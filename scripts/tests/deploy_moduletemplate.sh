@@ -39,34 +39,40 @@ fi
 # Add moduleversion to `bdba` list in sec-scanners-config.yaml
 yq eval '.bdba += ["europe-docker.pkg.dev/kyma-project/prod/template-operator:'"${RELEASE_VERSION}"'"]' -i sec-scanners-config.yaml
 
-cat module-config-for-e2e.yaml
+MODULE_CONFIG="module-config-for-e2e.yaml"
+REGISTRY_URL="http://localhost:5111/"
+COMPONENT_CONSTRUCTOR_FILE="./component-constructor.yaml"
+CTF_DIR="./component-ctf"
+TEMPLATE_FILE="template.yaml"
+MANIFEST_FILE="template-operator.yaml"
+DEFAULT_CR_FILE="default-sample-cr.yaml"
 
-REGISTRY_URL="http://localhost:5111"
-CTF_PATH="./ctf-archive"
+cat "${MODULE_CONFIG}"
 
 # Generate ModuleTemplate using modulectl
 echo "Generating CTF with modulectl..."
 modulectl create \
-  --config-file ./module-config-for-e2e.yaml \
-  --registry "${REGISTRY_URL}" \
-  --insecure \
+  --config-file "${MODULE_CONFIG}" \
   --disable-ocm-registry-push \
-  --output-constructor-file "${CTF_PATH}"
+  --output-constructor-file "${COMPONENT_CONSTRUCTOR_FILE}"
 
 # Transfer CTF to registry using ocm cli
 echo "Transferring component version to registry using ocm cli..."
-ocm transfer ctf "${CTF_PATH}" "${REGISTRY_URL}" --enforce --overwrite
+ocm add componentversions --create --file "${CTF_DIR}" "${COMPONENT_CONSTRUCTOR_FILE}"
+ocm transfer ctf --no-update "${CTF_DIR}" "${REGISTRY_URL}"
 
-cat template.yaml
+cat "${TEMPLATE_FILE}"
 echo "ModuleTemplate created successfully"
+yq -i '.metadata.namespace="kcp-system"' "${TEMPLATE_FILE}"
 
 if [ "${DEPLOY_MODULETEMPLATE}" == "true" ]; then
-kubectl apply -f template.yaml
-rm -f template.yaml
+  kubectl apply -f "${TEMPLATE_FILE}"
+  rm -f "${TEMPLATE_FILE}"
 fi
 
-rm -f module-config-for-e2e.yaml
-rm -f template-operator.yaml
-rm -f default-sample-cr.yaml
-rm -rf "${CTF_PATH}"
+# Cleanup temporary files
+rm -f "${MODULE_CONFIG}"
+rm -f "${MANIFEST_FILE}"
+rm -f "${DEFAULT_CR_FILE}"
+rm -rf "${CTF_DIR}"
 echo "Temporary files removed successfully"

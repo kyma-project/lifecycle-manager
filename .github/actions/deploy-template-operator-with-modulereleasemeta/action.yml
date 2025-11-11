@@ -31,24 +31,26 @@ runs:
         }}
       shell: bash
       run: |
-        # Common registry configuration
+        MODULE_CONFIG="./module-config.yaml"
         REGISTRY_URL="http://localhost:5111"
-        CTF_PATH="./ctf-archive"
+        COMPONENT_CONSTRUCTOR_FILE="./component-constructor.yaml"
+        CTF_DIR="./ctf-archive"
+        TEMPLATE_FILE="./template.yaml"
+        TARGET_REGISTRY="k3d-kcp-registry.localhost:5000"
 
         echo "creating ModuleTemplate"
         modulectl create \
-          --config-file ./module-config.yaml \
-          --registry "${REGISTRY_URL}" \
-          --insecure \
+          --config-file "${MODULE_CONFIG}" \
           --disable-ocm-registry-push \
-          --output-constructor-file "${CTF_PATH}"
+          --output-constructor-file "${COMPONENT_CONSTRUCTOR_FILE}"
 
         echo "pushing OCM components..."
-        ocm transfer ctf "${CTF_PATH}" "${REGISTRY_URL}" --enforce --overwrite
+        ocm add componentversions --create --file "${CTF_DIR}" "${COMPONENT_CONSTRUCTOR_FILE}"
+        ocm transfer ctf "${CTF_DIR}" "${REGISTRY_URL}"
 
-        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
+        sed -i "s|localhost:5111|${TARGET_REGISTRY}|g" "${TEMPLATE_FILE}"
         kubectl get crds
-        kubectl apply -f template.yaml
+        kubectl apply -f "${TEMPLATE_FILE}"
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInOlderVersion
       working-directory: template-operator
       if: ${{ matrix.e2e-test != 'mandatory-module' &&
@@ -89,32 +91,31 @@ runs:
       if: ${{ matrix.e2e-test == 'oci-reg-cred-secret' }}
       shell: bash
       run: |
-        # Common registry configuration for private registry
+        MODULE_CONFIG="./module-config.yaml"
         REGISTRY_URL="http://k3d-private-oci-reg.localhost:5001"
         REGISTRY_CREDS="myuser:mypass"
-        CTF_PATH="./ctf-archive"
+        COMPONENT_CONSTRUCTOR_FILE="./component-constructor.yaml"
+        CTF_DIR="./ctf-archive"
+        TEMPLATE_FILE="./template.yaml"
+        TARGET_REGISTRY="private-oci-reg.localhost:5000"
 
         echo "creating ModuleTemplate"
         modulectl create \
-          --config-file ./module-config.yaml \
-          --registry "${REGISTRY_URL}" \
-          --registry-credentials "${REGISTRY_CREDS}" \
-          --insecure \
+          --config-file "${MODULE_CONFIG}" \
           --disable-ocm-registry-push \
-          --output-constructor-file "${CTF_PATH}"
+          --output-constructor-file "${COMPONENT_CONSTRUCTOR_FILE}"
 
         echo "pushing OCM components..."
+        ocm add componentversions --create --file "${CTF_DIR}" "${COMPONENT_CONSTRUCTOR_FILE}"
         ocm transfer ctf \
-          "${CTF_PATH}" \
+          --no-update \
+          "${CTF_DIR}" \
           "${REGISTRY_URL}" \
-          --enforce \
-          --overwrite \
-          --uploader ocm/ociRegistry \
-          --creds "${REGISTRY_CREDS}"
+          --uploader ocm/ociRegistry
 
-        sed -i 's/k3d-private-oci-reg.localhost:5001/private-oci-reg.localhost:5000/g' ./template.yaml
+        sed -i "s|k3d-private-oci-reg.localhost:5001|${TARGET_REGISTRY}|g" "${TEMPLATE_FILE}"
         kubectl get crds
-        kubectl apply -f template.yaml
+        kubectl apply -f "${TEMPLATE_FILE}"
     - name: Create and apply ModuleReleaseMeta from the template-operator repo
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'kyma-metrics' ||
