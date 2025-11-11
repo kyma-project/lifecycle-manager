@@ -226,7 +226,7 @@ var _ = BeforeSuite(func() {
 	resourceConfigurator := skrwebhookresources.NewResourceConfigurator(
 		flags.DefaultRemoteSyncNamespace, "dummyhost/fake-watcher-image:latest",
 		"200Mi",
-		"1", *resolvedKcpAddr)
+		"1", *resolvedKcpAddr, "")
 
 	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(kcpClient, testSkrContextFactory,
 		flags.DefaultRemoteSyncNamespace,
