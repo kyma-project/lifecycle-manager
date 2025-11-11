@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 
+	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -42,6 +43,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
+type AccessSecretService interface {
+	GetAccessSecretByKyma(ctx context.Context, kymaName string) (*apicorev1.Secret, error)
+}
+
 type DeletionReconciler struct {
 	client.Client
 	event.Event
@@ -56,6 +61,7 @@ type DeletionReconciler struct {
 	Metrics              *metrics.KymaMetrics
 	RemoteCatalog        *remote.RemoteCatalog
 	TemplateLookup       *templatelookup.TemplateLookup
+	AccessSecretService  AccessSecretService
 }
 
 func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -91,9 +97,13 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
-	err := r.SkrContextProvider.Init(ctx, kyma.GetNamespacedName())
-	if errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
+	if _, err := r.AccessSecretService.GetAccessSecretByKyma(ctx,
+		kyma.GetName()); errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
 		return r.handleDeletedSkr(ctx, kyma)
+	}
+
+	if err := r.SkrContextProvider.Init(ctx, kyma.GetNamespacedName()); err != nil {
+		return r.requeueWithError(ctx, kyma, err)
 	}
 
 	return r.reconcileDeletion(ctx, kyma)
@@ -173,7 +183,6 @@ func (r *DeletionReconciler) handleDeletingState(ctx context.Context, kyma *v1be
 		return ctrl.Result{}, fmt.Errorf("failed to get skrContext: %w", err)
 	}
 
-	r.SkrContextProvider.InvalidateCache(kyma.GetNamespacedName())
 	if err = skrContext.RemoveFinalizersFromKyma(ctx); client.IgnoreNotFound(err) != nil {
 		r.Metrics.RecordRequeueReason(metrics.FinalizersRemovalFromRemoteKyma, queue.UnexpectedRequeue)
 		return r.requeueWithError(ctx, kyma, err)

@@ -264,7 +264,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	metrics.NewFipsMetrics().Update()
 
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
-		kymaMetrics, logger, maintenanceWindow, ociRegistryHost)
+		kymaMetrics, logger, maintenanceWindow, ociRegistryHost, accessManagerService)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
 		eventRecorder)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, logger,
@@ -414,6 +414,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SkrWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
 	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, ociRegistryHost string,
+	accessManagerService *accessmanager.Service,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -491,12 +492,12 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		Config:  kymaReconcilerConfig,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, skrContextFactory,
 			flagVar.RemoteSyncNamespace),
-		TemplateLookup: templatelookup,
+		TemplateLookup:      templatelookup,
+		AccessSecretService: accessManagerService,
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KymaDeletion")
 		os.Exit(1)
 	}
-
 }
 
 func setupPurgeReconciler(mgr ctrl.Manager,
