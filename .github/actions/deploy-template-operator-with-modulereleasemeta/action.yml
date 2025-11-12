@@ -112,8 +112,7 @@ runs:
         ocm transfer ctf \
           --no-update \
           "${CTF_DIR}" \
-          "${REGISTRY_URL}" \
-          --uploader ocm/ociRegistry
+          "${REGISTRY_URL}"
 
         sed -i "s|k3d-private-oci-reg.localhost:5001|${TARGET_REGISTRY}|g" "${TEMPLATE_FILE}"
         kubectl get crds
