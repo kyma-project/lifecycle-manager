@@ -58,7 +58,7 @@ modulectl create \
 
 # Transfer CTF to registry using ocm cli
 echo "Transferring component version to registry using ocm cli..."
-ocm add componentversions --create --file "${CTF_DIR}" "${COMPONENT_CONSTRUCTOR_FILE}"
+ocm add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
 ocm transfer ctf --no-update "${CTF_DIR}" "${REGISTRY_URL}"
 
 cat "${TEMPLATE_FILE}"
