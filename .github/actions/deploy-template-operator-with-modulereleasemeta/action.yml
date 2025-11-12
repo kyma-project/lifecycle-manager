@@ -60,6 +60,7 @@ runs:
         }}
       shell: bash
       run: |
+        yq eval '.images[0].newTag = "${{ inputs.module_version }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInOlderVersion }}"' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersion }}
@@ -83,6 +84,7 @@ runs:
           REQUIRE_DOWNTIME=false
         fi
 
+        yq eval '.images[0].newTag = "${{ inputs.module_version }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }} $INCLUDE_DEFAULT_CR $MANDATORY $DEPLOY_MODULETEMPLATE $REQUIRE_DOWNTIME
@@ -162,6 +164,7 @@ runs:
         }}
       shell: bash
       run: |
+        yq eval '.images[0].newTag = "${{ inputs.module_version }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInOlderVersion }}"' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersionForMandatoryModule }} true true false
@@ -176,6 +179,7 @@ runs:
       working-directory: template-operator
       shell: bash
       run: |
+        yq eval '.images[0].newTag = "${{ inputs.module_version }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersionForMandatoryModule }} true true false
@@ -193,12 +197,14 @@ runs:
       shell: bash
       run: |
         # Create and apply ModuleReleaseMeta with version when deployment is in warning state
+        yq eval '.images[0].newTag = "${{ inputs.module_version }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].args) = ["--leader-elect", "--final-state=Warning", "--final-deletion-state=Warning"]' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForDeploymentInWarning }}
         ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForDeploymentInWarning }}
 
         # Create and apply ModuleReleaseMeta with version when deployment is misconfigured
+        yq eval '.images[0].newTag = "${{ inputs.module_version }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].image) = "non-working/path:001"' -i template-operator.yaml
         yq eval '(. | select(.kind == "Deployment") | .spec.progressDeadlineSeconds) = 60' -i template-operator.yaml
@@ -218,12 +224,14 @@ runs:
       shell: bash
       run: |
         # Create and apply ModuleReleaseMeta with version when statefulset is in warning state
+        yq eval '.images[0].newTag = "${{ inputs.module_version }}"' -i config/manager/statefulset/kustomization.yaml
         make build-statefulset-manifests
         yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].args) = ["--leader-elect", "--final-state=Warning", "--final-deletion-state=Warning"]' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForStatefulSetInWarning }}
         ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForStatefulSetInWarning }}
 
         # Create and apply ModuleReleaseMeta with version when statefulset is misconfigured
+        yq eval '.images[0].newTag = "${{ inputs.module_version }}"' -i config/manager/statefulset/kustomization.yaml
         make build-statefulset-manifests
         yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].image) = "non-working/path:002"' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredStatefulSetImage }}
@@ -233,6 +241,7 @@ runs:
       if: ${{ matrix.e2e-test == 'module-without-default-cr' }}
       shell: bash
       run: |
+        yq eval '.images[0].newTag = "${{ inputs.module_version }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForNoDefaultCR }} false
         ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForNoDefaultCR }}
