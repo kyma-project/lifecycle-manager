@@ -53,6 +53,7 @@ import (
 	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate" //nolint:revive // not for import
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
@@ -275,6 +276,9 @@ var _ = BeforeSuite(func() {
 		Config:               kymaReconcilerConfig,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
+		AccessSecretService: accessmanager.NewService(
+			secretrepository.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+		),
 	}).SetupWithManager(mgr, ctrlruntime.Options{}) // DeletionReconciler doesn't need SKR event listener
 	Expect(err).ToNot(HaveOccurred())
 
