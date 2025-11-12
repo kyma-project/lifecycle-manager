@@ -11,7 +11,7 @@ on:
       template_operator_version:
         description: "Template operator version (tag or branch)"
         required: false
-        default: '1.0.3'
+        default: '1.0.4'
   pull_request:
     types: [ opened, edited, synchronize, reopened, ready_for_review ]
 
@@ -94,10 +94,10 @@ jobs:
           path: lifecycle-manager
       - name: Checkout template-operator
         uses: actions/checkout@v4
-        ref: '1.0.3'
         with:
           repository: kyma-project/template-operator
           path: template-operator
+          ref: ${{ inputs.template_operator_version || steps.configuration.outputs.template_operator_version }}
 
       - name: Get configuration
         uses: ./lifecycle-manager/.github/actions/get-configuration
@@ -129,6 +129,8 @@ jobs:
           klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
       - name: Deploy template-operator
         uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
+        with:
+          module_version: ${{ steps.configuration.outputs.template_operator_version }}
         env:
           ModuleDeploymentName: template-operator-controller-manager
           ModuleDeploymentNameInNewerVersion: template-operator-v2-controller-manager

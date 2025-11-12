@@ -4,7 +4,7 @@ inputs:
   module_version:
     description: "Version of the template operator to be deployed, should be aligned with the latest version released in github."
     required: true
-    default: "1.0.3"
+    default: "1.0.4"
 runs:
   using: composite
   steps:

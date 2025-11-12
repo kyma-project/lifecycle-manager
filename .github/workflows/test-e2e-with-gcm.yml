@@ -57,6 +57,7 @@ jobs:
         with:
           repository: kyma-project/template-operator
           path: template-operator
+          ref: ${{ steps.configuration.outputs.template_operator_version }}
       - name: Get configuration
         uses: ./lifecycle-manager/.github/actions/get-configuration
         id: configuration
@@ -87,6 +88,8 @@ jobs:
           klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
       - name: Deploy template-operator
         uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
+        with:
+          module_version: ${{ steps.configuration.outputs.template_operator_version }}
         env:
           ModuleDeploymentName: template-operator-controller-manager
           ModuleDeploymentNameInNewerVersion: template-operator-v2-controller-manager
