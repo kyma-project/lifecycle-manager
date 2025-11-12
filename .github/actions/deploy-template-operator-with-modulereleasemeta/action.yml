@@ -38,6 +38,20 @@ runs:
         TEMPLATE_FILE="./template.yaml"
         TARGET_REGISTRY="k3d-kcp-registry.localhost:5000"
 
+        # Configure OCM to use insecure HTTP for local registry
+        cat > .ocmconfig <<EOF
+        type: generic.config.ocm.software/v1
+        configurations:
+          - type: attributes.config.ocm.software
+            attributes:
+              oci.config.ocm.software:
+                type: oci.config.ocm.software
+                aliases:
+                  localhost:5111:
+                    scheme: http
+        EOF
+        export OCM_CONFIG=.ocmconfig
+
         echo "creating ModuleTemplate"
         modulectl create \
           --config-file "${MODULE_CONFIG}" \
@@ -100,6 +114,20 @@ runs:
         CTF_DIR="./ctf-archive"
         TEMPLATE_FILE="./template.yaml"
         TARGET_REGISTRY="private-oci-reg.localhost:5000"
+
+        # Configure OCM to use insecure HTTP for private registry
+        cat > .ocmconfig <<EOF
+        type: generic.config.ocm.software/v1
+        configurations:
+          - type: attributes.config.ocm.software
+            attributes:
+              oci.config.ocm.software:
+                type: oci.config.ocm.software
+                aliases:
+                  k3d-private-oci-reg.localhost:5001:
+                    scheme: http
+        EOF
+        export OCM_CONFIG=.ocmconfig
 
         echo "creating ModuleTemplate"
         modulectl create \
