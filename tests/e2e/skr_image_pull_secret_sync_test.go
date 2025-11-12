@@ -70,7 +70,8 @@ var _ = Describe("SKR Image Pull Secret Sync", Ordered, func() {
 				WithArguments("template-operator-v1-controller-manager", "template-operator-system",
 					skrImagePullSecretName, skrClient).
 				Should(Succeed())
-      
+		})
+
 		It("And SKR image pull Secret is added to runtime-watcher deployment as imagePullSecrets", func() {
 			Eventually(DeploymentPodSpecHasImagePullSecret).
 				WithContext(ctx).
