@@ -55,6 +55,7 @@ func TestResourceConfigurator_ConfigureDeployment_SetsGODEBUG(t *testing.T) {
 		"100m",
 		"128Mi",
 		skrwebhookresources.KCPAddr{Hostname: "dbg-host", Port: 4242},
+		"",
 	)
 	configurator.SetSecretResVer("v1")
 
@@ -180,6 +181,7 @@ func TestResourceConfigurator_ConfigureDeployment(t *testing.T) {
 				testCase.fields.cpuResLimit,
 				testCase.fields.memResLimit,
 				testCase.fields.kcpAddress,
+				"",
 			)
 			configurator.SetSecretResVer(testCase.fields.secretResVer)
 			got, err := configurator.ConfigureDeployment(testCase.obj)
@@ -271,7 +273,8 @@ func TestResourceConfigurator_ConfigureNetworkPolicies(t *testing.T) {
 				testCase.fields.skrWatcherImage,
 				testCase.fields.cpuResLimit,
 				testCase.fields.memResLimit,
-				testCase.fields.kcpAddress)
+				testCase.fields.kcpAddress,
+				"")
 			got, err := configurator.ConfigureNetworkPolicies(testCase.obj)
 			if (err != nil) != testCase.wantErr {
 				t.Errorf("ConfigureNetworkPolicies() error = %v, wantErr %v", err, testCase.wantErr)
@@ -281,6 +284,54 @@ func TestResourceConfigurator_ConfigureNetworkPolicies(t *testing.T) {
 				t.Errorf("ConfigureNetworkPolicies() got = %v, want %v", got, testCase.want)
 			}
 		})
+	}
+}
+
+func TestResourceConfigurator_ConfigureDeployment_SetsImagePullSecret(t *testing.T) {
+	const pullSecretName = "my-pull-secret"
+	testDeploy := toUnstructured(&apiappsv1.Deployment{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:   "pull-secret-deploy",
+			Labels: map[string]string{"test": "true"},
+		},
+		Spec: apiappsv1.DeploymentSpec{
+			Template: apicorev1.PodTemplateSpec{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Labels: map[string]string{"app": "test"},
+				},
+				Spec: apicorev1.PodSpec{
+					Containers: []apicorev1.Container{
+						{
+							Name:  "main",
+							Image: "old-image",
+						},
+					},
+				},
+			},
+		},
+	})
+
+	configurator := skrwebhookresources.NewResourceConfigurator(
+		"",
+		"",
+		"100m",
+		"128Mi",
+		skrwebhookresources.KCPAddr{Hostname: "test-host", Port: 4242},
+		pullSecretName,
+	)
+	configurator.SetSecretResVer("v1")
+
+	got, err := configurator.ConfigureDeployment(testDeploy)
+	if err != nil {
+		t.Fatalf("ConfigureDeployment() returned error: %v", err)
+	}
+
+	if len(got.Spec.Template.Spec.ImagePullSecrets) != 1 {
+		t.Fatalf("expected 1 ImagePullSecret, got %d", len(got.Spec.Template.Spec.ImagePullSecrets))
+	}
+
+	if got.Spec.Template.Spec.ImagePullSecrets[0].Name != pullSecretName {
+		t.Errorf("ImagePullSecret name = %q, want %q", got.Spec.Template.Spec.ImagePullSecrets[0].Name, pullSecretName)
 	}
 }
 
