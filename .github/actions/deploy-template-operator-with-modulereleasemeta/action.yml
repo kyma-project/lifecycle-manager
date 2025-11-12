@@ -115,7 +115,7 @@ runs:
         TEMPLATE_FILE="./template.yaml"
         TARGET_REGISTRY="private-oci-reg.localhost:5000"
 
-        # Configure OCM to use insecure HTTP for private registry
+        # Configure OCM to use insecure HTTP for private registry with credentials
         cat > .ocmconfig <<EOF
         type: generic.config.ocm.software/v1
         configurations:
@@ -126,6 +126,16 @@ runs:
                 aliases:
                   k3d-private-oci-reg.localhost:5001:
                     scheme: http
+          - type: credentials.config.ocm.software
+            consumers:
+              - identity:
+                  type: OCIRegistry
+                  hostname: k3d-private-oci-reg.localhost:5001
+                credentials:
+                  - type: Credentials
+                    properties:
+                      username: myuser
+                      password: mypass
         EOF
         export OCM_CONFIG=.ocmconfig
 
