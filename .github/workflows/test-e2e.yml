@@ -8,6 +8,10 @@ on:
       k8s_version:
         description: "With Kubernetes version (format: X.Y.Z)"
         required: false
+      template_operator_version:
+        description: "Template operator version (tag or branch)"
+        required: false
+        default: '1.0.3'
   pull_request:
     types: [ opened, edited, synchronize, reopened, ready_for_review ]
 
@@ -90,6 +94,7 @@ jobs:
           path: lifecycle-manager
       - name: Checkout template-operator
         uses: actions/checkout@v4
+        ref: '1.0.3'
         with:
           repository: kyma-project/template-operator
           path: template-operator
