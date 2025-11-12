@@ -47,6 +47,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
@@ -215,6 +217,9 @@ var _ = BeforeSuite(func() {
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
 		TemplateLookup: templateLookup,
+		AccessSecretService: accessmanager.NewService(
+			secretrepository.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+		),
 	}).SetupWithManager(mgr, ctrlruntime.Options{}) // DeletionReconciler doesn't need SKR event listener
 	Expect(err).ToNot(HaveOccurred())
 

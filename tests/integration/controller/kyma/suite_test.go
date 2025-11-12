@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
@@ -50,6 +51,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
@@ -216,6 +218,9 @@ var _ = BeforeSuite(func() {
 		Config:         kymaReconcilerConfig,
 		Metrics:        kymaMetrics,
 		TemplateLookup: templateLookup,
+		AccessSecretService: accessmanager.NewService(
+			secretrepository.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+		),
 	}).SetupWithManager(mgr, ctrlruntime.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
