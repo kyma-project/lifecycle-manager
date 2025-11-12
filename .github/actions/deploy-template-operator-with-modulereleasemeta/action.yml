@@ -46,7 +46,7 @@ runs:
 
         echo "pushing OCM components..."
         ocm add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
-        ocm transfer ctf "${CTF_DIR}" "${REGISTRY_URL}"
+        ocm transfer ctf "${CTF_DIR}" "${REGISTRY_URL}" --uploader ocm/ociRegistry
 
         sed -i "s|localhost:5111|${TARGET_REGISTRY}|g" "${TEMPLATE_FILE}"
         kubectl get crds
@@ -112,7 +112,8 @@ runs:
         ocm transfer ctf \
           --no-update \
           "${CTF_DIR}" \
-          "${REGISTRY_URL}"
+          "${REGISTRY_URL}" \
+          --uploader ocm/ociRegistry
 
         sed -i "s|k3d-private-oci-reg.localhost:5001|${TARGET_REGISTRY}|g" "${TEMPLATE_FILE}"
         kubectl get crds
