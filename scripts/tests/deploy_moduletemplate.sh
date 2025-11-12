@@ -40,7 +40,7 @@ fi
 yq eval '.bdba = ["europe-docker.pkg.dev/kyma-project/prod/template-operator:'"${RELEASE_VERSION}"'"]' -i sec-scanners-config.yaml
 
 MODULE_CONFIG="module-config-for-e2e.yaml"
-REGISTRY_URL="http://localhost:5111/"
+REGISTRY_URL="localhost:5111"
 COMPONENT_CONSTRUCTOR_FILE="./component-constructor.yaml"
 CTF_DIR="./component-ctf"
 TEMPLATE_FILE="template.yaml"
@@ -59,7 +59,7 @@ modulectl create \
 # Transfer CTF to registry using ocm cli
 echo "Transferring component version to registry using ocm cli..."
 ocm add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
-ocm transfer ctf --no-update "${CTF_DIR}" "${REGISTRY_URL}" --uploader ocm/ociRegistry
+ocm transfer ctf --no-update "${CTF_DIR}" "${REGISTRY_URL}"
 
 cat "${TEMPLATE_FILE}"
 echo "ModuleTemplate created successfully"

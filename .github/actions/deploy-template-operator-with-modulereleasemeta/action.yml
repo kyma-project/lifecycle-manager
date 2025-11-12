@@ -32,7 +32,7 @@ runs:
       shell: bash
       run: |
         MODULE_CONFIG="./module-config.yaml"
-        REGISTRY_URL="http://localhost:5111"
+        REGISTRY_URL="localhost:5111"
         COMPONENT_CONSTRUCTOR_FILE="./component-constructor.yaml"
         CTF_DIR="./ctf-archive"
         TEMPLATE_FILE="./template.yaml"
@@ -46,7 +46,7 @@ runs:
 
         echo "pushing OCM components..."
         ocm add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
-        ocm transfer ctf "${CTF_DIR}" "${REGISTRY_URL}" --uploader ocm/ociRegistry
+        ocm transfer ctf "${CTF_DIR}" "${REGISTRY_URL}"
 
         sed -i "s|localhost:5111|${TARGET_REGISTRY}|g" "${TEMPLATE_FILE}"
         kubectl get crds
@@ -94,7 +94,7 @@ runs:
       shell: bash
       run: |
         MODULE_CONFIG="./module-config.yaml"
-        REGISTRY_URL="http://k3d-private-oci-reg.localhost:5001"
+        REGISTRY_URL="k3d-private-oci-reg.localhost:5001"
         REGISTRY_CREDS="myuser:mypass"
         COMPONENT_CONSTRUCTOR_FILE="./component-constructor.yaml"
         CTF_DIR="./ctf-archive"
@@ -112,8 +112,7 @@ runs:
         ocm transfer ctf \
           --no-update \
           "${CTF_DIR}" \
-          "${REGISTRY_URL}" \
-          --uploader ocm/ociRegistry
+          "${REGISTRY_URL}"
 
         sed -i "s|k3d-private-oci-reg.localhost:5001|${TARGET_REGISTRY}|g" "${TEMPLATE_FILE}"
         kubectl get crds
