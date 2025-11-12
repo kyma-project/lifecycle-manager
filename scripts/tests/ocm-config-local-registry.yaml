@@ -1,0 +1,9 @@
+type: generic.config.ocm.software/v1
+configurations:
+  - type: attributes.config.ocm.software
+    attributes:
+      oci.config.ocm.software:
+        type: oci.config.ocm.software
+        aliases:
+          localhost:5111:
+            scheme: http
