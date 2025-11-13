@@ -1,6 +1,6 @@
 type: generic.config.ocm.software/v1
 configurations:
-  - type: oci.config.ocm.software
+  - type: ocm.config.ocm.software
     aliases:
       k3d-private-oci-reg.localhost:5001:
         type: OCIRegistry
