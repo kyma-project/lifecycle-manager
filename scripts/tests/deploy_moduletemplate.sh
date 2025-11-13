@@ -50,7 +50,7 @@ DEFAULT_CR_FILE="default-sample-cr.yaml"
 cat "${MODULE_CONFIG}"
 
 # Configure OCM to use insecure HTTP for local registry
-export OCM_CONFIG="$(dirname "$0")/ocm-config-local-registry.yaml"
+OCM_CONFIG="$(dirname "$0")/ocm-config-local-registry.yaml"
 
 # Generate ModuleTemplate using modulectl
 echo "Generating CTF with modulectl..."
@@ -61,8 +61,8 @@ modulectl create \
 
 # Transfer CTF to registry using ocm cli
 echo "Transferring component version to registry using ocm cli..."
-ocm add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
-ocm transfer ctf --no-update "${CTF_DIR}" "${REGISTRY_URL}"
+ocm --config "${OCM_CONFIG}" add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
+ocm --config "${OCM_CONFIG}" transfer ctf --no-update "${CTF_DIR}" "${REGISTRY_URL}"
 
 cat "${TEMPLATE_FILE}"
 echo "ModuleTemplate created successfully"

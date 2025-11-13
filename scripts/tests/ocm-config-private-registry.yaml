@@ -1,12 +1,9 @@
 type: generic.config.ocm.software/v1
 configurations:
-  - type: attributes.config.ocm.software
-    attributes:
-      oci.config.ocm.software:
-        type: oci.config.ocm.software
-        aliases:
-          k3d-private-oci-reg.localhost:5001:
-            scheme: http
+  - type: oci.config.ocm.software
+    aliases:
+      k3d-private-oci-reg.localhost:5001:
+        scheme: http
   - type: credentials.config.ocm.software
     consumers:
       - identity:

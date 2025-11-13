@@ -37,10 +37,7 @@ runs:
         CTF_DIR="./ctf-archive"
         TEMPLATE_FILE="./template.yaml"
         TARGET_REGISTRY="k3d-kcp-registry.localhost:5000"
-
-        # Configure OCM to use insecure HTTP for local registry
-        cat ../lifecycle-manager/scripts/tests/ocm-config-local-registry.yaml
-        cat ../lifecycle-manager/scripts/tests/ocm-config-local-registry.yaml > ~/.ocmconfig
+        OCM_CONFIG="../lifecycle-manager/scripts/tests/ocm-config-local-registry.yaml"
 
         echo "creating ModuleTemplate"
         modulectl create \
@@ -49,8 +46,8 @@ runs:
           --output-constructor-file "${COMPONENT_CONSTRUCTOR_FILE}"
 
         echo "pushing OCM components..."
-        ocm add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
-        ocm transfer ctf "${CTF_DIR}" "${REGISTRY_URL}"
+        ocm --config "${OCM_CONFIG}" add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
+        ocm --config "${OCM_CONFIG}" transfer ctf "${CTF_DIR}" "${REGISTRY_URL}"
 
         sed -i "s|localhost:5111|${TARGET_REGISTRY}|g" "${TEMPLATE_FILE}"
         kubectl get crds
@@ -104,10 +101,7 @@ runs:
         CTF_DIR="./ctf-archive"
         TEMPLATE_FILE="./template.yaml"
         TARGET_REGISTRY="private-oci-reg.localhost:5000"
-
-        # Configure OCM to use insecure HTTP for private registry with credentials
-        cat ../lifecycle-manager/scripts/tests/ocm-config-private-registry.yaml
-        cat ../lifecycle-manager/scripts/tests/ocm-config-private-registry.yaml > ~/.ocmconfig
+        OCM_CONFIG="../lifecycle-manager/scripts/tests/ocm-config-private-registry.yaml"
 
         echo "creating ModuleTemplate"
         modulectl create \
@@ -116,8 +110,8 @@ runs:
           --output-constructor-file "${COMPONENT_CONSTRUCTOR_FILE}"
 
         echo "pushing OCM components..."
-        ocm add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
-        ocm transfer ctf \
+        ocm --config "${OCM_CONFIG}" add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
+        ocm --config "${OCM_CONFIG}" transfer ctf \
           --no-update \
           "${CTF_DIR}" \
           "${REGISTRY_URL}"
