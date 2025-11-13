@@ -3,7 +3,8 @@ configurations:
   - type: oci.config.ocm.software
     aliases:
       k3d-private-oci-reg.localhost:5001:
-        scheme: http
+        type: OCIRegistry
+        baseUrl: http://k3d-private-oci-reg.localhost:5001
   - type: credentials.config.ocm.software
     consumers:
       - identity:
