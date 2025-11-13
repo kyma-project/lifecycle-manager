@@ -39,7 +39,8 @@ runs:
         TARGET_REGISTRY="k3d-kcp-registry.localhost:5000"
 
         # Configure OCM to use insecure HTTP for local registry
-        export OCM_CONFIG=../lifecycle-manager/scripts/tests/ocm-config-local-registry.yaml
+        cat ../lifecycle-manager/scripts/tests/ocm-config-local-registry.yaml
+        cat ../lifecycle-manager/scripts/tests/ocm-config-local-registry.yaml > ~/.ocmconfig
 
         echo "creating ModuleTemplate"
         modulectl create \
@@ -105,7 +106,8 @@ runs:
         TARGET_REGISTRY="private-oci-reg.localhost:5000"
 
         # Configure OCM to use insecure HTTP for private registry with credentials
-        export OCM_CONFIG=../lifecycle-manager/scripts/tests/ocm-config-private-registry.yaml
+        cat ../lifecycle-manager/scripts/tests/ocm-config-private-registry.yaml
+        cat ../lifecycle-manager/scripts/tests/ocm-config-private-registry.yaml > ~/.ocmconfig
 
         echo "creating ModuleTemplate"
         modulectl create \
