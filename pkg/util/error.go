@@ -12,13 +12,9 @@ import (
 	"k8s.io/client-go/discovery"
 )
 
-const (
-	MsgTLSCertificateExpired = "expired certificate" // stdlib: crypto/tls/alert.go
-)
-
 var (
 	ErrClientUnauthorized   = errors.New("ServerSideApply is unauthorized")
-	ErrClientTLSCertExpired = errors.New("SKR TLS certificate is expired")
+	ErrClientTLSCertExpired = errors.New("SKR access secret certificate is expired")
 )
 
 func IsNotFound(err error) bool {

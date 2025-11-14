@@ -17,6 +17,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
+const (
+	msgTLSCertificateExpired = "expired certificate" // stdlib: crypto/tls/alert.go
+)
+
 var (
 	ErrClientObjectConversionFailed = errors.New("client object conversion failed")
 	ErrServerSideApplyFailed        = errors.New("ServerSideApply failed")
@@ -172,7 +176,7 @@ func (c *ConcurrentDefaultSSA) suppressUnauthorized(src error) (error, bool) {
 
 // suppressTLSExpired replaces client-go error with our own in order to suppress it's very long Error() payload.
 func (c *ConcurrentDefaultSSA) suppressTLSExpired(src error) (error, bool) {
-	if strings.HasSuffix(strings.TrimRight(src.Error(), " \n"), util.MsgTLSCertificateExpired) {
+	if strings.HasSuffix(strings.TrimRight(src.Error(), " \n"), msgTLSCertificateExpired) {
 		return util.ErrClientTLSCertExpired, true
 	}
 	return src, false
