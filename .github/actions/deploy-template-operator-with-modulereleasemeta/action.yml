@@ -32,13 +32,22 @@ runs:
         }}
       shell: bash
       run: |
-        MODULE_CONFIG="./module-config.yaml"
+        MODULE_CONFIG="./module-config-for-e2e.yaml"
         REGISTRY_URL="localhost:5111"
         COMPONENT_CONSTRUCTOR_FILE="./component-constructor.yaml"
         CTF_DIR="./ctf-archive"
         TEMPLATE_FILE="./template.yaml"
         TARGET_REGISTRY="k3d-kcp-registry.localhost:5000"
         OCM_CONFIG="./ocm-config-local-registry.yaml"
+
+        echo "Creating module config for E2E tests with localhost URLs..."
+        cat <<EOF > "${MODULE_CONFIG}"
+        name: kyma-project.io/module/template-operator
+        version: 1.0.4
+        manifest: https://localhost:8080/template-operator.yaml
+        repository: https://github.com/kyma-project/template-operator
+        defaultCR: https://localhost:8080/config/samples/default-sample-cr.yaml
+        EOF
 
         echo "Verifying OCM config..."
         ocm --config "${OCM_CONFIG}" get config
