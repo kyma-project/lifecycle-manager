@@ -12,7 +12,6 @@ TIMEOUT_SECONDS=$((TIMEOUT_MINUTES * 60))
 echo "Running test '$TEST_NAME' with ${TIMEOUT_MINUTES}-minute timeout..."
 
 # Run test in background
-cd lifecycle-manager || exit 1
 make -C tests/e2e "$TEST_NAME" &
 TEST_PID=$!
 
@@ -35,8 +34,7 @@ while kill -0 $TEST_PID 2>/dev/null; do
         
         # Run debugging BEFORE exit
         echo "Capturing debugging information..."
-        cd .. || exit 1
-        ./lifecycle-manager/.github/scripts/debug/teardown.sh || true
+        ./.github/scripts/debug/teardown.sh || true
         
         echo ""
         echo "Test timed out after ${TIMEOUT_MINUTES} minutes"
