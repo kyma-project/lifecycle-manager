@@ -51,6 +51,7 @@ func SetupWithManager(mgr manager.Manager,
 	kcpClient client.Client,
 	cachedManifestParser declarativev2.CachedManifestParser,
 	customStateCheck declarativev2.StateCheck,
+	skrImagePullSecretName string,
 ) error {
 	var verifyFunc watcherevent.Verify
 	if settings.EnableDomainNameVerification {
@@ -97,7 +98,7 @@ func SetupWithManager(mgr manager.Manager,
 		WithOptions(opts).
 		Complete(declarativev2.NewReconciler(requeueIntervals, manifestMetrics, mandatoryModulesMetrics, manifestClient,
 			orphanDetectionService, specResolver, skrClientCache, skrClient, kcpClient, cachedManifestParser,
-			customStateCheck)); err != nil {
+			customStateCheck, skrImagePullSecretName)); err != nil {
 		return fmt.Errorf("failed to setup manager for manifest controller: %w", err)
 	}
 

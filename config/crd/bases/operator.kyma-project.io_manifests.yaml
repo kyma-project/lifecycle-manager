@@ -422,6 +422,31 @@ spec:
                 items:
                   type: string
                 type: array
+              manager:
+                description: Manager contains information for identifying a module's
+                  resource that can be used as indicator for the installation readiness
+                  of the module. Typically, this is the manager Deployment of the
+                  module. In exceptional cases, it may also be another resource.
+                properties:
+                  group:
+                    type: string
+                  kind:
+                    type: string
+                  name:
+                    description: Name is the name of the manager.
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the manager. It is
+                      optional.
+                    type: string
+                  version:
+                    type: string
+                required:
+                - group
+                - kind
+                - name
+                - version
+                type: object
               remote:
                 description: Remote indicates if Manifest should be installed on a
                   remote cluster

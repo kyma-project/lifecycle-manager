@@ -76,7 +76,7 @@ type SKRClient interface {
 	ResolveClient(ctx context.Context, manifest *v1beta2.Manifest) (*skrclient.SKRClient, error)
 }
 
-type ObjectTransform = func(context.Context, Object, []*unstructured.Unstructured) error
+type ResourceTransform = func(context.Context, Object, []*unstructured.Unstructured) error
 
 type Reconciler struct {
 	requeueIntervals     queue.RequeueIntervals
@@ -92,6 +92,7 @@ type Reconciler struct {
 	orphanDetectionService     OrphanDetectionService
 	skrClientCache             SKRClientCache
 	skrClient                  SKRClient
+	resourceTransforms         []ResourceTransform
 }
 
 func NewReconciler(requeueIntervals queue.RequeueIntervals,
@@ -105,6 +106,7 @@ func NewReconciler(requeueIntervals queue.RequeueIntervals,
 	kcpClient client.Client,
 	cachedManifestParser CachedManifestParser,
 	stateCheck StateCheck,
+	skrImagePullSecretName string,
 ) *Reconciler {
 	reconciler := &Reconciler{}
 	reconciler.manifestMetrics = metrics
@@ -116,6 +118,12 @@ func NewReconciler(requeueIntervals queue.RequeueIntervals,
 	reconciler.orphanDetectionService = orphanDetectionService
 	reconciler.skrClientCache = clientCache
 	reconciler.skrClient = skrClient
+
+	reconciler.resourceTransforms = GetDefaultResourceTransforms()
+	if skrImagePullSecretName != "" {
+		reconciler.resourceTransforms = append(reconciler.resourceTransforms,
+			CreateSkrImagePullSecretTransform(skrImagePullSecretName))
+	}
 
 	reconciler.kcpClient = kcpClient
 	reconciler.cachedManifestParser = cachedManifestParser
@@ -449,14 +457,7 @@ func (r *Reconciler) renderTargetResources(ctx context.Context,
 		return nil, err
 	}
 
-	transforms := []ObjectTransform{
-		ManagedByOwnedBy,
-		KymaComponentTransform,
-		DisclaimerTransform,
-		DockerImageLocalizationTransform,
-	}
-
-	for _, transform := range transforms {
+	for _, transform := range r.resourceTransforms {
 		if err := transform(ctx, manifest, targetResources.Items); err != nil {
 			return nil, err
 		}
