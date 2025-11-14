@@ -2,9 +2,8 @@ name: Deploy template-operator With ModuleReleaseMeta
 description: Deploys a test-specific template-operator and corresponding ModuleReleaseMeta.
 inputs:
   module_version:
-    description: "Version of the template operator to be deployed, should be aligned with the latest version released in github."
+    description: "Version of the template operator to be deployed, should be aligned with the version in versions.yaml"
     required: true
-    default: "1.0.4"
 runs:
   using: composite
   steps:
@@ -42,7 +41,6 @@ runs:
         OCM_CONFIG="./ocm-config-local-registry.yaml"
 
         echo "Verifying OCM config..."
-        cat "${OCM_CONFIG}"
         ocm --config "${OCM_CONFIG}" get config
 
         echo "creating ModuleTemplate"
