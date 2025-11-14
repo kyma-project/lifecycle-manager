@@ -5,11 +5,17 @@ configurations:
       k3d-private-oci-reg.localhost:5001:
         type: OCIRegistry
         baseUrl: http://k3d-private-oci-reg.localhost:5001
+  - type: oci.config.ocm.software
+    aliases:
+      k3d-private-oci-reg.localhost:5001:
+        type: OCIRegistry
+        baseUrl: http://k3d-private-oci-reg.localhost:5001
   - type: credentials.config.ocm.software
     consumers:
       - identity:
           type: OCIRegistry
-          hostname: k3d-private-oci-reg.localhost:5001
+          hostname: k3d-private-oci-reg.localhost
+          port: "5001"
         credentials:
           - type: Credentials
             properties:

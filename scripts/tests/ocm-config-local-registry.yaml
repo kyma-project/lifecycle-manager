@@ -5,3 +5,8 @@ configurations:
       localhost:5111:
         type: OCIRegistry
         baseUrl: http://localhost:5111
+  - type: oci.config.ocm.software
+    aliases:
+      localhost:5111:
+        type: OCIRegistry
+        baseUrl: http://localhost:5111
