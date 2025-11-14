@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,7 +41,7 @@ const (
 	ConsistentDuration      = 20 * time.Second
 	interval                = 500 * time.Millisecond
 	moduleCRFinalizer       = "cr-finalizer"
-	ModuleVersionToBeUsed   = "1.0.3"
+	ModuleVersionToBeUsed   = "1.0.4"
 	NewerVersion            = "2.4.2-e2e-test"
 	MisconfiguredModuleName = "template-operator-misconfigured"
 )
@@ -281,4 +282,29 @@ func DeploymentPodSpecHasImagePullSecret(ctx context.Context,
 		}
 	}
 	return fmt.Errorf("imagePullSecret %s not found in deployment %s", secretName, deploymentName)
+}
+
+func DeploymentContainersHaveImagePullSecretEnv(ctx context.Context,
+	deploymentName, namespace, secretName string, clnt client.Client,
+) error {
+	klmDeployment, err := GetDeployment(ctx, clnt, deploymentName, namespace)
+	if err != nil {
+		return fmt.Errorf("could not get deployment: %w", err)
+	}
+
+	containers := klmDeployment.Spec.Template.Spec.Containers
+	for _, container := range containers {
+		found := false
+		for _, envVar := range container.Env {
+			if envVar.Name == declarativev2.SkrImagePullSecretEnvName && envVar.Value == secretName {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("env var %s with value %s not found in container %s of deployment %s",
+				declarativev2.SkrImagePullSecretEnvName, secretName, container.Name, deploymentName)
+		}
+	}
+	return nil
 }

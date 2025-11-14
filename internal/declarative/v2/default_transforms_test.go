@@ -1,6 +1,7 @@
 package v2_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,7 +20,7 @@ func (t testObj) SetStatus(shared.Status)  { panic("status not supported in test
 func Test_defaultTransforms(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		declarativev2.ObjectTransform
+		declarativev2.ResourceTransform
 
 		name      string
 		resources []*unstructured.Unstructured
@@ -112,11 +113,26 @@ func Test_defaultTransforms(t *testing.T) {
 				t.Parallel()
 				obj := &testObj{Unstructured: &unstructured.Unstructured{}}
 				obj.SetName("test-object")
-				err := testCase.ObjectTransform(t.Context(), obj, testCase.resources)
+				err := testCase.ResourceTransform(t.Context(), obj, testCase.resources)
 				testCase.wantErr(
 					t, err, testCase.resources,
 				)
 			},
 		)
+	}
+}
+
+func TestGetDefaultResourceTransforms(t *testing.T) {
+	t.Parallel()
+	transforms := declarativev2.GetDefaultResourceTransforms()
+	require.Len(t, transforms, 4)
+	expected := []uintptr{
+		reflect.ValueOf(declarativev2.ManagedByOwnedBy).Pointer(),
+		reflect.ValueOf(declarativev2.KymaComponentTransform).Pointer(),
+		reflect.ValueOf(declarativev2.DisclaimerTransform).Pointer(),
+		reflect.ValueOf(declarativev2.DockerImageLocalizationTransform).Pointer(),
+	}
+	for i, tr := range transforms {
+		require.Equal(t, expected[i], reflect.ValueOf(tr).Pointer())
 	}
 }

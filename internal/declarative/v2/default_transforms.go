@@ -91,3 +91,12 @@ func ManagedByOwnedBy(_ context.Context, obj Object, resources []*unstructured.U
 	}
 	return nil
 }
+
+func GetDefaultResourceTransforms() []ResourceTransform {
+	return []ResourceTransform{
+		ManagedByOwnedBy,
+		KymaComponentTransform,
+		DisclaimerTransform,
+		DockerImageLocalizationTransform,
+	}
+}
