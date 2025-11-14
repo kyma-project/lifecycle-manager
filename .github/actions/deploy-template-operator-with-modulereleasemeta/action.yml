@@ -57,7 +57,7 @@ runs:
 
         sed -i "s|localhost:5111|${TARGET_REGISTRY}|g" "${TEMPLATE_FILE}"
         kubectl get crds
-        kubectl apply -f "${TEMPLATE_FILE}"
+        kubectl apply -f <(yq eval '.metadata.namespace = "kcp-system"' "${TEMPLATE_FILE}")
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInOlderVersion
       working-directory: template-operator
       if: ${{ matrix.e2e-test != 'mandatory-module' &&
@@ -124,7 +124,7 @@ runs:
 
         sed -i "s|k3d-private-oci-reg.localhost:5001|${TARGET_REGISTRY}|g" "${TEMPLATE_FILE}"
         kubectl get crds
-        kubectl apply -f "${TEMPLATE_FILE}"
+        kubectl apply -f <(yq eval '.metadata.namespace = "kcp-system"' "${TEMPLATE_FILE}")
     - name: Create and apply ModuleReleaseMeta from the template-operator repo
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'kyma-metrics' ||
@@ -214,7 +214,7 @@ runs:
         # Create and apply ModuleReleaseMeta with version when deployment is misconfigured
         yq eval '.images[0].newTag = "${{ env.VersionForMisconfiguredDeploymentImage }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
-        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].image) = "non-working/path:001"' -i template-operator.yaml
+        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].image) = "non-working/path:0.0.1"' -i template-operator.yaml
         yq eval '(. | select(.kind == "Deployment") | .spec.progressDeadlineSeconds) = 60' -i template-operator.yaml
         yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].livenessProbe) = {
           "httpGet": {"path": "/healthz", "port": 8081},
@@ -241,7 +241,7 @@ runs:
         # Create and apply ModuleReleaseMeta with version when statefulset is misconfigured
         yq eval '.images[0].newTag = "${{ env.VersionForMisconfiguredStatefulSetImage }}"' -i config/manager/statefulset/kustomization.yaml
         make build-statefulset-manifests
-        yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].image) = "non-working/path:002"' -i template-operator.yaml
+        yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].image) = "non-working/path:0.0.2"' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredStatefulSetImage }}
         ./deploy_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:${{ env.VersionForMisconfiguredStatefulSetImage }}
     - name: Create Template Operator Module without default CR and apply ModuleReleaseMeta
