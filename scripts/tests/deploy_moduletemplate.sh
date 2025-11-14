@@ -64,7 +64,9 @@ echo "Transferring component version to registry using ocm cli..."
 ocm --config "${OCM_CONFIG}" add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
 ocm --config "${OCM_CONFIG}" transfer ctf --no-update "${CTF_DIR}" "${REGISTRY_URL}"
 
+echo "=== ModuleTemplate content ==="
 cat "${TEMPLATE_FILE}"
+echo "=== End ModuleTemplate ===" 
 echo "ModuleTemplate created successfully"
 yq -i '.metadata.namespace="kcp-system"' "${TEMPLATE_FILE}"
 

@@ -53,7 +53,20 @@ runs:
         ocm --config "${OCM_CONFIG}" add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
         ocm --config "${OCM_CONFIG}" transfer ctf "${CTF_DIR}" "${REGISTRY_URL}"
 
-        sed -i "s|localhost:5111|${TARGET_REGISTRY}|g" "${TEMPLATE_FILE}"
+        echo "Verifying component in registry..."
+        curl -s "http://${REGISTRY_URL}/v2/_catalog" || echo "Warning: Could not verify registry catalog"
+        
+        # Replace only the registry host in spec.data.repo, not the entire file
+        # This prevents accidentally changing image references in the embedded manifest
+        # External registry: localhost:5111 → Internal cluster registry: k3d-kcp-registry.localhost:5000
+        echo "ModuleTemplate BEFORE registry replacement:"
+        yq eval '.spec.data.repo' "${TEMPLATE_FILE}"
+        
+        yq eval '.spec.data.repo = (.spec.data.repo | sub("localhost:5111", "'"${TARGET_REGISTRY}"'"))' -i "${TEMPLATE_FILE}"
+        
+        echo "ModuleTemplate AFTER registry replacement:"
+        yq eval '.spec.data.repo' "${TEMPLATE_FILE}"
+        
         kubectl get crds
         kubectl apply -f <(yq eval '.metadata.namespace = "kcp-system"' "${TEMPLATE_FILE}")
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInOlderVersion
@@ -120,7 +133,20 @@ runs:
           "${CTF_DIR}" \
           "${REGISTRY_URL}"
 
-        sed -i "s|k3d-private-oci-reg.localhost:5001|${TARGET_REGISTRY}|g" "${TEMPLATE_FILE}"
+        echo "Verifying component in private registry..."
+        curl -s -u myuser:mypass "http://${REGISTRY_URL}/v2/_catalog" || echo "Warning: Could not verify registry catalog"
+        
+        # Replace only the registry host in spec.data.repo, not the entire file
+        # This prevents accidentally changing image references in the embedded manifest
+        # External registry: k3d-private-oci-reg.localhost:5001 → Internal cluster: private-oci-reg.localhost:5000
+        echo "ModuleTemplate BEFORE registry replacement:"
+        yq eval '.spec.data.repo' "${TEMPLATE_FILE}"
+        
+        yq eval '.spec.data.repo = (.spec.data.repo | sub("k3d-private-oci-reg.localhost:5001", "'"${TARGET_REGISTRY}"'"))' -i "${TEMPLATE_FILE}"
+        
+        echo "ModuleTemplate AFTER registry replacement:"
+        yq eval '.spec.data.repo' "${TEMPLATE_FILE}"
+        
         kubectl get crds
         kubectl apply -f <(yq eval '.metadata.namespace = "kcp-system"' "${TEMPLATE_FILE}")
     - name: Create and apply ModuleReleaseMeta from the template-operator repo
