@@ -297,46 +297,7 @@ runs:
         echo ""
         echo "=== Checking if component version exists ==="
         curl -s "http://localhost:5111/v2/component-descriptors/kyma-project.io/module/template-operator/tags/list" || echo "Warning: Could not list component tags"
-    - name: Debug - Check SKR Deployment Status
-      uses: ./lifecycle-manager/.github/actions/switch-kubectl-context
-      with:
-        context_name: k3d-skr
-    - name: Wait and check template-operator deployment in SKR
-      shell: bash
-      run: |
-        echo "=== Waiting 30 seconds for deployment to start ==="
-        sleep 30
-        
-        echo ""
-        echo "=== Checking namespaces in SKR cluster ==="
-        kubectl get namespaces | grep -E "(template-operator|kyma-system)" || echo "No template-operator namespace found"
-        
-        echo ""
-        echo "=== Checking deployments in template-operator-system ==="
-        kubectl get deployments -n template-operator-system -o wide || echo "Namespace template-operator-system not found or no deployments"
-        
-        echo ""
-        echo "=== Checking pods in template-operator-system ==="
-        kubectl get pods -n template-operator-system -o wide || echo "No pods found in template-operator-system"
-        
-        echo ""
-        echo "=== Describing deployment (if exists) ==="
-        kubectl describe deployment -n template-operator-system || echo "No deployment to describe"
-        
-        echo ""
-        echo "=== Checking pod logs (if any) ==="
-        POD_NAME=$(kubectl get pods -n template-operator-system -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-        if [ -n "$POD_NAME" ]; then
-          echo "Found pod: $POD_NAME"
-          kubectl logs -n template-operator-system "$POD_NAME" --tail=50 || echo "Could not get pod logs"
-        else
-          echo "No pods found to check logs"
-        fi
-        
-        echo ""
-        echo "=== Checking events in template-operator-system ==="
-        kubectl get events -n template-operator-system --sort-by='.lastTimestamp' || echo "No events found"
-    - name: Switch back to KCP context
+    - name: Switch back to KCP context for remaining steps
       uses: ./lifecycle-manager/.github/actions/switch-kubectl-context
       with:
         context_name: k3d-kcp
