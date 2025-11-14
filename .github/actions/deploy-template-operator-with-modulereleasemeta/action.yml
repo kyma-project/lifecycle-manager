@@ -56,16 +56,9 @@ runs:
         echo "Verifying component in registry..."
         curl -s "http://${REGISTRY_URL}/v2/_catalog" || echo "Warning: Could not verify registry catalog"
         
-        # Replace only the registry host in spec.data.repo, not the entire file
-        # This prevents accidentally changing image references in the embedded manifest
-        # External registry: localhost:5111 → Internal cluster registry: k3d-kcp-registry.localhost:5000
-        echo "ModuleTemplate BEFORE registry replacement:"
-        yq eval '.spec.data.repo' "${TEMPLATE_FILE}"
-        
-        yq eval '.spec.data.repo = (.spec.data.repo | sub("localhost:5111", "'"${TARGET_REGISTRY}"'"))' -i "${TEMPLATE_FILE}"
-        
-        echo "ModuleTemplate AFTER registry replacement:"
-        yq eval '.spec.data.repo' "${TEMPLATE_FILE}"
+        echo "=== ModuleTemplate Content ==="
+        cat "${TEMPLATE_FILE}"
+        echo "=== End ModuleTemplate ==="
         
         kubectl get crds
         kubectl apply -f <(yq eval '.metadata.namespace = "kcp-system"' "${TEMPLATE_FILE}")
@@ -135,17 +128,6 @@ runs:
 
         echo "Verifying component in private registry..."
         curl -s -u myuser:mypass "http://${REGISTRY_URL}/v2/_catalog" || echo "Warning: Could not verify registry catalog"
-        
-        # Replace only the registry host in spec.data.repo, not the entire file
-        # This prevents accidentally changing image references in the embedded manifest
-        # External registry: k3d-private-oci-reg.localhost:5001 → Internal cluster: private-oci-reg.localhost:5000
-        echo "ModuleTemplate BEFORE registry replacement:"
-        yq eval '.spec.data.repo' "${TEMPLATE_FILE}"
-        
-        yq eval '.spec.data.repo = (.spec.data.repo | sub("k3d-private-oci-reg.localhost:5001", "'"${TARGET_REGISTRY}"'"))' -i "${TEMPLATE_FILE}"
-        
-        echo "ModuleTemplate AFTER registry replacement:"
-        yq eval '.spec.data.repo' "${TEMPLATE_FILE}"
         
         kubectl get crds
         kubectl apply -f <(yq eval '.metadata.namespace = "kcp-system"' "${TEMPLATE_FILE}")
@@ -297,3 +279,97 @@ runs:
       shell: bash
       run: |
         kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_transferred.yaml
+    - name: Debug - Check ModuleTemplate and Component Status
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        echo "=== Checking ModuleTemplates in kcp-system ==="
+        kubectl get moduletemplates -n kcp-system -o wide || echo "Failed to get ModuleTemplates"
+        
+        echo ""
+        echo "=== Checking ModuleReleaseMeta ==="
+        kubectl get modulereleasemeta -n kcp-system -o wide || echo "Failed to get ModuleReleaseMeta"
+        
+        echo ""
+        echo "=== Checking if components are in registry ==="
+        curl -s "http://localhost:5111/v2/_catalog" || echo "Warning: Could not query registry catalog"
+        
+        echo ""
+        echo "=== Checking if component version exists ==="
+        curl -s "http://localhost:5111/v2/component-descriptors/kyma-project.io/module/template-operator/tags/list" || echo "Warning: Could not list component tags"
+    - name: Debug - Check SKR Deployment Status
+      uses: ./lifecycle-manager/.github/actions/switch-kubectl-context
+      with:
+        context_name: k3d-skr
+    - name: Wait and check template-operator deployment in SKR
+      shell: bash
+      run: |
+        echo "=== Waiting 30 seconds for deployment to start ==="
+        sleep 30
+        
+        echo ""
+        echo "=== Checking namespaces in SKR cluster ==="
+        kubectl get namespaces | grep -E "(template-operator|kyma-system)" || echo "No template-operator namespace found"
+        
+        echo ""
+        echo "=== Checking deployments in template-operator-system ==="
+        kubectl get deployments -n template-operator-system -o wide || echo "Namespace template-operator-system not found or no deployments"
+        
+        echo ""
+        echo "=== Checking pods in template-operator-system ==="
+        kubectl get pods -n template-operator-system -o wide || echo "No pods found in template-operator-system"
+        
+        echo ""
+        echo "=== Describing deployment (if exists) ==="
+        kubectl describe deployment -n template-operator-system || echo "No deployment to describe"
+        
+        echo ""
+        echo "=== Checking pod logs (if any) ==="
+        POD_NAME=$(kubectl get pods -n template-operator-system -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+        if [ -n "$POD_NAME" ]; then
+          echo "Found pod: $POD_NAME"
+          kubectl logs -n template-operator-system "$POD_NAME" --tail=50 || echo "Could not get pod logs"
+        else
+          echo "No pods found to check logs"
+        fi
+        
+        echo ""
+        echo "=== Checking events in template-operator-system ==="
+        kubectl get events -n template-operator-system --sort-by='.lastTimestamp' || echo "No events found"
+    - name: Switch back to KCP context
+      uses: ./lifecycle-manager/.github/actions/switch-kubectl-context
+      with:
+        context_name: k3d-kcp
+    - name: Debug - Check Manifest CR Status in KCP
+      shell: bash
+      run: |
+        echo "=== Checking Manifest CRs in kcp-system ==="
+        kubectl get manifests -n kcp-system -o wide || echo "No Manifest CRs found"
+        
+        echo ""
+        echo "=== Checking Manifest CR details ==="
+        MANIFEST_NAME=$(kubectl get manifests -n kcp-system -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+        if [ -n "$MANIFEST_NAME" ]; then
+          echo "Found manifest: $MANIFEST_NAME"
+          echo ""
+          echo "=== Manifest Status ==="
+          kubectl get manifest "$MANIFEST_NAME" -n kcp-system -o jsonpath='{.status}' | jq '.' || echo "Could not get manifest status"
+          
+          echo ""
+          echo "=== Manifest Full Details ==="
+          kubectl describe manifest "$MANIFEST_NAME" -n kcp-system || echo "Could not describe manifest"
+        else
+          echo "No Manifest CR found"
+        fi
+        
+        echo ""
+        echo "=== Checking Kyma CR status ==="
+        kubectl get kyma -A -o wide || echo "No Kyma CRs found"
+        
+        KYMA_NAME=$(kubectl get kyma -A -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+        KYMA_NAMESPACE=$(kubectl get kyma -A -o jsonpath='{.items[0].metadata.namespace}' 2>/dev/null)
+        if [ -n "$KYMA_NAME" ]; then
+          echo ""
+          echo "=== Kyma CR Status for $KYMA_NAME in namespace $KYMA_NAMESPACE ==="
+          kubectl get kyma "$KYMA_NAME" -n "$KYMA_NAMESPACE" -o jsonpath='{.status}' | jq '.' || echo "Could not get Kyma status"
+        fi
