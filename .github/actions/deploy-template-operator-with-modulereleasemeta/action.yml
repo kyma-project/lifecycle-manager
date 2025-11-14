@@ -32,25 +32,13 @@ runs:
         }}
       shell: bash
       run: |
-        MODULE_CONFIG="./module-config-for-e2e.yaml"
+        MODULE_CONFIG="./module-config.yaml"
         REGISTRY_URL="localhost:5111"
         COMPONENT_CONSTRUCTOR_FILE="./component-constructor.yaml"
         CTF_DIR="./ctf-archive"
         TEMPLATE_FILE="./template.yaml"
         TARGET_REGISTRY="k3d-kcp-registry.localhost:5000"
         OCM_CONFIG="./ocm-config-local-registry.yaml"
-
-        echo "Creating module config for E2E tests with localhost URLs..."
-        echo "name: kyma-project.io/module/template-operator" > "${MODULE_CONFIG}"
-        echo "version: 1.0.4" >> "${MODULE_CONFIG}"
-        echo "security: sec-scanners-config.yaml" >> "${MODULE_CONFIG}"
-        echo "manifest: https://localhost:8080/template-operator.yaml" >> "${MODULE_CONFIG}"
-        echo "repository: https://github.com/kyma-project/template-operator" >> "${MODULE_CONFIG}"
-        echo "documentation: https://github.com/kyma-project/template-operator/blob/main/README.md" >> "${MODULE_CONFIG}"
-        echo "defaultCR: https://localhost:8080/config/samples/default-sample-cr.yaml" >> "${MODULE_CONFIG}"
-        echo "icons:" >> "${MODULE_CONFIG}"
-        echo "- name: module-icon" >> "${MODULE_CONFIG}"
-        echo "  link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> "${MODULE_CONFIG}"
 
         echo "Verifying OCM config..."
         ocm --config "${OCM_CONFIG}" get config
