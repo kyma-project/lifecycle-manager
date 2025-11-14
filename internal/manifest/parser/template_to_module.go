@@ -175,6 +175,9 @@ func newManifestFromTemplate(
 	if localizedImages := getLocalizedImagesFromDescriptor(descriptor); len(localizedImages) > 0 {
 		manifest.Spec.LocalizedImages = localizedImages
 	}
+	if template.Spec.Manager != nil {
+		manifest.Spec.Manager = template.Spec.Manager.DeepCopy()
+	}
 	return manifest, nil
 }
 

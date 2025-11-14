@@ -83,6 +83,10 @@ type ManifestSpec struct {
 	// the "localized" image reference is used instead of the original one.
 	// +optional
 	LocalizedImages []string `json:"localizedImages,omitempty"`
+
+	// Manager contains information for identifying a module's resource that can be used as indicator for the installation readiness of the module. Typically, this is the manager Deployment of the module. In exceptional cases, it may also be another resource.
+	// +optional
+	Manager *Manager `json:"manager,omitempty"`
 }
 
 // ImageSpec defines OCI Image specifications.

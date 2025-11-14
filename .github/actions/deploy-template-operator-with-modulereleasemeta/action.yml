@@ -4,7 +4,7 @@ inputs:
   module_version:
     description: "Version of the template operator to be deployed, should be aligned with the latest version released in github."
     required: true
-    default: "1.0.3"
+    default: "1.0.4"
 runs:
   using: composite
   steps:
@@ -112,7 +112,8 @@ runs:
         matrix.e2e-test == 'maintenance-windows' ||
         matrix.e2e-test == 'maintenance-windows-initial-installation' ||
         matrix.e2e-test == 'maintenance-windows-skip' ||
-        matrix.e2e-test == 'simulate-skr-secret-rotation-evict-client-cache'
+        matrix.e2e-test == 'simulate-skr-secret-rotation-evict-client-cache'||
+        matrix.e2e-test == 'skr-image-pull-secret-sync'
         }}
       shell: bash
       run: |
