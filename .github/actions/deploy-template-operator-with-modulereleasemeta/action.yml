@@ -41,18 +41,16 @@ runs:
         OCM_CONFIG="./ocm-config-local-registry.yaml"
 
         echo "Creating module config for E2E tests with localhost URLs..."
-        cat > "${MODULE_CONFIG}" << 'MODULECONFIG'
-name: kyma-project.io/module/template-operator
-version: 1.0.4
-security: sec-scanners-config.yaml
-manifest: https://localhost:8080/template-operator.yaml
-repository: https://github.com/kyma-project/template-operator
-documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
-defaultCR: https://localhost:8080/config/samples/default-sample-cr.yaml
-icons:
-- name: module-icon
-  link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png
-MODULECONFIG
+        echo "name: kyma-project.io/module/template-operator" > "${MODULE_CONFIG}"
+        echo "version: 1.0.4" >> "${MODULE_CONFIG}"
+        echo "security: sec-scanners-config.yaml" >> "${MODULE_CONFIG}"
+        echo "manifest: https://localhost:8080/template-operator.yaml" >> "${MODULE_CONFIG}"
+        echo "repository: https://github.com/kyma-project/template-operator" >> "${MODULE_CONFIG}"
+        echo "documentation: https://github.com/kyma-project/template-operator/blob/main/README.md" >> "${MODULE_CONFIG}"
+        echo "defaultCR: https://localhost:8080/config/samples/default-sample-cr.yaml" >> "${MODULE_CONFIG}"
+        echo "icons:" >> "${MODULE_CONFIG}"
+        echo "- name: module-icon" >> "${MODULE_CONFIG}"
+        echo "  link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> "${MODULE_CONFIG}"
 
         echo "Verifying OCM config..."
         ocm --config "${OCM_CONFIG}" get config
