@@ -264,7 +264,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	metrics.NewFipsMetrics().Update()
 
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
-		kymaMetrics, logger, maintenanceWindow, ociRegistryHost)
+		kymaMetrics, logger, maintenanceWindow, ociRegistryHost, accessManagerService)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
 		eventRecorder)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, logger,
@@ -414,6 +414,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SkrWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
 	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, ociRegistryHost string,
+	accessManagerService *accessmanager.Service,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -427,6 +428,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
 	modulesStatusHandler := modules.NewStatusHandler(moduleStatusGen, kcpClient, kymaMetrics.RemoveModuleStateMetrics)
 
+	// Setup InstallationReconciler for handling Kyma installation and updates
 	kymaReconcilerConfig := kyma.ReconcilerConfig{
 		RemoteSyncNamespace:    flagVar.RemoteSyncNamespace,
 		IsManagedKyma:          flagVar.IsKymaManaged,
@@ -439,6 +441,8 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		secretrepository.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
 		&syncCrdsUseCase,
 		flagVar.SkrImagePullSecret)
+
+	templatelookup := templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, moduleTemplateInfoLookup)
 
 	if err := (&kyma.Reconciler{
 		Client:               kcpClient,
@@ -457,9 +461,8 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		Metrics: kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, skrContextFactory,
 			flagVar.RemoteSyncNamespace),
-		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
-			moduleTemplateInfoLookup),
-		Config: kymaReconcilerConfig,
+		TemplateLookup: templatelookup,
+		Config:         kymaReconcilerConfig,
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,
@@ -468,6 +471,31 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		},
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
+		os.Exit(1)
+	}
+	// Setup DeletionReconciler for handling Kyma deletion
+	if err := (&kyma.DeletionReconciler{
+		Client:               kcpClient,
+		SkrContextProvider:   skrContextFactory,
+		Event:                event,
+		DescriptorProvider:   descriptorProvider,
+		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil),
+		ModulesStatusHandler: modulesStatusHandler,
+		SKRWebhookManager:    skrWebhookManager,
+		RequeueIntervals: queue.RequeueIntervals{
+			Success: flagVar.KymaRequeueSuccessInterval,
+			Busy:    flagVar.KymaRequeueBusyInterval,
+			Error:   flagVar.KymaRequeueErrInterval,
+			Warning: flagVar.KymaRequeueWarningInterval,
+		},
+		Metrics: kymaMetrics,
+		Config:  kymaReconcilerConfig,
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, skrContextFactory,
+			flagVar.RemoteSyncNamespace),
+		TemplateLookup:      templatelookup,
+		AccessSecretService: accessManagerService,
+	}).SetupWithManager(mgr, options); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "KymaDeletion")
 		os.Exit(1)
 	}
 }

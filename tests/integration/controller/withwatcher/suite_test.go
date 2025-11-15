@@ -53,6 +53,7 @@ import (
 	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate" //nolint:revive // not for import
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
@@ -235,6 +236,8 @@ var _ = BeforeSuite(func() {
 
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
+	kymaMetrics := metrics.NewKymaMetrics(metrics.NewSharedMetrics())
+	// Setup InstallationReconciler for withwatcher tests
 
 	kymaReconcilerConfig := kyma.ReconcilerConfig{
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
@@ -252,11 +255,31 @@ var _ = BeforeSuite(func() {
 		DescriptorProvider:   nil, // no descriptor provider needed for these tests
 		SkrSyncService:       skrSyncService,
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
-		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		Metrics:              kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
 		Config: kymaReconcilerConfig,
 	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
+	Expect(err).ToNot(HaveOccurred())
+
+	// Setup DeletionReconciler for withwatcher tests
+	err = (&kyma.DeletionReconciler{
+		Client:               kcpClient,
+		SkrContextProvider:   testSkrContextFactory,
+		Event:                testEventRec,
+		RequeueIntervals:     intervals,
+		SKRWebhookManager:    skrWebhookChartManager,
+		DescriptorProvider:   nil,
+		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
+		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
+		Metrics:              kymaMetrics,
+		Config:               kymaReconcilerConfig,
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+			flags.DefaultRemoteSyncNamespace),
+		AccessSecretService: accessmanager.NewService(
+			secretrepository.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+		),
+	}).SetupWithManager(mgr, ctrlruntime.Options{}) // DeletionReconciler doesn't need SKR event listener
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&watcherctrl.Reconciler{

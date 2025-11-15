@@ -28,6 +28,7 @@ import (
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
@@ -35,11 +36,6 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
-	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
-
-	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -51,14 +47,18 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/service/componentdescriptor"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
@@ -181,6 +181,11 @@ var _ = BeforeSuite(func() {
 	syncCrdsUseCase := remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache)
 	skrSyncService := skrsync.NewService(nil, nil, &syncCrdsUseCase, "")
 
+	kymaMetrics := metrics.NewKymaMetrics(metrics.NewSharedMetrics())
+	templateLookup := templatelookup.NewTemplateLookup(kcpClient,
+		descriptorProvider,
+		moduletemplateinfolookup.NewLookup(kcpClient))
+	// Setup InstallationReconciler for KCP tests
 	err = (&kyma.Reconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    testSkrContextFactory,
@@ -189,16 +194,35 @@ var _ = BeforeSuite(func() {
 		DescriptorProvider:   descriptorProvider,
 		SkrSyncService:       skrSyncService,
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
-		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		Metrics:              kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
-		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient,
-			descriptorProvider,
-			moduletemplateinfolookup.NewLookup(kcpClient)),
-		Config: kymaReconcilerConfig,
+		TemplateLookup: templateLookup,
+		Config:         kymaReconcilerConfig,
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
+
+	// Setup DeletionReconciler for KCP tests
+	err = (&kyma.DeletionReconciler{
+		Client:               kcpClient,
+		SkrContextProvider:   testSkrContextFactory,
+		Event:                testEventRec,
+		RequeueIntervals:     intervals,
+		DescriptorProvider:   descriptorProvider,
+		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache),
+		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
+		Config:               kymaReconcilerConfig,
+		Metrics:              kymaMetrics,
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+			flags.DefaultRemoteSyncNamespace),
+		TemplateLookup: templateLookup,
+		AccessSecretService: accessmanager.NewService(
+			secretrepository.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+		),
+	}).SetupWithManager(mgr, ctrlruntime.Options{}) // DeletionReconciler doesn't need SKR event listener
+	Expect(err).ToNot(HaveOccurred())
+
 	Eventually(CreateNamespace, Timeout, Interval).
 		WithContext(ctx).
 		WithArguments(kcpClient, ControlPlaneNamespace).Should(Succeed())
