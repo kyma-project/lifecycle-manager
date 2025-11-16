@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM --platform=$BUILDPLATFORM golang:1.25.3-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.25.4-alpine AS builder
 
 WORKDIR /lifecycle-manager
 # Copy the Go Modules manifests
