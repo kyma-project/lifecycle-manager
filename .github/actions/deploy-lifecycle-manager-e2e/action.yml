@@ -30,7 +30,7 @@ runs:
         echo \
         "- op: add
           path: /spec/template/spec/containers/0/args/-
-          value: --oci-registry-host=http://k3d-kcp-registry.localhost:5000" >> oci_registry_host.yaml
+          value: --oci-registry-host=http://k3d-kcp-registry:5000" >> oci_registry_host.yaml
         cat oci_registry_host.yaml
         kustomize edit add patch --path oci_registry_host.yaml --kind Deployment
         popd
