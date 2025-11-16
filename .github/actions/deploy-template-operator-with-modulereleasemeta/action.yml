@@ -55,17 +55,17 @@ runs:
 
         echo "Verifying component in registry..."
         curl -s "http://${REGISTRY_URL}/v2/_catalog" || echo "Warning: Could not verify registry catalog"
-        
+
         echo "=== ModuleTemplate Content (before patching) ==="
         cat "${TEMPLATE_FILE}"
         echo "=== End ModuleTemplate ==="
-        
+
         echo "No baseUrl patching needed - using registry name from component descriptor..."
-        
+
         echo "=== ModuleTemplate Content (after patching) ==="
         cat "${TEMPLATE_FILE}"
         echo "=== End ModuleTemplate ==="
-        
+
         kubectl get crds
         kubectl apply -f <(yq eval '.metadata.namespace = "kcp-system"' "${TEMPLATE_FILE}")
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInOlderVersion
@@ -134,7 +134,7 @@ runs:
 
         echo "Verifying component in private registry..."
         curl -s -u myuser:mypass "http://${REGISTRY_URL}/v2/_catalog" || echo "Warning: Could not verify registry catalog"
-        
+
         echo "No baseUrl patching needed for private registry..."
         kubectl get crds
         kubectl apply -f <(yq eval '.metadata.namespace = "kcp-system"' "${TEMPLATE_FILE}")
@@ -292,15 +292,15 @@ runs:
       run: |
         echo "=== Checking ModuleTemplates in kcp-system ==="
         kubectl get moduletemplates -n kcp-system -o wide || echo "Failed to get ModuleTemplates"
-        
+
         echo ""
         echo "=== Checking ModuleReleaseMeta ==="
         kubectl get modulereleasemeta -n kcp-system -o wide || echo "Failed to get ModuleReleaseMeta"
-        
+
         echo ""
         echo "=== Checking if components are in registry ==="
         curl -s "http://localhost:5111/v2/_catalog" || echo "Warning: Could not query registry catalog"
-        
+
         echo ""
         echo "=== Checking if component version exists ==="
         curl -s "http://localhost:5111/v2/component-descriptors/kyma-project.io/module/template-operator/tags/list" || echo "Warning: Could not list component tags"
