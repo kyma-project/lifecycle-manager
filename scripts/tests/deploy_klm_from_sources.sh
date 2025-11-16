@@ -5,8 +5,7 @@ cd $(git rev-parse --show-toplevel)
 
 # Export necessary environment variables
 export KUBECONFIG=${HOME}/.k3d/kcp-local.yaml
-# Use the k3d registry name (the full container name including .localhost)
-export CLUSTER_REGISTRY="k3d-kcp-registry.localhost:5000"
+export CLUSTER_REGISTRY="k3d-kcp-registry.localhost:5111"
 export LOCAL_IMG="localhost:5111/lifecycle-manager"
 export CLUSTER_IMG="${CLUSTER_REGISTRY}/lifecycle-manager"
 export TAG=$(date +%Y%m%d%H%M%S)
