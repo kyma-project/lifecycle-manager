@@ -64,18 +64,9 @@ echo "Transferring component version to registry using ocm cli..."
 ocm --config "${OCM_CONFIG}" add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
 ocm --config "${OCM_CONFIG}" transfer ctf --no-update "${CTF_DIR}" "${REGISTRY_URL}"
 
-echo "=== ModuleTemplate content (before patching) ==="
+echo "=== ModuleTemplate content ==="
 cat "${TEMPLATE_FILE}"
 echo "=== End ModuleTemplate ===" 
-
-echo "Patching ModuleTemplate to use in-cluster registry name..."
-# Update the repository in the component descriptor to use the in-cluster accessible registry name
-# k3d-kcp-registry:5000 instead of k3d-kcp-registry.localhost:5000
-yq eval '(.spec.descriptor.component.repositoryContexts[0].baseUrl = "k3d-kcp-registry:5000")' -i "${TEMPLATE_FILE}"
-
-echo "=== ModuleTemplate content (after patching) ==="
-cat "${TEMPLATE_FILE}"
-echo "=== End ModuleTemplate ==="
 
 echo "ModuleTemplate created successfully"
 yq -i '.metadata.namespace="kcp-system"' "${TEMPLATE_FILE}"
