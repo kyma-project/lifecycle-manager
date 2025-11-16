@@ -56,7 +56,16 @@ runs:
         echo "Verifying component in registry..."
         curl -s "http://${REGISTRY_URL}/v2/_catalog" || echo "Warning: Could not verify registry catalog"
         
-        echo "=== ModuleTemplate Content ==="
+        echo "=== ModuleTemplate Content (before patching) ==="
+        cat "${TEMPLATE_FILE}"
+        echo "=== End ModuleTemplate ==="
+        
+        echo "Patching ModuleTemplate to use in-cluster registry name..."
+        # Update the repository in Install.Source to use the in-cluster accessible registry name
+        # k3d-kcp-registry:5000 instead of k3d-kcp-registry.localhost:5000
+        yq eval '(.spec.descriptor.component.repositoryContexts[0].baseUrl = "k3d-kcp-registry:5000")' -i "${TEMPLATE_FILE}"
+        
+        echo "=== ModuleTemplate Content (after patching) ==="
         cat "${TEMPLATE_FILE}"
         echo "=== End ModuleTemplate ==="
         
