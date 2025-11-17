@@ -10,7 +10,7 @@ replace (
 require (
 	github.com/kyma-project/lifecycle-manager/api v1.0.0
 	github.com/kyma-project/lifecycle-manager/maintenancewindows v1.0.0
-	github.com/kyma-project/runtime-watcher/listener v1.0.0
+	github.com/kyma-project/runtime-watcher/listener v1.2.0
 	github.com/kyma-project/template-operator/api v1.0.0
 )
 
