@@ -48,6 +48,19 @@ func TestParse(t *testing.T) {
 					Type: "oci-ref",
 				},
 			},
+		}, {
+			"should parse raw-manifest layer from mediaType: application/x-tgz",
+			"v1beta2_template_operator_tgz_format.yaml",
+			"1.0.0-tgz-format",
+			img.Layer{
+				LayerName: "raw-manifest",
+				LayerRepresentation: &img.OCI{
+					Repo: "europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/template-operator/component-descriptors",
+					Name: testutils.DefaultFQDN,
+					Ref:  "sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1",
+					Type: "oci-dir",
+				},
+			},
 		},
 	}
 	for _, testCase := range tests {

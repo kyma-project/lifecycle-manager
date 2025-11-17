@@ -51,7 +51,7 @@ runs:
 
         echo "pushing OCM components..."
         ocm --config "${OCM_CONFIG}" add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
-        ocm --config "${OCM_CONFIG}" transfer ctf "${CTF_DIR}" "${REGISTRY_URL}"
+        ocm --config "${OCM_CONFIG}" transfer ctf --overwrite "${CTF_DIR}" "http://${REGISTRY_URL}"
 
         echo "Verifying component in registry..."
         curl -s "http://${REGISTRY_URL}/v2/_catalog" || echo "Warning: Could not verify registry catalog"
@@ -68,6 +68,9 @@ runs:
 
         kubectl get crds
         kubectl apply -f <(yq eval '.metadata.namespace = "kcp-system"' "${TEMPLATE_FILE}")
+
+        echo "Cleaning up CTF directory..."
+        rm -rf "${CTF_DIR}"
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInOlderVersion
       working-directory: template-operator
       if: ${{ matrix.e2e-test != 'mandatory-module' &&
@@ -128,9 +131,10 @@ runs:
         echo "pushing OCM components..."
         ocm --config "${OCM_CONFIG}" add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
         ocm --config "${OCM_CONFIG}" transfer ctf \
+          --overwrite \
           --no-update \
           "${CTF_DIR}" \
-          "${REGISTRY_URL}"
+          "http://${REGISTRY_URL}"
 
         echo "Verifying component in private registry..."
         curl -s -u myuser:mypass "http://${REGISTRY_URL}/v2/_catalog" || echo "Warning: Could not verify registry catalog"

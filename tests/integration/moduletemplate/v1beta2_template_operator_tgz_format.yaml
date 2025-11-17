@@ -1,0 +1,82 @@
+apiVersion: operator.kyma-project.io/v1beta2
+kind: ModuleTemplate
+metadata:
+  name: template-operator-tgz
+  namespace: kcp-system
+  annotations:
+    "operator.kyma-project.io/is-cluster-scoped": "false"
+    "operator.kyma-project.io/module-version": "1.0.0-tgz-format"
+spec:
+  channel: regular
+  mandatory: false
+  data:
+    apiVersion: operator.kyma-project.io/v1alpha1
+    kind: Sample
+    metadata:
+      name: sample-yaml
+    spec:
+      initKey: initValue
+      resourceFilePath: "./module-data/yaml"
+  descriptor:
+    component:
+      componentReferences: [ ]
+      creationTime: "2024-07-09T12:22:30Z"
+      name: kyma-project.io/module/template-operator
+      provider: kyma-project.io
+      repositoryContexts:
+        - baseUrl: europe-west3-docker.pkg.dev
+          componentNameMapping: urlPath
+          subPath: sap-kyma-jellyfish-dev/template-operator
+          type: OCIRegistry
+      resources:
+        - access:
+            imageReference: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.0
+            type: ociArtifact
+          digest:
+            hashAlgorithm: SHA-256
+            normalisationAlgorithm: ociArtifactDigest/v1
+            value: 03a194e1dca2421755cec5ec1e946de744407e6e1ca3b671f715fee939e8d1fb
+          name: module-image
+          relation: external
+          type: ociArtifact
+          version: 1.0.0
+        - access:
+            localReference: sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1
+            mediaType: application/x-tgz
+            type: localBlob
+          digest:
+            hashAlgorithm: SHA-256
+            normalisationAlgorithm: genericBlobDigest/v1
+            value: 4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1
+          name: raw-manifest
+          relation: local
+          type: directoryTree
+          version: 1.0.0
+        - access:
+            localReference: sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1
+            mediaType: application/x-tgz
+            type: localBlob
+          digest:
+            hashAlgorithm: SHA-256
+            normalisationAlgorithm: genericBlobDigest/v1
+            value: 4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1
+          name: default-cr
+          relation: local
+          type: directoryTree
+          version: 1.0.0
+        - access:
+            localReference: sha256:ad5fce84d0d2ea3cfa0a9b10dbfe83033fceb90121fb4648c89ac43856d6ff56
+            mediaType: application/octet-stream
+            type: localBlob
+          digest:
+            hashAlgorithm: SHA-256
+            normalisationAlgorithm: genericBlobDigest/v1
+            value: ad5fce84d0d2ea3cfa0a9b10dbfe83033fceb90121fb4648c89ac43856d6ff56
+          name: moduletemplate
+          relation: local
+          type: PlainText
+          version: 1.0.0
+      sources: [ ]
+      version: 1.0.0-tgz-format
+    meta:
+      schemaVersion: v2

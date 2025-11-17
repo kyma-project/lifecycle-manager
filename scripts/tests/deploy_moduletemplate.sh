@@ -62,7 +62,7 @@ modulectl create \
 # Transfer CTF to registry using ocm cli
 echo "Transferring component version to registry using ocm cli..."
 ocm --config "${OCM_CONFIG}" add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
-ocm --config "${OCM_CONFIG}" transfer ctf --no-update "${CTF_DIR}" "${REGISTRY_URL}"
+ocm --config "${OCM_CONFIG}" transfer ctf --overwrite --no-update "${CTF_DIR}" "http://${REGISTRY_URL}"
 
 echo "ModuleTemplate created successfully"
 yq -i '.metadata.namespace="kcp-system"' "${TEMPLATE_FILE}"
