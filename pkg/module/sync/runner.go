@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -21,7 +20,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-var ErrServerSideApplyFailed = errors.New("ServerSideApply failed")
+var ErrManifestSSAFailed = errors.New("server-side apply of manifest failed")
 
 func New(clnt client.Client) *Runner {
 	return &Runner{
@@ -41,7 +40,6 @@ type Runner struct {
 func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	modules modulecommon.Modules,
 ) error {
-	ssaStart := time.Now()
 	baseLogger := logf.FromContext(ctx)
 
 	results := make(chan error, len(modules))
@@ -76,12 +74,11 @@ func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 			errs = append(errs, err)
 		}
 	}
-	ssaFinish := time.Since(ssaStart)
 	if len(errs) != 0 {
-		errs = append(errs, fmt.Errorf("%w (after %s)", ErrServerSideApplyFailed, ssaFinish))
+		errs = append(errs, fmt.Errorf("%w for Kyma %s", ErrManifestSSAFailed, kyma.GetName()))
 		return errors.Join(errs...)
 	}
-	baseLogger.V(log.DebugLevel).Info("ServerSideApply finished", "time", ssaFinish)
+	baseLogger.V(log.DebugLevel).Info("ServerSideApply finished")
 	return nil
 }
 

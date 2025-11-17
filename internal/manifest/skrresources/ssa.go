@@ -23,7 +23,7 @@ const (
 
 var (
 	ErrClientObjectConversionFailed = errors.New("client object conversion failed")
-	ErrServerSideApplyFailed        = errors.New("ServerSideApply failed")
+	ErrModuleResourcesSSAFailed     = errors.New("server-side apply of module resources failed")
 )
 
 type SSA interface {
@@ -59,7 +59,6 @@ func ConcurrentSSA(clnt client.Client,
 }
 
 func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.Info) error {
-	ssaStart := time.Now()
 	logger := logf.FromContext(ctx, "owner", c.owner)
 	logger.V(internal.TraceLogLevel).Info("ServerSideApply", "resources", len(resources))
 
@@ -76,20 +75,17 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 		}
 	}
 
-	ssaFinish := time.Since(ssaStart)
-
 	if errs != nil {
-		summaryErr := fmt.Errorf("%w (after %s)", ErrServerSideApplyFailed, ssaFinish)
 		if c.allUnauthorized(errs) {
-			return errors.Join(util.ErrClientUnauthorized, summaryErr)
+			return errors.Join(util.ErrClientUnauthorized, ErrModuleResourcesSSAFailed)
 		}
 		if c.allTLSExpired(errs) {
-			return errors.Join(util.ErrClientTLSCertExpired, summaryErr)
+			return errors.Join(util.ErrClientTLSCertExpired, ErrModuleResourcesSSAFailed)
 		}
-		errs = append(errs, summaryErr)
+		errs = append(errs, ErrModuleResourcesSSAFailed)
 		return errors.Join(errs...)
 	}
-	logger.V(internal.DebugLogLevel).Info("ServerSideApply finished", "time", ssaFinish)
+	logger.V(internal.DebugLogLevel).Info("ServerSideApply finished")
 	if err := c.collector.Emit(ctx); err != nil {
 		logger.V(internal.DebugLogLevel).Error(err, "error emitting data of unknown field managers")
 	}
