@@ -78,7 +78,6 @@ func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 		errs = append(errs, fmt.Errorf("%w for Kyma %s", ErrManifestSSAFailed, kyma.GetName()))
 		return errors.Join(errs...)
 	}
-	baseLogger.V(log.DebugLevel).Info("ServerSideApply finished")
 	return nil
 }
 

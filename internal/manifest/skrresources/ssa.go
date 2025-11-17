@@ -85,7 +85,6 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 		errs = append(errs, ErrModuleResourcesSSAFailed)
 		return errors.Join(errs...)
 	}
-	logger.V(internal.DebugLogLevel).Info("ServerSideApply finished")
 	if err := c.collector.Emit(ctx); err != nil {
 		logger.V(internal.DebugLogLevel).Error(err, "error emitting data of unknown field managers")
 	}
