@@ -32,45 +32,9 @@ runs:
         }}
       shell: bash
       run: |
-        MODULE_CONFIG="./module-config.yaml"
-        REGISTRY_URL="localhost:5111"
-        COMPONENT_CONSTRUCTOR_FILE="./component-constructor.yaml"
-        CTF_DIR="./component-ctf"
-        TEMPLATE_FILE="./template.yaml"
-        TARGET_REGISTRY="k3d-kcp-registry.localhost:5000"
-        OCM_CONFIG="./ocm-config-local-registry.yaml"
-
-        echo "Verifying OCM config..."
-        ocm --config "${OCM_CONFIG}" get config
-
-        echo "creating ModuleTemplate"
-        modulectl create \
-          --config-file "${MODULE_CONFIG}" \
-          --disable-ocm-registry-push \
-          --output-constructor-file "${COMPONENT_CONSTRUCTOR_FILE}"
-
-        echo "pushing OCM components..."
-        ocm --config "${OCM_CONFIG}" add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
-        ocm --config "${OCM_CONFIG}" transfer ctf --overwrite "${CTF_DIR}" "http://${REGISTRY_URL}"
-
-        echo "Verifying component in registry..."
-        curl -s "http://${REGISTRY_URL}/v2/_catalog" || echo "Warning: Could not verify registry catalog"
-
-        echo "=== ModuleTemplate Content (before patching) ==="
-        cat "${TEMPLATE_FILE}"
-        echo "=== End ModuleTemplate ==="
-
-        echo "No baseUrl patching needed - using registry name from component descriptor..."
-
-        echo "=== ModuleTemplate Content (after patching) ==="
-        cat "${TEMPLATE_FILE}"
-        echo "=== End ModuleTemplate ==="
-
-        kubectl get crds
-        kubectl apply -f <(yq eval '.metadata.namespace = "kcp-system"' "${TEMPLATE_FILE}")
-
-        echo "Cleaning up CTF directory..."
-        rm -rf "${CTF_DIR}"
+        yq eval '.images[0].newTag = "${{ inputs.module_version }}"' -i config/manager/deployment/kustomization.yaml
+        make build-manifests
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ inputs.module_version }}
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInOlderVersion
       working-directory: template-operator
       if: ${{ matrix.e2e-test != 'mandatory-module' &&
