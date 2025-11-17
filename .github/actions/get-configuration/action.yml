@@ -17,7 +17,7 @@ outputs:
     description: The version of modulectl to install. For example, 1.0.0.
     value: ${{ steps.define-variables.outputs.modulectl_version }}
   template_operator_version:
-    description: The version of template-operator to checkout. For example, 1.0.4.
+    description: The version of template-operator to checkout. Defaults to value from versions.yaml.
     value: ${{ steps.define-variables.outputs.template_operator_version }}
   cert_manager_version:
     description: The version of cert-manager to deploy. For example, 1.13.3.

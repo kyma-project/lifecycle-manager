@@ -11,7 +11,6 @@ on:
       template_operator_version:
         description: "Template operator version (tag or branch)"
         required: false
-        default: '1.0.4'
   pull_request:
     types: [ opened, edited, synchronize, reopened, ready_for_review ]
 
@@ -148,6 +147,8 @@ jobs:
           ModuleName: template-operator
       - name: Run '${{ matrix.e2e-test }}' test
         working-directory: lifecycle-manager
+        env:
+          MODULE_VERSION: ${{ steps.configuration.outputs.template_operator_version }}
         run: |
           make -C tests/e2e ${{ matrix.e2e-test }}
       - name: Post debug
