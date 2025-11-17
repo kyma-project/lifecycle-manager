@@ -38,6 +38,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/result"
+	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -61,6 +63,18 @@ const (
 	updateStatusError event.Reason = "UpdateStatusError"
 	patchStatusError  event.Reason = "PatchStatus"
 )
+
+type DeletionMetricWriter interface {
+	Write(res result.Result)
+}
+
+type DeletionEventWriter interface {
+	Write(ctx context.Context, kyma *v1beta2.Kyma, res result.Result)
+}
+
+type DeletionService interface {
+	Delete(ctx context.Context, kyma *v1beta2.Kyma) result.Result
+}
 
 type SKRWebhookManager interface {
 	Reconcile(ctx context.Context, kyma *v1beta2.Kyma) error
@@ -86,6 +100,7 @@ type ReconcilerConfig struct {
 	SkrImagePullSecretName string
 }
 
+// TODO: make all fields private and provide constructor
 type Reconciler struct {
 	client.Client
 	event.Event
@@ -101,6 +116,10 @@ type Reconciler struct {
 	Metrics        *metrics.KymaMetrics
 	RemoteCatalog  *remote.RemoteCatalog
 	TemplateLookup *templatelookup.TemplateLookup
+
+	DeletionMetrics DeletionMetricWriter
+	DeletionEvents  DeletionEventWriter
+	DeletionService DeletionService
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -144,6 +163,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.requeueWithError(ctx, kyma, err)
 	}
 
+	if !kyma.DeletionTimestamp.IsZero() {
+		return r.processDeletion(ctx, kyma)
+	}
+
 	err = skrContext.CreateKymaNamespace(ctx)
 	if apierrors.IsUnauthorized(err) {
 		r.SkrContextFactory.InvalidateCache(kyma.GetNamespacedName())
@@ -159,6 +182,33 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	return r.reconcile(ctx, kyma)
+}
+
+func (r *Reconciler) processDeletion(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
+	res := r.DeletionService.Delete(ctx, kyma)
+
+	r.DeletionMetrics.Write(res)
+	r.DeletionEvents.Write(ctx, kyma, res)
+
+	switch res.UseCase {
+	case deletion.UseCaseSetKcpKymaStateDeleting,
+		deletion.UseCaseSetSkrKymaStateDeleting,
+		deletion.UseCaseDeleteSkrKyma,
+		deletion.UseCaseDeleteSkrWatcher,
+		deletion.UseCaseDeleteSkrModuleMetadata,
+		deletion.UseCaseDeleteSkrCrds,
+		deletion.UseCaseDeleteWatcherCertificate,
+		deletion.UseCaseDeleteManifests,
+		deletion.UseCaseDeleteMetrics:
+		// error takes precedence over the RequeueAfter
+		// res.Err != nil => requeue rate limited
+		// res.Err == nil => requeue after
+		// TODO: r.RequeueIntervals.Busy is 5s, should we go lower?
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, res.Err
+	case deletion.UseCaseRemoveKymaFinalizers:
+		// finalizers removed, no need to requeue if there is no error
+	}
+	return ctrl.Result{}, res.Err
 }
 
 // ValidateDefaultChannel validates the Kyma spec.
