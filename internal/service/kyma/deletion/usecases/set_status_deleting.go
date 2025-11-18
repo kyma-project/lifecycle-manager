@@ -10,11 +10,9 @@ import (
 )
 
 const useCase = usecase.SetKcpKymaStateDeleting
-const state shared.State = shared.StateDeleting
-const lastOperationMessage = "waiting for modules to be deleted"
 
 type KymaStatusRepository interface {
-	UpdateKymaStatus(ctx context.Context, kyma *v1beta2.Kyma, newState shared.State, message string) error
+	UpdateStatusDeleting(ctx context.Context, kyma *v1beta2.Kyma) error
 }
 
 type SetKymaStatusDeletingUseCase struct {
@@ -32,7 +30,7 @@ func (u *SetKymaStatusDeletingUseCase) IsApplicable(ctx context.Context, kyma *v
 }
 
 func (u *SetKymaStatusDeletingUseCase) Execute(ctx context.Context, kyma *v1beta2.Kyma) result.Result {
-	err := u.kymaStatusRepo.UpdateKymaStatus(ctx, kyma, state, lastOperationMessage)
+	err := u.kymaStatusRepo.UpdateStatusDeleting(ctx, kyma)
 	return result.Result{
 		UseCase: useCase,
 		Err:     err,

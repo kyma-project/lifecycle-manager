@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	kymaName      = "test-kyma"
-	kymaNamespace = "test-namespace"
-	testMessage   = "test operation message"
+	kymaName                = "test-kyma"
+	kymaNamespace           = "test-namespace"
+	expectedDeletingMessage = "waiting for modules to be deleted"
 )
 
 var errGeneric = errors.New("generic error")
@@ -32,132 +32,55 @@ func TestNewRepository(t *testing.T) {
 	require.NotNil(t, repo)
 }
 
-func TestRepository_UpdateKymaStatus_WhenPatchSucceeds_ReturnNoError(t *testing.T) {
+func TestRepository_UpdateStatusDeleting_WhenPatchSucceeds_ReturnNoError(t *testing.T) {
 	t.Parallel()
 
 	statusWriter := &statusWriterStub{}
 	repo := statusrepo.NewRepository(statusWriter)
 	kyma := createTestKyma()
 
-	err := repo.UpdateKymaStatus(context.Background(), kyma, shared.StateReady, testMessage)
+	err := repo.UpdateStatusDeleting(context.Background(), kyma)
 
 	require.NoError(t, err)
 	require.True(t, statusWriter.PatchCalled)
-	require.Equal(t, shared.StateReady, kyma.Status.State)
-	require.Equal(t, testMessage, kyma.Status.LastOperation.Operation)
+	require.Equal(t, shared.StateDeleting, kyma.Status.State)
+	require.Equal(t, expectedDeletingMessage, kyma.Status.LastOperation.Operation)
 	require.NotZero(t, kyma.Status.LastOperation.LastUpdateTime)
 	require.Nil(t, kyma.ManagedFields)
 }
 
-func TestRepository_UpdateKymaStatus_WhenPatchFails_ReturnError(t *testing.T) {
+func TestRepository_UpdateStatusDeleting_WhenPatchFails_ReturnError(t *testing.T) {
 	t.Parallel()
 
 	statusWriter := &statusWriterStubWithError{err: errGeneric}
 	repo := statusrepo.NewRepository(statusWriter)
 	kyma := createTestKyma()
 
-	err := repo.UpdateKymaStatus(context.Background(), kyma, shared.StateError, testMessage)
+	err := repo.UpdateStatusDeleting(context.Background(), kyma)
 
 	require.Error(t, err)
 	require.ErrorIs(t, err, errGeneric)
 	require.True(t, statusWriter.PatchCalled)
 }
 
-func TestRepository_UpdateKymaStatus_StateDeleting_NoActiveChannelSet(t *testing.T) {
+func TestRepository_UpdateStatusDeleting_NoActiveChannelModification(t *testing.T) {
 	t.Parallel()
 
 	statusWriter := &statusWriterStub{}
 	repo := statusrepo.NewRepository(statusWriter)
 	kyma := createTestKymaWithActiveChannel()
+	originalChannel := kyma.Status.ActiveChannel
 
-	err := repo.UpdateKymaStatus(context.Background(), kyma, shared.StateDeleting, testMessage)
+	err := repo.UpdateStatusDeleting(context.Background(), kyma)
 
 	require.NoError(t, err)
 	require.Equal(t, shared.StateDeleting, kyma.Status.State)
+	require.Equal(t, expectedDeletingMessage, kyma.Status.LastOperation.Operation)
 	// Active channel should remain unchanged for deleting state
-	require.NotEmpty(t, kyma.Status.ActiveChannel)
+	require.Equal(t, originalChannel, kyma.Status.ActiveChannel)
 }
 
-func TestRepository_UpdateKymaStatus_StateReady_SetsActiveChannel(t *testing.T) {
-	t.Parallel()
-
-	statusWriter := &statusWriterStub{}
-	repo := statusrepo.NewRepository(statusWriter)
-	kyma := createTestKyma()
-
-	err := repo.UpdateKymaStatus(context.Background(), kyma, shared.StateReady, testMessage)
-
-	require.NoError(t, err)
-	require.Equal(t, shared.StateReady, kyma.Status.State)
-	// SetActiveChannel should be called for StateReady
-}
-
-func TestRepository_UpdateKymaStatus_StateWarning_SetsActiveChannel(t *testing.T) {
-	t.Parallel()
-
-	statusWriter := &statusWriterStub{}
-	repo := statusrepo.NewRepository(statusWriter)
-	kyma := createTestKyma()
-
-	err := repo.UpdateKymaStatus(context.Background(), kyma, shared.StateWarning, testMessage)
-
-	require.NoError(t, err)
-	require.Equal(t, shared.StateWarning, kyma.Status.State)
-	// SetActiveChannel should be called for StateWarning
-}
-
-func TestRepository_UpdateKymaStatus_VariousStates_ProperlyHandled(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name      string
-		state     shared.State
-		expectErr bool
-	}{
-		{
-			name:      "empty state",
-			state:     "",
-			expectErr: false,
-		},
-		{
-			name:      "processing state",
-			state:     shared.StateProcessing,
-			expectErr: false,
-		},
-		{
-			name:      "error state",
-			state:     shared.StateError,
-			expectErr: false,
-		},
-		{
-			name:      "unmanaged state",
-			state:     shared.StateUnmanaged,
-			expectErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			statusWriter := &statusWriterStub{}
-			repo := statusrepo.NewRepository(statusWriter)
-			kyma := createTestKyma()
-
-			err := repo.UpdateKymaStatus(context.Background(), kyma, tt.state, testMessage)
-
-			if tt.expectErr {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, tt.state, kyma.Status.State)
-				require.Equal(t, testMessage, kyma.Status.LastOperation.Operation)
-			}
-		})
-	}
-}
-
-func TestRepository_UpdateKymaStatus_LastOperationTimestamp_IsSet(t *testing.T) {
+func TestRepository_UpdateStatusDeleting_TimestampIsSet(t *testing.T) {
 	t.Parallel()
 
 	statusWriter := &statusWriterStub{}
@@ -165,7 +88,7 @@ func TestRepository_UpdateKymaStatus_LastOperationTimestamp_IsSet(t *testing.T) 
 	kyma := createTestKyma()
 	beforeUpdate := time.Now()
 
-	err := repo.UpdateKymaStatus(context.Background(), kyma, shared.StateReady, testMessage)
+	err := repo.UpdateStatusDeleting(context.Background(), kyma)
 
 	require.NoError(t, err)
 	afterUpdate := time.Now()
@@ -175,7 +98,7 @@ func TestRepository_UpdateKymaStatus_LastOperationTimestamp_IsSet(t *testing.T) 
 	require.True(t, lastUpdateTime.Before(afterUpdate) || lastUpdateTime.Equal(afterUpdate))
 }
 
-func TestRepository_UpdateKymaStatus_ManagedFieldsCleared(t *testing.T) {
+func TestRepository_UpdateStatusDeleting_ManagedFieldsCleared(t *testing.T) {
 	t.Parallel()
 
 	statusWriter := &statusWriterStub{}
@@ -187,9 +110,11 @@ func TestRepository_UpdateKymaStatus_ManagedFieldsCleared(t *testing.T) {
 		{Manager: "test-manager"},
 	}
 
-	err := repo.UpdateKymaStatus(context.Background(), kyma, shared.StateReady, testMessage)
+	err := repo.UpdateStatusDeleting(context.Background(), kyma)
 
 	require.NoError(t, err)
+	require.Equal(t, shared.StateDeleting, kyma.Status.State)
+	require.Equal(t, expectedDeletingMessage, kyma.Status.LastOperation.Operation)
 	require.Nil(t, kyma.ManagedFields)
 }
 

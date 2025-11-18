@@ -12,6 +12,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
+const (
+	lastOperationDeleting = "waiting for modules to be deleted"
+)
+
 type Repository struct {
 	statusWriter client.StatusWriter
 }
@@ -22,25 +26,20 @@ func NewRepository(statusWriter client.StatusWriter) *Repository {
 	}
 }
 
-func (r *Repository) UpdateKymaStatus(ctx context.Context,
+func (r *Repository) UpdateStatusDeleting(ctx context.Context, kyma *v1beta2.Kyma) error {
+	return r.updateKymaStatus(ctx, kyma, shared.StateDeleting, lastOperationDeleting)
+}
+
+func (r *Repository) updateKymaStatus(ctx context.Context,
 	kyma *v1beta2.Kyma,
 	newState shared.State,
 	message string,
 ) error {
 	kyma.Status.State = newState
-	kyma.ManagedFields = nil
-
-	switch newState {
-	case shared.StateReady, shared.StateWarning:
+	if newState == shared.StateReady || newState == shared.StateWarning {
 		kyma.SetActiveChannel()
-	case "":
-	case shared.StateDeleting:
-	case shared.StateError:
-	case shared.StateProcessing:
-	case shared.StateUnmanaged:
-	default:
 	}
-
+	kyma.ManagedFields = nil
 	kyma.Status.LastOperation = shared.LastOperation{
 		Operation:      message,
 		LastUpdateTime: apimetav1.NewTime(time.Now()),
@@ -51,6 +50,6 @@ func (r *Repository) UpdateKymaStatus(ctx context.Context,
 	}, client.FieldOwner(shared.OperatorName)); err != nil {
 		return fmt.Errorf("status could not be updated: %w", err)
 	}
-	
+
 	return nil
 }
