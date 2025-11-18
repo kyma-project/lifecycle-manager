@@ -60,6 +60,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/istiogatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
+	kymadeletionctrl "github.com/kyma-project/lifecycle-manager/internal/controller/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/manifest"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/purge"
@@ -82,7 +83,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepository "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
+	kymadeletionsvc "github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
@@ -440,6 +443,10 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		&syncCrdsUseCase,
 		flagVar.SkrImagePullSecret)
 
+	deletionMetricsWriter := kymadeletionctrl.NewMetricWriter(kymaMetrics)
+	resultEventRecorder := resultevent.NewEventRecorder(event)
+	kymaDeletionService := &kymadeletionsvc.Service{}
+
 	if err := (&kyma.Reconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    skrContextFactory,
@@ -459,7 +466,10 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			flagVar.RemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
 			moduleTemplateInfoLookup),
-		Config: kymaReconcilerConfig,
+		Config:          kymaReconcilerConfig,
+		DeletionMetrics: deletionMetricsWriter,
+		DeletionEvents:  resultEventRecorder,
+		DeletionService: kymaDeletionService,
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,

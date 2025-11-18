@@ -5,6 +5,7 @@ import (
 	"time"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -32,6 +33,11 @@ func NewKymaBuilder() KymaBuilder {
 			Status: v1beta2.KymaStatus{},
 		},
 	}
+}
+
+func (kb KymaBuilder) WithUid(uid types.UID) KymaBuilder {
+	kb.kyma.UID = uid
+	return kb
 }
 
 // WithName sets v1beta2.Kyma.ObjectMeta.Name.
