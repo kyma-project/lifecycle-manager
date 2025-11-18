@@ -31,21 +31,21 @@ func (w *MetricWriter) Write(res result.Result) {
 	}
 
 	switch res.UseCase {
-	case usecase.UseCaseSetKcpKymaStateDeleting:
+	case usecase.SetKcpKymaStateDeleting:
 		w.metrics.RecordRequeueReason(metrics.StatusUpdateToDeleting, requeueType)
-	case usecase.UseCaseSetSkrKymaStateDeleting:
+	case usecase.SetSkrKymaStateDeleting:
 		w.metrics.RecordRequeueReason(metrics.StatusSyncToRemote, requeueType)
-	case usecase.UseCaseDeleteSkrKyma:
+	case usecase.DeleteSkrKyma:
 		w.metrics.RecordRequeueReason(metrics.RemoteKymaDeletion, requeueType)
-	case usecase.UseCaseDeleteSkrModuleMetadata:
+	case usecase.DeleteSkrModuleMetadata:
 		w.metrics.RecordRequeueReason(metrics.RemoteModuleCatalogDeletion, requeueType)
-	case usecase.UseCaseDeleteManifests:
+	case usecase.DeleteManifests:
 		w.metrics.RecordRequeueReason(metrics.CleanupManifestCrs, requeueType)
-	case usecase.UseCaseDeleteSkrWatcher,
-		usecase.UseCaseDeleteSkrCrds,
-		usecase.UseCaseDeleteWatcherCertificate,
-		usecase.UseCaseDeleteMetrics,
-		usecase.UseCaseRemoveKymaFinalizers:
+	case usecase.DeleteSkrWatcher,
+		usecase.DeleteSkrCrds,
+		usecase.DeleteWatcherCertificate,
+		usecase.DeleteMetrics,
+		usecase.RemoveKymaFinalizers:
 		// These use cases are not tracked by metrics.
 	}
 }

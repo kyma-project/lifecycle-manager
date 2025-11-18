@@ -37,7 +37,7 @@ func TestMetricWriter_Write(t *testing.T) {
 		// Intended requeues
 		{
 			name:                "StatusUpdateToDeleting intended",
-			useCase:             usecase.UseCaseSetKcpKymaStateDeleting,
+			useCase:             usecase.SetKcpKymaStateDeleting,
 			err:                 nil,
 			expectedCall:        true,
 			expectedReason:      metrics.StatusUpdateToDeleting,
@@ -45,7 +45,7 @@ func TestMetricWriter_Write(t *testing.T) {
 		},
 		{
 			name:                "StatusSyncToRemote intended",
-			useCase:             usecase.UseCaseSetSkrKymaStateDeleting,
+			useCase:             usecase.SetSkrKymaStateDeleting,
 			err:                 nil,
 			expectedCall:        true,
 			expectedReason:      metrics.StatusSyncToRemote,
@@ -53,7 +53,7 @@ func TestMetricWriter_Write(t *testing.T) {
 		},
 		{
 			name:                "RemoteKymaDeletion intended",
-			useCase:             usecase.UseCaseDeleteSkrKyma,
+			useCase:             usecase.DeleteSkrKyma,
 			err:                 nil,
 			expectedCall:        true,
 			expectedReason:      metrics.RemoteKymaDeletion,
@@ -61,7 +61,7 @@ func TestMetricWriter_Write(t *testing.T) {
 		},
 		{
 			name:                "RemoteModuleCatalogDeletion intended",
-			useCase:             usecase.UseCaseDeleteSkrModuleMetadata,
+			useCase:             usecase.DeleteSkrModuleMetadata,
 			err:                 nil,
 			expectedCall:        true,
 			expectedReason:      metrics.RemoteModuleCatalogDeletion,
@@ -69,7 +69,7 @@ func TestMetricWriter_Write(t *testing.T) {
 		},
 		{
 			name:                "CleanupManifestCrs intended",
-			useCase:             usecase.UseCaseDeleteManifests,
+			useCase:             usecase.DeleteManifests,
 			err:                 nil,
 			expectedCall:        true,
 			expectedReason:      metrics.CleanupManifestCrs,
@@ -79,7 +79,7 @@ func TestMetricWriter_Write(t *testing.T) {
 		// Unexpected requeues
 		{
 			name:                "StatusUpdateToDeleting unexpected",
-			useCase:             usecase.UseCaseSetKcpKymaStateDeleting,
+			useCase:             usecase.SetKcpKymaStateDeleting,
 			err:                 assert.AnError,
 			expectedCall:        true,
 			expectedReason:      metrics.StatusUpdateToDeleting,
@@ -87,7 +87,7 @@ func TestMetricWriter_Write(t *testing.T) {
 		},
 		{
 			name:                "StatusSyncToRemote unexpected",
-			useCase:             usecase.UseCaseSetSkrKymaStateDeleting,
+			useCase:             usecase.SetSkrKymaStateDeleting,
 			err:                 assert.AnError,
 			expectedCall:        true,
 			expectedReason:      metrics.StatusSyncToRemote,
@@ -95,7 +95,7 @@ func TestMetricWriter_Write(t *testing.T) {
 		},
 		{
 			name:                "RemoteKymaDeletion unexpected",
-			useCase:             usecase.UseCaseDeleteSkrKyma,
+			useCase:             usecase.DeleteSkrKyma,
 			err:                 assert.AnError,
 			expectedCall:        true,
 			expectedReason:      metrics.RemoteKymaDeletion,
@@ -103,7 +103,7 @@ func TestMetricWriter_Write(t *testing.T) {
 		},
 		{
 			name:                "RemoteModuleCatalogDeletion unexpected",
-			useCase:             usecase.UseCaseDeleteSkrModuleMetadata,
+			useCase:             usecase.DeleteSkrModuleMetadata,
 			err:                 assert.AnError,
 			expectedCall:        true,
 			expectedReason:      metrics.RemoteModuleCatalogDeletion,
@@ -111,7 +111,7 @@ func TestMetricWriter_Write(t *testing.T) {
 		},
 		{
 			name:                "CleanupManifestCrs unexpected",
-			useCase:             usecase.UseCaseDeleteManifests,
+			useCase:             usecase.DeleteManifests,
 			err:                 assert.AnError,
 			expectedCall:        true,
 			expectedReason:      metrics.CleanupManifestCrs,
@@ -121,31 +121,31 @@ func TestMetricWriter_Write(t *testing.T) {
 		// No calls
 		{
 			name:         "Nothing for UseCaseDeleteSkrWatcher",
-			useCase:      usecase.UseCaseDeleteSkrWatcher,
+			useCase:      usecase.DeleteSkrWatcher,
 			err:          nil,
 			expectedCall: false,
 		},
 		{
 			name:         "Nothing for UseCaseDeleteSkrCrds",
-			useCase:      usecase.UseCaseDeleteSkrCrds,
+			useCase:      usecase.DeleteSkrCrds,
 			err:          nil,
 			expectedCall: false,
 		},
 		{
 			name:         "Nothing for UseCaseDeleteWatcherCertificate",
-			useCase:      usecase.UseCaseDeleteWatcherCertificate,
+			useCase:      usecase.DeleteWatcherCertificate,
 			err:          nil,
 			expectedCall: false,
 		},
 		{
 			name:         "Nothing for UseCaseDeleteMetrics",
-			useCase:      usecase.UseCaseDeleteMetrics,
+			useCase:      usecase.DeleteMetrics,
 			err:          nil,
 			expectedCall: false,
 		},
 		{
 			name:         "Nothing for UseCaseRemoveKymaFinalizers",
-			useCase:      usecase.UseCaseRemoveKymaFinalizers,
+			useCase:      usecase.RemoveKymaFinalizers,
 			err:          nil,
 			expectedCall: false,
 		},

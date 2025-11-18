@@ -267,21 +267,21 @@ func (r *Reconciler) processDeletion(ctx context.Context, kyma *v1beta2.Kyma) (c
 	r.DeletionEvents.Record(ctx, kyma, res)
 
 	switch res.UseCase {
-	case usecase.UseCaseSetKcpKymaStateDeleting,
-		usecase.UseCaseSetSkrKymaStateDeleting,
-		usecase.UseCaseDeleteSkrKyma,
-		usecase.UseCaseDeleteSkrWatcher,
-		usecase.UseCaseDeleteSkrModuleMetadata,
-		usecase.UseCaseDeleteSkrCrds,
-		usecase.UseCaseDeleteWatcherCertificate,
-		usecase.UseCaseDeleteManifests,
-		usecase.UseCaseDeleteMetrics:
+	case usecase.SetKcpKymaStateDeleting,
+		usecase.SetSkrKymaStateDeleting,
+		usecase.DeleteSkrKyma,
+		usecase.DeleteSkrWatcher,
+		usecase.DeleteSkrModuleMetadata,
+		usecase.DeleteSkrCrds,
+		usecase.DeleteWatcherCertificate,
+		usecase.DeleteManifests,
+		usecase.DeleteMetrics:
 		// error takes precedence over the RequeueAfter
 		// res.Err != nil => requeue rate limited
 		// res.Err == nil => requeue after
 		// TODO: r.RequeueIntervals.Busy is 5s, should we go lower?
 		return ctrl.Result{RequeueAfter: r.Busy}, res.Err
-	case usecase.UseCaseRemoveKymaFinalizers:
+	case usecase.RemoveKymaFinalizers:
 		// finalizers removed, no need to requeue if there is no error
 	}
 	return ctrl.Result{}, res.Err
