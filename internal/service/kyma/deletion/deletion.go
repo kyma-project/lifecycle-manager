@@ -8,11 +8,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 )
 
+var ErrNotImplementedYet = errors.New("deletion service is not implemented yet")
+
 type Service struct{}
 
 func (s *Service) Delete(ctx context.Context, kyma *v1beta2.Kyma) result.Result {
 	return result.Result{
 		UseCase: "NotImplementedYet",
-		Err:     errors.New("deletion service is not implemented yet"),
+		Err:     ErrNotImplementedYet,
 	}
 }
