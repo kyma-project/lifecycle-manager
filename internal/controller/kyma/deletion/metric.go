@@ -42,10 +42,10 @@ func (w *MetricWriter) Write(res result.Result) {
 	case deletion.UseCaseDeleteManifests:
 		w.metrics.RecordRequeueReason(metrics.CleanupManifestCrs, requeueType)
 	// TODO: check if we need metrics for these, the exists ones don't seem to match
-	case deletion.UseCaseDeleteSkrWatcher:
-	case deletion.UseCaseDeleteSkrCrds:
-	case deletion.UseCaseDeleteWatcherCertificate:
-	case deletion.UseCaseDeleteMetrics:
-	case deletion.UseCaseRemoveKymaFinalizers:
+	case deletion.UseCaseDeleteSkrWatcher,
+		deletion.UseCaseDeleteSkrCrds,
+		deletion.UseCaseDeleteWatcherCertificate,
+		deletion.UseCaseDeleteMetrics,
+		deletion.UseCaseRemoveKymaFinalizers:
 	}
 }
