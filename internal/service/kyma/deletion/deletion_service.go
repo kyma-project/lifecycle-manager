@@ -1,0 +1,53 @@
+package deletion
+
+import (
+	"context"
+	"errors"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/result"
+)
+
+var (
+	ErrUnableToDetermineUsecaseApplicability = errors.New("unable to determine usecase applicability")
+	ErrNoUseCaseApplicable                   = errors.New("no use case applicable for kyma deletion")
+)
+
+type UseCase interface {
+	IsApplicable(ctx context.Context, mrm *v1beta2.Kyma) (bool, error)
+	Execute(ctx context.Context, mrm *v1beta2.Kyma) result.Result
+}
+
+type Service struct {
+	deletionSteps []UseCase
+}
+
+func NewService(
+	setStatus UseCase,
+	deleteSkrKyma UseCase,
+) *Service {
+	return &Service{
+		deletionSteps: []UseCase{
+			setStatus,
+			deleteSkrKyma,
+		},
+	}
+}
+
+func (s *Service) Delete(ctx context.Context, kyma *v1beta2.Kyma) result.Result {
+	for _, step := range s.deletionSteps {
+		isApplicable, err := step.IsApplicable(ctx, kyma)
+		if err != nil {
+			return result.Result{
+				Err: ErrUnableToDetermineUsecaseApplicability,
+			}
+		}
+		if isApplicable {
+			return step.Execute(ctx, kyma)
+		}
+	}
+
+	return result.Result{
+		Err: ErrNoUseCaseApplicable,
+	}
+}
