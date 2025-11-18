@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"golang.org/x/sync/errgroup"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -279,8 +280,7 @@ func (r *Reconciler) processDeletion(ctx context.Context, kyma *v1beta2.Kyma) (c
 		// error takes precedence over the RequeueAfter
 		// res.Err != nil => requeue rate limited
 		// res.Err == nil => requeue after
-		// TODO: r.RequeueIntervals.Busy is 5s, should we go lower?
-		return ctrl.Result{RequeueAfter: r.Busy}, res.Err
+		return ctrl.Result{RequeueAfter: 1 * time.Second}, res.Err
 	case usecase.RemoveKymaFinalizers:
 		// finalizers removed, no need to requeue if there is no error
 	}
