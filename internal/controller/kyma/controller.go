@@ -49,6 +49,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 )
 
 var (
@@ -68,8 +69,8 @@ type DeletionMetricWriter interface {
 	Write(res result.Result)
 }
 
-type DeletionEventWriter interface {
-	Write(ctx context.Context, kyma *v1beta2.Kyma, res result.Result)
+type DeletionEventRecorder interface {
+	Record(ctx context.Context, obj machineryruntime.Object, res result.Result)
 }
 
 type DeletionService interface {
@@ -118,7 +119,7 @@ type Reconciler struct {
 	TemplateLookup *templatelookup.TemplateLookup
 
 	DeletionMetrics DeletionMetricWriter
-	DeletionEvents  DeletionEventWriter
+	DeletionEvents  DeletionEventRecorder
 	DeletionService DeletionService
 }
 
@@ -188,7 +189,7 @@ func (r *Reconciler) processDeletion(ctx context.Context, kyma *v1beta2.Kyma) (c
 	res := r.DeletionService.Delete(ctx, kyma)
 
 	r.DeletionMetrics.Write(res)
-	r.DeletionEvents.Write(ctx, kyma, res)
+	r.DeletionEvents.Record(ctx, kyma, res)
 
 	switch res.UseCase {
 	case deletion.UseCaseSetKcpKymaStateDeleting,

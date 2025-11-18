@@ -80,10 +80,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
-	eventrepository "github.com/kyma-project/lifecycle-manager/internal/repository/event"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepository "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	kymadeletionservice "github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
@@ -445,9 +445,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 
 	// TODO: put into setup funcs
 	deletionMetricsWriter := kymadeletioncontroller.NewMetricWriter(kymaMetrics)
-	deletionEventWriter := kymadeletioncontroller.NewEventWriter(eventrepository.NewRepository(kcpClient,
-		shared.DefaultControlPlaneNamespace,
-		"kyma"))
+	resultEventRecorder := resultevent.NewEventRecorder(event)
 	kymaDeletionService := &kymadeletionservice.Service{}
 
 	if err := (&kyma.Reconciler{
@@ -471,7 +469,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			moduleTemplateInfoLookup),
 		Config:          kymaReconcilerConfig,
 		DeletionMetrics: deletionMetricsWriter,
-		DeletionEvents:  deletionEventWriter,
+		DeletionEvents:  resultEventRecorder,
 		DeletionService: kymaDeletionService,
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
