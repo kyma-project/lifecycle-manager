@@ -38,3 +38,7 @@ func (u *SetKymaStatusDeletingUseCase) Execute(ctx context.Context, kyma *v1beta
 		Err:     err,
 	}
 }
+
+func (u *SetKymaStatusDeletingUseCase) Name() result.UseCase {
+	return useCase
+}

@@ -39,7 +39,7 @@ func (s *Service) Delete(ctx context.Context, kyma *v1beta2.Kyma) result.Result 
 		isApplicable, err := step.IsApplicable(ctx, kyma)
 		if err != nil {
 			return result.Result{
-				Err: ErrUnableToDetermineUsecaseApplicability,
+				Err: errors.Join(ErrUnableToDetermineUsecaseApplicability, err),
 			}
 		}
 		if isApplicable {
