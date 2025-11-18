@@ -9,7 +9,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 )
 
-const Success = "Success"
+const success = "Success"
 
 type EventRepo interface {
 	Create(ctx context.Context, involvedObject corev1.ObjectReference, eventType, reason, message string)
@@ -31,7 +31,7 @@ func NewEventWriter(eventRepo EventRepo) *EventWriter {
 // The message is either "Success" or the message of the error when present.
 func (e *EventWriter) Write(ctx context.Context, kyma *v1beta2.Kyma, res result.Result) {
 	eventType := corev1.EventTypeNormal
-	message := Success
+	message := success
 
 	if res.Err != nil {
 		eventType = corev1.EventTypeWarning

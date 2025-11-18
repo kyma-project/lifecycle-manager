@@ -9,6 +9,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 type KymaBuilder struct {
@@ -32,6 +33,11 @@ func NewKymaBuilder() KymaBuilder {
 			Status: v1beta2.KymaStatus{},
 		},
 	}
+}
+
+func (kb KymaBuilder) WithUid(uid types.UID) KymaBuilder {
+	kb.kyma.UID = uid
+	return kb
 }
 
 // WithName sets v1beta2.Kyma.ObjectMeta.Name.
