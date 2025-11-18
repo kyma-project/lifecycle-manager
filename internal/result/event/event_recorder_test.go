@@ -3,17 +3,17 @@ package event_test
 import (
 	"testing"
 
-	corev1 "k8s.io/api/core/v1"
+	"github.com/stretchr/testify/assert"
+	apicorev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/uuid"
 
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
-	"github.com/stretchr/testify/assert"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	machineryruntime "k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
 type eventStub struct {
@@ -28,7 +28,7 @@ type eventStub struct {
 
 func (e *eventStub) Normal(object machineryruntime.Object, reason event.Reason, msg string) {
 	e.normalCalled = true
-	e.eventType = corev1.EventTypeNormal
+	e.eventType = apicorev1.EventTypeNormal
 	e.reason = string(reason)
 	e.message = msg
 
@@ -41,7 +41,7 @@ func (e *eventStub) Normal(object machineryruntime.Object, reason event.Reason, 
 
 func (e *eventStub) Warning(object machineryruntime.Object, reason event.Reason, err error) {
 	e.warningCalled = true
-	e.eventType = corev1.EventTypeWarning
+	e.eventType = apicorev1.EventTypeWarning
 	e.reason = string(reason)
 	e.message = err.Error()
 
@@ -71,7 +71,7 @@ func TestEventRecorder_Record_NormalEvent_Success(t *testing.T) {
 	event.Record(t.Context(), kyma, res)
 
 	assert.True(t, eventStub.normalCalled)
-	assert.Equal(t, corev1.EventTypeNormal, eventStub.eventType)
+	assert.Equal(t, apicorev1.EventTypeNormal, eventStub.eventType)
 	assert.Equal(t, string(res.UseCase), eventStub.reason)
 	assert.Equal(t, "Success", eventStub.message)
 	assert.Equal(t, kyma.APIVersion, eventStub.involvedObject.GetAPIVersion())
@@ -100,7 +100,7 @@ func TestEventRecorder_Record_WarningEvent_Success(t *testing.T) {
 	event.Record(t.Context(), kyma, res)
 
 	assert.True(t, eventStub.warningCalled)
-	assert.Equal(t, corev1.EventTypeWarning, eventStub.eventType)
+	assert.Equal(t, apicorev1.EventTypeWarning, eventStub.eventType)
 	assert.Equal(t, string(res.UseCase), eventStub.reason)
 	assert.Equal(t, res.Err.Error(), eventStub.message)
 	assert.Equal(t, kyma.APIVersion, eventStub.involvedObject.GetAPIVersion())

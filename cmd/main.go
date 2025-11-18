@@ -60,7 +60,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/istiogatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
-	kymadeletioncontroller "github.com/kyma-project/lifecycle-manager/internal/controller/kyma/deletion"
+	kymadeletionctrl "github.com/kyma-project/lifecycle-manager/internal/controller/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/manifest"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/purge"
@@ -85,7 +85,7 @@ import (
 	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
-	kymadeletionservice "github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion"
+	svckymadeletion "github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
@@ -443,10 +443,9 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		&syncCrdsUseCase,
 		flagVar.SkrImagePullSecret)
 
-	// TODO: put into setup funcs
-	deletionMetricsWriter := kymadeletioncontroller.NewMetricWriter(kymaMetrics)
+	deletionMetricsWriter := kymadeletionctrl.NewMetricWriter(kymaMetrics)
 	resultEventRecorder := resultevent.NewEventRecorder(event)
-	kymaDeletionService := &kymadeletionservice.Service{}
+	kymaDeletionService := &svckymadeletion.Service{}
 
 	if err := (&kyma.Reconciler{
 		Client:               kcpClient,

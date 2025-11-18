@@ -5,11 +5,11 @@ import (
 	"time"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 type KymaBuilder struct {

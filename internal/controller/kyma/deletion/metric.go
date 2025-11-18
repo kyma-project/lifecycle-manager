@@ -3,7 +3,7 @@ package deletion
 import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
-	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/deletion"
+	resultkymadeletion "github.com/kyma-project/lifecycle-manager/internal/result/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
 
@@ -31,21 +31,21 @@ func (w *MetricWriter) Write(res result.Result) {
 	}
 
 	switch res.UseCase {
-	case deletion.UseCaseSetKcpKymaStateDeleting:
+	case resultkymadeletion.UseCaseSetKcpKymaStateDeleting:
 		w.metrics.RecordRequeueReason(metrics.StatusUpdateToDeleting, requeueType)
-	case deletion.UseCaseSetSkrKymaStateDeleting:
+	case resultkymadeletion.UseCaseSetSkrKymaStateDeleting:
 		w.metrics.RecordRequeueReason(metrics.StatusSyncToRemote, requeueType)
-	case deletion.UseCaseDeleteSkrKyma:
+	case resultkymadeletion.UseCaseDeleteSkrKyma:
 		w.metrics.RecordRequeueReason(metrics.RemoteKymaDeletion, requeueType)
-	case deletion.UseCaseDeleteSkrModuleMetadata:
+	case resultkymadeletion.UseCaseDeleteSkrModuleMetadata:
 		w.metrics.RecordRequeueReason(metrics.RemoteModuleCatalogDeletion, requeueType)
-	case deletion.UseCaseDeleteManifests:
+	case resultkymadeletion.UseCaseDeleteManifests:
 		w.metrics.RecordRequeueReason(metrics.CleanupManifestCrs, requeueType)
-	case deletion.UseCaseDeleteSkrWatcher,
-		deletion.UseCaseDeleteSkrCrds,
-		deletion.UseCaseDeleteWatcherCertificate,
-		deletion.UseCaseDeleteMetrics,
-		deletion.UseCaseRemoveKymaFinalizers:
+	case resultkymadeletion.UseCaseDeleteSkrWatcher,
+		resultkymadeletion.UseCaseDeleteSkrCrds,
+		resultkymadeletion.UseCaseDeleteWatcherCertificate,
+		resultkymadeletion.UseCaseDeleteMetrics,
+		resultkymadeletion.UseCaseRemoveKymaFinalizers:
 		// These use cases are not tracked by metrics.
 	}
 }

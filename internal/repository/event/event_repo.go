@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apicorev1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -28,15 +28,15 @@ func NewRepository(clnt client.Client,
 }
 
 func (r *Repository) Create(ctx context.Context,
-	involvedObject corev1.ObjectReference,
+	involvedObject apicorev1.ObjectReference,
 	eventType, reason, message string,
 ) {
-	event := &corev1.Event{
+	event := &apicorev1.Event{
 		Type:           eventType,
 		Reason:         reason,
 		Message:        message,
 		InvolvedObject: involvedObject,
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s/%d", r.eventName, time.Now().UnixMilli()),
 			Namespace: r.namespace,
 		},

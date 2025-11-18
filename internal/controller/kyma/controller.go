@@ -25,6 +25,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -39,7 +40,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
-	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/deletion"
+	resultkymadeletion "github.com/kyma-project/lifecycle-manager/internal/result/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -49,7 +50,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 )
 
 var (
@@ -101,7 +101,7 @@ type ReconcilerConfig struct {
 	SkrImagePullSecretName string
 }
 
-// TODO: make all fields private and provide constructor
+// TODO: make all fields private and provide constructor.
 type Reconciler struct {
 	client.Client
 	event.Event
@@ -185,33 +185,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return r.reconcile(ctx, kyma)
 }
 
-func (r *Reconciler) processDeletion(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
-	res := r.DeletionService.Delete(ctx, kyma)
-
-	r.DeletionMetrics.Write(res)
-	r.DeletionEvents.Record(ctx, kyma, res)
-
-	switch res.UseCase {
-	case deletion.UseCaseSetKcpKymaStateDeleting,
-		deletion.UseCaseSetSkrKymaStateDeleting,
-		deletion.UseCaseDeleteSkrKyma,
-		deletion.UseCaseDeleteSkrWatcher,
-		deletion.UseCaseDeleteSkrModuleMetadata,
-		deletion.UseCaseDeleteSkrCrds,
-		deletion.UseCaseDeleteWatcherCertificate,
-		deletion.UseCaseDeleteManifests,
-		deletion.UseCaseDeleteMetrics:
-		// error takes precedence over the RequeueAfter
-		// res.Err != nil => requeue rate limited
-		// res.Err == nil => requeue after
-		// TODO: r.RequeueIntervals.Busy is 5s, should we go lower?
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, res.Err
-	case deletion.UseCaseRemoveKymaFinalizers:
-		// finalizers removed, no need to requeue if there is no error
-	}
-	return ctrl.Result{}, res.Err
-}
-
 // ValidateDefaultChannel validates the Kyma spec.
 func (r *Reconciler) ValidateDefaultChannel(kyma *v1beta2.Kyma) error {
 	if shared.NoneChannel.Equals(kyma.Spec.Channel) {
@@ -285,6 +258,33 @@ func (r *Reconciler) UpdateModuleTemplatesIfNeeded(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (r *Reconciler) processDeletion(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
+	res := r.DeletionService.Delete(ctx, kyma)
+
+	r.DeletionMetrics.Write(res)
+	r.DeletionEvents.Record(ctx, kyma, res)
+
+	switch res.UseCase {
+	case resultkymadeletion.UseCaseSetKcpKymaStateDeleting,
+		resultkymadeletion.UseCaseSetSkrKymaStateDeleting,
+		resultkymadeletion.UseCaseDeleteSkrKyma,
+		resultkymadeletion.UseCaseDeleteSkrWatcher,
+		resultkymadeletion.UseCaseDeleteSkrModuleMetadata,
+		resultkymadeletion.UseCaseDeleteSkrCrds,
+		resultkymadeletion.UseCaseDeleteWatcherCertificate,
+		resultkymadeletion.UseCaseDeleteManifests,
+		resultkymadeletion.UseCaseDeleteMetrics:
+		// error takes precedence over the RequeueAfter
+		// res.Err != nil => requeue rate limited
+		// res.Err == nil => requeue after
+		// TODO: r.RequeueIntervals.Busy is 5s, should we go lower?
+		return ctrl.Result{RequeueAfter: r.Busy}, res.Err
+	case resultkymadeletion.UseCaseRemoveKymaFinalizers:
+		// finalizers removed, no need to requeue if there is no error
+	}
+	return ctrl.Result{}, res.Err
 }
 
 func (r *Reconciler) requeueWithError(ctx context.Context, kyma *v1beta2.Kyma, err error) (ctrl.Result, error) {

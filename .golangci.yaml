@@ -120,6 +120,8 @@ linters:
           alias: testskrcontext
         - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/watcher
           alias: watcherctrl
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/kyma/deletion
+          alias: kymadeletionctrl
         - pkg: github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client
           alias: gatewaysecretclient
         - pkg: github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler
@@ -130,6 +132,10 @@ linters:
           alias: kymarepository
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/secret
           alias: secretrepository
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/result/event
+          alias: resultevent
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/result/kyma/deletion
+          alias: resultkymadeletion
         - pkg: k8s.io/api/networking/v1
           alias: apinetworkv1
         - pkg: github.com/kyma-project/lifecycle-manager/internal/descriptor/cache
@@ -138,6 +144,8 @@ linters:
           alias: skrwebhookresources
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager
           alias: certmanagerrenewal
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion
+          alias: svckymadeletion
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/errors
           alias: certerror
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate
