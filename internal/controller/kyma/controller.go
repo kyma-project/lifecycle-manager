@@ -40,7 +40,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
-	resultkymadeletion "github.com/kyma-project/lifecycle-manager/internal/result/kyma/deletion"
+	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -267,21 +267,21 @@ func (r *Reconciler) processDeletion(ctx context.Context, kyma *v1beta2.Kyma) (c
 	r.DeletionEvents.Record(ctx, kyma, res)
 
 	switch res.UseCase {
-	case resultkymadeletion.UseCaseSetKcpKymaStateDeleting,
-		resultkymadeletion.UseCaseSetSkrKymaStateDeleting,
-		resultkymadeletion.UseCaseDeleteSkrKyma,
-		resultkymadeletion.UseCaseDeleteSkrWatcher,
-		resultkymadeletion.UseCaseDeleteSkrModuleMetadata,
-		resultkymadeletion.UseCaseDeleteSkrCrds,
-		resultkymadeletion.UseCaseDeleteWatcherCertificate,
-		resultkymadeletion.UseCaseDeleteManifests,
-		resultkymadeletion.UseCaseDeleteMetrics:
+	case usecase.UseCaseSetKcpKymaStateDeleting,
+		usecase.UseCaseSetSkrKymaStateDeleting,
+		usecase.UseCaseDeleteSkrKyma,
+		usecase.UseCaseDeleteSkrWatcher,
+		usecase.UseCaseDeleteSkrModuleMetadata,
+		usecase.UseCaseDeleteSkrCrds,
+		usecase.UseCaseDeleteWatcherCertificate,
+		usecase.UseCaseDeleteManifests,
+		usecase.UseCaseDeleteMetrics:
 		// error takes precedence over the RequeueAfter
 		// res.Err != nil => requeue rate limited
 		// res.Err == nil => requeue after
 		// TODO: r.RequeueIntervals.Busy is 5s, should we go lower?
 		return ctrl.Result{RequeueAfter: r.Busy}, res.Err
-	case resultkymadeletion.UseCaseRemoveKymaFinalizers:
+	case usecase.UseCaseRemoveKymaFinalizers:
 		// finalizers removed, no need to requeue if there is no error
 	}
 	return ctrl.Result{}, res.Err

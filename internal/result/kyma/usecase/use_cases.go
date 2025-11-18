@@ -1,4 +1,4 @@
-package deletion
+package usecase
 
 import "github.com/kyma-project/lifecycle-manager/internal/result"
 

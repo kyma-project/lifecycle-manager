@@ -85,7 +85,7 @@ import (
 	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
-	svckymadeletion "github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion"
+	kymadeletionsvc "github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
@@ -445,7 +445,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 
 	deletionMetricsWriter := kymadeletionctrl.NewMetricWriter(kymaMetrics)
 	resultEventRecorder := resultevent.NewEventRecorder(event)
-	kymaDeletionService := &svckymadeletion.Service{}
+	kymaDeletionService := &kymadeletionsvc.Service{}
 
 	if err := (&kyma.Reconciler{
 		Client:               kcpClient,
