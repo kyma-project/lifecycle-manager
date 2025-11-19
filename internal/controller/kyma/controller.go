@@ -264,6 +264,11 @@ func (r *Reconciler) UpdateModuleTemplatesIfNeeded(ctx context.Context) error {
 func (r *Reconciler) processDeletion(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	res := r.DeletionService.Delete(ctx, kyma)
 
+	// TODO revisit this, but probably necessary right now
+	if util.IsConnectionRelatedError(res.Err) {
+		r.SkrContextFactory.InvalidateCache(kyma.GetNamespacedName())
+	}
+
 	r.DeletionMetrics.Write(res)
 	r.DeletionEvents.Record(ctx, kyma, res)
 
