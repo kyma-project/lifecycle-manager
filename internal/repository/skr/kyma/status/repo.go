@@ -79,7 +79,7 @@ func (r *Repository) SetStateDeleting(ctx context.Context, kymaName types.Namesp
 		kyma,
 		client.Apply,
 		client.ForceOwnership,
-		client.FieldOwner(fieldowners.LifecycleManager),
+		fieldowners.LifecycleManager,
 	)
 }
 
