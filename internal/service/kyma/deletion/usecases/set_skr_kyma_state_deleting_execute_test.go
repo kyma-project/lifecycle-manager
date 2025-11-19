@@ -1,7 +1,6 @@
 package usecases_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -11,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 func TestExecute_Succeeds(t *testing.T) {
@@ -54,20 +52,4 @@ func TestExecute_Fails(t *testing.T) {
 	assert.Equal(t, usecase.SetSkrKymaStateDeleting, result.UseCase)
 	assert.True(t, kymaStatusRepo.called)
 	assert.Equal(t, kyma.GetNamespacedName(), kymaStatusRepo.namespacedName)
-}
-
-type kymaStatusRepoStub struct {
-	usecases.KymaStatusRepo
-
-	called bool
-
-	namespacedName types.NamespacedName
-
-	err error
-}
-
-func (r *kymaStatusRepoStub) SetStateDeleting(_ context.Context, namespacedName types.NamespacedName) error {
-	r.called = true
-	r.namespacedName = namespacedName
-	return r.err
 }
