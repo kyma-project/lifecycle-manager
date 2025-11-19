@@ -31,6 +31,7 @@ func NewService(
 	return &Service{
 		deletionSteps: []UseCase{
 			setKcpKymaStateDeleting,
+			setSkrKymaStateDeleting,
 			deleteSkrKyma,
 		},
 	}
