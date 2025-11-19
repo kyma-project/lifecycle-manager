@@ -12,7 +12,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	statusrepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma/status"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/kyma/status"
 )
 
 const (
@@ -25,7 +25,7 @@ func TestNewRepository(t *testing.T) {
 	t.Parallel()
 
 	statusWriter := &statusWriterStub{}
-	repo := statusrepo.NewRepository(statusWriter)
+	repo := status.NewRepository(statusWriter)
 
 	require.NotNil(t, repo)
 }
@@ -34,7 +34,7 @@ func TestRepository_UpdateStatusDeleting_WhenPatchSucceeds_ReturnNoError(t *test
 	t.Parallel()
 
 	statusWriter := &statusWriterStub{}
-	repo := statusrepo.NewRepository(statusWriter)
+	repo := status.NewRepository(statusWriter)
 	kyma := createTestKyma()
 
 	err := repo.UpdateStatusDeleting(context.Background(), kyma)
@@ -42,8 +42,8 @@ func TestRepository_UpdateStatusDeleting_WhenPatchSucceeds_ReturnNoError(t *test
 	require.NoError(t, err)
 	require.True(t, statusWriter.PatchCalled)
 	require.Equal(t, shared.StateDeleting, kyma.Status.State)
-	require.Equal(t, expectedDeletingMessage, kyma.Status.LastOperation.Operation)
-	require.NotZero(t, kyma.Status.LastOperation.LastUpdateTime)
+	require.Equal(t, expectedDeletingMessage, kyma.Status.Operation)
+	require.NotZero(t, kyma.Status.LastUpdateTime)
 	require.Nil(t, kyma.ManagedFields)
 }
 
@@ -51,7 +51,7 @@ func TestRepository_UpdateStatusDeleting_WhenPatchFails_ReturnError(t *testing.T
 	t.Parallel()
 
 	statusWriter := &statusWriterStub{err: assert.AnError}
-	repo := statusrepo.NewRepository(statusWriter)
+	repo := status.NewRepository(statusWriter)
 	kyma := createTestKyma()
 
 	err := repo.UpdateStatusDeleting(context.Background(), kyma)
@@ -65,7 +65,7 @@ func TestRepository_UpdateStatusDeleting_NoActiveChannelModification(t *testing.
 	t.Parallel()
 
 	statusWriter := &statusWriterStub{}
-	repo := statusrepo.NewRepository(statusWriter)
+	repo := status.NewRepository(statusWriter)
 	kyma := createTestKymaWithActiveChannel()
 	originalChannel := kyma.Status.ActiveChannel
 
@@ -73,7 +73,7 @@ func TestRepository_UpdateStatusDeleting_NoActiveChannelModification(t *testing.
 
 	require.NoError(t, err)
 	require.Equal(t, shared.StateDeleting, kyma.Status.State)
-	require.Equal(t, expectedDeletingMessage, kyma.Status.LastOperation.Operation)
+	require.Equal(t, expectedDeletingMessage, kyma.Status.Operation)
 	// Active channel should remain unchanged for deleting state
 	require.Equal(t, originalChannel, kyma.Status.ActiveChannel)
 }
@@ -82,7 +82,7 @@ func TestRepository_UpdateStatusDeleting_TimestampIsSet(t *testing.T) {
 	t.Parallel()
 
 	statusWriter := &statusWriterStub{}
-	repo := statusrepo.NewRepository(statusWriter)
+	repo := status.NewRepository(statusWriter)
 	kyma := createTestKyma()
 	beforeUpdate := time.Now()
 
@@ -91,7 +91,7 @@ func TestRepository_UpdateStatusDeleting_TimestampIsSet(t *testing.T) {
 	require.NoError(t, err)
 	afterUpdate := time.Now()
 
-	lastUpdateTime := kyma.Status.LastOperation.LastUpdateTime.Time
+	lastUpdateTime := kyma.Status.LastUpdateTime.Time
 	require.True(t, lastUpdateTime.After(beforeUpdate) || lastUpdateTime.Equal(beforeUpdate))
 	require.True(t, lastUpdateTime.Before(afterUpdate) || lastUpdateTime.Equal(afterUpdate))
 }
@@ -100,7 +100,7 @@ func TestRepository_UpdateStatusDeleting_ManagedFieldsCleared(t *testing.T) {
 	t.Parallel()
 
 	statusWriter := &statusWriterStub{}
-	repo := statusrepo.NewRepository(statusWriter)
+	repo := status.NewRepository(statusWriter)
 	kyma := createTestKyma()
 
 	// Set some managed fields
@@ -112,7 +112,7 @@ func TestRepository_UpdateStatusDeleting_ManagedFieldsCleared(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, shared.StateDeleting, kyma.Status.State)
-	require.Equal(t, expectedDeletingMessage, kyma.Status.LastOperation.Operation)
+	require.Equal(t, expectedDeletingMessage, kyma.Status.Operation)
 	require.Nil(t, kyma.ManagedFields)
 }
 
@@ -138,6 +138,7 @@ func createTestKymaWithActiveChannel() *v1beta2.Kyma {
 
 type statusWriterStub struct {
 	client.StatusWriter
+
 	err         error
 	PatchCalled bool
 }

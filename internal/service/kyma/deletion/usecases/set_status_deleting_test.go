@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -72,15 +73,15 @@ func TestSetKymaStatusDeletingUseCase_IsApplicable(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			mockRepo := &kymaStatusRepositoryStub{}
 			useCase := usecases.NewSetKymaStatusDeletingUseCase(mockRepo)
 
-			applicable, err := useCase.IsApplicable(context.Background(), tt.kyma)
+			applicable, err := useCase.IsApplicable(context.Background(), testCase.kyma)
 
-			assert.Equal(t, tt.expectedResult, applicable)
-			assert.Equal(t, tt.expectedError, err)
+			assert.Equal(t, testCase.expectedResult, applicable)
+			assert.Equal(t, testCase.expectedError, err)
 		})
 	}
 }
@@ -122,25 +123,25 @@ func TestSetKymaStatusDeletingUseCase_Execute(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			mockRepo := &kymaStatusRepositoryStub{}
 			mockRepo.On("UpdateKymaStatus",
 				mock.Anything,
-				tt.kyma,
+				testCase.kyma,
 				shared.StateDeleting,
-				"waiting for modules to be deleted").Return(tt.repoError)
+				"waiting for modules to be deleted").Return(testCase.repoError)
 
 			useCase := usecases.NewSetKymaStatusDeletingUseCase(mockRepo)
 
-			res := useCase.Execute(context.Background(), tt.kyma)
+			res := useCase.Execute(context.Background(), testCase.kyma)
 
-			assert.Equal(t, tt.expectedResult.UseCase, res.UseCase)
-			if tt.expectedResult.Err != nil {
-				assert.Error(t, res.Err)
-				assert.Equal(t, tt.expectedResult.Err.Error(), res.Err.Error())
+			assert.Equal(t, testCase.expectedResult.UseCase, res.UseCase)
+			if testCase.expectedResult.Err != nil {
+				require.Error(t, res.Err)
+				assert.Equal(t, testCase.expectedResult.Err.Error(), res.Err.Error())
 			} else {
-				assert.NoError(t, res.Err)
+				require.NoError(t, res.Err)
 			}
 
 			mockRepo.AssertExpectations(t)
