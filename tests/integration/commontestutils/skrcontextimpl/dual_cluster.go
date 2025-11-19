@@ -77,7 +77,7 @@ func (f *DualClusterFactory) Init(_ context.Context, kyma types.NamespacedName) 
 		_ = skrEnv.Stop()
 		return err
 	}
-	newClient := remote.NewClientWithConfig(skrClient, authUser.Config())
+	newClient := skrClient
 	f.clients.Store(kyma.Name, newClient)
 
 	// track this envtest so Stop() can stop all started envs
@@ -91,11 +91,11 @@ func (f *DualClusterFactory) Get(kyma types.NamespacedName) (*remote.SkrContext,
 	if !ok {
 		return nil, ErrSkrEnvNotStarted
 	}
-	skrClient, ok := value.(*remote.ConfigAndClient)
+	skrClient, ok := value.(*client.Client)
 	if !ok {
 		return nil, ErrSkrEnvNotStarted
 	}
-	return remote.NewSkrContext(skrClient, f.event), nil
+	return remote.NewSkrContext(*skrClient, f.event), nil
 }
 
 func (f *DualClusterFactory) StoreEnv(name string, env *envtest.Environment) error {
