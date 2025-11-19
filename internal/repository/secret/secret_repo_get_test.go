@@ -49,13 +49,16 @@ func TestGet_ClientReturnsAnError_ReturnsError(t *testing.T) {
 type getClientStub struct {
 	client.Client
 
+	key client.ObjectKey
+
 	called bool
 	object *apicorev1.Secret
 	err    error
 }
 
-func (c *getClientStub) Get(_ context.Context, _ client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
+func (c *getClientStub) Get(_ context.Context, key client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
 	c.called = true
+	c.key = key
 	if c.object != nil {
 		c.object.DeepCopyInto(obj.(*apicorev1.Secret))
 	}
