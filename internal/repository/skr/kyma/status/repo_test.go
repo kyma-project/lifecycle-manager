@@ -1,8 +1,9 @@
 package status_test
 
 import (
-	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 )
 
 type skrClientCacheStub struct {

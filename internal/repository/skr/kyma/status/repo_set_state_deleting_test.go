@@ -12,6 +12,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/errors"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status"
@@ -43,8 +44,14 @@ func TestSetStateDeleting_ClientCallSucceeds(t *testing.T) {
 	assert.Equal(t, shared.DefaultRemoteNamespace, statusClientStub.patchedObject.Namespace)
 	// correct state set
 	assert.Equal(t, shared.StateDeleting, statusClientStub.patchedObject.Status.State)
-	assert.Equal(t, ".status.State set to Deleting", statusClientStub.patchedObject.Status.LastOperation.Operation)
-	assert.WithinDuration(t, time.Now(), statusClientStub.patchedObject.Status.LastOperation.LastUpdateTime.Time, time.Second)
+	assert.Equal(t, ".status.State set to Deleting", statusClientStub.patchedObject.Status.Operation)
+	assert.WithinDuration(t,
+		time.Now(),
+		statusClientStub.patchedObject.Status.LastUpdateTime.Time,
+		time.Second)
+	// correct options used
+	assert.Contains(t, statusClientStub.opts, fieldowners.LifecycleManager)
+	assert.Contains(t, statusClientStub.opts, client.ForceOwnership)
 }
 
 func TestSetStateDeleting_ClientReturnsAnError(t *testing.T) {
@@ -105,7 +112,11 @@ type statusClientStub struct {
 	opts          []client.SubResourcePatchOption
 }
 
-func (c *statusClientStub) Patch(_ context.Context, obj client.Object, _ client.Patch, opts ...client.SubResourcePatchOption) error {
+func (c *statusClientStub) Patch(_ context.Context,
+	obj client.Object,
+	_ client.Patch,
+	opts ...client.SubResourcePatchOption,
+) error {
 	c.called = true
 	c.patchedObject = obj.(*v1beta2.Kyma)
 	c.opts = opts
