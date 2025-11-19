@@ -2,10 +2,10 @@ package status_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -20,8 +20,6 @@ const (
 	kymaNamespace           = "test-namespace"
 	expectedDeletingMessage = "waiting for modules to be deleted"
 )
-
-var errGeneric = errors.New("generic error")
 
 func TestNewRepository(t *testing.T) {
 	t.Parallel()
@@ -52,14 +50,14 @@ func TestRepository_UpdateStatusDeleting_WhenPatchSucceeds_ReturnNoError(t *test
 func TestRepository_UpdateStatusDeleting_WhenPatchFails_ReturnError(t *testing.T) {
 	t.Parallel()
 
-	statusWriter := &statusWriterStubWithError{err: errGeneric}
+	statusWriter := &statusWriterStub{err: assert.AnError}
 	repo := statusrepo.NewRepository(statusWriter)
 	kyma := createTestKyma()
 
 	err := repo.UpdateStatusDeleting(context.Background(), kyma)
 
 	require.Error(t, err)
-	require.ErrorIs(t, err, errGeneric)
+	require.ErrorIs(t, err, assert.AnError)
 	require.True(t, statusWriter.PatchCalled)
 }
 
@@ -138,9 +136,9 @@ func createTestKymaWithActiveChannel() *v1beta2.Kyma {
 	return kyma
 }
 
-// StatusWriter stubs
-
 type statusWriterStub struct {
+	client.StatusWriter
+	err         error
 	PatchCalled bool
 }
 
@@ -150,46 +148,8 @@ func (s *statusWriterStub) Patch(_ context.Context,
 	_ ...client.SubResourcePatchOption,
 ) error {
 	s.PatchCalled = true
+	if s.err != nil {
+		return s.err
+	}
 	return nil
-}
-
-func (s *statusWriterStub) Create(_ context.Context,
-	_ client.Object,
-	_ client.Object,
-	_ ...client.SubResourceCreateOption,
-) error {
-	return nil
-}
-
-func (s *statusWriterStub) Update(_ context.Context, _ client.Object, _ ...client.SubResourceUpdateOption) error {
-	return nil
-}
-
-type statusWriterStubWithError struct {
-	PatchCalled bool
-	err         error
-}
-
-func (s *statusWriterStubWithError) Patch(_ context.Context,
-	_ client.Object,
-	_ client.Patch,
-	_ ...client.SubResourcePatchOption,
-) error {
-	s.PatchCalled = true
-	return s.err
-}
-
-func (s *statusWriterStubWithError) Create(_ context.Context,
-	_ client.Object,
-	_ client.Object,
-	_ ...client.SubResourceCreateOption,
-) error {
-	return s.err
-}
-
-func (s *statusWriterStubWithError) Update(_ context.Context,
-	_ client.Object,
-	_ ...client.SubResourceUpdateOption,
-) error {
-	return s.err
 }

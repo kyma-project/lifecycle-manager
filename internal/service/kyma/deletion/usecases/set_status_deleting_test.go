@@ -1,4 +1,4 @@
-package usecases
+package usecases_test
 
 import (
 	"context"
@@ -14,16 +14,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion/usecases"
 )
-
-func TestNewSetKymaStatusDeletingUseCase(t *testing.T) {
-	mockRepo := &kymaStatusRepositoryStub{}
-
-	useCase := NewSetKymaStatusDeletingUseCase(mockRepo)
-
-	assert.NotNil(t, useCase)
-	assert.Equal(t, mockRepo, useCase.kymaStatusRepo)
-}
 
 func TestSetKymaStatusDeletingUseCase_IsApplicable(t *testing.T) {
 	tests := []struct {
@@ -83,7 +75,7 @@ func TestSetKymaStatusDeletingUseCase_IsApplicable(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := &kymaStatusRepositoryStub{}
-			useCase := NewSetKymaStatusDeletingUseCase(mockRepo)
+			useCase := usecases.NewSetKymaStatusDeletingUseCase(mockRepo)
 
 			applicable, err := useCase.IsApplicable(context.Background(), tt.kyma)
 
@@ -139,7 +131,7 @@ func TestSetKymaStatusDeletingUseCase_Execute(t *testing.T) {
 				shared.StateDeleting,
 				"waiting for modules to be deleted").Return(tt.repoError)
 
-			useCase := NewSetKymaStatusDeletingUseCase(mockRepo)
+			useCase := usecases.NewSetKymaStatusDeletingUseCase(mockRepo)
 
 			res := useCase.Execute(context.Background(), tt.kyma)
 
@@ -171,7 +163,7 @@ func TestSetKymaStatusDeletingUseCase_Execute_VerifyRepositoryCall(t *testing.T)
 		shared.StateDeleting,
 		"waiting for modules to be deleted").Return(nil)
 
-	useCase := NewSetKymaStatusDeletingUseCase(mockRepo)
+	useCase := usecases.NewSetKymaStatusDeletingUseCase(mockRepo)
 
 	useCase.Execute(context.Background(), kyma)
 
@@ -183,22 +175,13 @@ func TestSetKymaStatusDeletingUseCase_Execute_VerifyRepositoryCall(t *testing.T)
 		"waiting for modules to be deleted")
 }
 
-func TestSetKymaStatusDeletingUseCase_Constants(t *testing.T) {
-	// Test that constants have expected values
-	assert.Equal(t, usecase.SetKcpKymaStateDeleting, useCase)
-	assert.Equal(t, shared.StateDeleting, state)
-	assert.Equal(t, "waiting for modules to be deleted", lastOperationMessage)
-}
-
 type kymaStatusRepositoryStub struct {
 	mock.Mock
 }
 
-func (m *kymaStatusRepositoryStub) UpdateKymaStatus(ctx context.Context,
+func (m *kymaStatusRepositoryStub) UpdateStatusDeleting(ctx context.Context,
 	kyma *v1beta2.Kyma,
-	newState shared.State,
-	message string,
 ) error {
-	args := m.Called(ctx, kyma, newState, message)
+	args := m.Called(ctx, kyma)
 	return args.Error(0)
 }

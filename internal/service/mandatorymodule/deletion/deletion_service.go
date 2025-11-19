@@ -4,13 +4,11 @@ import (
 	"context"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/result"
 )
 
 type UseCase interface {
 	IsApplicable(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error)
 	Execute(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) error
-	Name() result.UseCase
 }
 
 type Service struct {

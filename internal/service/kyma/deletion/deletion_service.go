@@ -16,6 +16,7 @@ var (
 type UseCase interface {
 	IsApplicable(ctx context.Context, mrm *v1beta2.Kyma) (bool, error)
 	Execute(ctx context.Context, mrm *v1beta2.Kyma) result.Result
+	Name() result.UseCase
 }
 
 type Service struct {

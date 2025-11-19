@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	// TODO: discuss whether this message needs to be changed
 	lastOperationDeleting = "waiting for modules to be deleted"
 )
 
