@@ -11,6 +11,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/errors"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 )
@@ -36,7 +37,13 @@ func (r *Repository) Get(ctx context.Context, kymaName types.NamespacedName) (*v
 	}
 
 	kyma := &v1beta2.Kyma{}
-	if err := skrClient.Get(ctx, kymaName, kyma); err != nil {
+	if err := skrClient.Get(ctx,
+		types.NamespacedName{
+			Name:      shared.DefaultRemoteKymaName,
+			Namespace: shared.DefaultRemoteNamespace,
+		},
+		kyma,
+	); err != nil {
 		return nil, err
 	}
 
@@ -50,9 +57,13 @@ func (r *Repository) SetStateDeleting(ctx context.Context, kymaName types.Namesp
 	}
 
 	kyma := &v1beta2.Kyma{
+		TypeMeta: apimetav1.TypeMeta{
+			Kind:       string(shared.KymaKind),
+			APIVersion: v1beta2.GroupVersion.String(),
+		},
 		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      kymaName.Name,
-			Namespace: kymaName.Namespace,
+			Name:      shared.DefaultRemoteKymaName,
+			Namespace: shared.DefaultRemoteNamespace,
 		},
 		Status: v1beta2.KymaStatus{
 			State: shared.StateDeleting,
@@ -68,6 +79,7 @@ func (r *Repository) SetStateDeleting(ctx context.Context, kymaName types.Namesp
 		kyma,
 		client.Apply,
 		client.ForceOwnership,
+		client.FieldOwner(fieldowners.LifecycleManager),
 	)
 }
 

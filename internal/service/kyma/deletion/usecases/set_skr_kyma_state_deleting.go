@@ -29,7 +29,8 @@ func NewSetSkrKymaStateDeleting(kymaStatusRepo KymaStatusRepo,
 	skrAccessSecretRepo SkrAccessSecretRepo,
 ) *SetSkrKymaStateDeleting {
 	return &SetSkrKymaStateDeleting{
-		kymaStatusRepo: kymaStatusRepo,
+		kymaStatusRepo:      kymaStatusRepo,
+		skrAccessSecretRepo: skrAccessSecretRepo,
 	}
 }
 
