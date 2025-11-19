@@ -32,6 +32,11 @@ func (r *Repository) Get(ctx context.Context, name string) (*apicorev1.Secret, e
 	return secret, nil
 }
 
+func (r *Repository) Exists(ctx context.Context, kymaName string) (bool, error) {
+	secret, err := r.Get(ctx, kymaName)
+	return secret != nil, err
+}
+
 func (r *Repository) List(ctx context.Context, labelSelector k8slabels.Selector) (*apicorev1.SecretList, error) {
 	secretList := &apicorev1.SecretList{}
 	err := r.kcpClient.List(ctx, secretList, &client.ListOptions{
