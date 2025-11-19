@@ -126,11 +126,9 @@ func TestSetKymaStatusDeletingUseCase_Execute(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			mockRepo := &kymaStatusRepositoryStub{}
-			mockRepo.On("UpdateKymaStatus",
+			mockRepo.On("UpdateStatusDeleting",
 				mock.Anything,
-				testCase.kyma,
-				shared.StateDeleting,
-				"waiting for modules to be deleted").Return(testCase.repoError)
+				testCase.kyma).Return(testCase.repoError)
 
 			useCase := usecases.NewSetKymaStatusDeletingUseCase(mockRepo)
 
@@ -158,22 +156,18 @@ func TestSetKymaStatusDeletingUseCase_Execute_VerifyRepositoryCall(t *testing.T)
 		},
 	}
 
-	mockRepo.On("UpdateKymaStatus",
+	mockRepo.On("UpdateStatusDeleting",
 		mock.Anything,
-		kyma,
-		shared.StateDeleting,
-		"waiting for modules to be deleted").Return(nil)
+		kyma).Return(nil)
 
 	useCase := usecases.NewSetKymaStatusDeletingUseCase(mockRepo)
 
 	useCase.Execute(context.Background(), kyma)
 
 	// Verify the repository was called with the correct parameters
-	mockRepo.AssertCalled(t, "UpdateKymaStatus",
+	mockRepo.AssertCalled(t, "UpdateStatusDeleting",
 		mock.Anything,
-		kyma,
-		shared.StateDeleting,
-		"waiting for modules to be deleted")
+		kyma)
 }
 
 type kymaStatusRepositoryStub struct {
