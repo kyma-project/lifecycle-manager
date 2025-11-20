@@ -35,12 +35,12 @@ const (
 )
 
 type SkrContext struct {
-	Client
+	client.Client
 
 	event event.Event
 }
 
-func NewSkrContext(client Client, event event.Event) *SkrContext {
+func NewSkrContext(client client.Client, event event.Event) *SkrContext {
 	return &SkrContext{
 		Client: client,
 		event:  event,
