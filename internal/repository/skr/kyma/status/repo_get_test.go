@@ -12,7 +12,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/errors"
-	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
@@ -85,7 +84,7 @@ func TestGet_ClientNotFound_ReturnsError(t *testing.T) {
 }
 
 type getClientStub struct {
-	remote.Client
+	client.Client
 
 	called bool
 	object *v1beta2.Kyma

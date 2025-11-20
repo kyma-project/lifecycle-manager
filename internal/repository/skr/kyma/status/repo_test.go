@@ -2,17 +2,15 @@ package status_test
 
 import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/internal/remote"
 )
 
 type skrClientCacheStub struct {
-	client remote.Client
+	client client.Client
 
 	receivedKey client.ObjectKey
 }
 
-func (s *skrClientCacheStub) Get(key client.ObjectKey) remote.Client {
+func (s *skrClientCacheStub) Get(key client.ObjectKey) client.Client {
 	s.receivedKey = key
 	return s.client
 }

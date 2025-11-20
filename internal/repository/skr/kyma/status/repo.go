@@ -13,11 +13,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/errors"
-	"github.com/kyma-project/lifecycle-manager/internal/remote"
 )
 
 type SkrClientCache interface {
-	Get(key client.ObjectKey) remote.Client
+	Get(key client.ObjectKey) client.Client
 }
 
 type Repository struct {
