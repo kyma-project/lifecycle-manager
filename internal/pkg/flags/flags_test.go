@@ -101,7 +101,7 @@ func Test_ConstantFlags(t *testing.T) {
 		{
 			constName:     "DefaultSkrClientBurst",
 			constValue:    strconv.Itoa(DefaultSkrClientBurst),
-			expectedValue: "10",
+			expectedValue: "100",
 		},
 		{
 			constName:     "DefaultPprofServerTimeout",
