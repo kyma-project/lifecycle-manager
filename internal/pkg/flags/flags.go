@@ -182,13 +182,13 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.WatcherRequeueSuccessInterval, "watcher-requeue-success-interval",
 		DefaultWatcherRequeueSuccessInterval,
 		"Duration after which a Watcher in Ready state is enqueued for reconciliation.")
-	flag.Float64Var(&flagVar.ClientQPS, "k8s-client-qps", DefaultClientQPS,
+	flag.IntVar(&flagVar.ClientQPS, "k8s-client-qps", DefaultClientQPS,
 		"Maximum queries per second (QPS) limit for the Kubernetes client. Controls how many requests"+
 			" can be made to the Kubernetes API server per second in steady state.")
 	flag.IntVar(&flagVar.ClientBurst, "k8s-client-burst", DefaultClientBurst,
 		"Maximum burst size for throttling Kubernetes API requests. Allows temporarily exceeding the QPS"+
 			" limit when there are sudden spikes in request volume.")
-	flag.Float64Var(&flagVar.SkrClientQPS, "k8s-skr-client-qps", DefaultSkrClientQPS,
+	flag.IntVar(&flagVar.SkrClientQPS, "k8s-skr-client-qps", DefaultSkrClientQPS,
 		"Maximum queries per second (QPS) limit for the SKR Kubernetes client. Controls how many requests"+
 			" can be made to the Kubernetes API server per second in steady state.")
 	flag.IntVar(&flagVar.SkrClientBurst, "k8s-skr-client-burst", DefaultSkrClientBurst,
@@ -328,9 +328,9 @@ type FlagVar struct {
 	WatcherRequeueSuccessInterval                  time.Duration
 	MandatoryModuleRequeueSuccessInterval          time.Duration
 	MandatoryModuleDeletionRequeueSuccessInterval  time.Duration
-	ClientQPS                                      float64
+	ClientQPS                                      int
 	ClientBurst                                    int
-	SkrClientQPS                                   float64
+	SkrClientQPS                                   int
 	SkrClientBurst                                 int
 	IstioNamespace                                 string
 	IstioGatewayName                               string
