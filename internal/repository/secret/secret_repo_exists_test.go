@@ -49,7 +49,6 @@ func TestExists_ClientCallSucceeds_ReturnsNotExists(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, result)
 	assert.True(t, clientStub.called)
-	// maps to the r
 	assert.Equal(t,
 		client.ObjectKey{Name: kymaName, Namespace: repoNamespace},
 		clientStub.key)
