@@ -31,8 +31,8 @@ const (
 	DefaultWatcherRequeueSuccessInterval                                = 1 * time.Minute
 	DefaultClientQPS                                                    = 1000
 	DefaultClientBurst                                                  = 2000
-	DefaultSkrClientQPS                                                 = 5
-	DefaultSkrClientBurst                                               = 10
+	DefaultSkrClientQPS                                                 = 50
+	DefaultSkrClientBurst                                               = 100
 	DefaultPprofServerTimeout                                           = 90 * time.Second
 	RateLimiterBurstDefault                                             = 2000
 	RateLimiterFrequencyDefault                                         = 1000
