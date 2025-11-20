@@ -31,6 +31,8 @@ const (
 	DefaultWatcherRequeueSuccessInterval                                = 1 * time.Minute
 	DefaultClientQPS                                                    = 1000
 	DefaultClientBurst                                                  = 2000
+	DefaultSkrClientQPS                                                 = 5
+	DefaultSkrClientBurst                                               = 10
 	DefaultPprofServerTimeout                                           = 90 * time.Second
 	RateLimiterBurstDefault                                             = 2000
 	RateLimiterFrequencyDefault                                         = 1000
@@ -186,10 +188,10 @@ func DefineFlagVar() *FlagVar {
 	flag.IntVar(&flagVar.ClientBurst, "k8s-client-burst", DefaultClientBurst,
 		"Maximum burst size for throttling Kubernetes API requests. Allows temporarily exceeding the QPS"+
 			" limit when there are sudden spikes in request volume.")
-	flag.Float64Var(&flagVar.SkrClientQPS, "k8s-skr-client-qps", DefaultClientQPS,
+	flag.Float64Var(&flagVar.SkrClientQPS, "k8s-skr-client-qps", DefaultSkrClientQPS,
 		"Maximum queries per second (QPS) limit for the SKR Kubernetes client. Controls how many requests"+
 			" can be made to the Kubernetes API server per second in steady state.")
-	flag.IntVar(&flagVar.SkrClientBurst, "k8s-skr-client-burst", DefaultClientBurst,
+	flag.IntVar(&flagVar.SkrClientBurst, "k8s-skr-client-burst", DefaultSkrClientBurst,
 		"Maximum burst size for throttling SKR Kubernetes API requests. Allows temporarily exceeding the QPS"+
 			" limit when there are sudden spikes in request volume.")
 	flag.BoolVar(&flagVar.EnableWebhooks, "enable-webhooks", false,
