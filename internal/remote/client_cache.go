@@ -19,16 +19,16 @@ const (
 // Client. I don't think this makes much sense. We should consider to change this to just client.Client to make things
 // re-usable easier.
 type ClientCache struct {
-	internal *ttlcache.Cache[client.ObjectKey, Client]
+	internal *ttlcache.Cache[client.ObjectKey, client.Client]
 }
 
 func NewClientCache() *ClientCache {
-	cache := &ClientCache{internal: ttlcache.New[client.ObjectKey, Client]()}
+	cache := &ClientCache{internal: ttlcache.New[client.ObjectKey, client.Client]()}
 	go cache.internal.Start()
 	return cache
 }
 
-func (c *ClientCache) Get(key client.ObjectKey) Client {
+func (c *ClientCache) Get(key client.ObjectKey) client.Client {
 	cachedClient := c.internal.Get(key)
 	if cachedClient != nil {
 		return cachedClient.Value()
@@ -36,7 +36,7 @@ func (c *ClientCache) Get(key client.ObjectKey) Client {
 	return nil
 }
 
-func (c *ClientCache) Add(key client.ObjectKey, value Client) {
+func (c *ClientCache) Add(key client.ObjectKey, value client.Client) {
 	c.internal.Set(key, value, getRandomTTL())
 }
 

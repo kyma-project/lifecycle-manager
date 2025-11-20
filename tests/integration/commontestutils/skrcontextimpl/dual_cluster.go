@@ -16,8 +16,9 @@ import (
 )
 
 var (
-	ErrEmptyRestConfig  = errors.New("rest.Config is nil")
-	ErrSkrEnvNotStarted = errors.New("SKR envtest environment not started")
+	ErrEmptyRestConfig             = errors.New("rest.Config is nil")
+	ErrSkrEnvNotStarted            = errors.New("SKR envtest environment not started")
+	ErrFailedToGetSkrClientFromMap = errors.New("failed to get SKR client from map")
 )
 
 type Stopper interface {
@@ -77,8 +78,8 @@ func (f *DualClusterFactory) Init(_ context.Context, kyma types.NamespacedName) 
 		_ = skrEnv.Stop()
 		return err
 	}
-	newClient := remote.NewClientWithConfig(skrClient, authUser.Config())
-	f.clients.Store(kyma.Name, newClient)
+
+	f.clients.Store(kyma.Name, skrClient)
 
 	// track this envtest so Stop() can stop all started envs
 	f.SkrEnvs.Store(kyma.Name, skrEnv)
@@ -91,9 +92,9 @@ func (f *DualClusterFactory) Get(kyma types.NamespacedName) (*remote.SkrContext,
 	if !ok {
 		return nil, ErrSkrEnvNotStarted
 	}
-	skrClient, ok := value.(*remote.ConfigAndClient)
+	skrClient, ok := value.(client.Client)
 	if !ok {
-		return nil, ErrSkrEnvNotStarted
+		return nil, ErrFailedToGetSkrClientFromMap
 	}
 	return remote.NewSkrContext(skrClient, f.event), nil
 }

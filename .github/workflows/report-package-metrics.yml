@@ -5,11 +5,7 @@ permissions: { }
 
 on:
   pull_request:
-    types:
-      - opened
-      - reopened
-      - edited
-      - synchronize
+    types: [ opened, synchronize, reopened, ready_for_review ]
 
 env:
   spm: ${{ github.workspace }}/scripts/coverage-metrics/bin/utils/package-metrics/spm.py

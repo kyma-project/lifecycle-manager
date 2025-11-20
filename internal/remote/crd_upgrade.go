@@ -108,7 +108,7 @@ const (
 	SKR CrdType = "SKR"
 )
 
-func updateRemoteCRD(ctx context.Context, kyma *v1beta2.Kyma, runtimeClient Client,
+func updateRemoteCRD(ctx context.Context, kyma *v1beta2.Kyma, runtimeClient client.Client,
 	crdFromRuntime *apiextensionsv1.CustomResourceDefinition, kcpCrd *apiextensionsv1.CustomResourceDefinition,
 ) (bool, error) {
 	if ShouldPatchRemoteCRD(crdFromRuntime, kcpCrd, kyma) {
@@ -148,7 +148,9 @@ func getAnnotation(crd *apiextensionsv1.CustomResourceDefinition, crdType CrdTyp
 	return fmt.Sprintf("%s-%s-crd-generation", strings.ToLower(crd.Spec.Names.Kind), strings.ToLower(string(crdType)))
 }
 
-func (s *SyncCrdsUseCase) fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, skrClient Client, kyma *v1beta2.Kyma,
+func (s *SyncCrdsUseCase) fetchCrdsAndUpdateKymaAnnotations(ctx context.Context,
+	skrClient client.Client,
+	kyma *v1beta2.Kyma,
 	plural string,
 ) (bool, error) {
 	kcpCrd, skrCrd, err := s.fetchCrds(ctx, skrClient, plural)
@@ -175,7 +177,7 @@ func (s *SyncCrdsUseCase) fetchCrdsAndUpdateKymaAnnotations(ctx context.Context,
 	return crdUpdated, nil
 }
 
-func (s *SyncCrdsUseCase) fetchCrds(ctx context.Context, skrClient Client,
+func (s *SyncCrdsUseCase) fetchCrds(ctx context.Context, skrClient client.Client,
 	plural string,
 ) (*apiextensionsv1.CustomResourceDefinition, *apiextensionsv1.CustomResourceDefinition, error) {
 	kcpCrdName := fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group)
