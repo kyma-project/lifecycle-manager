@@ -96,7 +96,7 @@ func Test_ConstantFlags(t *testing.T) {
 		{
 			constName:     "DefaultSkrClientQPS",
 			constValue:    strconv.Itoa(DefaultSkrClientQPS),
-			expectedValue: "5",
+			expectedValue: "50",
 		},
 		{
 			constName:     "DefaultSkrClientBurst",
