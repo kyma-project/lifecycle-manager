@@ -46,8 +46,10 @@ This document provides a list of flags that can be set to control some specific 
 
 | Flag               | Type  | Default Value | Description                                                                                                                                                          |
 |--------------------|-------|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `k8s-client-qps`   | float | 300           | Maximum queries per second (QPS) limit for the Kubernetes client. Controls how many requests can be made to the Kubernetes API server per second in the steady state |
-| `k8s-client-burst` | int   | 600           | Maximum burst size for throttling Kubernetes API requests. Allows temporarily exceeding the QPS limit when there are sudden spikes in request volume                 |
+| `k8s-client-qps`   | int   | 1000           | Maximum queries per second (QPS) limit for the Kubernetes client. Controls how many requests can be made to the Kubernetes API server per second in the steady state |
+| `k8s-client-burst` | int   | 2000           | Maximum burst size for throttling Kubernetes API requests. Allows temporarily exceeding the QPS limit when there are sudden spikes in request volume                 |
+| `k8s-client-qps`   | int   | 5           | Maximum queries per second (QPS) limit for the SKR Kubernetes client. Controls how many requests can be made to the Kubernetes API server per second in the steady state |
+| `k8s-client-burst` | int   | 10           | Maximum burst size for throttling SKR Kubernetes API requests. Allows temporarily exceeding the QPS limit when there are sudden spikes in request volume                 |
 
 ## Certificates Configuration
 
