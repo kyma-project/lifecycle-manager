@@ -1,10 +1,10 @@
 name: Verify Unit Test Coverage
 
-permissions: {}
+permissions: { }
 
 on:
   pull_request:
-    types: [opened, edited, synchronize, reopened, ready_for_review]
+    types: [ opened, synchronize, reopened, ready_for_review ]
 
 env:
   coverage_guard: ${{ github.workspace }}/scripts/coverage-metrics/bin/utils/unit-test-coverage/coverage_guard.py
