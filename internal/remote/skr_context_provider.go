@@ -64,12 +64,11 @@ func (k *KymaSkrContextProvider) Init(ctx context.Context, kyma types.Namespaced
 	// skrClients are cached anyways.
 	restConfig.Proxy = http.ProxyFromEnvironment
 
-	clnt, err := client.New(restConfig, client.Options{Scheme: k.kcpClient.Scheme()})
+	skrClient, err := client.New(restConfig, client.Options{Scheme: k.kcpClient.Scheme()})
 	if err != nil {
 		return fmt.Errorf("failed to create lookup client: %w", err)
 	}
 
-	skrClient := clnt
 	k.clientCache.Add(kyma, skrClient)
 
 	return nil
