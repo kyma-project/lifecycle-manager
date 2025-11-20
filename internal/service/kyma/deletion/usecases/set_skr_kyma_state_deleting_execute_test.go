@@ -3,13 +3,14 @@ package usecases_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion/usecases"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestExecute_Succeeds(t *testing.T) {

@@ -3,9 +3,10 @@ package usecases_test
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/types"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion/usecases"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 type kymaStatusRepoStub struct {

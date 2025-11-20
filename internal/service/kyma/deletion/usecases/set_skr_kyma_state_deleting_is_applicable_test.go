@@ -5,13 +5,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion/usecases"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestIsApplicable_False_DeletionTimestampNotSet(t *testing.T) {
