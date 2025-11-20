@@ -203,7 +203,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		remoteClientCache,
 		eventRecorder,
 		accessManagerService,
-	flagVar.SkrClientQPS,
+		flagVar.SkrClientQPS,
 		flagVar.SkrClientBurst)
 	var skrWebhookManager *watcher.SkrWebhookManifestManager
 	var options ctrlruntime.Options
