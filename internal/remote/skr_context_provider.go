@@ -24,18 +24,24 @@ type KymaSkrContextProvider struct {
 	kcpClient            client.Client
 	event                event.Event
 	accessManagerService *accessmanager.Service
+	skrQps               float32
+	skrBurst             int
 }
 
 func NewKymaSkrContextProvider(kcpClient client.Client,
 	clientCache *ClientCache,
 	event event.Event,
 	accessManagerService *accessmanager.Service,
+	skrQps float32,
+	skrBurst int,
 ) *KymaSkrContextProvider {
 	return &KymaSkrContextProvider{
 		clientCache:          clientCache,
 		kcpClient:            kcpClient,
 		event:                event,
 		accessManagerService: accessManagerService,
+		skrQps:               skrQps,
+		skrBurst:             skrBurst,
 	}
 }
 
@@ -50,6 +56,9 @@ func (k *KymaSkrContextProvider) Init(ctx context.Context, kyma types.Namespaced
 	if err != nil {
 		return fmt.Errorf("failed to create rest config from kubeconfig: %w", err)
 	}
+
+	restConfig.QPS = k.skrQps
+	restConfig.Burst = k.skrBurst
 
 	// Required to prevent memory leak by avoiding caching in transport.tlsTransportCache.
 	// skrClients are cached anyways.
