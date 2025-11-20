@@ -14,7 +14,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/errors"
-	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
@@ -93,7 +92,7 @@ func TestSetStateDeleting_ClientNotFound(t *testing.T) {
 }
 
 type clientStub struct {
-	remote.Client
+	client.Client
 
 	status client.SubResourceWriter
 }
