@@ -11,7 +11,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 )
 
-type KymaStatusRepo interface {
+type SkrKymaStatusRepo interface {
 	SetStateDeleting(ctx context.Context, namespacedName types.NamespacedName) error
 	Get(ctx context.Context, namespacedName types.NamespacedName) (*v1beta2.KymaStatus, error)
 }
@@ -21,11 +21,11 @@ type SkrAccessSecretRepo interface {
 }
 
 type SetSkrKymaStateDeleting struct {
-	kymaStatusRepo      KymaStatusRepo
+	kymaStatusRepo      SkrKymaStatusRepo
 	skrAccessSecretRepo SkrAccessSecretRepo
 }
 
-func NewSetSkrKymaStateDeleting(kymaStatusRepo KymaStatusRepo,
+func NewSetSkrKymaStateDeleting(kymaStatusRepo SkrKymaStatusRepo,
 	skrAccessSecretRepo SkrAccessSecretRepo,
 ) *SetSkrKymaStateDeleting {
 	return &SetSkrKymaStateDeleting{

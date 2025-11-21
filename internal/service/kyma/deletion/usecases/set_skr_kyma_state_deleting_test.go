@@ -25,7 +25,7 @@ func TestExecute_Succeeds(t *testing.T) {
 		},
 	}
 
-	kymaStatusRepo := &kymaStatusRepoStub{}
+	kymaStatusRepo := &skrKymaStatusRepoStub{}
 
 	uc := usecases.NewSetSkrKymaStateDeleting(kymaStatusRepo, nil)
 
@@ -45,7 +45,7 @@ func TestExecute_Fails(t *testing.T) {
 		},
 	}
 
-	kymaStatusRepo := &kymaStatusRepoStub{
+	kymaStatusRepo := &skrKymaStatusRepoStub{
 		err: assert.AnError,
 	}
 
@@ -133,7 +133,7 @@ func TestIsApplicable_False_KymaAlreadyInDeletingState(t *testing.T) {
 		},
 	}
 
-	kymaStatusRepo := &kymaStatusRepoStub{
+	kymaStatusRepo := &skrKymaStatusRepoStub{
 		status: &v1beta2.KymaStatus{
 			State: shared.StateDeleting,
 		},
@@ -163,7 +163,7 @@ func TestIsApplicable_True(t *testing.T) {
 		},
 	}
 
-	kymaStatusRepo := &kymaStatusRepoStub{
+	kymaStatusRepo := &skrKymaStatusRepoStub{
 		status: &v1beta2.KymaStatus{
 			State: shared.StateReady,
 		},
@@ -199,8 +199,8 @@ func (r *skrAccessSecretRepoStub) Exists(_ context.Context, kymaName string) (bo
 	return r.exists, r.err
 }
 
-type kymaStatusRepoStub struct {
-	usecases.KymaStatusRepo
+type skrKymaStatusRepoStub struct {
+	usecases.SkrKymaStatusRepo
 
 	called         bool
 	namespacedName types.NamespacedName
@@ -208,13 +208,13 @@ type kymaStatusRepoStub struct {
 	err            error
 }
 
-func (r *kymaStatusRepoStub) Get(_ context.Context, namespacedName types.NamespacedName) (*v1beta2.KymaStatus, error) {
+func (r *skrKymaStatusRepoStub) Get(_ context.Context, namespacedName types.NamespacedName) (*v1beta2.KymaStatus, error) {
 	r.called = true
 	r.namespacedName = namespacedName
 	return r.status, r.err
 }
 
-func (r *kymaStatusRepoStub) SetStateDeleting(_ context.Context, namespacedName types.NamespacedName) error {
+func (r *skrKymaStatusRepoStub) SetStateDeleting(_ context.Context, namespacedName types.NamespacedName) error {
 	r.called = true
 	r.namespacedName = namespacedName
 	return r.err
