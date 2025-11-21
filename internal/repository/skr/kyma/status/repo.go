@@ -15,6 +15,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/errors"
 )
 
+const operationSetStateDeleting = ".status.State set to Deleting"
+
 type SkrClientCache interface {
 	Get(key client.ObjectKey) client.Client
 }
@@ -67,7 +69,7 @@ func (r *Repository) SetStateDeleting(ctx context.Context, kymaName types.Namesp
 		Status: v1beta2.KymaStatus{
 			State: shared.StateDeleting,
 			LastOperation: shared.LastOperation{
-				Operation:      ".status.State set to Deleting",
+				Operation:      operationSetStateDeleting,
 				LastUpdateTime: apimetav1.NewTime(time.Now()),
 			},
 		},
