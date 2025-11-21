@@ -17,7 +17,7 @@ type SkrKymaStatusRepo interface {
 }
 
 type SkrAccessSecretRepo interface {
-	Exists(ctx context.Context, kymaName string) (bool, error)
+	Exists(ctx context.Context, name string) (bool, error)
 }
 
 type SetSkrKymaStateDeleting struct {

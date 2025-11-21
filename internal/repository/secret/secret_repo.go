@@ -32,8 +32,8 @@ func (r *Repository) Get(ctx context.Context, name string) (*apicorev1.Secret, e
 	return secret, nil
 }
 
-func (r *Repository) Exists(ctx context.Context, kymaName string) (bool, error) {
-	secret, err := r.Get(ctx, kymaName)
+func (r *Repository) Exists(ctx context.Context, name string) (bool, error) {
+	secret, err := r.Get(ctx, name)
 	return secret != nil && secret.GetName() != "", err
 }
 
