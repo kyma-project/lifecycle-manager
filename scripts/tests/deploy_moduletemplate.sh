@@ -36,21 +36,49 @@ mandatory: true
 EOF
 fi
 
-# Add moduleversion to `bdba` list in sec-scanners-config.yaml
-yq eval '.bdba += ["europe-docker.pkg.dev/kyma-project/prod/template-operator:'"${RELEASE_VERSION}"'"]' -i sec-scanners-config.yaml
+# Replace the bdba list with the current module version
+yq eval '.bdba = ["europe-docker.pkg.dev/kyma-project/prod/template-operator:'"${RELEASE_VERSION}"'"]' -i sec-scanners-config.yaml
 
-cat module-config-for-e2e.yaml
-modulectl create --config-file ./module-config-for-e2e.yaml --registry http://localhost:5111 --insecure
+MODULE_CONFIG="module-config-for-e2e.yaml"
+REGISTRY_URL="localhost:5111"
+COMPONENT_CONSTRUCTOR_FILE="./component-constructor.yaml"
+CTF_DIR="./component-ctf"
+TEMPLATE_FILE="template.yaml"
+MANIFEST_FILE="template-operator.yaml"
+DEFAULT_CR_FILE="default-sample-cr.yaml"
 
-cat template.yaml
+echo "Module config used to create OCM artifact:"
+cat "${MODULE_CONFIG}"
+
+# Configure OCM to use insecure HTTP for local registry
+OCM_CONFIG="$(dirname "$0")/ocm-config-local-registry.yaml"
+
+# Generate ModuleTemplate using modulectl
+echo "Generating CTF with modulectl:$(modulectl version)..."
+modulectl create \
+  --config-file "${MODULE_CONFIG}" \
+  --disable-ocm-registry-push \
+  --output-constructor-file "${COMPONENT_CONSTRUCTOR_FILE}"
+
+echo "component-constructor file created:"
+cat "${COMPONENT_CONSTRUCTOR_FILE}"
+
+# Transfer CTF to registry using ocm cli
+echo "Transferring component version to registry using ocm cli..."
+ocm --config "${OCM_CONFIG}" add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
+ocm --config "${OCM_CONFIG}" transfer ctf --overwrite --no-update "${CTF_DIR}" "http://${REGISTRY_URL}"
+
 echo "ModuleTemplate created successfully"
+yq -i '.metadata.namespace="kcp-system"' "${TEMPLATE_FILE}"
 
 if [ "${DEPLOY_MODULETEMPLATE}" == "true" ]; then
-kubectl apply -f template.yaml
-rm -f template.yaml
+  kubectl apply -f "${TEMPLATE_FILE}"
+  rm -f "${TEMPLATE_FILE}"
 fi
 
-rm -f module-config-for-e2e.yaml
-rm -f template-operator.yaml
-rm -f default-sample-cr.yaml
+# Cleanup temporary files
+rm -f "${MODULE_CONFIG}"
+rm -f "${MANIFEST_FILE}"
+rm -f "${DEFAULT_CR_FILE}"
+rm -rf "${CTF_DIR}"
 echo "Temporary files removed successfully"
