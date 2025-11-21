@@ -47,17 +47,21 @@ TEMPLATE_FILE="template.yaml"
 MANIFEST_FILE="template-operator.yaml"
 DEFAULT_CR_FILE="default-sample-cr.yaml"
 
+echo "Module config used to create OCM artifact:"
 cat "${MODULE_CONFIG}"
 
 # Configure OCM to use insecure HTTP for local registry
 OCM_CONFIG="$(dirname "$0")/ocm-config-local-registry.yaml"
 
 # Generate ModuleTemplate using modulectl
-echo "Generating CTF with modulectl..."
+echo "Generating CTF with modulectl:$(modulectl version)..."
 modulectl create \
   --config-file "${MODULE_CONFIG}" \
   --disable-ocm-registry-push \
   --output-constructor-file "${COMPONENT_CONSTRUCTOR_FILE}"
+
+echo "component-constructor file created:"
+cat "${COMPONENT_CONSTRUCTOR_FILE}"
 
 # Transfer CTF to registry using ocm cli
 echo "Transferring component version to registry using ocm cli..."
