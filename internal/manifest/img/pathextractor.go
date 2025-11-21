@@ -2,6 +2,7 @@ package img
 
 import (
 	"archive/tar"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -135,7 +136,17 @@ func (p PathExtractor) ExtractLayer(tarPath string) (string, error) {
 	}
 	defer tarFile.Close()
 
-	tarReader := tar.NewReader(tarFile)
+	var tarReader *tar.Reader
+	gzipReader, err := gzip.NewReader(tarFile)
+	if err == nil {
+		defer gzipReader.Close()
+		tarReader = tar.NewReader(gzipReader)
+	} else {
+		if _, err := tarFile.Seek(0, 0); err != nil {
+			return "", fmt.Errorf("failed to seek file: %w", err)
+		}
+		tarReader = tar.NewReader(tarFile)
+	}
 	for {
 		header, err := tarReader.Next()
 		if errors.Is(err, io.EOF) {

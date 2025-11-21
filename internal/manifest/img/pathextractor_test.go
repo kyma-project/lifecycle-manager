@@ -3,6 +3,7 @@ package img_test
 import (
 	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,7 +20,19 @@ import (
 )
 
 func TestPathExtractor_ExtractLayer(t *testing.T) {
-	content, tarFilePath := generateDummyTarFile(t)
+	t.Run("should extract uncompressed tar file", func(t *testing.T) {
+		content, tarFilePath := generateDummyTarFile(t, false)
+		testExtractLayer(t, content, tarFilePath)
+	})
+
+	t.Run("should extract gzip-compressed tar file", func(t *testing.T) {
+		content, tarFilePath := generateDummyTarFile(t, true)
+		testExtractLayer(t, content, tarFilePath)
+	})
+}
+
+func testExtractLayer(t *testing.T, content []byte, tarFilePath string) {
+	t.Helper()
 	pathExtractor := img.NewPathExtractor()
 	numGoroutines := 5
 	resultCh := make(chan string, numGoroutines)
@@ -115,9 +128,11 @@ func TestPathExtractor_FetchLayerToFile(t *testing.T) {
 	}
 }
 
-func generateDummyTarFile(t *testing.T) ([]byte, string) {
+func generateDummyTarFile(t *testing.T, compress bool) ([]byte, string) {
 	t.Helper()
 	var buf bytes.Buffer
+
+	// Create tar writer
 	tarWriter := tar.NewWriter(&buf)
 
 	content := []byte("file-content")
@@ -135,8 +150,28 @@ func generateDummyTarFile(t *testing.T) ([]byte, string) {
 
 	err = tarWriter.Close()
 	require.NoError(t, err)
-	tarFilePath := filepath.Join(os.TempDir(), "test.tar")
-	err = os.WriteFile(tarFilePath, buf.Bytes(), 0o600)
+
+	// Get tar bytes
+	tarBytes := buf.Bytes()
+
+	// Optionally compress with gzip
+	if compress {
+		var gzipBuf bytes.Buffer
+		gzipWriter := gzip.NewWriter(&gzipBuf)
+		_, err = gzipWriter.Write(tarBytes)
+		require.NoError(t, err)
+		err = gzipWriter.Close()
+		require.NoError(t, err)
+		tarBytes = gzipBuf.Bytes()
+	}
+
+	// Write to file
+	ext := ".tar"
+	if compress {
+		ext = ".tar.gz"
+	}
+	tarFilePath := filepath.Join(os.TempDir(), "test"+ext)
+	err = os.WriteFile(tarFilePath, tarBytes, 0o600)
 	require.NoError(t, err)
 	return content, tarFilePath
 }

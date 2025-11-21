@@ -110,7 +110,7 @@ func getOCIRef(
 	accessSpec *localblob.AccessSpec,
 ) (*OCI, error) {
 	layerRef := OCI{}
-	if accessSpec.MediaType == mime.MIME_TAR {
+	if accessSpec.MediaType == mime.MIME_TAR || accessSpec.MediaType == mime.MIME_TGZ {
 		layerRef.Type = string(v1beta2.OciDirType)
 	} else {
 		layerRef.Type = string(v1beta2.OciRefType)
