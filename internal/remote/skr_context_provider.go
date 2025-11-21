@@ -21,21 +21,27 @@ type SkrContextProvider interface {
 
 type KymaSkrContextProvider struct {
 	clientCache          *ClientCache
-	kcpClient            Client
+	kcpClient            client.Client
 	event                event.Event
 	accessManagerService *accessmanager.Service
+	skrQps               int
+	skrBurst             int
 }
 
-func NewKymaSkrContextProvider(kcpClient Client,
+func NewKymaSkrContextProvider(kcpClient client.Client,
 	clientCache *ClientCache,
 	event event.Event,
 	accessManagerService *accessmanager.Service,
+	skrQps int,
+	skrBurst int,
 ) *KymaSkrContextProvider {
 	return &KymaSkrContextProvider{
 		clientCache:          clientCache,
 		kcpClient:            kcpClient,
 		event:                event,
 		accessManagerService: accessManagerService,
+		skrQps:               skrQps,
+		skrBurst:             skrBurst,
 	}
 }
 
@@ -51,19 +57,18 @@ func (k *KymaSkrContextProvider) Init(ctx context.Context, kyma types.Namespaced
 		return fmt.Errorf("failed to create rest config from kubeconfig: %w", err)
 	}
 
-	restConfig.QPS = k.kcpClient.Config().QPS
-	restConfig.Burst = k.kcpClient.Config().Burst
+	restConfig.QPS = float32(k.skrQps)
+	restConfig.Burst = k.skrBurst
 
 	// Required to prevent memory leak by avoiding caching in transport.tlsTransportCache.
 	// skrClients are cached anyways.
 	restConfig.Proxy = http.ProxyFromEnvironment
 
-	clnt, err := client.New(restConfig, client.Options{Scheme: k.kcpClient.Scheme()})
+	skrClient, err := client.New(restConfig, client.Options{Scheme: k.kcpClient.Scheme()})
 	if err != nil {
 		return fmt.Errorf("failed to create lookup client: %w", err)
 	}
 
-	skrClient := NewClientWithConfig(clnt, restConfig)
 	k.clientCache.Add(kyma, skrClient)
 
 	return nil

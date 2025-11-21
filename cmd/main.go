@@ -187,9 +187,8 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		logger.Error(err, "unable to start manager")
 		os.Exit(bootstrapFailedExitCode)
 	}
-	kcpRestConfig := mgr.GetConfig()
 	remoteClientCache := remote.NewClientCache()
-	kcpClient := remote.NewClientWithConfig(mgr.GetClient(), kcpRestConfig)
+	kcpClient := mgr.GetClient()
 	eventRecorder := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 
 	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
@@ -200,8 +199,12 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	gatewayRepository := istiogateway.NewRepository(kcpClientWithoutCache)
 	accessSecretRepository := secretrepository.NewRepository(kcpClientWithoutCache, shared.DefaultControlPlaneNamespace)
 	accessManagerService := accessmanager.NewService(accessSecretRepository)
-	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient, remoteClientCache, eventRecorder,
-		accessManagerService)
+	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient,
+		remoteClientCache,
+		eventRecorder,
+		accessManagerService,
+		flagVar.SkrClientQPS,
+		flagVar.SkrClientBurst)
 	var skrWebhookManager *watcher.SkrWebhookManifestManager
 	var options ctrlruntime.Options
 	if flagVar.EnableKcpWatcher {

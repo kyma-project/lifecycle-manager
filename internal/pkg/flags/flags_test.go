@@ -94,6 +94,16 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: "2000",
 		},
 		{
+			constName:     "DefaultSkrClientQPS",
+			constValue:    strconv.Itoa(DefaultSkrClientQPS),
+			expectedValue: "50",
+		},
+		{
+			constName:     "DefaultSkrClientBurst",
+			constValue:    strconv.Itoa(DefaultSkrClientBurst),
+			expectedValue: "100",
+		},
+		{
 			constName:     "DefaultPprofServerTimeout",
 			constValue:    DefaultPprofServerTimeout.String(),
 			expectedValue: (90 * time.Second).String(),

@@ -12,7 +12,6 @@ import (
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -211,10 +210,8 @@ func (s *skrContextProviderStub) Init(_ context.Context, _ types.NamespacedName)
 	return nil
 }
 
-func (s *skrContextProviderStub) InvalidateCache(_ types.NamespacedName) {
-}
+func (s *skrContextProviderStub) InvalidateCache(_ types.NamespacedName) {}
 
-// mockSkrClient implements remote.Client interface for testing.
 type mockSkrClient struct {
 	client.Client
 
@@ -233,10 +230,6 @@ func (m *mockSkrClient) Patch(ctx context.Context,
 	m.patchedObject = obj
 	m.patchOptions = opts
 	return m.patchError
-}
-
-func (m *mockSkrClient) Config() *rest.Config {
-	return nil
 }
 
 // Implement minimal methods for client.Client interface that might be called.
