@@ -14,6 +14,9 @@ const (
 	ttlInSecondsLower, ttlInSecondsUpper = 23 * 60 * 60, 25 * 60 * 60
 )
 
+// TODO: consider to introduce a type/alias for "kymaId" which is used uniformly to identify
+// a Kyma instance and is used here in the client as well as when calling services/repo that only
+// need info about what Kyma to process
 type ClientCache struct {
 	internal *ttlcache.Cache[client.ObjectKey, client.Client]
 }

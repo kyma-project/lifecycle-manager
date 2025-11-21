@@ -9,8 +9,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 )
 
-const useCase = usecase.SetKcpKymaStateDeleting
-
 type KymaStatusRepository interface {
 	UpdateStatusDeleting(ctx context.Context, kyma *v1beta2.Kyma) error
 }
@@ -32,11 +30,11 @@ func (u *SetKymaStatusDeletingUseCase) IsApplicable(ctx context.Context, kyma *v
 func (u *SetKymaStatusDeletingUseCase) Execute(ctx context.Context, kyma *v1beta2.Kyma) result.Result {
 	err := u.kymaStatusRepo.UpdateStatusDeleting(ctx, kyma)
 	return result.Result{
-		UseCase: useCase,
+		UseCase: u.Name(),
 		Err:     err,
 	}
 }
 
 func (u *SetKymaStatusDeletingUseCase) Name() result.UseCase {
-	return useCase
+	return usecase.SetKcpKymaStateDeleting
 }

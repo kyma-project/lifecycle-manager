@@ -24,12 +24,14 @@ type Service struct {
 }
 
 func NewService(
-	setStatus UseCase,
+	setKcpKymaStateDeleting UseCase,
+	setSkrKymaStateDeleting UseCase,
 	deleteSkrKyma UseCase,
 ) *Service {
 	return &Service{
 		deletionSteps: []UseCase{
-			setStatus,
+			setKcpKymaStateDeleting,
+			setSkrKymaStateDeleting,
 			deleteSkrKyma,
 		},
 	}
