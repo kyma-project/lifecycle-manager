@@ -34,16 +34,16 @@ func NewSetSkrKymaStateDeleting(kymaStatusRepo SkrKymaStatusRepo,
 	}
 }
 
-func (u *SetSkrKymaStateDeleting) IsApplicable(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
-	if kyma.DeletionTimestamp.IsZero() {
+func (u *SetSkrKymaStateDeleting) IsApplicable(ctx context.Context, kcpKyma *v1beta2.Kyma) (bool, error) {
+	if kcpKyma.DeletionTimestamp.IsZero() {
 		return false, nil
 	}
 
-	if exists, err := u.skrAccessSecretRepo.Exists(ctx, kyma.GetName()); !exists || err != nil {
+	if exists, err := u.skrAccessSecretRepo.Exists(ctx, kcpKyma.GetName()); !exists || err != nil {
 		return false, err
 	}
 
-	status, err := u.kymaStatusRepo.Get(ctx, kyma.GetNamespacedName())
+	status, err := u.kymaStatusRepo.Get(ctx, kcpKyma.GetNamespacedName())
 	if err != nil {
 		return false, err
 	}
@@ -51,10 +51,10 @@ func (u *SetSkrKymaStateDeleting) IsApplicable(ctx context.Context, kyma *v1beta
 	return status.State != shared.StateDeleting, nil
 }
 
-func (u *SetSkrKymaStateDeleting) Execute(ctx context.Context, kyma *v1beta2.Kyma) result.Result {
+func (u *SetSkrKymaStateDeleting) Execute(ctx context.Context, kcpKyma *v1beta2.Kyma) result.Result {
 	return result.Result{
 		UseCase: u.Name(),
-		Err:     u.kymaStatusRepo.SetStateDeleting(ctx, kyma.GetNamespacedName()),
+		Err:     u.kymaStatusRepo.SetStateDeleting(ctx, kcpKyma.GetNamespacedName()),
 	}
 }
 
