@@ -14,10 +14,6 @@ const (
 	ttlInSecondsLower, ttlInSecondsUpper = 23 * 60 * 60, 25 * 60 * 60
 )
 
-// TODO: I think the only reason for using a custom remote.Client interface here is that we want to use the config
-// However, the only use for the config is in SkrContextProvider where we re-use the same QPS and burst for the SKR
-// Client. I don't think this makes much sense. We should consider to change this to just client.Client to make things
-// re-usable easier.
 type ClientCache struct {
 	internal *ttlcache.Cache[client.ObjectKey, client.Client]
 }
