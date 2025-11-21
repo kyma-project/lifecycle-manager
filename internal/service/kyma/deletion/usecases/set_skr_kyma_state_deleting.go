@@ -21,7 +21,7 @@ type SkrAccessSecretRepo interface {
 }
 
 type SetSkrKymaStateDeleting struct {
-	kymaStatusRepo      SkrKymaStatusRepo
+	skrKymaStatusRepo   SkrKymaStatusRepo
 	skrAccessSecretRepo SkrAccessSecretRepo
 }
 
@@ -29,7 +29,7 @@ func NewSetSkrKymaStateDeleting(kymaStatusRepo SkrKymaStatusRepo,
 	skrAccessSecretRepo SkrAccessSecretRepo,
 ) *SetSkrKymaStateDeleting {
 	return &SetSkrKymaStateDeleting{
-		kymaStatusRepo:      kymaStatusRepo,
+		skrKymaStatusRepo:   kymaStatusRepo,
 		skrAccessSecretRepo: skrAccessSecretRepo,
 	}
 }
@@ -43,7 +43,7 @@ func (u *SetSkrKymaStateDeleting) IsApplicable(ctx context.Context, kcpKyma *v1b
 		return false, err
 	}
 
-	status, err := u.kymaStatusRepo.Get(ctx, kcpKyma.GetNamespacedName())
+	status, err := u.skrKymaStatusRepo.Get(ctx, kcpKyma.GetNamespacedName())
 	if err != nil {
 		return false, err
 	}
@@ -54,7 +54,7 @@ func (u *SetSkrKymaStateDeleting) IsApplicable(ctx context.Context, kcpKyma *v1b
 func (u *SetSkrKymaStateDeleting) Execute(ctx context.Context, kcpKyma *v1beta2.Kyma) result.Result {
 	return result.Result{
 		UseCase: u.Name(),
-		Err:     u.kymaStatusRepo.SetStateDeleting(ctx, kcpKyma.GetNamespacedName()),
+		Err:     u.skrKymaStatusRepo.SetStateDeleting(ctx, kcpKyma.GetNamespacedName()),
 	}
 }
 
