@@ -142,13 +142,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !kyma.DeletionTimestamp.IsZero() {
-		skrSecret, err := r.SkrAccessSecretRepo.Get(ctx, kyma.Name)
-		if err != nil {
-			return r.requeueWithError(ctx, kyma, err)
+		_, err := r.SkrAccessSecretRepo.Get(ctx, kyma.Name)
+		if util.IsNotFound(err) {
+			return r.handleDeletedSkr(ctx, kyma)
 		}
 
-		if skrSecret == nil {
-			return r.handleDeletedSkr(ctx, kyma)
+		if err != nil {
+			return r.requeueWithError(ctx, kyma, err)
 		}
 	}
 
