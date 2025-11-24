@@ -91,7 +91,7 @@ func NewSKRWebhookManifestManager(kcpClient client.Client, skrContextFactory rem
 func (m *SkrWebhookManifestManager) Reconcile(ctx context.Context, kyma *v1beta2.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
-	skrContext, err := m.skrContextFactory.Get(kyma.GetNamespacedName())
+	skrContext, err := m.skrContextFactory.Get(ctx, kyma.GetNamespacedName())
 	if err != nil {
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
@@ -135,7 +135,7 @@ func (m *SkrWebhookManifestManager) Reconcile(ctx context.Context, kyma *v1beta2
 func (m *SkrWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
-	skrContext, err := m.skrContextFactory.Get(kyma.GetNamespacedName())
+	skrContext, err := m.skrContextFactory.Get(ctx, kyma.GetNamespacedName())
 	if err != nil {
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}

@@ -61,7 +61,7 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma).Should(Succeed())
 			Eventually(func() error {
-				skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+				skrClient, err = testSkrContextFactory.Get(context.Background(), kyma.GetNamespacedName())
 				return err
 			}, Timeout, Interval).Should(Succeed())
 
@@ -270,7 +270,7 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 
 		BeforeAll(func() {
 			Eventually(func() error {
-				skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+				skrClient, err = testSkrContextFactory.Get(context.Background(), kyma.GetNamespacedName())
 				return err
 			}, Timeout, Interval).Should(Succeed())
 		})

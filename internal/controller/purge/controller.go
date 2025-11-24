@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -47,6 +48,10 @@ const (
 	removeFinalizerFailure event.Reason = "RemovingPurgeFinalizerFailed"
 )
 
+type SkrAccessSecretRepo interface {
+	Get(ctx context.Context, name string) (*apicorev1.Secret, error)
+}
+
 type Reconciler struct {
 	client.Client
 	event.Event
@@ -56,6 +61,8 @@ type Reconciler struct {
 	SkipCRDs              matcher.CRDMatcherFunc
 	IsManagedKyma         bool
 	Metrics               *metrics.PurgeMetrics
+
+	SkrAccessSecretRepo SkrAccessSecretRepo
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -76,12 +83,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	start := time.Now()
-	err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
-	if err != nil {
+
+	if skrSecret, err := r.SkrAccessSecretRepo.Get(ctx, kyma.Name); err != nil || skrSecret == nil {
 		return r.handleSkrNotFoundError(ctx, kyma, err)
 	}
 
-	skrContext, err := r.SkrContextFactory.Get(kyma.GetNamespacedName())
+	skrContext, err := r.SkrContextFactory.Get(ctx, kyma.GetNamespacedName())
 	if err != nil {
 		return r.handleSkrNotFoundError(ctx, kyma, err)
 	}

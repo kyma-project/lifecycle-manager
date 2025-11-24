@@ -1,6 +1,7 @@
 package kcp_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"maps"
@@ -65,7 +66,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
 		Eventually(func() error {
-			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			skrClient, err = testSkrContextFactory.Get(context.Background(), kyma.GetNamespacedName())
 			return err
 		}, Timeout, Interval).Should(Succeed())
 	})
@@ -271,7 +272,7 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 	registerControlPlaneLifecycleForKyma(kyma)
 	BeforeAll(func() {
 		Eventually(func() error {
-			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			skrClient, err = testSkrContextFactory.Get(context.Background(), kyma.GetNamespacedName())
 			return err
 		}, Timeout, Interval).Should(Succeed())
 	})
@@ -380,7 +381,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 			WithArguments(kcpClient, kyma).Should(Succeed())
 
 		Eventually(func() error {
-			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			skrClient, err = testSkrContextFactory.Get(context.Background(), kyma.GetNamespacedName())
 			return err
 		}, Timeout, Interval).Should(Succeed())
 

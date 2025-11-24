@@ -50,6 +50,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
@@ -185,7 +186,7 @@ var _ = BeforeSuite(func() {
 		Client:               kcpClient,
 		Event:                testEventRec,
 		DescriptorProvider:   descriptorProvider,
-		SkrContextFactory:    testSkrContextFactory,
+		SkrContextProvider:   testSkrContextFactory,
 		SkrSyncService:       skrSyncService,
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
 		RequeueIntervals:     intervals,
@@ -194,7 +195,8 @@ var _ = BeforeSuite(func() {
 		Metrics: metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
 			moduletemplateinfolookup.NewLookup(kcpClient)),
-		Config: kymaReconcilerConfig,
+		Config:              kymaReconcilerConfig,
+		SkrAccessSecretRepo: secretrepository.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())

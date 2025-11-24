@@ -62,7 +62,7 @@ func (s *Service) SyncImagePullSecret(ctx context.Context, kyma types.Namespaced
 	if err != nil {
 		return errors.Join(ErrImagePullSecretNotFound, err)
 	}
-	skrContext, err := s.skrContextFactory.Get(kyma)
+	skrContext, err := s.skrContextFactory.Get(ctx, kyma)
 	if err != nil {
 		return err
 	}

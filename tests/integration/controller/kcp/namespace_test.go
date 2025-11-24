@@ -25,7 +25,7 @@ var _ = Describe("Remote Namespace is correctly labelled", Ordered, func() {
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
 		Eventually(func() error {
-			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			skrClient, err = testSkrContextFactory.Get(context.Background(), kyma.GetNamespacedName())
 			return err
 		}, Timeout, Interval).Should(Succeed())
 	})

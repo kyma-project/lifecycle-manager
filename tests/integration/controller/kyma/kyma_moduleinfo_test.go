@@ -1,6 +1,7 @@
 package kyma_test
 
 import (
+	"context"
 	"errors"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,7 +53,7 @@ var _ = Describe("Kyma module control", Ordered, func() {
 			objTracker,
 		)
 		Eventually(func() error {
-			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			skrClient, err = testSkrContextFactory.Get(context.Background(), kyma.GetNamespacedName())
 			return err
 		}, Timeout, Interval).Should(Succeed())
 		By("Waiting for KCP Kyma to exist")

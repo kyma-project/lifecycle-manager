@@ -27,7 +27,7 @@ var _ = Describe("Given kyma CR with invalid module enabled", Ordered, func() {
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
 		Eventually(func() error {
-			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			skrClient, err = testSkrContextFactory.Get(context.Background(), kyma.GetNamespacedName())
 			return err
 		}, Timeout, Interval).Should(Succeed())
 	})

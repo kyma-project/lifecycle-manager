@@ -76,7 +76,7 @@ var _ = Describe("module channel different from the global channel", Ordered, fu
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
 		Eventually(func() error {
-			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			skrClient, err = testSkrContextFactory.Get(context.Background(), kyma.GetNamespacedName())
 			return err
 		}, Timeout, Interval).Should(Succeed())
 	})
@@ -245,7 +245,7 @@ var _ = Describe("Channel switch", Ordered, func() {
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
 		Eventually(func() error {
-			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			skrClient, err = testSkrContextFactory.Get(context.Background(), kyma.GetNamespacedName())
 			return err
 		}, Timeout, Interval).Should(Succeed())
 	})

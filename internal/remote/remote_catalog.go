@@ -13,6 +13,10 @@ import (
 
 const moduleCatalogSyncFieldManager = "catalog-sync"
 
+type SkrContextProvider interface {
+	Get(ctx context.Context, kyma types.NamespacedName) (*SkrContext, error)
+}
+
 type Settings struct {
 	// this namespace flag can be used to override the namespace in which all ModuleTemplates should be applied.
 	Namespace       string
@@ -21,7 +25,7 @@ type Settings struct {
 
 type RemoteCatalog struct {
 	kcpClient                         client.Client
-	skrContextFactory                 SkrContextProvider
+	skrContextProvider                SkrContextProvider
 	settings                          Settings
 	moduleTemplateSyncAPIFactoryFn    moduleTemplateSyncAPIFactory
 	moduleReleaseMetaSyncAPIFactoryFn moduleReleaseMetaSyncAPIFactory
@@ -72,7 +76,7 @@ func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvi
 
 	res := &RemoteCatalog{
 		kcpClient:                         kcpClient,
-		skrContextFactory:                 skrContextFactory,
+		skrContextProvider:                skrContextFactory,
 		settings:                          settings,
 		moduleTemplateSyncAPIFactoryFn:    moduleTemplateSyncerAPIFactoryFn,
 		moduleReleaseMetaSyncAPIFactoryFn: moduleReleaseMetaSyncerAPIFactoryFn,
@@ -104,7 +108,7 @@ func (c *RemoteCatalog) Delete(
 	ctx context.Context,
 	kyma types.NamespacedName,
 ) error {
-	skrContext, err := c.skrContextFactory.Get(kyma)
+	skrContext, err := c.skrContextProvider.Get(ctx, kyma)
 	if err != nil {
 		return fmt.Errorf("failed to get SKR context: %w", err)
 	}
@@ -213,7 +217,7 @@ func (c *RemoteCatalog) sync(
 	kcpModules []v1beta2.ModuleTemplate,
 	kcpModuleReleaseMeta []v1beta2.ModuleReleaseMeta,
 ) error {
-	skrContext, err := c.skrContextFactory.Get(kyma)
+	skrContext, err := c.skrContextProvider.Get(ctx, kyma)
 	if err != nil {
 		return fmt.Errorf("failed to get SKR context: %w", err)
 	}

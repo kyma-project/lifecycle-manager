@@ -1,6 +1,8 @@
 package kcp_test
 
 import (
+	"context"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -22,7 +24,7 @@ var _ = Describe("Kyma is reconciled correctly based on the event filters", Orde
 			WithArguments(kcpClient, kyma).Should(Succeed())
 
 		Eventually(func() error {
-			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			skrClient, err = testSkrContextFactory.Get(context.Background(), kyma.GetNamespacedName())
 			return err
 		}, Timeout, Interval).Should(Succeed())
 

@@ -29,7 +29,7 @@ func newFactory() *testskrcontext.DualClusterFactory {
 func Test_GetBeforeInit(t *testing.T) {
 	dualFactory := newFactory()
 
-	_, err := dualFactory.Get(types.NamespacedName{Name: "kymaUninitialized"})
+	_, err := dualFactory.Get(t.Context(), types.NamespacedName{Name: "kymaUninitialized"})
 
 	require.Error(t, err)
 	assert.ErrorIs(t, err, testskrcontext.ErrSkrEnvNotStarted)
@@ -85,7 +85,7 @@ func Test_StopClearsAllEntriesAndIsIdempotent(t *testing.T) {
 	assert.Nil(t, dualFactory.GetSkrEnv())
 
 	// Verify entry is cleared
-	_, err := dualFactory.Get(types.NamespacedName{Name: "test-env"})
+	_, err := dualFactory.Get(t.Context(), types.NamespacedName{Name: "test-env"})
 	require.Error(t, err)
 
 	// Second stop should also succeed (idempotent)

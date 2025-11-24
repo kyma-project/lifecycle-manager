@@ -197,7 +197,7 @@ type skrContextProviderStub struct {
 	err        error
 }
 
-func (s *skrContextProviderStub) Get(kyma types.NamespacedName) (*remote.SkrContext, error) {
+func (s *skrContextProviderStub) Get(_ context.Context, kyma types.NamespacedName) (*remote.SkrContext, error) {
 	s.called = true
 	if s.err != nil {
 		return nil, s.err

@@ -36,10 +36,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
-
+	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -183,7 +183,7 @@ var _ = BeforeSuite(func() {
 
 	err = (&kyma.Reconciler{
 		Client:               kcpClient,
-		SkrContextFactory:    testSkrContextFactory,
+		SkrContextProvider:   testSkrContextFactory,
 		Event:                testEventRec,
 		RequeueIntervals:     intervals,
 		DescriptorProvider:   descriptorProvider,
@@ -195,7 +195,8 @@ var _ = BeforeSuite(func() {
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient,
 			descriptorProvider,
 			moduletemplateinfolookup.NewLookup(kcpClient)),
-		Config: kymaReconcilerConfig,
+		Config:              kymaReconcilerConfig,
+		SkrAccessSecretRepo: secretrepository.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())

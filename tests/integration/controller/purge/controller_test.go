@@ -347,12 +347,7 @@ func ensureSetup(kyma *v1beta2.Kyma, skrClient *client.Client) func() {
 	return func() {
 		var err error
 		Eventually(func() error {
-			err = testSkrContextFactory.Init(ctx, kyma.GetNamespacedName())
-			return err
-		}, Timeout, Interval).Should(Succeed())
-
-		Eventually(func() error {
-			*skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			*skrClient, err = testSkrContextFactory.Get(context.Background(), kyma.GetNamespacedName())
 			return err
 		}, Timeout, Interval).Should(Succeed())
 

@@ -41,53 +41,12 @@ func NewDualClusterFactory(scheme *machineryruntime.Scheme, event event.Event) *
 	}
 }
 
-func (f *DualClusterFactory) Init(_ context.Context, kyma types.NamespacedName) error {
-	_, ok := f.clients.Load(kyma.Name)
-	if ok {
-		return nil
-	}
-
-	skrEnv := &envtest.Environment{
-		ErrorIfCRDPathMissing: true,
-		// Scheme: scheme,
-	}
-
-	// Start the envtest and record the returned cfg
-	cfg, err := skrEnv.Start()
+func (f *DualClusterFactory) Get(ctx context.Context, kyma types.NamespacedName) (*remote.SkrContext, error) {
+	err := f.init(ctx, kyma)
 	if err != nil {
-		return err
-	}
-	if cfg == nil {
-		// cleanup fast - if start returned nil cfg
-		_ = skrEnv.Stop()
-		return ErrEmptyRestConfig
+		return nil, err
 	}
 
-	var authUser *envtest.AuthenticatedUser
-	authUser, err = skrEnv.AddUser(envtest.User{
-		Name:   "skr-admin-account",
-		Groups: []string{"system:masters"},
-	}, cfg)
-	if err != nil {
-		_ = skrEnv.Stop()
-		return err
-	}
-
-	skrClient, err := client.New(authUser.Config(), client.Options{Scheme: f.scheme})
-	if err != nil {
-		_ = skrEnv.Stop()
-		return err
-	}
-
-	f.clients.Store(kyma.Name, skrClient)
-
-	// track this envtest so Stop() can stop all started envs
-	f.SkrEnvs.Store(kyma.Name, skrEnv)
-
-	return err
-}
-
-func (f *DualClusterFactory) Get(kyma types.NamespacedName) (*remote.SkrContext, error) {
 	value, ok := f.clients.Load(kyma.Name)
 	if !ok {
 		return nil, ErrSkrEnvNotStarted
@@ -145,4 +104,50 @@ func (f *DualClusterFactory) Stop() error {
 		return fmt.Errorf("errors stopping envtests: %w", errors.Join(errs...))
 	}
 	return nil
+}
+
+func (f *DualClusterFactory) init(_ context.Context, kyma types.NamespacedName) error {
+	_, ok := f.clients.Load(kyma.Name)
+	if ok {
+		return nil
+	}
+
+	skrEnv := &envtest.Environment{
+		ErrorIfCRDPathMissing: true,
+		// Scheme: scheme,
+	}
+
+	// Start the envtest and record the returned cfg
+	cfg, err := skrEnv.Start()
+	if err != nil {
+		return err
+	}
+	if cfg == nil {
+		// cleanup fast - if start returned nil cfg
+		_ = skrEnv.Stop()
+		return ErrEmptyRestConfig
+	}
+
+	var authUser *envtest.AuthenticatedUser
+	authUser, err = skrEnv.AddUser(envtest.User{
+		Name:   "skr-admin-account",
+		Groups: []string{"system:masters"},
+	}, cfg)
+	if err != nil {
+		_ = skrEnv.Stop()
+		return err
+	}
+
+	skrClient, err := client.New(authUser.Config(), client.Options{Scheme: f.scheme})
+	if err != nil {
+		_ = skrEnv.Stop()
+		return err
+	}
+
+	f.clients.Store(kyma.Name, skrClient)
+
+	// track this envtest so Stop() can stop all started envs
+	f.SkrEnvs.Store(kyma.Name, skrEnv)
+
+	return err
 }

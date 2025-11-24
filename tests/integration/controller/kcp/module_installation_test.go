@@ -41,10 +41,11 @@ var _ = Describe("Module installation", func() {
 
 			var skrClient client.Client
 			Eventually(func() error {
-				skrClient, err = testSkrContextFactory.Get(types.NamespacedName{
-					Name:      kymaName,
-					Namespace: ControlPlaneNamespace,
-				})
+				skrClient, err = testSkrContextFactory.Get(context.Background(),
+					types.NamespacedName{
+						Name:      kymaName,
+						Namespace: ControlPlaneNamespace,
+					})
 				return err
 			}, Timeout, Interval).Should(Succeed())
 

@@ -22,7 +22,7 @@ import (
 	"fmt"
 
 	"golang.org/x/sync/errgroup"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -38,7 +38,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
-	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
@@ -77,6 +76,14 @@ type SkrSyncService interface {
 	SyncImagePullSecret(ctx context.Context, kyma types.NamespacedName) error
 }
 
+type SkrContextProvider interface {
+	Get(ctx context.Context, kyma types.NamespacedName) (*remote.SkrContext, error)
+}
+
+type SkrAccessSecretRepo interface {
+	Get(ctx context.Context, name string) (*apicorev1.Secret, error)
+}
+
 // ReconcilerConfig holds configuration values for the Kyma Reconciler.
 // Usually read from flags or environment variables.
 type ReconcilerConfig struct {
@@ -92,7 +99,7 @@ type Reconciler struct {
 	queue.RequeueIntervals
 
 	Config               ReconcilerConfig
-	SkrContextFactory    remote.SkrContextProvider
+	SkrContextProvider   SkrContextProvider
 	DescriptorProvider   *provider.CachedDescriptorProvider
 	SkrSyncService       SkrSyncService
 	ModulesStatusHandler ModuleStatusHandler
@@ -101,6 +108,8 @@ type Reconciler struct {
 	Metrics        *metrics.KymaMetrics
 	RemoteCatalog  *remote.RemoteCatalog
 	TemplateLookup *templatelookup.TemplateLookup
+
+	SkrAccessSecretRepo SkrAccessSecretRepo
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -132,12 +141,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
-	err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
-	if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
-		return r.handleDeletedSkr(ctx, kyma)
+	if !kyma.DeletionTimestamp.IsZero() {
+		skrSecret, err := r.SkrAccessSecretRepo.Get(ctx, kyma.Name)
+		if err != nil {
+			return r.requeueWithError(ctx, kyma, err)
+		}
+
+		if skrSecret == nil {
+			return r.handleDeletedSkr(ctx, kyma)
+		}
 	}
 
-	skrContext, err := r.SkrContextFactory.Get(kyma.GetNamespacedName())
+	skrContext, err := r.SkrContextProvider.Get(ctx, kyma.GetNamespacedName())
 	if err != nil {
 		r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)
 		setModuleStatusesToError(kyma, err.Error())
@@ -145,14 +160,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	err = skrContext.CreateKymaNamespace(ctx)
-	if apierrors.IsUnauthorized(err) {
-		r.SkrContextFactory.InvalidateCache(kyma.GetNamespacedName())
-		logger.Info("connection refused, assuming connection is invalid and resetting cache-entry for kyma")
-		r.Metrics.RecordRequeueReason(metrics.KymaUnauthorized, queue.UnexpectedRequeue)
-		return r.requeueWithError(ctx, kyma, err)
-	}
 	if err != nil {
-		r.SkrContextFactory.InvalidateCache(kyma.GetNamespacedName())
 		r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)
 		setModuleStatusesToError(kyma, util.NestedErrorMessage(err))
 		return r.requeueWithError(ctx, kyma, err)
@@ -332,7 +340,7 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 }
 
 func (r *Reconciler) deleteRemoteKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
-	skrContext, err := r.SkrContextFactory.Get(kyma.GetNamespacedName())
+	skrContext, err := r.SkrContextProvider.Get(ctx, kyma.GetNamespacedName())
 	if err != nil {
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
@@ -346,7 +354,7 @@ func (r *Reconciler) deleteRemoteKyma(ctx context.Context, kyma *v1beta2.Kyma) e
 }
 
 func (r *Reconciler) fetchRemoteKyma(ctx context.Context, kcpKyma *v1beta2.Kyma) (*v1beta2.Kyma, error) {
-	syncContext, err := r.SkrContextFactory.Get(kcpKyma.GetNamespacedName())
+	syncContext, err := r.SkrContextProvider.Get(ctx, kcpKyma.GetNamespacedName())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get syncContext: %w", err)
 	}
@@ -371,7 +379,7 @@ func (r *Reconciler) syncStatusToRemote(ctx context.Context, kcpKyma *v1beta2.Ky
 		return err
 	}
 
-	skrContext, err := r.SkrContextFactory.Get(kcpKyma.GetNamespacedName())
+	skrContext, err := r.SkrContextProvider.Get(ctx, kcpKyma.GetNamespacedName())
 	if err != nil {
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
@@ -472,7 +480,7 @@ func (r *Reconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Ky
 				}
 				return err
 			}
-			skrClient, _ := r.SkrContextFactory.Get(client.ObjectKeyFromObject(kyma))
+			skrClient, _ := r.SkrContextProvider.Get(ctx, kyma.GetNamespacedName())
 			return checkSKRWebhookReadiness(ctx, skrClient, kyma)
 		})
 	}
@@ -524,12 +532,11 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 		r.Metrics.RecordRequeueReason(metrics.RemoteModuleCatalogDeletion, queue.UnexpectedRequeue)
 		return r.requeueWithError(ctx, kyma, err)
 	}
-	skrContext, err := r.SkrContextFactory.Get(kyma.GetNamespacedName())
+	skrContext, err := r.SkrContextProvider.Get(ctx, kyma.GetNamespacedName())
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to get skrContext: %w", err)
 	}
 
-	r.SkrContextFactory.InvalidateCache(kyma.GetNamespacedName())
 	if err = skrContext.RemoveFinalizersFromKyma(ctx); client.IgnoreNotFound(err) != nil {
 		r.Metrics.RecordRequeueReason(metrics.FinalizersRemovalFromRemoteKyma, queue.UnexpectedRequeue)
 		return r.requeueWithError(ctx, kyma, err)

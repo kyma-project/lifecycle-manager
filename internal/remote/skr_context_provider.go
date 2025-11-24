@@ -3,86 +3,39 @@ package remote
 import (
 	"context"
 	"errors"
-	"fmt"
-	"net/http"
 
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/event"
-	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 )
 
-type SkrContextProvider interface {
-	Get(kyma types.NamespacedName) (*SkrContext, error)
-	Init(ctx context.Context, kyma types.NamespacedName) error
-	InvalidateCache(kyma types.NamespacedName)
-}
+var ErrFailedToGetSkrClient = errors.New("failed to get SKR client")
 
 type KymaSkrContextProvider struct {
-	clientCache          *ClientCache
-	kcpClient            client.Client
-	event                event.Event
-	accessManagerService *accessmanager.Service
-	skrQps               int
-	skrBurst             int
+	clientFactory *ClientFactory
+	event         event.Event
 }
 
 func NewKymaSkrContextProvider(kcpClient client.Client,
-	clientCache *ClientCache,
+	clientFactory *ClientFactory,
 	event event.Event,
-	accessManagerService *accessmanager.Service,
-	skrQps int,
-	skrBurst int,
 ) *KymaSkrContextProvider {
 	return &KymaSkrContextProvider{
-		clientCache:          clientCache,
-		kcpClient:            kcpClient,
-		event:                event,
-		accessManagerService: accessManagerService,
-		skrQps:               skrQps,
-		skrBurst:             skrBurst,
+		clientFactory: clientFactory,
+		event:         event,
 	}
 }
 
-var ErrSkrClientContextNotFound = errors.New("skr client context not found")
-
-func (k *KymaSkrContextProvider) Init(ctx context.Context, kyma types.NamespacedName) error {
-	if k.clientCache.Contains(kyma) {
-		return nil
-	}
-
-	restConfig, err := k.accessManagerService.GetAccessRestConfigByKyma(ctx, kyma.Name)
+func (k *KymaSkrContextProvider) Get(ctx context.Context, kyma types.NamespacedName) (*SkrContext, error) {
+	skrClient, err := k.clientFactory.Get(ctx, kyma)
 	if err != nil {
-		return fmt.Errorf("failed to create rest config from kubeconfig: %w", err)
+		return nil, err
 	}
 
-	restConfig.QPS = float32(k.skrQps)
-	restConfig.Burst = k.skrBurst
-
-	// Required to prevent memory leak by avoiding caching in transport.tlsTransportCache.
-	// skrClients are cached anyways.
-	restConfig.Proxy = http.ProxyFromEnvironment
-
-	skrClient, err := client.New(restConfig, client.Options{Scheme: k.kcpClient.Scheme()})
-	if err != nil {
-		return fmt.Errorf("failed to create lookup client: %w", err)
-	}
-
-	k.clientCache.Add(kyma, skrClient)
-
-	return nil
-}
-
-func (k *KymaSkrContextProvider) Get(kyma types.NamespacedName) (*SkrContext, error) {
-	skrClient := k.clientCache.Get(kyma)
 	if skrClient == nil {
-		return nil, ErrSkrClientContextNotFound
+		return nil, ErrFailedToGetSkrClient
 	}
 
 	return NewSkrContext(skrClient, k.event), nil
-}
-
-func (k *KymaSkrContextProvider) InvalidateCache(kyma types.NamespacedName) {
-	k.clientCache.Delete(kyma)
 }

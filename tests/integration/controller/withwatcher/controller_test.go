@@ -50,7 +50,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	var err error
 	BeforeAll(func() {
 		Eventually(func() error {
-			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			skrClient, err = testSkrContextFactory.Get(context.Background(), kyma.GetNamespacedName())
 			return err
 		}, Timeout, Interval).Should(Succeed())
 	})

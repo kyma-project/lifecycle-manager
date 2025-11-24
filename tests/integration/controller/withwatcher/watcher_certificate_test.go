@@ -2,6 +2,7 @@ package withwatcher_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 
@@ -39,7 +40,7 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 	var err error
 	BeforeAll(func() {
 		Eventually(func() error {
-			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			skrClient, err = testSkrContextFactory.Get(context.Background(), kyma.GetNamespacedName())
 			return err
 		}, Timeout, Interval).Should(Succeed())
 	})

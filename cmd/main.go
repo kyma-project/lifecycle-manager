@@ -199,12 +199,16 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	gatewayRepository := istiogateway.NewRepository(kcpClientWithoutCache)
 	accessSecretRepository := secretrepository.NewRepository(kcpClientWithoutCache, shared.DefaultControlPlaneNamespace)
 	accessManagerService := accessmanager.NewService(accessSecretRepository)
-	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient,
+	skrClientFactory := remote.NewClientFactory(
 		remoteClientCache,
-		eventRecorder,
 		accessManagerService,
+		kcpClient.Scheme(),
 		flagVar.SkrClientQPS,
-		flagVar.SkrClientBurst)
+		flagVar.SkrClientBurst,
+	)
+	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient,
+		skrClientFactory,
+		eventRecorder)
 	var skrWebhookManager *watcher.SkrWebhookManifestManager
 	var options ctrlruntime.Options
 	if flagVar.EnableKcpWatcher {
@@ -445,7 +449,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 
 	if err := (&kyma.Reconciler{
 		Client:               kcpClient,
-		SkrContextFactory:    skrContextFactory,
+		SkrContextProvider:   skrContextFactory,
 		Event:                event,
 		DescriptorProvider:   descriptorProvider,
 		SkrSyncService:       skrSyncService,

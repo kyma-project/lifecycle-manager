@@ -45,7 +45,7 @@ func NewSyncCrdsUseCase(kcpClient client.Client, skrContextFactory SkrContextPro
 }
 
 func (s *SyncCrdsUseCase) Execute(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
-	skrContext, err := s.skrContextFactory.Get(kyma.GetNamespacedName())
+	skrContext, err := s.skrContextFactory.Get(ctx, kyma.GetNamespacedName())
 	if err != nil {
 		return false, fmt.Errorf("failed to get SKR context: %w", err)
 	}

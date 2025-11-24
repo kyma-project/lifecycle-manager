@@ -245,7 +245,7 @@ var _ = BeforeSuite(func() {
 
 	err = (&kyma.Reconciler{
 		Client:               kcpClient,
-		SkrContextFactory:    testSkrContextFactory,
+		SkrContextProvider:   testSkrContextFactory,
 		Event:                testEventRec,
 		RequeueIntervals:     intervals,
 		SKRWebhookManager:    skrWebhookChartManager,
@@ -255,7 +255,8 @@ var _ = BeforeSuite(func() {
 		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
-		Config: kymaReconcilerConfig,
+		Config:              kymaReconcilerConfig,
+		SkrAccessSecretRepo: secretrepository.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
 	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 

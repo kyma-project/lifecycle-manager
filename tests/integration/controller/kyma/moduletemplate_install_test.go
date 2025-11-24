@@ -1,6 +1,7 @@
 package kyma_test
 
 import (
+	"context"
 	"fmt"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -26,7 +27,7 @@ var _ = Describe("ModuleTemplate installation", Ordered, func() {
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
 		Eventually(func() error {
-			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			skrClient, err = testSkrContextFactory.Get(context.Background(), kyma.GetNamespacedName())
 			return err
 		}, Timeout, Interval).Should(Succeed())
 		By("Waiting for KCP Kyma to exist")

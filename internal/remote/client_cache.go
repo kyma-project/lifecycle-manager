@@ -36,10 +36,6 @@ func (c *ClientCache) Add(key client.ObjectKey, value client.Client) {
 	c.internal.Set(key, value, getRandomTTL())
 }
 
-func (c *ClientCache) Contains(key client.ObjectKey) bool {
-	return c.internal.Has(key)
-}
-
 func (c *ClientCache) Delete(key client.ObjectKey) {
 	c.internal.Delete(key)
 }
