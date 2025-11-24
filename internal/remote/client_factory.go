@@ -32,6 +32,7 @@ func NewClientFactory(clientCache *ClientCache,
 	return &ClientFactory{
 		clientCache:         clientCache,
 		skrAccessSecretRepo: skrAccessSecretRepo,
+		scheme:              scheme,
 		skrQps:              skrQps,
 		skrBurst:            skrBurst,
 	}
