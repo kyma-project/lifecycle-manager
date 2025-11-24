@@ -202,7 +202,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	skrClientFactory := remote.NewClientFactory(
 		remoteClientCache,
 		accessManagerService,
-		kcpClient.Scheme(),
+		scheme,
 		flagVar.SkrClientQPS,
 		flagVar.SkrClientBurst,
 	)
