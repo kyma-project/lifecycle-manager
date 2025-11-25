@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -13,8 +15,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion/usecases"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestExecute_Succeeds(t *testing.T) {
@@ -184,21 +184,6 @@ func TestIsApplicable_True(t *testing.T) {
 	assert.Equal(t, kyma.GetNamespacedName(), kymaStatusRepo.namespacedName)
 }
 
-type skrAccessSecretRepoStub struct {
-	usecases.SkrAccessSecretRepo
-
-	called   bool
-	kymaName string
-	exists   bool
-	err      error
-}
-
-func (r *skrAccessSecretRepoStub) Exists(_ context.Context, kymaName string) (bool, error) {
-	r.called = true
-	r.kymaName = kymaName
-	return r.exists, r.err
-}
-
 type skrKymaStatusRepoStub struct {
 	usecases.SkrKymaStatusRepo
 
@@ -208,7 +193,9 @@ type skrKymaStatusRepoStub struct {
 	err            error
 }
 
-func (r *skrKymaStatusRepoStub) Get(_ context.Context, namespacedName types.NamespacedName) (*v1beta2.KymaStatus, error) {
+func (r *skrKymaStatusRepoStub) Get(_ context.Context,
+	namespacedName types.NamespacedName,
+) (*v1beta2.KymaStatus, error) {
 	r.called = true
 	r.namespacedName = namespacedName
 	return r.status, r.err
