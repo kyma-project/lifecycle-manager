@@ -14,7 +14,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/errors"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status"
+	skrkymastatusrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
@@ -29,7 +29,7 @@ func TestSetStateDeleting_ClientCallSucceeds(t *testing.T) {
 		client: clientStub,
 	}
 
-	repo := status.NewRepository(clientCacheStub)
+	repo := skrkymastatusrepo.NewRepository(clientCacheStub)
 
 	err := repo.SetStateDeleting(t.Context(), kcpKymaName)
 
@@ -64,7 +64,7 @@ func TestSetStateDeleting_ClientReturnsAnError(t *testing.T) {
 		client: clientStub,
 	}
 
-	repo := status.NewRepository(clientCacheStub)
+	repo := skrkymastatusrepo.NewRepository(clientCacheStub)
 
 	err := repo.SetStateDeleting(context.Background(),
 		types.NamespacedName{
@@ -77,7 +77,7 @@ func TestSetStateDeleting_ClientReturnsAnError(t *testing.T) {
 }
 
 func TestSetStateDeleting_ClientNotFound(t *testing.T) {
-	repo := status.NewRepository(&skrClientCacheStub{
+	repo := skrkymastatusrepo.NewRepository(&skrClientCacheStub{
 		client: nil, // No client available in the cache
 	})
 

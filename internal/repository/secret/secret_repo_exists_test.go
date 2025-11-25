@@ -10,7 +10,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
@@ -26,7 +26,7 @@ func TestExists_ClientCallSucceeds_ReturnsExists(t *testing.T) {
 			},
 		},
 	}
-	secretRepository := secretrepository.NewRepository(clientStub, repoNamespace)
+	secretRepository := secretrepo.NewRepository(clientStub, repoNamespace)
 
 	result, err := secretRepository.Exists(t.Context(), kymaName)
 
@@ -45,7 +45,7 @@ func TestExists_ClientCallFailsWithNotFound_ReturnsNotExists(t *testing.T) {
 	clientStub := &getClientStub{
 		err: apierrors.NewNotFound(apicorev1.Resource("secrets"), kymaName),
 	}
-	secretRepository := secretrepository.NewRepository(clientStub, repoNamespace)
+	secretRepository := secretrepo.NewRepository(clientStub, repoNamespace)
 
 	result, err := secretRepository.Exists(t.Context(), kymaName)
 
@@ -61,7 +61,7 @@ func TestExists_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	clientStub := &getClientStub{
 		err: assert.AnError,
 	}
-	secretRepository := secretrepository.NewRepository(clientStub, random.Name())
+	secretRepository := secretrepo.NewRepository(clientStub, random.Name())
 
 	result, err := secretRepository.Exists(t.Context(), random.Name())
 

@@ -135,7 +135,7 @@ linters:
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma
           alias: skrkymarepo
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status
-          alias: skrkymastatus-repo
+          alias: skrkymastatusrepo
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/secret
           alias: secretrepo
         - pkg: github.com/kyma-project/lifecycle-manager/internal/result/event
