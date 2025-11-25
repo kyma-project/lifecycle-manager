@@ -12,7 +12,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/kyma/status"
+	kymastatusrepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma/status"
 )
 
 const (
@@ -25,7 +25,7 @@ func TestNewRepository(t *testing.T) {
 	t.Parallel()
 
 	statusWriter := &statusWriterStub{}
-	repo := status.NewRepository(statusWriter)
+	repo := kymastatusrepo.NewRepository(statusWriter)
 
 	require.NotNil(t, repo)
 }
@@ -34,7 +34,7 @@ func TestRepository_UpdateStatusDeleting_WhenPatchSucceeds_ReturnNoError(t *test
 	t.Parallel()
 
 	statusWriter := &statusWriterStub{}
-	repo := status.NewRepository(statusWriter)
+	repo := kymastatusrepo.NewRepository(statusWriter)
 	kyma := createTestKyma()
 
 	err := repo.UpdateStatusDeleting(context.Background(), kyma)
@@ -51,7 +51,7 @@ func TestRepository_UpdateStatusDeleting_WhenPatchFails_ReturnError(t *testing.T
 	t.Parallel()
 
 	statusWriter := &statusWriterStub{err: assert.AnError}
-	repo := status.NewRepository(statusWriter)
+	repo := kymastatusrepo.NewRepository(statusWriter)
 	kyma := createTestKyma()
 
 	err := repo.UpdateStatusDeleting(context.Background(), kyma)
@@ -65,7 +65,7 @@ func TestRepository_UpdateStatusDeleting_NoActiveChannelModification(t *testing.
 	t.Parallel()
 
 	statusWriter := &statusWriterStub{}
-	repo := status.NewRepository(statusWriter)
+	repo := kymastatusrepo.NewRepository(statusWriter)
 	kyma := createTestKymaWithActiveChannel()
 	originalChannel := kyma.Status.ActiveChannel
 
@@ -82,7 +82,7 @@ func TestRepository_UpdateStatusDeleting_TimestampIsSet(t *testing.T) {
 	t.Parallel()
 
 	statusWriter := &statusWriterStub{}
-	repo := status.NewRepository(statusWriter)
+	repo := kymastatusrepo.NewRepository(statusWriter)
 	kyma := createTestKyma()
 	beforeUpdate := time.Now()
 
@@ -100,7 +100,7 @@ func TestRepository_UpdateStatusDeleting_ManagedFieldsCleared(t *testing.T) {
 	t.Parallel()
 
 	statusWriter := &statusWriterStub{}
-	repo := status.NewRepository(statusWriter)
+	repo := kymastatusrepo.NewRepository(statusWriter)
 	kyma := createTestKyma()
 
 	// Set some managed fields

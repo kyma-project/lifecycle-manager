@@ -13,7 +13,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/errors"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma"
+	skrkymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
@@ -25,7 +25,7 @@ func TestDelete_ClientCallSucceeds(t *testing.T) {
 		client: clientStub,
 	}
 
-	repo := kyma.NewRepository(clientCacheStub)
+	repo := skrkymarepo.NewRepository(clientCacheStub)
 
 	err := repo.Delete(t.Context(), kcpKymaName)
 
@@ -46,7 +46,7 @@ func TestDelete_ClientReturnsAnError(t *testing.T) {
 	clientStub := &deleteClientStub{
 		err: assert.AnError,
 	}
-	repo := kyma.NewRepository(&skrClientCacheStub{
+	repo := skrkymarepo.NewRepository(&skrClientCacheStub{
 		client: clientStub,
 	})
 
@@ -61,7 +61,7 @@ func TestDelete_ClientReturnsAnError(t *testing.T) {
 }
 
 func TestDelete_ClientNotFound_ReturnsError(t *testing.T) {
-	repo := kyma.NewRepository(&skrClientCacheStub{
+	repo := skrkymarepo.NewRepository(&skrClientCacheStub{
 		client: nil, // No client available in the cache
 	})
 

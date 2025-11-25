@@ -14,7 +14,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/errors"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma"
+	skrkymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
@@ -34,7 +34,7 @@ func TestIsDeleting_ClientCallSucceeds_ReturnsTrue(t *testing.T) {
 		client: clientStub,
 	}
 
-	repo := kyma.NewRepository(clientCacheStub)
+	repo := skrkymarepo.NewRepository(clientCacheStub)
 
 	result, err := repo.IsDeleting(t.Context(), kcpKymaName)
 
@@ -65,7 +65,7 @@ func TestIsDeleting_ClientCallSucceeds_ReturnsFalse(t *testing.T) {
 		client: clientStub,
 	}
 
-	repo := kyma.NewRepository(clientCacheStub)
+	repo := skrkymarepo.NewRepository(clientCacheStub)
 
 	result, err := repo.IsDeleting(t.Context(), kcpKymaName)
 
@@ -85,7 +85,7 @@ func TestIsDeleting_ClientReturnsAnError(t *testing.T) {
 	clientStub := &isDeletingClientStub{
 		err: assert.AnError,
 	}
-	repo := kyma.NewRepository(&skrClientCacheStub{
+	repo := skrkymarepo.NewRepository(&skrClientCacheStub{
 		client: clientStub,
 	})
 
@@ -101,7 +101,7 @@ func TestIsDeleting_ClientReturnsAnError(t *testing.T) {
 }
 
 func TestIsDeleting_ClientNotFound_ReturnsError(t *testing.T) {
-	repo := kyma.NewRepository(&skrClientCacheStub{
+	repo := skrkymarepo.NewRepository(&skrClientCacheStub{
 		client: nil, // No client available in the cache
 	})
 
