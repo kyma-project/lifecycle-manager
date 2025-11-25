@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apicorev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -37,11 +38,13 @@ func TestExists_ClientCallSucceeds_ReturnsExists(t *testing.T) {
 		clientStub.key)
 }
 
-func TestExists_ClientCallSucceeds_ReturnsNotExists(t *testing.T) {
+func TestExists_ClientCallFailsWithNotFound_ReturnsNotExists(t *testing.T) {
 	kymaName := random.Name()
 	repoNamespace := random.Name()
 
-	clientStub := &getClientStub{}
+	clientStub := &getClientStub{
+		err: apierrors.NewNotFound(apicorev1.Resource("secrets"), kymaName),
+	}
 	secretRepository := secretrepository.NewRepository(clientStub, repoNamespace)
 
 	result, err := secretRepository.Exists(t.Context(), kymaName)
@@ -60,9 +63,9 @@ func TestExists_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	}
 	secretRepository := secretrepository.NewRepository(clientStub, random.Name())
 
-	result, err := secretRepository.Get(t.Context(), random.Name())
+	result, err := secretRepository.Exists(t.Context(), random.Name())
 
-	assert.Nil(t, result)
+	assert.True(t, result)
 	require.ErrorIs(t, err, assert.AnError)
 	assert.True(t, clientStub.called)
 }
