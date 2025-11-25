@@ -48,6 +48,8 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1b
 	tlsSecret *apicorev1.Secret, issuer *certmanagerv1.Issuer, gatewaySecret *apicorev1.Secret,
 ) {
 	BeforeAll(func() {
+		By("Create dummy SKR access secret")
+		Expect(kcpClient.Create(ctx, createDummySkrAccessSecret(kyma.Name))).To(Succeed())
 		By("Creating watcher CR")
 		Expect(kcpClient.Create(ctx, watcher)).To(Succeed())
 		By("Creating kyma CR")
@@ -198,6 +200,18 @@ func createGatewaySecret() *apicorev1.Secret {
 			"tls.crt": []byte("jellyfish"),
 			"tls.key": []byte("jellyfishes"),
 		},
+		Type: apicorev1.SecretTypeOpaque,
+	}
+}
+
+// dummy secret is unused by DualClusterFactory, but the controller needs to lookup if it exists
+func createDummySkrAccessSecret(name string) *apicorev1.Secret {
+	return &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      name,
+			Namespace: shared.DefaultControlPlaneNamespace,
+		},
+		Data: map[string][]byte{},
 		Type: apicorev1.SecretTypeOpaque,
 	}
 }
