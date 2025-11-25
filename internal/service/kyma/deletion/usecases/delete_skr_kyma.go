@@ -11,7 +11,7 @@ import (
 )
 
 type SkrKymaRepo interface {
-	IsDeleting(ctx context.Context, namespacedName types.NamespacedName) (bool, error)
+	Exists(ctx context.Context, namespacedName types.NamespacedName) (bool, error)
 	Delete(ctx context.Context, namespacedName types.NamespacedName) error
 }
 
@@ -38,12 +38,7 @@ func (u *DeleteSkrKyma) IsApplicable(ctx context.Context, kcpKyma *v1beta2.Kyma)
 		return false, err
 	}
 
-	isDeleting, err := u.skrKymaRepo.IsDeleting(ctx, kcpKyma.GetNamespacedName())
-	if err != nil {
-		return false, err
-	}
-
-	return !isDeleting, nil
+	return u.skrKymaRepo.Exists(ctx, kcpKyma.GetNamespacedName())
 }
 
 func (u *DeleteSkrKyma) Execute(ctx context.Context, kcpKyma *v1beta2.Kyma) result.Result {

@@ -79,7 +79,7 @@ func TestIsApplicable_SecretRepoReturnsError(t *testing.T) {
 	assert.Equal(t, kcpKyma.GetName(), skrAccessSecretRepo.kymaName)
 }
 
-func TestIsApplicable_KymaAlreadyDeleting(t *testing.T) {
+func TestIsApplicable_KymaExists(t *testing.T) {
 	time := apimetav1.NewTime(time.Now())
 	kcpKyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
@@ -90,36 +90,7 @@ func TestIsApplicable_KymaAlreadyDeleting(t *testing.T) {
 	}
 
 	skrKymaRepo := &skrKymaRepoStub{
-		isDeleting: true,
-	}
-
-	skrAccessSecretRepo := &skrAccessSecretRepoStub{
 		exists: true,
-	}
-
-	uc := usecases.NewDeleteSkrKyma(skrKymaRepo, skrAccessSecretRepo)
-
-	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
-
-	require.NoError(t, err)
-	assert.False(t, applicable)
-	assert.True(t, skrAccessSecretRepo.called)
-	assert.True(t, skrKymaRepo.called)
-	assert.Equal(t, kcpKyma.GetNamespacedName(), skrKymaRepo.namespacedName)
-}
-
-func TestIsApplicable_KymaNotDeleting(t *testing.T) {
-	time := apimetav1.NewTime(time.Now())
-	kcpKyma := &v1beta2.Kyma{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:              random.Name(),
-			Namespace:         random.Name(),
-			DeletionTimestamp: &time,
-		},
-	}
-
-	skrKymaRepo := &skrKymaRepoStub{
-		isDeleting: false,
 	}
 
 	skrAccessSecretRepo := &skrAccessSecretRepoStub{
@@ -137,7 +108,7 @@ func TestIsApplicable_KymaNotDeleting(t *testing.T) {
 	assert.Equal(t, kcpKyma.GetNamespacedName(), skrKymaRepo.namespacedName)
 }
 
-func TestIsApplicable_IsDeletingFails(t *testing.T) {
+func TestIsApplicable_KymaNotExists(t *testing.T) {
 	time := apimetav1.NewTime(time.Now())
 	kcpKyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
@@ -148,7 +119,37 @@ func TestIsApplicable_IsDeletingFails(t *testing.T) {
 	}
 
 	skrKymaRepo := &skrKymaRepoStub{
-		err: assert.AnError,
+		exists: false,
+	}
+
+	skrAccessSecretRepo := &skrAccessSecretRepoStub{
+		exists: true,
+	}
+
+	uc := usecases.NewDeleteSkrKyma(skrKymaRepo, skrAccessSecretRepo)
+
+	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
+
+	require.NoError(t, err)
+	assert.False(t, applicable)
+	assert.True(t, skrAccessSecretRepo.called)
+	assert.True(t, skrKymaRepo.called)
+	assert.Equal(t, kcpKyma.GetNamespacedName(), skrKymaRepo.namespacedName)
+}
+
+func TestIsApplicable_ExistsFails(t *testing.T) {
+	time := apimetav1.NewTime(time.Now())
+	kcpKyma := &v1beta2.Kyma{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:              random.Name(),
+			Namespace:         random.Name(),
+			DeletionTimestamp: &time,
+		},
+	}
+
+	skrKymaRepo := &skrKymaRepoStub{
+		exists: true,
+		err:    assert.AnError,
 	}
 
 	skrAccessSecretRepo := &skrAccessSecretRepoStub{
@@ -160,7 +161,7 @@ func TestIsApplicable_IsDeletingFails(t *testing.T) {
 	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
 
 	require.ErrorIs(t, err, assert.AnError)
-	assert.False(t, applicable)
+	assert.True(t, applicable)
 	assert.True(t, skrAccessSecretRepo.called)
 	assert.True(t, skrKymaRepo.called)
 	assert.Equal(t, kcpKyma.GetNamespacedName(), skrKymaRepo.namespacedName)
@@ -213,14 +214,14 @@ type skrKymaRepoStub struct {
 
 	called         bool
 	namespacedName types.NamespacedName
-	isDeleting     bool
+	exists         bool
 	err            error
 }
 
-func (r *skrKymaRepoStub) IsDeleting(_ context.Context, namespacedName types.NamespacedName) (bool, error) {
+func (r *skrKymaRepoStub) Exists(_ context.Context, namespacedName types.NamespacedName) (bool, error) {
 	r.called = true
 	r.namespacedName = namespacedName
-	return r.isDeleting, r.err
+	return r.exists, r.err
 }
 
 func (r *skrKymaRepoStub) Delete(_ context.Context, namespacedName types.NamespacedName) error {

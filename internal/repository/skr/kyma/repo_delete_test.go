@@ -6,7 +6,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -57,6 +59,27 @@ func TestDelete_ClientReturnsAnError(t *testing.T) {
 		})
 
 	require.ErrorIs(t, err, assert.AnError)
+	assert.True(t, clientStub.called)
+}
+
+func TestDelete_ClientIgnoresNotFoundError(t *testing.T) {
+	clientStub := &deleteClientStub{
+		err: apierrors.NewNotFound(schema.GroupResource{
+			Group:    v1beta2.GroupVersion.Group,
+			Resource: string(shared.KymaKind),
+		}, random.Name()),
+	}
+	repo := skrkymarepo.NewRepository(&skrClientCacheStub{
+		client: clientStub,
+	})
+
+	err := repo.Delete(t.Context(),
+		types.NamespacedName{
+			Name:      random.Name(),
+			Namespace: random.Name(),
+		})
+
+	require.NoError(t, err)
 	assert.True(t, clientStub.called)
 }
 

@@ -7,22 +7,24 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1beta1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/errors"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	skrkymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
-func TestIsDeleting_ClientCallSucceeds_ReturnsTrue(t *testing.T) {
+func TestExists_ClientCallSucceeds_ReturnsTrue(t *testing.T) {
 	kcpKymaName := types.NamespacedName{Name: random.Name(), Namespace: random.Name()}
 
 	time := apimetav1.NewTime(time.Now())
-	clientStub := &isDeletingClientStub{
+	clientStub := &getClientStub{
 		object: &v1beta1.PartialObjectMetadata{
 			ObjectMeta: apimetav1.ObjectMeta{
 				DeletionTimestamp: &time,
@@ -36,7 +38,7 @@ func TestIsDeleting_ClientCallSucceeds_ReturnsTrue(t *testing.T) {
 
 	repo := skrkymarepo.NewRepository(clientCacheStub)
 
-	result, err := repo.IsDeleting(t.Context(), kcpKymaName)
+	result, err := repo.Exists(t.Context(), kcpKymaName)
 
 	require.NoError(t, err)
 	assert.True(t, result)
@@ -50,15 +52,20 @@ func TestIsDeleting_ClientCallSucceeds_ReturnsTrue(t *testing.T) {
 	}, clientStub.receivedKey)
 }
 
-func TestIsDeleting_ClientCallSucceeds_ReturnsFalse(t *testing.T) {
+func TestExists_ClientCallFailsWithNotFound_ReturnsFalse(t *testing.T) {
 	kcpKymaName := types.NamespacedName{Name: random.Name(), Namespace: random.Name()}
 
-	clientStub := &isDeletingClientStub{
+	time := apimetav1.NewTime(time.Now())
+	clientStub := &getClientStub{
 		object: &v1beta1.PartialObjectMetadata{
 			ObjectMeta: apimetav1.ObjectMeta{
-				DeletionTimestamp: nil,
+				DeletionTimestamp: &time,
 			},
 		},
+		err: apierrors.NewNotFound(schema.GroupResource{
+			Group:    v1beta2.GroupVersion.Group,
+			Resource: string(shared.KymaKind),
+		}, random.Name()),
 	}
 
 	clientCacheStub := &skrClientCacheStub{
@@ -67,7 +74,7 @@ func TestIsDeleting_ClientCallSucceeds_ReturnsFalse(t *testing.T) {
 
 	repo := skrkymarepo.NewRepository(clientCacheStub)
 
-	result, err := repo.IsDeleting(t.Context(), kcpKymaName)
+	result, err := repo.Exists(t.Context(), kcpKymaName)
 
 	require.NoError(t, err)
 	assert.False(t, result)
@@ -81,42 +88,40 @@ func TestIsDeleting_ClientCallSucceeds_ReturnsFalse(t *testing.T) {
 	}, clientStub.receivedKey)
 }
 
-func TestIsDeleting_ClientReturnsAnError(t *testing.T) {
-	clientStub := &isDeletingClientStub{
+func TestExists_ClientCallFails_ReturnsTrue(t *testing.T) {
+	kcpKymaName := types.NamespacedName{Name: random.Name(), Namespace: random.Name()}
+
+	time := apimetav1.NewTime(time.Now())
+	clientStub := &getClientStub{
+		object: &v1beta1.PartialObjectMetadata{
+			ObjectMeta: apimetav1.ObjectMeta{
+				DeletionTimestamp: &time,
+			},
+		},
 		err: assert.AnError,
 	}
-	repo := skrkymarepo.NewRepository(&skrClientCacheStub{
+
+	clientCacheStub := &skrClientCacheStub{
 		client: clientStub,
-	})
+	}
 
-	result, err := repo.IsDeleting(t.Context(),
-		types.NamespacedName{
-			Name:      random.Name(),
-			Namespace: random.Name(),
-		})
+	repo := skrkymarepo.NewRepository(clientCacheStub)
 
-	assert.False(t, result)
+	result, err := repo.Exists(t.Context(), kcpKymaName)
+
 	require.ErrorIs(t, err, assert.AnError)
+	assert.True(t, result)
 	assert.True(t, clientStub.called)
+	// kcpKymaName used to get the client
+	assert.Equal(t, kcpKymaName, clientCacheStub.receivedKey)
+	// standard Kyma name used to get the Kyma from SKR
+	assert.Equal(t, types.NamespacedName{
+		Name:      shared.DefaultRemoteKymaName,
+		Namespace: shared.DefaultRemoteNamespace,
+	}, clientStub.receivedKey)
 }
 
-func TestIsDeleting_ClientNotFound_ReturnsError(t *testing.T) {
-	repo := skrkymarepo.NewRepository(&skrClientCacheStub{
-		client: nil, // No client available in the cache
-	})
-
-	result, err := repo.IsDeleting(t.Context(),
-		types.NamespacedName{
-			Name:      random.Name(),
-			Namespace: random.Name(),
-		})
-
-	assert.False(t, result)
-	require.Error(t, err)
-	require.ErrorIs(t, err, errors.ErrSkrClientNotFound)
-}
-
-type isDeletingClientStub struct {
+type getClientStub struct {
 	client.Client
 
 	called bool
@@ -126,7 +131,7 @@ type isDeletingClientStub struct {
 	receivedKey client.ObjectKey
 }
 
-func (c *isDeletingClientStub) Get(_ context.Context,
+func (c *getClientStub) Get(_ context.Context,
 	key client.ObjectKey,
 	obj client.Object,
 	_ ...client.GetOption,

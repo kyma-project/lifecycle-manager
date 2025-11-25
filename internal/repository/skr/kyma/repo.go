@@ -12,6 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/errors"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 type SkrClientCache interface {
@@ -28,7 +29,7 @@ func NewRepository(skrClientCache SkrClientCache) *Repository {
 	}
 }
 
-func (r *Repository) IsDeleting(ctx context.Context, kymaName types.NamespacedName) (bool, error) {
+func (r *Repository) Exists(ctx context.Context, kymaName types.NamespacedName) (bool, error) {
 	skrClient, err := r.getSkrClient(kymaName)
 	if err != nil {
 		return false, err
@@ -41,17 +42,18 @@ func (r *Repository) IsDeleting(ctx context.Context, kymaName types.NamespacedNa
 		},
 	}
 
-	if err := skrClient.Get(ctx,
+	err = skrClient.Get(ctx,
 		types.NamespacedName{
 			Name:      shared.DefaultRemoteKymaName,
 			Namespace: shared.DefaultRemoteNamespace,
 		},
 		pom,
-	); err != nil {
-		return false, err
-	}
+	)
 
-	return !pom.GetDeletionTimestamp().IsZero(), nil
+	// not found error => (false, nil)
+	// other error => (true, err)
+	// no error => (true, nil)
+	return !util.IsNotFound(err), client.IgnoreNotFound(err)
 }
 
 func (r *Repository) Delete(ctx context.Context, kymaName types.NamespacedName) error {
@@ -67,7 +69,7 @@ func (r *Repository) Delete(ctx context.Context, kymaName types.NamespacedName) 
 		},
 	}
 
-	return skrClient.Delete(ctx, kyma)
+	return client.IgnoreNotFound(skrClient.Delete(ctx, kyma))
 }
 
 // TODO: this should work as long as we use the same client cache that we passed to KymaSkrContextProvider
