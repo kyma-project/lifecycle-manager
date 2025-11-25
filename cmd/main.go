@@ -81,9 +81,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
-	kymarepository "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
-	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status"
+	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
+	kymastatusrepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma/status"
+	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	skrkymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma"
+	skrkymastatusrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status"
 	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	kymadeletionsvc "github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion"
@@ -202,7 +204,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		os.Exit(bootstrapFailedExitCode)
 	}
 	gatewayRepository := istiogateway.NewRepository(kcpClientWithoutCache)
-	accessSecretRepository := secretrepository.NewRepository(kcpClientWithoutCache, shared.DefaultControlPlaneNamespace)
+	accessSecretRepository := secretrepo.NewRepository(kcpClientWithoutCache, shared.DefaultControlPlaneNamespace)
 	accessManagerService := accessmanager.NewService(accessSecretRepository)
 	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient,
 		remoteClientCache,
@@ -422,7 +424,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SkrWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
 	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, ociRegistryHost string,
-	accessSecretRepository *secretrepository.Repository, skrClientCache *remote.ClientCache,
+	accessSecretRepository *secretrepo.Repository, skrClientCache *remote.ClientCache,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -445,16 +447,22 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	syncCrdsUseCase := remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil)
 	skrSyncService := skrsync.NewService(
 		skrContextFactory,
-		secretrepository.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+		secretrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
 		&syncCrdsUseCase,
 		flagVar.SkrImagePullSecret)
 
 	deletionMetricsWriter := kymadeletionctrl.NewMetricWriter(kymaMetrics)
 	resultEventRecorder := resultevent.NewEventRecorder(event)
 
-	setSkrKymaStateDeleting := usecases.NewSetSkrKymaStateDeleting(status.NewRepository(skrClientCache),
+	kymaStatusRepo := kymastatusrepo.NewRepository(kcpClient.Status())
+	setKcpKymaStateDeleting := usecases.NewSetKymaStatusDeletingUseCase(kymaStatusRepo)
+	setSkrKymaStateDeleting := usecases.NewSetSkrKymaStateDeleting(skrkymastatusrepo.NewRepository(skrClientCache),
 		accessSecretRepository)
-	kymaDeletionService := kymadeletionsvc.NewService(nil, setSkrKymaStateDeleting, nil)
+	deleteSkrKyma := usecases.NewDeleteSkrKyma(skrkymarepo.NewRepository(skrClientCache),
+		accessSecretRepository)
+	kymaDeletionService := kymadeletionsvc.NewService(setKcpKymaStateDeleting,
+		setSkrKymaStateDeleting,
+		deleteSkrKyma)
 
 	if err := (&kyma.Reconciler{
 		Client:               kcpClient,
@@ -533,7 +541,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentManifestReconciles
 
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
-	orphanDetectionClient := kymarepository.NewClient(mgr.GetClient())
+	orphanDetectionClient := kymarepo.NewClient(mgr.GetClient())
 	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
 	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr.GetClient(), flagVar), img.NewPathExtractor())
 	clientCache := skrclientcache.NewService()
