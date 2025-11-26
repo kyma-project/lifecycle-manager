@@ -15,9 +15,7 @@
         "--kyma-requeue-success-interval=20s",
         "--kyma-requeue-error-interval=5s",
         "--kyma-requeue-busy-interval=5s",
-        "--leader-election-lease-duration=20s",
-        "--leader-election-renew-deadline=15s",
-        "--leader-election-retry-period=3s",
+        "--leader-elect=false",
         "--skr-watcher-image-tag=latest",
         "--skr-watcher-path=${cwd}/skr-webhook",
         "--oci-registry-host=http://localhost:5000"
