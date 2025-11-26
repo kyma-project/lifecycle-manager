@@ -7,6 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apicorev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -137,6 +139,37 @@ func TestIsApplicable_False_KymaAlreadyInDeletingState(t *testing.T) {
 		status: &v1beta2.KymaStatus{
 			State: shared.StateDeleting,
 		},
+	}
+
+	skrAccessSecretRepo := &skrAccessSecretRepoStub{
+		exists: true,
+	}
+
+	uc := usecases.NewSetSkrKymaStateDeleting(kymaStatusRepo, skrAccessSecretRepo)
+
+	applicable, err := uc.IsApplicable(t.Context(), kyma)
+
+	require.NoError(t, err)
+	assert.False(t, applicable)
+	assert.True(t, skrAccessSecretRepo.called)
+	assert.True(t, kymaStatusRepo.called)
+	assert.Equal(t, kyma.GetNamespacedName(), kymaStatusRepo.namespacedName)
+}
+
+func TestIsApplicable_False_KymaAlreadyGone(t *testing.T) {
+	kyma := &v1beta2.Kyma{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:              random.Name(),
+			Namespace:         random.Name(),
+			DeletionTimestamp: &apimetav1.Time{Time: time.Now()},
+		},
+	}
+
+	kymaStatusRepo := &skrKymaStatusRepoStub{
+		err: apierrors.NewNotFound(
+			apicorev1.Resource(string(shared.KymaKind)),
+			shared.DefaultRemoteKymaName,
+		),
 	}
 
 	skrAccessSecretRepo := &skrAccessSecretRepoStub{
