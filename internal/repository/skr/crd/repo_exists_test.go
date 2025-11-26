@@ -9,13 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	apimetav1beta1 "k8s.io/apimachinery/pkg/apis/meta/v1beta1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/errors"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/skr/crd"
+	skrcrdrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/crd"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
@@ -24,14 +24,14 @@ func TestExists_ClientCallSucceeds_ReturnsTrue(t *testing.T) {
 	crdName := random.Name()
 
 	clientStub := &getClientStub{
-		object: &apimetav1beta1.PartialObjectMetadata{},
+		object: &v1beta1.PartialObjectMetadata{},
 	}
 
 	clientCacheStub := &skrClientCacheStub{
 		client: clientStub,
 	}
 
-	repo := crd.NewRepository(clientCacheStub, crdName)
+	repo := skrcrdrepo.NewRepository(clientCacheStub, crdName)
 
 	result, err := repo.Exists(t.Context(), kymaName)
 
@@ -57,7 +57,7 @@ func TestExists_ClientCallFailsWithNotFound_ReturnsFalse(t *testing.T) {
 		client: clientStub,
 	}
 
-	repo := crd.NewRepository(clientCacheStub, crdName)
+	repo := skrcrdrepo.NewRepository(clientCacheStub, crdName)
 
 	result, err := repo.Exists(t.Context(), kymaName)
 
@@ -80,7 +80,7 @@ func TestExists_ClientCallFailsWithOtherError_ReturnsError(t *testing.T) {
 		client: clientStub,
 	}
 
-	repo := crd.NewRepository(clientCacheStub, crdName)
+	repo := skrcrdrepo.NewRepository(clientCacheStub, crdName)
 
 	result, err := repo.Exists(t.Context(), kymaName)
 
@@ -92,7 +92,7 @@ func TestExists_ClientCallFailsWithOtherError_ReturnsError(t *testing.T) {
 }
 
 func TestExists_ClientNotFound_ReturnsError(t *testing.T) {
-	repo := crd.NewRepository(&skrClientCacheStub{
+	repo := skrcrdrepo.NewRepository(&skrClientCacheStub{
 		client: nil, // No client available in the cache
 	}, random.Name())
 
@@ -111,7 +111,7 @@ type getClientStub struct {
 	client.Client
 
 	called bool
-	object *apimetav1beta1.PartialObjectMetadata
+	object *v1beta1.PartialObjectMetadata
 	err    error
 
 	receivedKey client.ObjectKey
@@ -121,7 +121,7 @@ func (c *getClientStub) Get(_ context.Context, key client.ObjectKey, obj client.
 	c.called = true
 	c.receivedKey = key
 	if c.object != nil {
-		c.object.DeepCopyInto(obj.(*apimetav1beta1.PartialObjectMetadata))
+		c.object.DeepCopyInto(obj.(*v1beta1.PartialObjectMetadata))
 	}
 	return c.err
 }

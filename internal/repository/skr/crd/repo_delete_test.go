@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/errors"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/skr/crd"
+	skrcrdrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/crd"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
@@ -27,7 +27,7 @@ func TestDelete_ClientCallSucceeds(t *testing.T) {
 		client: clientStub,
 	}
 
-	repo := crd.NewRepository(clientCacheStub, crdName)
+	repo := skrcrdrepo.NewRepository(clientCacheStub, crdName)
 
 	err := repo.Delete(context.Background(), kymaName)
 
@@ -43,7 +43,7 @@ func TestDelete_ClientReturnsAnError(t *testing.T) {
 	clientStub := &deleteClientStub{
 		err: assert.AnError,
 	}
-	repo := crd.NewRepository(&skrClientCacheStub{
+	repo := skrcrdrepo.NewRepository(&skrClientCacheStub{
 		client: clientStub,
 	}, random.Name())
 
@@ -64,7 +64,7 @@ func TestDelete_ClientIgnoresNotFoundError(t *testing.T) {
 			Resource: reflect.TypeOf(apiextensionsv1.CustomResourceDefinition{}).Name(),
 		}, random.Name()),
 	}
-	repo := crd.NewRepository(&skrClientCacheStub{
+	repo := skrcrdrepo.NewRepository(&skrClientCacheStub{
 		client: clientStub,
 	}, random.Name())
 
@@ -79,7 +79,7 @@ func TestDelete_ClientIgnoresNotFoundError(t *testing.T) {
 }
 
 func TestDelete_ClientNotFound_ReturnsError(t *testing.T) {
-	repo := crd.NewRepository(&skrClientCacheStub{
+	repo := skrcrdrepo.NewRepository(&skrClientCacheStub{
 		client: nil, // No client available in the cache
 	}, random.Name())
 
