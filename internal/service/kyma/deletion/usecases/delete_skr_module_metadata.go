@@ -10,24 +10,19 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 )
 
-type SkrModuleTemplateRepo interface {
-	CrdExists(ctx context.Context, kymaName types.NamespacedName) (bool, error)
-	DeleteCrd(ctx context.Context, kymaName types.NamespacedName) error
-}
-
-type SkrModuleReleaseMetaRepo interface {
-	CrdExists(ctx context.Context, kymaName types.NamespacedName) (bool, error)
-	DeleteCrd(ctx context.Context, kymaName types.NamespacedName) error
+type CrdRepo interface {
+	Exists(ctx context.Context, kymaName types.NamespacedName) (bool, error)
+	Delete(ctx context.Context, kymaName types.NamespacedName) error
 }
 
 type DeleteSkrModuleMetadata struct {
-	skrMtRepo           SkrModuleTemplateRepo
-	skrMrmRepo          SkrModuleReleaseMetaRepo
+	skrMtRepo           CrdRepo
+	skrMrmRepo          CrdRepo
 	skrAccessSecretRepo SkrAccessSecretRepo
 }
 
-func NewDeleteSKRModuleMetadata(skrMtRepo SkrModuleTemplateRepo,
-	skrMrmRepo SkrModuleReleaseMetaRepo,
+func NewDeleteSKRModuleMetadata(skrMtRepo CrdRepo,
+	skrMrmRepo CrdRepo,
 	skrAccessSecretRepo SkrAccessSecretRepo,
 ) *DeleteSkrModuleMetadata {
 	return &DeleteSkrModuleMetadata{
@@ -46,13 +41,13 @@ func (u *DeleteSkrModuleMetadata) IsApplicable(ctx context.Context, kcpKyma *v1b
 		return false, err
 	}
 
-	if mtCrdExists, err := u.skrMtRepo.CrdExists(ctx,
+	if mtCrdExists, err := u.skrMtRepo.Exists(ctx,
 		kcpKyma.GetNamespacedName(),
 	); mtCrdExists || err != nil {
 		return mtCrdExists, err
 	}
 
-	if mrmCrdExists, err := u.skrMrmRepo.CrdExists(ctx,
+	if mrmCrdExists, err := u.skrMrmRepo.Exists(ctx,
 		kcpKyma.GetNamespacedName(),
 	); mrmCrdExists || err != nil {
 		return mrmCrdExists, err
@@ -63,7 +58,7 @@ func (u *DeleteSkrModuleMetadata) IsApplicable(ctx context.Context, kcpKyma *v1b
 
 func (u *DeleteSkrModuleMetadata) Execute(ctx context.Context, kcpKyma *v1beta2.Kyma) result.Result {
 	// deleting the CRDs is sufficient as this also deletes related CRs
-	errMt := u.skrMtRepo.DeleteCrd(ctx, kcpKyma.GetNamespacedName())
+	errMt := u.skrMtRepo.Delete(ctx, kcpKyma.GetNamespacedName())
 	if errMt != nil {
 		return result.Result{
 			UseCase: u.Name(),
@@ -71,7 +66,7 @@ func (u *DeleteSkrModuleMetadata) Execute(ctx context.Context, kcpKyma *v1beta2.
 		}
 	}
 
-	errMrm := u.skrMrmRepo.DeleteCrd(ctx, kcpKyma.GetNamespacedName())
+	errMrm := u.skrMrmRepo.Delete(ctx, kcpKyma.GetNamespacedName())
 	if errMrm != nil {
 		return result.Result{
 			UseCase: u.Name(),

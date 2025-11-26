@@ -11,17 +11,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/errors"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-)
-
-var (
-	mrmCrdName  = fmt.Sprintf("%s.%s", shared.ModuleReleaseMetaKind.Plural(), shared.OperatorGroup)
-	crdTypeMeta = apimetav1.TypeMeta{
-		Kind:       reflect.TypeOf(apiextensionsv1.CustomResourceDefinition{}).Name(),
-		APIVersion: apiextensionsv1.SchemeGroupVersion.String(),
-	}
 )
 
 type SkrClientCache interface {
@@ -30,15 +21,19 @@ type SkrClientCache interface {
 
 type Repository struct {
 	skrClientCache SkrClientCache
+	crdName        string
 }
 
-func NewRepository(skrClientCache SkrClientCache) *Repository {
+func NewRepository(skrClientCache SkrClientCache,
+	crdName string,
+) *Repository {
 	return &Repository{
 		skrClientCache: skrClientCache,
+		crdName:        crdName,
 	}
 }
 
-func (r *Repository) CrdExists(ctx context.Context, kymaName types.NamespacedName) (bool, error) {
+func (r *Repository) Exists(ctx context.Context, kymaName types.NamespacedName) (bool, error) {
 	skrClient, err := r.getSkrClient(kymaName)
 	if err != nil {
 		return false, err
@@ -46,10 +41,13 @@ func (r *Repository) CrdExists(ctx context.Context, kymaName types.NamespacedNam
 
 	err = skrClient.Get(ctx,
 		types.NamespacedName{
-			Name: mrmCrdName,
+			Name: r.crdName,
 		},
 		&v1beta1.PartialObjectMetadata{
-			TypeMeta: crdTypeMeta,
+			TypeMeta: apimetav1.TypeMeta{
+				Kind:       reflect.TypeOf(apiextensionsv1.CustomResourceDefinition{}).Name(),
+				APIVersion: apiextensionsv1.SchemeGroupVersion.String(),
+			},
 		},
 	)
 
@@ -59,7 +57,7 @@ func (r *Repository) CrdExists(ctx context.Context, kymaName types.NamespacedNam
 	return !util.IsNotFound(err), client.IgnoreNotFound(err)
 }
 
-func (r *Repository) DeleteCrd(ctx context.Context, kymaName types.NamespacedName) error {
+func (r *Repository) Delete(ctx context.Context, kymaName types.NamespacedName) error {
 	skrClient, err := r.getSkrClient(kymaName)
 	if err != nil {
 		return err
@@ -69,7 +67,7 @@ func (r *Repository) DeleteCrd(ctx context.Context, kymaName types.NamespacedNam
 		skrClient.Delete(ctx,
 			&apiextensionsv1.CustomResourceDefinition{
 				ObjectMeta: apimetav1.ObjectMeta{
-					Name: mrmCrdName,
+					Name: r.crdName,
 				},
 			}))
 }
