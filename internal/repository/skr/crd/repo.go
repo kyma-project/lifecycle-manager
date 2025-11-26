@@ -1,4 +1,4 @@
-package modulereleasemeta
+package crd
 
 import (
 	"context"
