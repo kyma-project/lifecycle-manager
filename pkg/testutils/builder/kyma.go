@@ -17,6 +17,7 @@ type KymaBuilder struct {
 
 // NewKymaBuilder returns a KymaBuilder with v1beta2.Kyma initialized defaults.
 func NewKymaBuilder() KymaBuilder {
+	runtimeId := random.Name()
 	return KymaBuilder{
 		kyma: &v1beta2.Kyma{
 			TypeMeta: apimetav1.TypeMeta{
@@ -24,9 +25,11 @@ func NewKymaBuilder() KymaBuilder {
 				Kind:       string(shared.KymaKind),
 			},
 			ObjectMeta: apimetav1.ObjectMeta{
-				Name:      random.Name(),
+				Name:      runtimeId,
 				Namespace: apimetav1.NamespaceDefault,
-				Labels:    map[string]string{},
+				Labels: map[string]string{
+					shared.RuntimeIDLabel: runtimeId,
+				},
 			},
 			Spec:   v1beta2.KymaSpec{},
 			Status: v1beta2.KymaStatus{},
