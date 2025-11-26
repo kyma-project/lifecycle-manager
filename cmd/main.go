@@ -454,7 +454,8 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 
 	setSkrKymaStateDeleting := usecases.NewSetSkrKymaStateDeleting(status.NewRepository(skrClientCache),
 		accessSecretRepository)
-	kymaDeletionService := kymadeletionsvc.NewService(nil, setSkrKymaStateDeleting, nil)
+	removeSkrWebhook := usecases.NewRemoveSkrWebhookUseCase(skrWebhookManager)
+	kymaDeletionService := kymadeletionsvc.NewService(nil, setSkrKymaStateDeleting, nil, removeSkrWebhook)
 
 	if err := (&kyma.Reconciler{
 		Client:               kcpClient,

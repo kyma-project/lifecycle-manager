@@ -27,13 +27,26 @@ func NewService(
 	setKcpKymaStateDeleting UseCase,
 	setSkrKymaStateDeleting UseCase,
 	deleteSkrKyma UseCase,
+	removeSkrWebhook UseCase,
 ) *Service {
+	steps := []UseCase{}
+
+	// Add non-nil usecases in order
+	if setKcpKymaStateDeleting != nil {
+		steps = append(steps, setKcpKymaStateDeleting)
+	}
+	if setSkrKymaStateDeleting != nil {
+		steps = append(steps, setSkrKymaStateDeleting)
+	}
+	if deleteSkrKyma != nil {
+		steps = append(steps, deleteSkrKyma)
+	}
+	if removeSkrWebhook != nil {
+		steps = append(steps, removeSkrWebhook)
+	}
+
 	return &Service{
-		deletionSteps: []UseCase{
-			setKcpKymaStateDeleting,
-			setSkrKymaStateDeleting,
-			deleteSkrKyma,
-		},
+		deletionSteps: steps,
 	}
 }
 
