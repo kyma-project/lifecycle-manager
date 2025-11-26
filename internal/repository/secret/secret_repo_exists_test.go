@@ -45,7 +45,7 @@ func TestExists_ClientCallFailsWithNotFound_ReturnsNotExists(t *testing.T) {
 	clientStub := &getClientStub{
 		err: apierrors.NewNotFound(apicorev1.Resource("secrets"), kymaName),
 	}
-	secretRepository := secretrepository.NewRepository(clientStub, repoNamespace)
+	secretRepository := secretrepo.NewRepository(clientStub, repoNamespace)
 
 	result, err := secretRepository.Exists(t.Context(), kymaName)
 
