@@ -86,6 +86,8 @@ import (
 	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	skrkymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma"
 	skrkymastatusrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status"
+	skrmrmrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/modulereleasemeta"
+	skrmtrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/moduletemplate"
 	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	kymadeletionsvc "github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion"
@@ -460,9 +462,14 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		accessSecretRepository)
 	deleteSkrKyma := usecases.NewDeleteSkrKyma(skrkymarepo.NewRepository(skrClientCache),
 		accessSecretRepository)
+	deleteSkrModuleMetadata := usecases.NewDeleteSKRModuleMetadata(skrmtrepo.NewRepository(skrClientCache),
+		skrmrmrepo.NewRepository(skrClientCache),
+		accessSecretRepository)
 	kymaDeletionService := kymadeletionsvc.NewService(setKcpKymaStateDeleting,
 		setSkrKymaStateDeleting,
-		deleteSkrKyma)
+		deleteSkrKyma,
+		deleteSkrModuleMetadata,
+	)
 
 	if err := (&kyma.Reconciler{
 		Client:               kcpClient,

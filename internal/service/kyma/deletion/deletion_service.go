@@ -27,12 +27,14 @@ func NewService(
 	setKcpKymaStateDeleting UseCase,
 	setSkrKymaStateDeleting UseCase,
 	deleteSkrKyma UseCase,
+	deleteSkrModuleMetadata UseCase,
 ) *Service {
 	return &Service{
 		deletionSteps: []UseCase{
 			setKcpKymaStateDeleting,
 			setSkrKymaStateDeleting,
 			deleteSkrKyma,
+			deleteSkrModuleMetadata,
 		},
 	}
 }
