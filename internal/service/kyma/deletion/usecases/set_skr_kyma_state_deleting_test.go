@@ -217,21 +217,6 @@ func TestIsApplicable_True(t *testing.T) {
 	assert.Equal(t, kyma.GetNamespacedName(), kymaStatusRepo.namespacedName)
 }
 
-type skrAccessSecretRepoStub struct {
-	usecases.SkrAccessSecretRepo
-
-	called   bool
-	kymaName string
-	exists   bool
-	err      error
-}
-
-func (r *skrAccessSecretRepoStub) Exists(_ context.Context, kymaName string) (bool, error) {
-	r.called = true
-	r.kymaName = kymaName
-	return r.exists, r.err
-}
-
 type skrKymaStatusRepoStub struct {
 	usecases.SkrKymaStatusRepo
 

@@ -50,7 +50,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
-	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate" //nolint:revive // not for import
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
@@ -69,10 +69,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -208,7 +207,7 @@ var _ = BeforeSuite(func() {
 	)
 	Expect(err).ToNot(HaveOccurred())
 	certificateService := certificate.NewService(certmanagerrenewal.NewService(nil), certRepo,
-		secretrepository.NewRepository(mgr.GetClient(), flags.DefaultIstioNamespace), certificateManagerConfig)
+		secretrepo.NewRepository(mgr.GetClient(), flags.DefaultIstioNamespace), certificateManagerConfig)
 	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
 	Expect(err).ToNot(HaveOccurred())
 

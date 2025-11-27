@@ -17,10 +17,6 @@ type SkrKymaStatusRepo interface {
 	Get(ctx context.Context, namespacedName types.NamespacedName) (*v1beta2.KymaStatus, error)
 }
 
-type SkrAccessSecretRepo interface {
-	Exists(ctx context.Context, name string) (bool, error)
-}
-
 type SetSkrKymaStateDeleting struct {
 	skrKymaStatusRepo   SkrKymaStatusRepo
 	skrAccessSecretRepo SkrAccessSecretRepo

@@ -129,9 +129,15 @@ linters:
         - pkg: github.com/kyma-project/lifecycle-manager/pkg/module/common
           alias: modulecommon
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/kyma
-          alias: kymarepository
+          alias: kymarepo
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/kyma/status
+          alias: kymastatusrepo
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma
+          alias: skrkymarepo
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status
+          alias: skrkymastatusrepo
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/secret
-          alias: secretrepository
+          alias: secretrepo
         - pkg: github.com/kyma-project/lifecycle-manager/internal/result/event
           alias: resultevent
         - pkg: k8s.io/api/networking/v1
