@@ -6,6 +6,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
+	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 )
 
 var (
@@ -42,7 +43,8 @@ func (s *Service) Delete(ctx context.Context, kyma *v1beta2.Kyma) result.Result 
 		isApplicable, err := step.IsApplicable(ctx, kyma)
 		if err != nil {
 			return result.Result{
-				Err: errors.Join(ErrUnableToDetermineUsecaseApplicability, err),
+				UseCase: step.Name(),
+				Err:     errors.Join(ErrUnableToDetermineUsecaseApplicability, err),
 			}
 		}
 		if isApplicable {
@@ -51,6 +53,7 @@ func (s *Service) Delete(ctx context.Context, kyma *v1beta2.Kyma) result.Result 
 	}
 
 	return result.Result{
-		Err: ErrNoUseCaseApplicable,
+		UseCase: usecase.ProcessKymaDeletion,
+		Err:     ErrNoUseCaseApplicable,
 	}
 }
