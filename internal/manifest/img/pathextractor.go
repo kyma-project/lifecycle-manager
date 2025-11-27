@@ -2,7 +2,6 @@ package img
 
 import (
 	"archive/tar"
-	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -136,20 +135,7 @@ func (p PathExtractor) ExtractLayer(tarPath string) (string, error) {
 	}
 	defer tarFile.Close()
 
-	// Try to detect if the file is gzip-compressed by attempting to create a gzip reader
-	var tarReader *tar.Reader
-	gzipReader, err := gzip.NewReader(tarFile)
-	if err == nil {
-		// File is gzip-compressed, use gzip reader
-		defer gzipReader.Close()
-		tarReader = tar.NewReader(gzipReader)
-	} else {
-		// File is not gzip-compressed, seek back to start and read as plain tar
-		if _, err := tarFile.Seek(0, 0); err != nil {
-			return "", fmt.Errorf("failed to seek file: %w", err)
-		}
-		tarReader = tar.NewReader(tarFile)
-	}
+	tarReader := tar.NewReader(tarFile)
 	for {
 		header, err := tarReader.Next()
 		if errors.Is(err, io.EOF) {
