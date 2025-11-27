@@ -47,6 +47,7 @@ TEMPLATE_FILE="template.yaml"
 MANIFEST_FILE="template-operator.yaml"
 DEFAULT_CR_FILE="default-sample-cr.yaml"
 
+echo "=== Module config for modulectl... ==="
 cat "${MODULE_CONFIG}"
 
 # Configure OCM to use insecure HTTP for local registry
@@ -58,6 +59,9 @@ modulectl create \
   --config-file "${MODULE_CONFIG}" \
   --disable-ocm-registry-push \
   --output-constructor-file "${COMPONENT_CONSTRUCTOR_FILE}"
+
+echo "=== Component Constructor file ==="
+cat "${COMPONENT_CONSTRUCTOR_FILE}"
 
 # Transfer CTF to registry using ocm cli
 echo "Transferring component version to registry using ocm cli..."
