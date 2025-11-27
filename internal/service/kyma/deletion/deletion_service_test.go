@@ -2,6 +2,7 @@ package deletion_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -111,6 +112,39 @@ func Test_Delete_Fallthrough_WhenNoUseCaseIsApplicable(t *testing.T) {
 	assert.Equal(t, kyma, uc3.receivedKyma)
 }
 
+func Test_Delete_ExecutesCorrectOrderOfUseCases(t *testing.T) {
+	kyma := &v1beta2.Kyma{}
+
+	recordedOrder := []string{}
+	uc1 := &orderRecordingUseCaseStub{recorder: &recordedOrder}
+	uc2 := &orderRecordingUseCaseStub{recorder: &recordedOrder}
+	uc3 := &orderRecordingUseCaseStub{recorder: &recordedOrder}
+
+	executionOrder := []string{
+		fmt.Sprintf("%s-%s", uc1.Name(), "isApplicable"),
+		fmt.Sprintf("%s-%s", uc1.Name(), "execute"),
+		fmt.Sprintf("%s-%s", uc1.Name(), "isApplicable"),
+		fmt.Sprintf("%s-%s", uc2.Name(), "isApplicable"),
+		fmt.Sprintf("%s-%s", uc2.Name(), "execute"),
+		fmt.Sprintf("%s-%s", uc1.Name(), "isApplicable"),
+		fmt.Sprintf("%s-%s", uc2.Name(), "isApplicable"),
+		fmt.Sprintf("%s-%s", uc3.Name(), "isApplicable"),
+		fmt.Sprintf("%s-%s", uc3.Name(), "execute"),
+	}
+
+	svc := deletion.NewService(
+		uc1,
+		uc2,
+		uc3,
+	)
+
+	_ = svc.Delete(t.Context(), kyma)
+	_ = svc.Delete(t.Context(), kyma)
+	_ = svc.Delete(t.Context(), kyma)
+
+	require.Equal(t, executionOrder, recordedOrder)
+}
+
 type useCaseStub struct {
 	receivedKyma *v1beta2.Kyma
 	name         result.UseCase
@@ -131,7 +165,6 @@ func (u *useCaseStub) IsApplicable(_ context.Context, kyma *v1beta2.Kyma) (bool,
 func (u *useCaseStub) Execute(_ context.Context, kyma *v1beta2.Kyma) result.Result {
 	u.receivedKyma = kyma
 	u.executeCalled = true
-
 	return result.Result{
 		UseCase: u.Name(),
 		Err:     u.err,
@@ -144,4 +177,41 @@ func (u *useCaseStub) Name() result.UseCase {
 	}
 
 	return u.name
+}
+
+type orderRecordingUseCaseStub struct {
+	name        result.UseCase
+	appliedOnce bool
+	recorder    *[]string
+}
+
+func (u *orderRecordingUseCaseStub) IsApplicable(_ context.Context, _ *v1beta2.Kyma) (bool, error) {
+	u.record("isApplicable")
+
+	if !u.appliedOnce {
+		u.appliedOnce = true
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (u *orderRecordingUseCaseStub) Execute(_ context.Context, _ *v1beta2.Kyma) result.Result {
+	u.record("execute")
+	return result.Result{
+		UseCase: u.Name(),
+		Err:     nil,
+	}
+}
+
+func (u *orderRecordingUseCaseStub) Name() result.UseCase {
+	if u.name == "" {
+		u.name = result.UseCase(random.Name())
+	}
+
+	return u.name
+}
+
+func (u *orderRecordingUseCaseStub) record(phase string) {
+	*u.recorder = append(*u.recorder, fmt.Sprintf("%s-%s", u.Name(), phase))
 }
