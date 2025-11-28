@@ -12,7 +12,7 @@ kubectl get crd manifests.operator.kyma-project.io -o yaml
 
 ## Patching
 
-Responsible for creating and updating Manifest CRs is the so-called Runner. It is using Server Side Apply (SSA), where an update is only performed when one of the following conditions is met:
+The so-called Runner is responsible for creating and updating Manifest CRs. It is using Server Side Apply (SSA), where an update is only performed when one of the following conditions is met:
 
 1. The Manifest CR version differs from the Kyma CR's module status version.
 2. The Manifest CR channel differs from the Kyma CR's module status channel.
