@@ -47,8 +47,8 @@ OCM_CONFIG="$(dirname "$0")/ocm-config-local-registry.yaml"
 REGISTRY_URL="localhost:5111"
 
 echo "[DEBUG] List Component Versions from local registry:"
-echo ocm --config "${OCM_CONFIG}" get componentversions "http://${REGISTRY_URL}//kyma-project.io/module/template-operator" -o yaml
-ocm --config "${OCM_CONFIG}" get componentversions "http://${REGISTRY_URL}//kyma-project.io/module/template-operator" -o yaml
+echo ocm --config "${OCM_CONFIG}" get componentversions "http://${REGISTRY_URL}//kyma-project.io/module/template-operator"
+ocm --config "${OCM_CONFIG}" get componentversions "http://${REGISTRY_URL}//kyma-project.io/module/template-operator"
 
 echo "[DEBUG] Get ComponentDescriptor from local registry:"
 echo ocm --config "${OCM_CONFIG}" get componentversion "http://${REGISTRY_URL}//kyma-project.io/module/template-operator:${RELEASE_VERSION}" -o yaml
