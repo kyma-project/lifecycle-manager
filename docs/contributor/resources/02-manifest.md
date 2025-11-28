@@ -84,7 +84,7 @@ This status provides a reliable way to track the state of the Manifest CR and th
 
 This parameter was used to determine whether the given module should be installed in a remote cluster. If it should, then in the KCP cluster, it attempts to search for a Secret having the same `operator.kyma-project.io/kyma-name` label and value as in the Manifest CR. This is the default and only behaviour now.
 
-Thus, a Manifest CR like
+Thus, in the following example, the Manifest CR looks for a Secret with the same `operator.kyma-project.io/kyma-name` label and value `kyma-sample`.
 
 ```yaml
 apiVersion: operator.kyma-project.io/v1beta2
