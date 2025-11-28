@@ -98,8 +98,6 @@ spec:
   remote: true
 ```
 
-looks for a Secret with the same `operator.kyma-project.io/kyma-name` label and value `kyma-sample`.
-
 ### **.spec.config (Deprecated)**
 
 > ### Warning
