@@ -42,6 +42,14 @@ yq eval '.bdba += ["europe-docker.pkg.dev/kyma-project/prod/template-operator:'"
 cat module-config-for-e2e.yaml
 modulectl create --config-file ./module-config-for-e2e.yaml --registry http://localhost:5111 --insecure
 
+# Configure OCM to use insecure HTTP for local registry
+OCM_CONFIG="$(dirname "$0")/ocm-config-local-registry.yaml"
+REGISTRY_URL="localhost:5111"
+
+echo "[DEBUG] ComponentDescriptor in registry:"
+echo ocm --config "${OCM_CONFIG}" get componentversion "http://${REGISTRY_URL}//kyma-project.io/module/template-operator:${RELEASE_VERSION}" -o yaml
+ocm --config "${OCM_CONFIG}" get componentversion "http://${REGISTRY_URL}//kyma-project.io/module/template-operator:${RELEASE_VERSION}" -o yaml
+
 cat template.yaml
 echo "ModuleTemplate created successfully"
 

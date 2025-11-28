@@ -22,6 +22,8 @@ runs:
         cp ../lifecycle-manager/scripts/tests/deploy_moduletemplate.sh .
         cp ../lifecycle-manager/scripts/tests/deploy_modulereleasemeta.sh .
         cp ../lifecycle-manager/scripts/tests/deploy_mandatory_modulereleasemeta.sh .
+        cp ../lifecycle-manager/scripts/tests/ocm-config-local-registry.yaml .
+        cp ../lifecycle-manager/scripts/tests/ocm-config-private-registry.yaml .
     - name: Create and apply Template Operator ModuleTemplate from the latest release
       working-directory: template-operator
       if: ${{ matrix.e2e-test != 'mandatory-module' &&
