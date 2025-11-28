@@ -5,11 +5,12 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/manifest"
+	manifestrepo "github.com/kyma-project/lifecycle-manager/internal/repository/manifest"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
-	"github.com/stretchr/testify/require"
 )
 
 func TestRepository_DeleteAllForModule(t *testing.T) {
@@ -19,7 +20,7 @@ func TestRepository_DeleteAllForModule(t *testing.T) {
 
 	t.Run("successfully deletes all manifests for module", func(t *testing.T) {
 		stub := &clientStub{}
-		repo := manifest.NewRepository(stub, testNamespace)
+		repo := manifestrepo.NewRepository(stub, testNamespace)
 
 		err := repo.DeleteAllForModule(ctx, testModuleName)
 
@@ -33,7 +34,7 @@ func TestRepository_DeleteAllForModule(t *testing.T) {
 	t.Run("returns error when deleteAllOf fails", func(t *testing.T) {
 		expectedErr := errors.New("delete error")
 		stub := &clientStub{deleteAllOfErr: expectedErr}
-		repo := manifest.NewRepository(stub, testNamespace)
+		repo := manifestrepo.NewRepository(stub, testNamespace)
 
 		err := repo.DeleteAllForModule(ctx, testModuleName)
 

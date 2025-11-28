@@ -5,11 +5,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/manifest"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	manifestrepo "github.com/kyma-project/lifecycle-manager/internal/repository/manifest"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
 func TestRepository_ExistForKyma(t *testing.T) {
@@ -29,7 +30,7 @@ func TestRepository_ExistForKyma(t *testing.T) {
 		}
 
 		stub := &clientStub{partialObjectMetadata: expectedMetadata}
-		repo := manifest.NewRepository(stub, testNamespace)
+		repo := manifestrepo.NewRepository(stub, testNamespace)
 
 		exists, err := repo.ExistForKyma(ctx, testKymaName)
 
@@ -42,7 +43,7 @@ func TestRepository_ExistForKyma(t *testing.T) {
 
 	t.Run("returns false when no manifests exist for Kyma", func(t *testing.T) {
 		stub := &clientStub{partialObjectMetadata: []apimetav1.PartialObjectMetadata{}}
-		repo := manifest.NewRepository(stub, testNamespace)
+		repo := manifestrepo.NewRepository(stub, testNamespace)
 
 		exists, err := repo.ExistForKyma(ctx, testKymaName)
 
@@ -56,7 +57,7 @@ func TestRepository_ExistForKyma(t *testing.T) {
 	t.Run("returns error when list fails", func(t *testing.T) {
 		expectedErr := errors.New("list error")
 		stub := &clientStub{listErr: expectedErr}
-		repo := manifest.NewRepository(stub, testNamespace)
+		repo := manifestrepo.NewRepository(stub, testNamespace)
 
 		exists, err := repo.ExistForKyma(ctx, testKymaName)
 
