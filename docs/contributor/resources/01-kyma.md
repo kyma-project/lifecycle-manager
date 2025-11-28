@@ -16,11 +16,11 @@ The Kyma custom resource (CR) is used to declare the desired state of a cluster.
 Additionally, you can add a specific channel if **.spec.channel** should not be used.
 Last but not least, it includes a **customResourcePolicy** which can be used for specifying default behavior when initializing modules in a cluster.
 
-> [!Note]
+> ### Note
 > The Kyma CR is applied in both Kyma Control Plane (KCP) and SAP BTP, Kyma runtime clusters.
 > Lifecycle-Manager synchronizes the `.state` from KCP to Kyma runtime.
 > The `.spec` is only synchronized when creating the Kyma runtime resource from the KCP one.
-> From then on, it is NOT synchronized anylonger and Lifecycle-Manager directly determines the desired state from the Kyma runtime resource.
+> From then on, it is NOT synchronized any longer, and Lifecycle-Manager directly determines the desired state from the Kyma runtime resource.
 > See [Kyma CR Synchronization](../08-kcp-skr-synchronization.md#kyma-cr-synchronization) for more details.
 
 ## Configuration
@@ -99,7 +99,7 @@ spec:
   - name: example-module
 ```
 
-> **CAUTION:**
+> ### Warining
 > Module referencing using NamespacedName and FQDN (Fully Qualified Domain Name) has been deprecated.
 
 ### **.spec.modules[].managed**
@@ -124,7 +124,7 @@ The **state** attribute is a simple representation of the state of the entire Ky
 - `Error`: Indicates a technical problem that must be resolved. For example, when Lifecycle Manager is unable to connect to a Kyma runtime instance. Typically, technical support must resolve a long-running `Error` state.
 - `Deleting`: Indicates that the Kyma installation is being deleted.
 
-The **state** is always reported based on the last reconciliation loop of the [Kyma controller](../../../internal/controller/kyma/controller.go). It will be set to `Ready` only if all installations were successfully executed and are consistent at the time of the reconciliation.
+The **state** is always reported based on the last reconciliation loop of the [Kyma controller](https://github.com/kyma-project/lifecycle-manager/blob/main/internal/controller/kyma/controller.go). It will be set to `Ready` only if all installations were successfully executed and are consistent at the time of the reconciliation.
 
 ### **.status.conditions**
 
@@ -169,27 +169,27 @@ status:
     version: 1.2.10
 ```
 
-The above example shows that not only the module name is resolved to a unique `fqdn`, it also represents the active `channel`, `version` and `state` which is a direct tracking to the **.status.state** in the Manifest CR. The Kyma CR `Ready` state can only be achieved if all tracked modules are `Ready` themselves.
+The above example shows that not only is the module name resolved to a unique `fqdn`, it also represents the active `channel`, `version`, and `state`, which is a direct tracking to the **.status.state** in the Manifest CR. The Kyma CR `Ready` state can only be achieved if all tracked modules are `Ready` themselves.
 
-The Manifest CR can be directly observed by looking at the **metadata**, **apiVersion**, and **kind** which can be used to dynamically resolve the module.
+The Manifest CR can be directly observed by looking at the **metadata**, **apiVersion**, and **kind**, which can be used to dynamically resolve the module.
 
-The same is done for the ModuleTemplate CR. The actual one that is used as a template to initialize and synchronize the module similarly is referenced by **apiVersion**, **kind**, and **metadata**.
+The same is done for the ModuleTemplate CR. The actual one that is used as a template to initialize and synchronize the module, similarly, is referenced by **apiVersion**, **kind**, and **metadata**.
 
 To observe not only how the state of the `synchronization` but the entire reconciliation is working, as well as to check on latency and the last observed change, we also introduce the **lastOperation** field. This contains not only a timestamp of the last change (which allows you to view the time since the module was last reconciled by Lifecycle Manager), but also a message that either contains a process message or an error message in case of an `Error` state. Thus, to get more details of any potential issues, it is recommended to check **lastOperation**.
 
-In addition, we also regularly issue Events for important things happening at specific time intervals, e.g. critical errors that ease observability.
+In addition, we also regularly issue Events for important things happening at specific time intervals, e.g., critical errors that ease observability.
 
 ## `operator.kyma-project.io` Labels
 
-Various overarching features can be enabled/disabled or provided as hints to the reconciler by providing a specific label key and value to the Kyma CR and its related resources. For better understanding, use the matching [API label reference](/api/shared/operator_labels.go).
+Various overarching features can be enabled/disabled or provided as hints to the reconciler by providing a specific label key and value to the Kyma CR and its related resources. For better understanding, use the matching [API label reference](https://github.com/kyma-project/lifecycle-manager/blob/main/api/shared/operator_labels.go).
 
 The most important labels include, but are not limited to:
 
 * `operator.kyma-project.io/kyma-name`: The `runtime-id` of the Kyma runtime instance.
-* `operator.kyma-project.io/skip-reconciliation`: A label that can be used with the value `true` to completely disable reconciliation for a Kyma CR. Can also be used on the Manifest CR to disable a specific module. This will avoid all reconciliations for the entire Kyma or Manifest CRs. Note that even though reconciliation for the Kyma CR might be disabled, the Manifest CR in a Kyma can still get reconciled normally if not adjusted to have the label set as well.
+* `operator.kyma-project.io/skip-reconciliation`: A label that can be used with the value `true` to completely disable reconciliation for a Kyma CR. It can also be used on the Manifest CR to disable a specific module. This will avoid all reconciliations for the entire Kyma or Manifest CRs. Note that even though reconciliation for the Kyma CR might be disabled, the Manifest CR in a Kyma can still get reconciled normally if not adjusted to have the label set as well.
 * `operator.kyma-project.io/managed-by`: A cache limitation label that must be set to `lifecycle-manager` to have the resources picked up by the cache. Hard-coded but will be made dynamic to allow for multi-tenant deployments that have non-conflicting caches
 * `operator.kyma-project.io/internal`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `internal` modules, are also synchronized with the remote cluster. The default value is `false`.
-* `operator.kyma-project.io/beta`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `beta` modules are also synchronized with the remote cluster. The default value is `false`.
+* `operator.kyma-project.io/beta`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `beta` modules, are also synchronized with the remote cluster. The default value is `false`.
 
 ## Annotations
 
