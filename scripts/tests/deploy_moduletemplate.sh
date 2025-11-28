@@ -68,7 +68,11 @@ echo "Transferring component version to registry using ocm cli..."
 ocm --config "${OCM_CONFIG}" add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
 ocm --config "${OCM_CONFIG}" transfer ctf --overwrite --no-update "${CTF_DIR}" "http://${REGISTRY_URL}"
 
-echo "[DEBUG] ComponentDescriptor in registry:"
+echo "[DEBUG] List Component Versions from local registry:"
+echo ocm --config "${OCM_CONFIG}" get componentversions "http://${REGISTRY_URL}//kyma-project.io/module/template-operator" -o yaml
+ocm --config "${OCM_CONFIG}" get componentversions "http://${REGISTRY_URL}//kyma-project.io/module/template-operator" -o yaml
+
+echo "[DEBUG] Get ComponentDescriptor from local registry:"
 echo ocm --config "${OCM_CONFIG}" get componentversion "http://${REGISTRY_URL}//kyma-project.io/module/template-operator:${RELEASE_VERSION}" -o yaml
 ocm --config "${OCM_CONFIG}" get componentversion "http://${REGISTRY_URL}//kyma-project.io/module/template-operator:${RELEASE_VERSION}" -o yaml
 
