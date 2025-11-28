@@ -2,7 +2,7 @@
 
 The `manifests.operator.kyma-project.io` Custom Resource Definition (CRD) defines the structure and format used to configure the Manifest resource.
 
-The Manifest custom resource (CR) represent resources that make up a module and are to be installed by Lifecycle Manager. The Manifest CR is a rendered module added to a particular cluster.
+The Manifest custom resource (CR) represents resources that make up a module and are to be installed by Lifecycle Manager. The Manifest CR is a rendered module added to a particular cluster.
 
 To get the latest CRD in the YAML format, run the following command:
 
@@ -12,7 +12,7 @@ kubectl get crd manifests.operator.kyma-project.io -o yaml
 
 ## Patching
 
-Responsible for creating and updating Manifest CRs is the so-called Runner. It is using Server Side Apply (SSA) where an update is only performed when one of the following conditions is met:
+Responsible for creating and updating Manifest CRs is the so-called Runner. It is using Server Side Apply (SSA), where an update is only performed when one of the following conditions is met:
 
 1. The Manifest CR version differs from the Kyma CR's module status version.
 2. The Manifest CR channel differs from the Kyma CR's module status channel.
@@ -78,13 +78,13 @@ This status provides a reliable way to track the state of the Manifest CR and th
 
 ### **.spec.remote (Deprecated)**
 
-> ![Warning]
+> ### Warning
 > This field was deprecated and is no longer functional. It will be removed in the next API version.
 
 
 This parameter was used to determine whether the given module should be installed in a remote cluster. If it should, then in the KCP cluster, it attempts to search for a Secret having the same `operator.kyma-project.io/kyma-name` label and value as in the Manifest CR. This is the default and only behaviour now.
 
-Thus a Manifest CR like
+Thus, a Manifest CR like
 
 ```yaml
 apiVersion: operator.kyma-project.io/v1beta2
@@ -102,7 +102,7 @@ looks for a Secret with the same `operator.kyma-project.io/kyma-name` label and 
 
 ### **.spec.config (Deprecated)**
 
-> [!Warning]
+> ### Warning
 > This field was deprecated and is no longer functional. It will be removed in the next API version.
 
 The config reference used an image layer reference that contains configuration data that could be used to further
