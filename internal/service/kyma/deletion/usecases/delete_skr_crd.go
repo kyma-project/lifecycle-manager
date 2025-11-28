@@ -7,7 +7,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
-	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 )
 
 type CrdRepo interface {
@@ -16,19 +15,19 @@ type CrdRepo interface {
 }
 
 type DeleteSkrModuleMetadata struct {
-	skrMtRepo           CrdRepo
-	skrMrmRepo          CrdRepo
+	skrCrdRepo          CrdRepo
 	skrAccessSecretRepo SkrAccessSecretRepo
+	useCase             result.UseCase
 }
 
-func NewDeleteSKRModuleMetadata(skrMtRepo CrdRepo,
-	skrMrmRepo CrdRepo,
+func NewDeleteSkrCrd(skrCrdRepo CrdRepo,
 	skrAccessSecretRepo SkrAccessSecretRepo,
+	useCase result.UseCase,
 ) *DeleteSkrModuleMetadata {
 	return &DeleteSkrModuleMetadata{
-		skrMtRepo:           skrMtRepo,
-		skrMrmRepo:          skrMrmRepo,
+		skrCrdRepo:          skrCrdRepo,
 		skrAccessSecretRepo: skrAccessSecretRepo,
+		useCase:             useCase,
 	}
 }
 
@@ -41,45 +40,19 @@ func (u *DeleteSkrModuleMetadata) IsApplicable(ctx context.Context, kcpKyma *v1b
 		return false, err
 	}
 
-	if mtCrdExists, err := u.skrMtRepo.Exists(ctx,
+	return u.skrCrdRepo.Exists(ctx,
 		kcpKyma.GetNamespacedName(),
-	); mtCrdExists || err != nil {
-		return mtCrdExists, err
-	}
-
-	if mrmCrdExists, err := u.skrMrmRepo.Exists(ctx,
-		kcpKyma.GetNamespacedName(),
-	); mrmCrdExists || err != nil {
-		return mrmCrdExists, err
-	}
-
-	return false, nil
+	)
 }
 
 func (u *DeleteSkrModuleMetadata) Execute(ctx context.Context, kcpKyma *v1beta2.Kyma) result.Result {
 	// deleting the CRDs is sufficient as this also deletes related CRs
-	errMt := u.skrMtRepo.Delete(ctx, kcpKyma.GetNamespacedName())
-	if errMt != nil {
-		return result.Result{
-			UseCase: u.Name(),
-			Err:     errMt,
-		}
-	}
-
-	errMrm := u.skrMrmRepo.Delete(ctx, kcpKyma.GetNamespacedName())
-	if errMrm != nil {
-		return result.Result{
-			UseCase: u.Name(),
-			Err:     errMrm,
-		}
-	}
-
 	return result.Result{
 		UseCase: u.Name(),
-		Err:     nil,
+		Err:     u.skrCrdRepo.Delete(ctx, kcpKyma.GetNamespacedName()),
 	}
 }
 
 func (u *DeleteSkrModuleMetadata) Name() result.UseCase {
-	return usecase.DeleteSkrModuleMetadata
+	return u.useCase
 }

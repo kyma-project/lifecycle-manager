@@ -88,6 +88,7 @@ import (
 	skrkymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma"
 	skrkymastatusrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status"
 	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
+	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	kymadeletionsvc "github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion/usecases"
@@ -461,16 +462,28 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		accessSecretRepository)
 	deleteSkrKyma := usecases.NewDeleteSkrKyma(skrkymarepo.NewRepository(skrClientCache),
 		accessSecretRepository)
-	deleteSkrModuleMetadata := usecases.NewDeleteSKRModuleMetadata(
+	deleteSkrMtCrd := usecases.NewDeleteSkrCrd(
 		skrcrdrepo.NewRepository(skrClientCache,
 			fmt.Sprintf("%s.%s", shared.ModuleTemplateKind.Plural(), shared.OperatorGroup)),
+		accessSecretRepository,
+		usecase.DeleteSkrModuleTemplateCrd)
+	deleteSkrMrmCrd := usecases.NewDeleteSkrCrd(
 		skrcrdrepo.NewRepository(skrClientCache,
 			fmt.Sprintf("%s.%s", shared.ModuleReleaseMetaKind.Plural(), shared.OperatorGroup)),
-		accessSecretRepository)
+		accessSecretRepository,
+		usecase.DeleteSkrModuleReleaseMetaCrd)
+	deleteSkrKymaCrd := usecases.NewDeleteSkrCrd(
+		skrcrdrepo.NewRepository(skrClientCache,
+			fmt.Sprintf("%s.%s", shared.KymaKind.Plural(), shared.OperatorGroup)),
+		accessSecretRepository,
+		usecase.DeleteSkrKymaCrd)
+
 	kymaDeletionService := kymadeletionsvc.NewService(setKcpKymaStateDeleting,
 		setSkrKymaStateDeleting,
 		deleteSkrKyma,
-		deleteSkrModuleMetadata,
+		deleteSkrMtCrd,
+		deleteSkrMrmCrd,
+		deleteSkrKymaCrd,
 	)
 
 	if err := (&kyma.Reconciler{
