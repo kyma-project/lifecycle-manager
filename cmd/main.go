@@ -83,6 +83,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 	kymastatusrepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma/status"
+	manifestrepo "github.com/kyma-project/lifecycle-manager/internal/repository/manifest"
 	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	skrkymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma"
 	skrkymastatusrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status"
@@ -460,9 +461,16 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		accessSecretRepository)
 	deleteSkrKyma := usecases.NewDeleteSkrKyma(skrkymarepo.NewRepository(skrClientCache),
 		accessSecretRepository)
+	deleteManifests := usecases.NewDeleteManifests(
+		manifestrepo.NewRepository(
+			kcpClient,
+			shared.DefaultControlPlaneNamespace),
+	)
 	kymaDeletionService := kymadeletionsvc.NewService(setKcpKymaStateDeleting,
 		setSkrKymaStateDeleting,
-		deleteSkrKyma)
+		deleteSkrKyma,
+		deleteManifests,
+	)
 
 	if err := (&kyma.Reconciler{
 		Client:               kcpClient,
