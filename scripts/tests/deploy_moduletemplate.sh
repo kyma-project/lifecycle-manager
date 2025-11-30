@@ -37,7 +37,7 @@ EOF
 fi
 
 # Replace the bdba list with the current module version
-yq eval '.bdba = ["europe-docker.pkg.dev/kyma-project/prod/template-operator:'"${RELEASE_VERSION}"'"]' -i sec-scanners-config.yaml
+yq eval '.bdba += ["europe-docker.pkg.dev/kyma-project/prod/template-operator:'"${RELEASE_VERSION}"'"]' -i sec-scanners-config.yaml
 
 MODULE_CONFIG="module-config-for-e2e.yaml"
 REGISTRY_URL="localhost:5111"
