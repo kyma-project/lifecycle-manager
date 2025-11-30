@@ -81,12 +81,12 @@ ocm --config "${OCM_CONFIG}" add componentversions --create --file "${CTF_DIR}" 
 ocm --config "${OCM_CONFIG}" transfer ctf --overwrite --no-update "${CTF_DIR}" "http://${REGISTRY_URL}"
 
 echo "[DEBUG] List Component Versions from local registry:"
-echo ocm --config "${OCM_CONFIG}" get componentversions "http://${REGISTRY_URL}//kyma-project.io/module/template-operator"
-ocm --config "${OCM_CONFIG}" get componentversions "http://${REGISTRY_URL}//kyma-project.io/module/template-operator"
+echo ocm --config "${OCM_CONFIG}" get componentversions "http://${REGISTRY_URL}//kyma-project.io/module/${MODULE_NAME}"
+ocm --config "${OCM_CONFIG}" get componentversions "http://${REGISTRY_URL}//kyma-project.io/module/${MODULE_NAME}"
 
 echo "[DEBUG] Get ComponentDescriptor from local registry:"
-echo ocm --config "${OCM_CONFIG}" get componentversion "http://${REGISTRY_URL}//kyma-project.io/module/template-operator:${RELEASE_VERSION}" -o yaml
-ocm --config "${OCM_CONFIG}" get componentversion "http://${REGISTRY_URL}//kyma-project.io/module/template-operator:${RELEASE_VERSION}" -o yaml
+echo ocm --config "${OCM_CONFIG}" get componentversion "http://${REGISTRY_URL}//kyma-project.io/module/${MODULE_NAME}:${RELEASE_VERSION}" -o yaml
+ocm --config "${OCM_CONFIG}" get componentversion "http://${REGISTRY_URL}//kyma-project.io/module/${MODULE_NAME}:${RELEASE_VERSION}" -o yaml
 
 echo "ModuleTemplate created successfully"
 yq -i '.metadata.namespace="kcp-system"' "${TEMPLATE_FILE}"
