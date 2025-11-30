@@ -10,6 +10,15 @@ INCLUDE_DEFAULT_CR=${3:-true}
 MANDATORY=${4:-false}
 DEPLOY_MODULETEMPLATE=${5:-true}
 REQUIRES_DOWNTIME=${6:-false}
+DEPLOYABLE_IMAGE_VERSION=${7:-}  # template-operator version from versions.yaml (e.g., 1.0.4) - actual Docker image that exists
+
+# Validate required parameter
+if [ -z "${DEPLOYABLE_IMAGE_VERSION}" ]; then
+  echo "Error: DEPLOYABLE_IMAGE_VERSION parameter (7th argument) is required"
+  echo "This should be the template-operator version from versions.yaml (e.g., 1.0.4)"
+  echo "Usage: $0 MODULE_NAME RELEASE_VERSION [INCLUDE_DEFAULT_CR] [MANDATORY] [DEPLOY_MODULETEMPLATE] [REQUIRES_DOWNTIME] DEPLOYABLE_IMAGE_VERSION"
+  exit 1
+fi
 
 cat <<EOF > module-config-for-e2e.yaml
 name: kyma-project.io/module/${MODULE_NAME}
@@ -36,8 +45,11 @@ mandatory: true
 EOF
 fi
 
-# Replace the bdba list with the current module version
+# Add moduleversion to `bdba` list in sec-scanners-config.yaml
 yq eval '.bdba += ["europe-docker.pkg.dev/kyma-project/prod/template-operator:'"${RELEASE_VERSION}"'"]' -i sec-scanners-config.yaml
+
+# Replace test version with deployable version in the manifest YAML
+sed -i 's|europe-docker.pkg.dev/kyma-project/prod/template-operator:'"${RELEASE_VERSION}"'|europe-docker.pkg.dev/kyma-project/prod/template-operator:'"${DEPLOYABLE_IMAGE_VERSION}"'|g' template-operator.yaml
 
 MODULE_CONFIG="module-config-for-e2e.yaml"
 REGISTRY_URL="localhost:5111"
