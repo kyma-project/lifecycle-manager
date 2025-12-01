@@ -2,14 +2,20 @@ package event
 
 import (
 	"context"
+	"errors"
 
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 
+	"github.com/kyma-project/lifecycle-manager/internal/errors/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 )
 
-const success = "Success"
+const (
+	success                  = "Success"
+	kymaDeletionStuckReason  = "KymaDeletionStuck"
+	kymaDeletionStuckMessage = "Kyma still exists after deletion usecases have been handled."
+)
 
 type Event interface {
 	Normal(object machineryruntime.Object, reason event.Reason, msg string)
@@ -31,6 +37,11 @@ func NewEventRecorder(event Event) *EventRecorder {
 // The reason is set to the use case of the result.
 // The message is either "Success" or the message of the error when present.
 func (e *EventRecorder) Record(ctx context.Context, object machineryruntime.Object, res result.Result) {
+	if errors.Is(res.Err, deletion.ErrNoUseCaseApplicable) {
+		e.event.Warning(object, event.Reason(kymaDeletionStuckReason), errors.New(kymaDeletionStuckMessage))
+		return
+	}
+
 	if res.Err != nil {
 		e.event.Warning(object, event.Reason(res.UseCase), res.Err)
 		return
