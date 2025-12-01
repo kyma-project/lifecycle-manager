@@ -85,6 +85,14 @@ spec:
             limits:
               memory: 200Mi
               cpu: "0.1"
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
           ports:
             - containerPort: 8443
               name: watcher-port
@@ -102,6 +110,12 @@ spec:
               - key: ca.crt
                 path: ca.crt
       priorityClassName: skr-webhook-priority
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 30001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

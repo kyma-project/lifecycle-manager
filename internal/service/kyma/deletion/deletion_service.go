@@ -27,6 +27,9 @@ func NewService(
 	setKcpKymaStateDeleting UseCase,
 	setSkrKymaStateDeleting UseCase,
 	deleteSkrKyma UseCase,
+	deleteSkrMtCrd UseCase,
+	deleteSkrMrmCrd UseCase,
+	deleteSkrKymaCrd UseCase,
 	deleteManifests UseCase,
 ) *Service {
 	return &Service{
@@ -34,6 +37,9 @@ func NewService(
 			setKcpKymaStateDeleting,
 			setSkrKymaStateDeleting,
 			deleteSkrKyma,
+			deleteSkrMtCrd,
+			deleteSkrMrmCrd,
+			deleteSkrKymaCrd,
 			deleteManifests,
 		},
 	}

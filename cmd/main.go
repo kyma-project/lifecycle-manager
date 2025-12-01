@@ -85,9 +85,11 @@ import (
 	kymastatusrepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma/status"
 	manifestrepo "github.com/kyma-project/lifecycle-manager/internal/repository/manifest"
 	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	skrcrdrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/crd"
 	skrkymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma"
 	skrkymastatusrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status"
 	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
+	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	kymadeletionsvc "github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion/usecases"
@@ -466,9 +468,28 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			kcpClient,
 			shared.DefaultControlPlaneNamespace),
 	)
+	deleteSkrMtCrd := usecases.NewDeleteSkrCrd(
+		skrcrdrepo.NewRepository(skrClientCache,
+			fmt.Sprintf("%s.%s", shared.ModuleTemplateKind.Plural(), shared.OperatorGroup)),
+		accessSecretRepository,
+		usecase.DeleteSkrModuleTemplateCrd)
+	deleteSkrMrmCrd := usecases.NewDeleteSkrCrd(
+		skrcrdrepo.NewRepository(skrClientCache,
+			fmt.Sprintf("%s.%s", shared.ModuleReleaseMetaKind.Plural(), shared.OperatorGroup)),
+		accessSecretRepository,
+		usecase.DeleteSkrModuleReleaseMetaCrd)
+	deleteSkrKymaCrd := usecases.NewDeleteSkrCrd(
+		skrcrdrepo.NewRepository(skrClientCache,
+			fmt.Sprintf("%s.%s", shared.KymaKind.Plural(), shared.OperatorGroup)),
+		accessSecretRepository,
+		usecase.DeleteSkrKymaCrd)
+
 	kymaDeletionService := kymadeletionsvc.NewService(setKcpKymaStateDeleting,
 		setSkrKymaStateDeleting,
 		deleteSkrKyma,
+		deleteSkrMtCrd,
+		deleteSkrMrmCrd,
+		deleteSkrKymaCrd,
 		deleteManifests,
 	)
 
