@@ -129,8 +129,8 @@ func TestEventRecorder_Record_ErrNoUseCaseApplicable(t *testing.T) {
 
 	assert.True(t, eventStub.warningCalled)
 	assert.Equal(t, apicorev1.EventTypeWarning, eventStub.eventType)
-	assert.Equal(t, "KymaDeletion", eventStub.reason)
-	assert.Equal(t, deletion.ErrNoUseCaseApplicable.Error(), eventStub.message)
+	assert.Equal(t, "KymaDeletionStuck", eventStub.reason)
+	assert.Equal(t, "Kyma still exists after deletion usecases have been handled.", eventStub.message)
 	assert.Equal(t, kyma.APIVersion, eventStub.involvedObject.GetAPIVersion())
 	assert.Equal(t, kyma.Kind, eventStub.involvedObject.GetKind())
 	assert.Equal(t, kyma.Name, eventStub.involvedObject.GetName())
