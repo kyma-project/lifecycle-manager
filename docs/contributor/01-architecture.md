@@ -1,4 +1,4 @@
-# Architecture
+# Lifecycle Manager Architecture
 
 The architecture of Lifecycle Manager is based on Kubernetes controllers and operators. Lifecycle Manager is a meta operator that coordinates and tracks the lifecycle of Kyma components by delegating it to module operators.
 
