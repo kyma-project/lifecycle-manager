@@ -99,8 +99,8 @@ spec:
   - name: example-module
 ```
 
-> ### Warining
-> Module referencing using NamespacedName and FQDN (Fully Qualified Domain Name) has been deprecated.
+> ### Caution
+> > Module referencing using NamespacedName and FQDN (Fully Qualified Domain Name) has been deprecated.
 
 ### **.spec.modules[].managed**
 
