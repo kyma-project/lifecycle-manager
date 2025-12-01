@@ -22,6 +22,9 @@ func Test_Delete_ReturnsError_WhenIsApplicableReturnsError(t *testing.T) {
 		uc1,
 		nil,
 		nil,
+		nil,
+		nil,
+		nil,
 	)
 
 	result := svc.Delete(t.Context(), kyma)
@@ -43,6 +46,9 @@ func Test_Delete_ReturnsEarly_WhenIsApplicableReturnsError(t *testing.T) {
 		uc1,
 		uc2,
 		uc3,
+		nil,
+		nil,
+		nil,
 	)
 
 	result := svc.Delete(t.Context(), kyma)
@@ -69,6 +75,9 @@ func Test_Delete_ExecutesOnlyFirstApplicableUseCase(t *testing.T) {
 		uc1,
 		uc2,
 		uc3,
+		nil,
+		nil,
+		nil,
 	)
 
 	result := svc.Delete(t.Context(), kyma)
@@ -90,11 +99,17 @@ func Test_Delete_Fallthrough_WhenNoUseCaseIsApplicable(t *testing.T) {
 	uc1 := &useCaseStub{isApplicable: false, err: nil}
 	uc2 := &useCaseStub{isApplicable: false, err: nil}
 	uc3 := &useCaseStub{isApplicable: false, err: nil}
+	uc4 := &useCaseStub{isApplicable: false, err: nil}
+	uc5 := &useCaseStub{isApplicable: false, err: nil}
+	uc6 := &useCaseStub{isApplicable: false, err: nil}
 
 	svc := deletion.NewService(
 		uc1,
 		uc2,
 		uc3,
+		uc4,
+		uc5,
+		uc6,
 	)
 
 	result := svc.Delete(t.Context(), kyma)
@@ -107,9 +122,18 @@ func Test_Delete_Fallthrough_WhenNoUseCaseIsApplicable(t *testing.T) {
 	assert.False(t, uc2.executeCalled)
 	assert.True(t, uc3.isApplicableCalled)
 	assert.False(t, uc3.executeCalled)
+	assert.True(t, uc4.isApplicableCalled)
+	assert.False(t, uc4.executeCalled)
+	assert.True(t, uc5.isApplicableCalled)
+	assert.False(t, uc5.executeCalled)
+	assert.True(t, uc6.isApplicableCalled)
+	assert.False(t, uc6.executeCalled)
 	assert.Equal(t, kyma, uc1.receivedKyma)
 	assert.Equal(t, kyma, uc2.receivedKyma)
 	assert.Equal(t, kyma, uc3.receivedKyma)
+	assert.Equal(t, kyma, uc4.receivedKyma)
+	assert.Equal(t, kyma, uc5.receivedKyma)
+	assert.Equal(t, kyma, uc6.receivedKyma)
 }
 
 func Test_Delete_ExecutesCorrectOrderOfUseCases(t *testing.T) {
@@ -136,6 +160,9 @@ func Test_Delete_ExecutesCorrectOrderOfUseCases(t *testing.T) {
 		uc1,
 		uc2,
 		uc3,
+		nil,
+		nil,
+		nil,
 	)
 
 	_ = svc.Delete(t.Context(), kyma)
