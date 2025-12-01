@@ -37,12 +37,12 @@ func (w *MetricWriter) Write(res result.Result) {
 		w.metrics.RecordRequeueReason(metrics.StatusSyncToRemote, requeueType)
 	case usecase.DeleteSkrKyma:
 		w.metrics.RecordRequeueReason(metrics.RemoteKymaDeletion, requeueType)
-	case usecase.DeleteSkrModuleMetadata:
+	case usecase.DeleteSkrModuleTemplateCrd, usecase.DeleteSkrModuleReleaseMetaCrd:
 		w.metrics.RecordRequeueReason(metrics.RemoteModuleCatalogDeletion, requeueType)
 	case usecase.DeleteManifests:
 		w.metrics.RecordRequeueReason(metrics.CleanupManifestCrs, requeueType)
 	case usecase.DeleteSkrWatcher,
-		usecase.DeleteSkrCrds,
+		usecase.DeleteSkrKymaCrd,
 		usecase.DeleteWatcherCertificate,
 		usecase.DeleteMetrics,
 		usecase.RemoveKymaFinalizers:
