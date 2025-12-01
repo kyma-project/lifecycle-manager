@@ -83,6 +83,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 	kymastatusrepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma/status"
+	manifestrepo "github.com/kyma-project/lifecycle-manager/internal/repository/manifest"
 	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	skrcrdrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/crd"
 	skrkymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma"
@@ -462,6 +463,11 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		accessSecretRepository)
 	deleteSkrKyma := usecases.NewDeleteSkrKyma(skrkymarepo.NewRepository(skrClientCache),
 		accessSecretRepository)
+	deleteManifests := usecases.NewDeleteManifests(
+		manifestrepo.NewRepository(
+			kcpClient,
+			shared.DefaultControlPlaneNamespace),
+	)
 	deleteSkrMtCrd := usecases.NewDeleteSkrCrd(
 		skrcrdrepo.NewRepository(skrClientCache,
 			fmt.Sprintf("%s.%s", shared.ModuleTemplateKind.Plural(), shared.OperatorGroup)),
@@ -484,6 +490,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		deleteSkrMtCrd,
 		deleteSkrMrmCrd,
 		deleteSkrKymaCrd,
+		deleteManifests,
 	)
 
 	if err := (&kyma.Reconciler{
