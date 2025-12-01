@@ -13,6 +13,11 @@ type SKRWebhookManager interface {
 	Remove(ctx context.Context, kyma *v1beta2.Kyma) error
 }
 
+type SkrWebhookResourceRepo interface {
+	ResourcesExist(kymaName string) (bool, error)
+	DeleteWebhookResources(ctx context.Context, kymaName string) error
+}
+
 type RemoveSkrWebhookUseCase struct {
 	skrWebhookManager SKRWebhookManager
 }
@@ -24,19 +29,27 @@ func NewRemoveSkrWebhookUseCase(skrWebhookManager SKRWebhookManager) *RemoveSkrW
 }
 
 func (u *RemoveSkrWebhookUseCase) IsApplicable(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
-	// Only applicable when kyma is being deleted and in deleting state
-	return !kyma.DeletionTimestamp.IsZero() && kyma.Status.State == shared.StateDeleting, nil
+	if kyma.DeletionTimestamp.IsZero() || kyma.Status.State != shared.StateDeleting {
+		return false, nil
+	}
+
+	if {
+
+	}
+
 }
 
 func (u *RemoveSkrWebhookUseCase) Execute(ctx context.Context, kyma *v1beta2.Kyma) result.Result {
 	if u.skrWebhookManager == nil {
-		// If webhook manager is not enabled, skip this step
 		return result.Result{
 			UseCase: u.Name(),
 		}
 	}
 
 	err := u.skrWebhookManager.Remove(ctx, kyma)
+	if err != nil {
+
+	}
 	return result.Result{
 		UseCase: u.Name(),
 		Err:     err,
