@@ -78,7 +78,7 @@ This status provides a reliable way to track the state of the Manifest CR and th
 
 ### **.spec.remote (Deprecated)**
 
-> ### Warning
+> ### Caution
 > This field was deprecated and is no longer functional. It will be removed in the next API version.
 
 
