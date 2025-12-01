@@ -31,6 +31,7 @@ func NewService(
 	deleteSkrMtCrd UseCase,
 	deleteSkrMrmCrd UseCase,
 	deleteSkrKymaCrd UseCase,
+	deleteManifests UseCase,
 ) *Service {
 	return &Service{
 		deletionSteps: []UseCase{
@@ -40,6 +41,7 @@ func NewService(
 			deleteSkrMtCrd,
 			deleteSkrMrmCrd,
 			deleteSkrKymaCrd,
+			deleteManifests,
 		},
 	}
 }

@@ -24,11 +24,14 @@ func NewRepository(clnt client.Client, namespace string) *Repository {
 }
 
 func (r *Repository) DeleteAllForModule(ctx context.Context, moduleName string) error {
-	err := r.clnt.DeleteAllOf(ctx, &v1beta2.Manifest{}, client.InNamespace(r.namespace),
-		client.MatchingLabels{shared.ModuleName: moduleName})
-	if err != nil {
+	if err := r.clnt.DeleteAllOf(ctx, // does not return 404 error if no objects found
+		&v1beta2.Manifest{},
+		client.InNamespace(r.namespace),
+		client.MatchingLabels{shared.ModuleName: moduleName},
+	); err != nil {
 		return fmt.Errorf("failed to delete all manifests for module %s: %w", moduleName, err)
 	}
+
 	return nil
 }
 
@@ -36,11 +39,41 @@ func (r *Repository) ListAllForModule(ctx context.Context, moduleName string) (
 	[]apimetav1.PartialObjectMetadata, error,
 ) {
 	var manifestList apimetav1.PartialObjectMetadataList
-	manifestList.SetGroupVersionKind(v1beta2.GroupVersion.WithKind("ManifestList"))
+	manifestList.SetGroupVersionKind(v1beta2.GroupVersion.WithKind(shared.ManifestKind.List()))
 
-	if err := r.clnt.List(ctx, &manifestList, client.InNamespace(r.namespace),
-		client.MatchingLabels{shared.ModuleName: moduleName}); err != nil {
+	if err := r.clnt.List(ctx,
+		&manifestList,
+		client.InNamespace(r.namespace),
+		client.MatchingLabels{shared.ModuleName: moduleName},
+	); err != nil {
 		return nil, fmt.Errorf("failed to list Manifests for module %s: %w", moduleName, err)
 	}
 	return manifestList.Items, nil
+}
+
+func (r *Repository) ExistForKyma(ctx context.Context, kymaName string) (bool, error) {
+	var manifestList apimetav1.PartialObjectMetadataList
+	manifestList.SetGroupVersionKind(v1beta2.GroupVersion.WithKind(shared.ManifestKind.List()))
+
+	if err := r.clnt.List(ctx,
+		&manifestList,
+		client.InNamespace(r.namespace),
+		client.MatchingLabels{shared.KymaName: kymaName},
+		client.Limit(1)); err != nil {
+		return false, fmt.Errorf("failed to list Manifests for kyma %s: %w", kymaName, err)
+	}
+
+	return len(manifestList.Items) > 0, nil
+}
+
+func (r *Repository) DeleteAllForKyma(ctx context.Context, kymaName string) error {
+	if err := r.clnt.DeleteAllOf(ctx, // does not return 404 error if no objects found
+		&v1beta2.Manifest{},
+		client.InNamespace(r.namespace),
+		client.MatchingLabels{shared.KymaName: kymaName},
+	); err != nil {
+		return fmt.Errorf("failed to delete all manifests for kyma %s: %w", kymaName, err)
+	}
+
+	return nil
 }
