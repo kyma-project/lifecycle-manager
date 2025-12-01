@@ -14,5 +14,4 @@ const (
 	DeleteManifests               result.UseCase = "DeleteManifests"
 	DeleteMetrics                 result.UseCase = "DeleteMetrics"
 	RemoveKymaFinalizers          result.UseCase = "RemoveKymaFinalizers"
-	ProcessKymaDeletion           result.UseCase = "ProcessKymaDeletion"
 )

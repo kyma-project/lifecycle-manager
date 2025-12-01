@@ -9,6 +9,7 @@ import (
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/uuid"
 
+	"github.com/kyma-project/lifecycle-manager/internal/errors/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
@@ -103,6 +104,33 @@ func TestEventRecorder_Record_WarningEvent_Success(t *testing.T) {
 	assert.Equal(t, apicorev1.EventTypeWarning, eventStub.eventType)
 	assert.Equal(t, string(res.UseCase), eventStub.reason)
 	assert.Equal(t, res.Err.Error(), eventStub.message)
+	assert.Equal(t, kyma.APIVersion, eventStub.involvedObject.GetAPIVersion())
+	assert.Equal(t, kyma.Kind, eventStub.involvedObject.GetKind())
+	assert.Equal(t, kyma.Name, eventStub.involvedObject.GetName())
+	assert.Equal(t, kyma.Namespace, eventStub.involvedObject.GetNamespace())
+	assert.Equal(t, kyma.GetUID(), eventStub.involvedObject.GetUID())
+}
+
+func TestEventRecorder_Record_ErrNoUseCaseApplicable(t *testing.T) {
+	res := result.Result{
+		Err: deletion.ErrNoUseCaseApplicable,
+	}
+	eventStub := &eventStub{}
+
+	kyma := builder.NewKymaBuilder().
+		WithName(random.Name()).
+		WithNamespace(random.Name()).
+		WithUid(uuid.NewUUID()).
+		Build()
+
+	event := resultevent.NewEventRecorder(eventStub)
+
+	event.Record(t.Context(), kyma, res)
+
+	assert.True(t, eventStub.warningCalled)
+	assert.Equal(t, apicorev1.EventTypeWarning, eventStub.eventType)
+	assert.Equal(t, "KymaDeletion", eventStub.reason)
+	assert.Equal(t, deletion.ErrNoUseCaseApplicable.Error(), eventStub.message)
 	assert.Equal(t, kyma.APIVersion, eventStub.involvedObject.GetAPIVersion())
 	assert.Equal(t, kyma.Kind, eventStub.involvedObject.GetKind())
 	assert.Equal(t, kyma.Name, eventStub.involvedObject.GetName())
