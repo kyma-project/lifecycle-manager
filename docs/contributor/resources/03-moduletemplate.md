@@ -10,7 +10,7 @@ To get the latest CRD in the YAML format, run the following command:
 kubectl get crd moduletemplates.operator.kyma-project.io -o yaml
 ```
 
-> [!Note]
+> ### Note
 > The ModuleTemplate CR is applied in both Kyma Control Plane (KCP) and SAP BTP, Kyma runtime clusters.
 > Lifecycle Manager synchronizes the ModuleTemplates from KCP to the applicable Kyma runtime instances.
 > See [Module Catalog Synchronization](../08-kcp-skr-synchronization.md#module-catalog-synchronization) for more details.
@@ -34,7 +34,7 @@ spec:
   channel: regular
 ```
 
-the module was referenced by any Kyma CR asking for it in the `regular` channel.
+The module was referenced by a Kyma CR asking for it in the `regular` channel.
 
 ### **.spec.data**
 
@@ -108,7 +108,8 @@ spec:
 ```
 ### **.spec.customStateCheck (Deprecated)**
 
-> **CAUTION:** This field was deprecated at the end of July 2024 and will be deleted in the next ModuleTemplate API version. As of the deletion day, you can define the custom state only in a module's custom resource.
+> ### Warning
+> This field was deprecated at the end of July 2024 and will be deleted in the next ModuleTemplate API version. As of the deletion day, you can define the custom state only in a module's custom resource.
 
 The `.spec.customStateCheck` field in Kyma Lifecycle Manager is primarily designed for third-party modules. For non-Kyma modules, the `status.state` might not be present, which the Lifecycle Manager relies on to determine the module state. This field enables users to define custom fields in the module Custom Resource (CR) that can be mapped to valid states supported by Lifecycle Manager.
 
