@@ -151,7 +151,7 @@ In this scenario, the `Ready` state will only be reached if both `module.state.f
 
 The core of any ModuleTemplate CR, the descriptor can be one of the schemas mentioned in the latest version of the [OCM Model Specification](https://github.com/open-component-model/ocm-spec/blob/7bfbc171e814e73d6e95cfa07cc85813f89a1d44/doc/01-model/01-model.md#components-and-component-versions). While it is a `runtime.RawExtension` in the Go types, it will be resolved via ValidatingWebhook into an internal descriptor with the help of the official [OCM library](https://github.com/open-component-model/ocm).
 
-For detailed instructions on creating ModuleTemplates with component descriptors using modulectl and OCM CLI, see [Creating ModuleTemplates](../14-creating-moduletemplate.md).
+For more information on how to create ModuleTemplates with component descriptors using modulectl and OCM CLI, see [Creating ModuleTemplates](../14-creating-moduletemplate.md).
 
 ### **.spec.mandatory**
 
