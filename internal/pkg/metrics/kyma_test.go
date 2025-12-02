@@ -113,7 +113,7 @@ func TestKymaMetrics_CleanupNonExistingKymaCrsMetrics(t *testing.T) {
 			for _, rm := range receivedMetric.GetMetric() {
 				for _, wm := range wantResultingMetrics {
 					assert.ElementsMatch(t, wm.GetLabel(), rm.GetLabel())
-					assert.Equal(t, wm.GetGauge().GetValue(), rm.GetGauge().GetValue())
+					assert.Equal(t, wm.GetGauge(), rm.GetGauge())
 				}
 			}
 		}
