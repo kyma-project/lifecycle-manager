@@ -16,7 +16,7 @@ At runtime, Kyma Lifecycle Manager fetches component descriptors dynamically fro
 - [OCM CLI](https://github.com/open-component-model/ocm) installed
 - Access to an OCI registry (local or remote)
 
-## Step 1: Configure OCM Registry Access
+## 1. Configure OCM Registry Access
 
 Create an OCM configuration file to define registry aliases and enable communication with your target registry.
 
@@ -67,7 +67,7 @@ configurations:
                 }
 ```
 
-## Step 2: Generate Component Constructor
+## 2. Generate Component Constructor
 
 Use `modulectl create` to generate the component constructor file without pushing to registry:
 
@@ -87,7 +87,7 @@ This generates:
 - `component-constructor.yaml` - OCM component constructor file
 - `template.yaml` - The ModuleTemplate CR to apply to the cluster
 
-## Step 3: Add Component Version to CTF Archive
+## 3. Add Component Version to CTF Archive
 
 Add the component version from the constructor file to a Common Transport Format (CTF) archive:
 
@@ -109,7 +109,7 @@ ocm --config ocm-config-local.yaml add componentversions \
 
 This creates a CTF archive in the `./component-ctf` directory containing the component descriptor and all referenced resources.
 
-## Step 4: Transfer CTF to OCI Registry
+## 4. Transfer CTF to OCI Registry
 
 Transfer the complete CTF archive to the OCI registry:
 
@@ -131,7 +131,7 @@ ocm --config ocm-config-local.yaml transfer ctf \
 
 This pushes the component descriptor and all resources from the CTF to the OCI registry.
 
-## Step 5: Apply ModuleTemplate to Cluster
+## 5. Apply ModuleTemplate to Cluster
 
 Apply the generated ModuleTemplate manifest:
 
@@ -140,7 +140,7 @@ yq -i '.metadata.namespace="kcp-system"' template.yaml
 kubectl apply -f template.yaml
 ```
 
-## Step 6: Create ModuleReleaseMeta
+## 6. Create ModuleReleaseMeta
 
 Create a ModuleReleaseMeta CR to make the module available:
 
