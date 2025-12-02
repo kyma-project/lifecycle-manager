@@ -8,6 +8,9 @@ on:
       k8s_version:
         description: "With Kubernetes version (format: X.Y.Z)"
         required: false
+      template_operator_version:
+        description: "Template operator version (tag or branch)"
+        required: false
   pull_request:
     types: [ opened, synchronize, reopened, ready_for_review ]
 
@@ -93,6 +96,7 @@ jobs:
         with:
           repository: kyma-project/template-operator
           path: template-operator
+          ref: ${{ inputs.template_operator_version || steps.configuration.outputs.template_operator_version }}
 
       - name: Get configuration
         uses: ./lifecycle-manager/.github/actions/get-configuration
@@ -103,6 +107,7 @@ jobs:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
           istio_version: ${{ steps.configuration.outputs.istio_version }}
           k3d_version: ${{ steps.configuration.outputs.k3d_version }}
+          ocm_cli_version: ${{ steps.configuration.outputs.ocm_cli_version }}
           modulectl_version: ${{ steps.configuration.outputs.modulectl_version }}
           go-version-file: lifecycle-manager/go.mod
           cache-dependency-path: lifecycle-manager/go.sum
@@ -123,6 +128,8 @@ jobs:
           klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
       - name: Deploy template-operator
         uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
+        with:
+          module_version: ${{ steps.configuration.outputs.template_operator_version }}
         env:
           ModuleDeploymentName: template-operator-controller-manager
           ModuleDeploymentNameInNewerVersion: template-operator-v2-controller-manager
@@ -140,6 +147,8 @@ jobs:
           ModuleName: template-operator
       - name: Run '${{ matrix.e2e-test }}' test
         working-directory: lifecycle-manager
+        env:
+          MODULE_VERSION: ${{ steps.configuration.outputs.template_operator_version }}
         run: |
           make -C tests/e2e ${{ matrix.e2e-test }}
       - name: Post debug
