@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"context"
+	"errors"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -9,22 +10,27 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 )
 
-type SKRWebhookManager interface {
-	Remove(ctx context.Context, kyma *v1beta2.Kyma) error
-}
+var (
+	errFailedToDetermineApplicability    = errors.New("failed to determine applicability for removing SKR webhook resources")
+	errFailedToRemoveSkrWebhookResources = errors.New("failed to remove SKR webhook resources")
+)
 
-type SkrWebhookResourceRepo interface {
+//type SKRWebhookManager interface {
+//	Remove(ctx context.Context, kyma *v1beta2.Kyma) error
+//}
+
+type SkrWebhookResourcesRepository interface {
 	ResourcesExist(kymaName string) (bool, error)
 	DeleteWebhookResources(ctx context.Context, kymaName string) error
 }
 
 type RemoveSkrWebhookUseCase struct {
-	skrWebhookManager SKRWebhookManager
+	skrWebhookResourcesRepo SkrWebhookResourcesRepository
 }
 
-func NewRemoveSkrWebhookUseCase(skrWebhookManager SKRWebhookManager) *RemoveSkrWebhookUseCase {
+func NewRemoveSkrWebhookUseCase(skrWebhookResourcesRepo SkrWebhookResourcesRepository) *RemoveSkrWebhookUseCase {
 	return &RemoveSkrWebhookUseCase{
-		skrWebhookManager: skrWebhookManager,
+		skrWebhookResourcesRepo: skrWebhookResourcesRepo,
 	}
 }
 
@@ -33,26 +39,26 @@ func (u *RemoveSkrWebhookUseCase) IsApplicable(ctx context.Context, kyma *v1beta
 		return false, nil
 	}
 
-	if {
-
+	ok, err := u.skrWebhookResourcesRepo.ResourcesExist(kyma.Name)
+	if err != nil {
+		return false, errors.Join(err, errFailedToDetermineApplicability)
 	}
 
+	return !ok, nil
 }
 
 func (u *RemoveSkrWebhookUseCase) Execute(ctx context.Context, kyma *v1beta2.Kyma) result.Result {
-	if u.skrWebhookManager == nil {
+	err := u.skrWebhookResourcesRepo.DeleteWebhookResources(ctx, kyma.Name)
+	if err != nil {
 		return result.Result{
 			UseCase: u.Name(),
+			Err:     errors.Join(err, errFailedToRemoveSkrWebhookResources),
 		}
 	}
 
-	err := u.skrWebhookManager.Remove(ctx, kyma)
-	if err != nil {
-
-	}
 	return result.Result{
 		UseCase: u.Name(),
-		Err:     err,
+		Err:     nil,
 	}
 }
 
