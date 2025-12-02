@@ -34,7 +34,7 @@ runs:
       run: |
         yq eval '.images[0].newTag = "${{ inputs.module_version }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
-        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ inputs.module_version }} true false true false ${{ inputs.module_version }}
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ inputs.module_version }} ${{ inputs.module_version }} true false true false
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInOlderVersion
       working-directory: template-operator
       if: ${{ matrix.e2e-test != 'mandatory-module' &&
@@ -47,7 +47,7 @@ runs:
         yq eval '.images[0].newTag = "${{ env.OlderVersion }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInOlderVersion }}"' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersion }} true false true false ${{ inputs.module_version }}
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersion }} ${{ inputs.module_version }} true false true false
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInNewerVersion
       working-directory: template-operator
       if: ${{ matrix.e2e-test != 'mandatory-module' &&
@@ -71,7 +71,7 @@ runs:
         yq eval '.images[0].newTag = "${{ env.NewerVersion }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }} $INCLUDE_DEFAULT_CR $MANDATORY $DEPLOY_MODULETEMPLATE $REQUIRE_DOWNTIME ${{ inputs.module_version }}
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }} ${{ inputs.module_version }} $INCLUDE_DEFAULT_CR $MANDATORY $DEPLOY_MODULETEMPLATE $REQUIRE_DOWNTIME
     - name: Create and apply Template Operator ModuleTemplate in private registry
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'oci-reg-cred-secret' }}
@@ -156,7 +156,7 @@ runs:
         yq eval '.images[0].newTag = "${{ env.OlderVersionForMandatoryModule }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInOlderVersion }}"' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersionForMandatoryModule }} true true false false ${{ inputs.module_version }}
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersionForMandatoryModule }} ${{ inputs.module_version }} true true false false
         yq eval 'del(.spec.mandatory)' -i template.yaml
         kubectl apply -f template.yaml
         rm -f template.yaml
@@ -171,7 +171,7 @@ runs:
         yq eval '.images[0].newTag = "${{ env.NewerVersionForMandatoryModule }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersionForMandatoryModule }} true true false false ${{ inputs.module_version }}
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersionForMandatoryModule }} ${{ inputs.module_version }} true true false false
         yq eval 'del(.spec.mandatory)' -i template.yaml
         cp template.yaml ../lifecycle-manager/tests/e2e/mandatory_template_v2.yaml
     - name: Create and apply ModuleReleaseMeta Template Operator with newer version in fast channel and older version in regular channel
@@ -189,7 +189,7 @@ runs:
         yq eval '.images[0].newTag = "${{ env.VersionForDeploymentInWarning }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].args) = ["--leader-elect", "--final-state=Warning", "--final-deletion-state=Warning"]' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForDeploymentInWarning }} true false true false ${{ inputs.module_version }}
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForDeploymentInWarning }} ${{ inputs.module_version }} true false true false
         ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForDeploymentInWarning }}
 
         # Create and apply ModuleReleaseMeta with version when deployment is misconfigured
@@ -205,7 +205,7 @@ runs:
           "httpGet": {"path": "/readyz", "port": 8081},
           "initialDelaySeconds": 5, "periodSeconds": 5, "failureThreshold": 1
         }' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredDeploymentImage }} true false true false ${{ inputs.module_version }}
+        ./deploy_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredDeploymentImage }} ${{ inputs.module_version }} true false true false
         ./deploy_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:${{ env.VersionForMisconfiguredDeploymentImage }}
     - name: Create ModuleTemplate and ModuleReleaseMeta for Module Status test with StatefulSet
       working-directory: template-operator
@@ -216,14 +216,14 @@ runs:
         yq eval '.images[0].newTag = "${{ env.VersionForStatefulSetInWarning }}"' -i config/manager/statefulset/kustomization.yaml
         make build-statefulset-manifests
         yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].args) = ["--leader-elect", "--final-state=Warning", "--final-deletion-state=Warning"]' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForStatefulSetInWarning }} true false true false ${{ inputs.module_version }}
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForStatefulSetInWarning }} ${{ inputs.module_version }} true false true false
         ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForStatefulSetInWarning }}
 
         # Create and apply ModuleReleaseMeta with version when statefulset is misconfigured
         yq eval '.images[0].newTag = "${{ env.VersionForMisconfiguredStatefulSetImage }}"' -i config/manager/statefulset/kustomization.yaml
         make build-statefulset-manifests
         yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].image) = "non-working/path:0.0.2"' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredStatefulSetImage }} true false true false ${{ inputs.module_version }}
+        ./deploy_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredStatefulSetImage }} ${{ inputs.module_version }} true false true false
         ./deploy_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:${{ env.VersionForMisconfiguredStatefulSetImage }}
     - name: Create Template Operator Module without default CR and apply ModuleReleaseMeta
       working-directory: template-operator
@@ -232,7 +232,7 @@ runs:
       run: |
         yq eval '.images[0].newTag = "${{ env.VersionForNoDefaultCR }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
-        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForNoDefaultCR }} false false true false ${{ inputs.module_version }}
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForNoDefaultCR }} ${{ inputs.module_version }} false false true false
         ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForNoDefaultCR }}
     - name: Apply ModuleReleaseMeta with ModuleTemplate with name <modulename>-<channel>
       working-directory: template-operator

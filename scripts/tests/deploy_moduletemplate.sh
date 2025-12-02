@@ -4,19 +4,32 @@ set -o errexit
 set -E
 set -o pipefail
 
+# Required parameters
 MODULE_NAME=$1
 RELEASE_VERSION=$2
-INCLUDE_DEFAULT_CR=${3:-true}
-MANDATORY=${4:-false}
-DEPLOY_MODULETEMPLATE=${5:-true}
-REQUIRES_DOWNTIME=${6:-false}
-DEPLOYABLE_IMAGE_VERSION=${7:-}  # template-operator version from versions.yaml (e.g., 1.0.4) - actual Docker image that exists
+DEPLOYABLE_IMAGE_VERSION=$3  # template-operator version from versions.yaml (e.g., 1.0.4) - actual Docker image that exists
 
-# Validate required parameter
-if [ -z "${DEPLOYABLE_IMAGE_VERSION}" ]; then
-  echo "Error: DEPLOYABLE_IMAGE_VERSION parameter (7th argument) is required"
-  echo "This should be the template-operator version from versions.yaml (e.g., 1.0.4)"
-  echo "Usage: $0 MODULE_NAME RELEASE_VERSION [INCLUDE_DEFAULT_CR] [MANDATORY] [DEPLOY_MODULETEMPLATE] [REQUIRES_DOWNTIME] DEPLOYABLE_IMAGE_VERSION"
+# Optional parameters with defaults
+INCLUDE_DEFAULT_CR=${4:-true}
+MANDATORY=${5:-false}
+DEPLOY_MODULETEMPLATE=${6:-true}
+REQUIRES_DOWNTIME=${7:-false}
+
+# Validate required parameters
+if [ -z "${MODULE_NAME}" ] || [ -z "${RELEASE_VERSION}" ] || [ -z "${DEPLOYABLE_IMAGE_VERSION}" ]; then
+  echo "Error: MODULE_NAME, RELEASE_VERSION, and DEPLOYABLE_IMAGE_VERSION are required"
+  echo "Usage: $0 MODULE_NAME RELEASE_VERSION DEPLOYABLE_IMAGE_VERSION [INCLUDE_DEFAULT_CR] [MANDATORY] [DEPLOY_MODULETEMPLATE] [REQUIRES_DOWNTIME]"
+  echo ""
+  echo "Required parameters:"
+  echo "  MODULE_NAME                 - Name of the module (e.g., template-operator)"
+  echo "  RELEASE_VERSION             - Version for OCM component descriptor (e.g., 1.1.1-e2e-test)"
+  echo "  DEPLOYABLE_IMAGE_VERSION    - Actual image version that exists in registry (e.g., 1.0.4)"
+  echo ""
+  echo "Optional parameters (with defaults):"
+  echo "  INCLUDE_DEFAULT_CR          - Include default CR in module (default: true)"
+  echo "  MANDATORY                   - Mark module as mandatory (default: false)"
+  echo "  DEPLOY_MODULETEMPLATE       - Deploy ModuleTemplate to cluster (default: true)"
+  echo "  REQUIRES_DOWNTIME           - Module requires downtime for upgrades (default: false)"
   exit 1
 fi
 
