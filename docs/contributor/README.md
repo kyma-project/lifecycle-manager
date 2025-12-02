@@ -16,3 +16,4 @@
 * [Maintenance Windows](10-maintenance-windows.md)
 * [Lifecycle Manager Components](11-components.md)
 * [Lifecycle Manager Flags](12-klm-arguments.md)
+* [Creating ModuleTemplate(using modulectl & ocm cli)](14-creating-moduletemplate.md)

@@ -21,3 +21,4 @@
   * [Setting Your Module to the Unmanaged and Managed State](../user/02-unmanaging-modules.md)
   * [Maintenance Windows](../contributor/10-maintenance-windows.md)
   * [Skipping Maintenance Windows](../user/03-skipping-maintenance-windows.md)
+  * [Creating ModuleTemplate(using modulectl & ocm cli)](../contributor/14-creating-moduletemplate.md)
