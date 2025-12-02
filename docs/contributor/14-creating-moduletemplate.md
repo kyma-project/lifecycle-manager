@@ -12,7 +12,7 @@ At runtime, Kyma Lifecycle Manager fetches component descriptors dynamically fro
 
 ## Prerequisites
 
-- [modulectl](https://github.com/kyma-project/modulectl) installed
+- [modulectl](https://github.com/kyma-project/modulectl) installed (check the recommended version in the [versions.yaml](../../versions.yaml) file in the root of the repository)
 - [OCM CLI](https://github.com/open-component-model/ocm) installed
 - Access to an OCI registry (local or remote)
 
