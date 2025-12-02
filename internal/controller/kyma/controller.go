@@ -277,8 +277,9 @@ func (r *Reconciler) processDeletion(ctx context.Context, kyma *v1beta2.Kyma) (c
 		usecase.SetSkrKymaStateDeleting,
 		usecase.DeleteSkrKyma,
 		usecase.DeleteSkrWatcher,
-		usecase.DeleteSkrModuleMetadata,
-		usecase.DeleteSkrCrds,
+		usecase.DeleteSkrModuleTemplateCrd,
+		usecase.DeleteSkrModuleReleaseMetaCrd,
+		usecase.DeleteSkrKymaCrd,
 		usecase.DeleteWatcherCertificate,
 		usecase.DeleteManifests,
 		usecase.DeleteMetrics:

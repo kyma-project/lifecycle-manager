@@ -56,10 +56,10 @@ type SkrWebhookManifestManager struct {
 	skrContextFactory     remote.SkrContextProvider
 	remoteSyncNamespace   string
 	kcpAddr               skrwebhookresources.KCPAddr
-	chartReaderService    *chartreader.Service
+	ChartReaderService    *chartreader.Service
 	baseResources         []*unstructured.Unstructured
 	watcherMetrics        WatcherMetrics
-	skrCertificateService SKRCertificateService
+	SkrCertificateService SKRCertificateService
 	resourceConfigurator  *skrwebhookresources.ResourceConfigurator
 }
 
@@ -77,10 +77,10 @@ func NewSKRWebhookManifestManager(kcpClient client.Client, skrContextFactory rem
 		skrContextFactory:     skrContextFactory,
 		remoteSyncNamespace:   remoteSyncNamespace,
 		kcpAddr:               resolvedKcpAddr,
-		chartReaderService:    chartReaderService,
+		ChartReaderService:    chartReaderService,
 		baseResources:         baseResources,
 		watcherMetrics:        watcherMetrics,
-		skrCertificateService: skrCertificateService,
+		SkrCertificateService: skrCertificateService,
 		resourceConfigurator:  resourceConfigurator,
 	}, nil
 }
@@ -96,14 +96,14 @@ func (m *SkrWebhookManifestManager) Reconcile(ctx context.Context, kyma *v1beta2
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
 
-	err = m.skrCertificateService.CreateSkrCertificate(ctx, kyma)
+	err = m.SkrCertificateService.CreateSkrCertificate(ctx, kyma)
 	if err != nil {
 		return fmt.Errorf("failed to create SKR certificate: %w", err)
 	}
 
 	m.writeCertificateRenewalMetrics(ctx, kyma.Name, logger)
 
-	if err = m.skrCertificateService.RenewSkrCertificate(ctx, kyma.Name); err != nil {
+	if err = m.SkrCertificateService.RenewSkrCertificate(ctx, kyma.Name); err != nil {
 		return fmt.Errorf("failed to renew SKR certificate: %w", err)
 	}
 
@@ -114,7 +114,7 @@ func (m *SkrWebhookManifestManager) Reconcile(ctx context.Context, kyma *v1beta2
 	if err != nil {
 		return err
 	}
-	err = m.chartReaderService.RunResourceOperationWithGroupedErrors(ctx, skrContext.Client, resources,
+	err = m.ChartReaderService.RunResourceOperationWithGroupedErrors(ctx, skrContext.Client, resources,
 		func(ctx context.Context, clt client.Client, resource client.Object) error {
 			resource.SetNamespace(m.remoteSyncNamespace)
 			err := clt.Patch(ctx, resource, client.Apply, client.ForceOwnership, skrChartFieldOwner)
@@ -140,7 +140,7 @@ func (m *SkrWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
 
-	if err = m.skrCertificateService.DeleteSkrCertificate(ctx, kyma.Name); err != nil {
+	if err = m.SkrCertificateService.DeleteSkrCertificate(ctx, kyma.Name); err != nil {
 		return fmt.Errorf("failed to delete SKR certificate: %w", err)
 	}
 
@@ -148,7 +148,7 @@ func (m *SkrWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 	genClientObjects := m.getGeneratedClientObjects(data.CertificateSecretData{}, data.GatewaySecretData{},
 		[]v1beta2.Watcher{})
 	skrClientObjects = append(skrClientObjects, genClientObjects...)
-	err = m.chartReaderService.RunResourceOperationWithGroupedErrors(ctx, skrContext.Client, skrClientObjects,
+	err = m.ChartReaderService.RunResourceOperationWithGroupedErrors(ctx, skrContext.Client, skrClientObjects,
 		func(ctx context.Context, clt client.Client, resource client.Object) error {
 			resource.SetNamespace(m.remoteSyncNamespace)
 			err = clt.Delete(ctx, resource)
@@ -171,7 +171,7 @@ func (m *SkrWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 // RemoveSkrCertificate removes the SKR certificate from the KCP cluster.
 // The major anticipated use case is to cleanup orphaned certificates.
 func (m *SkrWebhookManifestManager) RemoveSkrCertificate(ctx context.Context, kymaName string) error {
-	if err := m.skrCertificateService.DeleteSkrCertificate(ctx, kymaName); err != nil {
+	if err := m.SkrCertificateService.DeleteSkrCertificate(ctx, kymaName); err != nil {
 		return fmt.Errorf("failed to delete SKR certificate: %w", err)
 	}
 
@@ -181,7 +181,7 @@ func (m *SkrWebhookManifestManager) RemoveSkrCertificate(ctx context.Context, ky
 func (m *SkrWebhookManifestManager) writeCertificateRenewalMetrics(ctx context.Context, kymaName string,
 	logger logr.Logger,
 ) {
-	overdue, err := m.skrCertificateService.IsSkrCertificateRenewalOverdue(ctx, kymaName)
+	overdue, err := m.SkrCertificateService.IsSkrCertificateRenewalOverdue(ctx, kymaName)
 	if err != nil {
 		m.watcherMetrics.SetCertNotRenew(kymaName)
 		logger.Error(err, "failed to check if certificate renewal is overdue for kyma "+kymaName)
@@ -237,7 +237,7 @@ func (m *SkrWebhookManifestManager) getGeneratedClientObjects(skrCertificateSecr
 func (m *SkrWebhookManifestManager) getRawManifestClientObjects(ctx context.Context, kymaName string,
 ) ([]client.Object, error) {
 	resources := make([]client.Object, 0)
-	skrCertificateSecret, err := m.skrCertificateService.GetSkrCertificateSecret(ctx, kymaName)
+	skrCertificateSecret, err := m.SkrCertificateService.GetSkrCertificateSecret(ctx, kymaName)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, ErrSkrCertificateNotReady
@@ -263,7 +263,7 @@ func (m *SkrWebhookManifestManager) getRawManifestClientObjects(ctx context.Cont
 func (m *SkrWebhookManifestManager) getCertificateData(ctx context.Context,
 	kymaName string,
 ) (*data.CertificateSecretData, *data.GatewaySecretData, error) {
-	skrCertificateSecretData, err := m.skrCertificateService.GetSkrCertificateSecretData(ctx, kymaName)
+	skrCertificateSecretData, err := m.SkrCertificateService.GetSkrCertificateSecretData(ctx, kymaName)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, nil, ErrSkrCertificateNotReady
@@ -272,7 +272,7 @@ func (m *SkrWebhookManifestManager) getCertificateData(ctx context.Context,
 		return nil, nil, fmt.Errorf("failed to get SKR certificate secret: %w", err)
 	}
 
-	gatewaySecretData, err := m.skrCertificateService.GetGatewayCertificateSecretData(ctx)
+	gatewaySecretData, err := m.SkrCertificateService.GetGatewayCertificateSecretData(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get gateway certificate secret: %w", err)
 	}

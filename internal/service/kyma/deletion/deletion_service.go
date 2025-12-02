@@ -5,13 +5,11 @@ import (
 	"errors"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/errors/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 )
 
-var (
-	ErrUnableToDetermineUsecaseApplicability = errors.New("unable to determine usecase applicability")
-	ErrNoUseCaseApplicable                   = errors.New("no use case applicable for kyma deletion")
-)
+var ErrUnableToDetermineUsecaseApplicability = errors.New("unable to determine usecase applicability")
 
 type UseCase interface {
 	IsApplicable(ctx context.Context, mrm *v1beta2.Kyma) (bool, error)
@@ -28,25 +26,22 @@ func NewService(
 	setSkrKymaStateDeleting UseCase,
 	deleteSkrKyma UseCase,
 	removeSkrWebhook UseCase,
+	deleteSkrMtCrd UseCase,
+	deleteSkrMrmCrd UseCase,
+	deleteSkrKymaCrd UseCase,
+	deleteManifests UseCase,
 ) *Service {
-	steps := []UseCase{}
-
-	// Add non-nil usecases in order
-	if setKcpKymaStateDeleting != nil {
-		steps = append(steps, setKcpKymaStateDeleting)
-	}
-	if setSkrKymaStateDeleting != nil {
-		steps = append(steps, setSkrKymaStateDeleting)
-	}
-	if deleteSkrKyma != nil {
-		steps = append(steps, deleteSkrKyma)
-	}
-	if removeSkrWebhook != nil {
-		steps = append(steps, removeSkrWebhook)
-	}
-
 	return &Service{
-		deletionSteps: steps,
+		deletionSteps: []UseCase{
+			setKcpKymaStateDeleting,
+			setSkrKymaStateDeleting,
+			deleteSkrKyma,
+			removeSkrWebhook,
+			deleteSkrMtCrd,
+			deleteSkrMrmCrd,
+			deleteSkrKymaCrd,
+			deleteManifests,
+		},
 	}
 }
 
@@ -55,7 +50,8 @@ func (s *Service) Delete(ctx context.Context, kyma *v1beta2.Kyma) result.Result 
 		isApplicable, err := step.IsApplicable(ctx, kyma)
 		if err != nil {
 			return result.Result{
-				Err: errors.Join(ErrUnableToDetermineUsecaseApplicability, err),
+				UseCase: step.Name(),
+				Err:     errors.Join(ErrUnableToDetermineUsecaseApplicability, err),
 			}
 		}
 		if isApplicable {
@@ -64,6 +60,6 @@ func (s *Service) Delete(ctx context.Context, kyma *v1beta2.Kyma) result.Result 
 	}
 
 	return result.Result{
-		Err: ErrNoUseCaseApplicable,
+		Err: deletion.ErrNoUseCaseApplicable,
 	}
 }

@@ -9,15 +9,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 type SkrKymaStatusRepo interface {
 	SetStateDeleting(ctx context.Context, namespacedName types.NamespacedName) error
 	Get(ctx context.Context, namespacedName types.NamespacedName) (*v1beta2.KymaStatus, error)
-}
-
-type SkrAccessSecretRepo interface {
-	Exists(ctx context.Context, name string) (bool, error)
 }
 
 type SetSkrKymaStateDeleting struct {
@@ -44,6 +41,12 @@ func (u *SetSkrKymaStateDeleting) IsApplicable(ctx context.Context, kcpKyma *v1b
 	}
 
 	status, err := u.skrKymaStatusRepo.Get(ctx, kcpKyma.GetNamespacedName())
+
+	// SKR kyma is already gone
+	if util.IsNotFound(err) {
+		return false, nil
+	}
+
 	if err != nil {
 		return false, err
 	}

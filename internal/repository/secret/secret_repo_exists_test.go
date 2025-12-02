@@ -6,10 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apicorev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
@@ -25,7 +26,7 @@ func TestExists_ClientCallSucceeds_ReturnsExists(t *testing.T) {
 			},
 		},
 	}
-	secretRepository := secretrepository.NewRepository(clientStub, repoNamespace)
+	secretRepository := secretrepo.NewRepository(clientStub, repoNamespace)
 
 	result, err := secretRepository.Exists(t.Context(), kymaName)
 
@@ -37,12 +38,14 @@ func TestExists_ClientCallSucceeds_ReturnsExists(t *testing.T) {
 		clientStub.key)
 }
 
-func TestExists_ClientCallSucceeds_ReturnsNotExists(t *testing.T) {
+func TestExists_ClientCallFailsWithNotFound_ReturnsNotExists(t *testing.T) {
 	kymaName := random.Name()
 	repoNamespace := random.Name()
 
-	clientStub := &getClientStub{}
-	secretRepository := secretrepository.NewRepository(clientStub, repoNamespace)
+	clientStub := &getClientStub{
+		err: apierrors.NewNotFound(apicorev1.Resource("secrets"), kymaName),
+	}
+	secretRepository := secretrepo.NewRepository(clientStub, repoNamespace)
 
 	result, err := secretRepository.Exists(t.Context(), kymaName)
 
@@ -58,11 +61,11 @@ func TestExists_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	clientStub := &getClientStub{
 		err: assert.AnError,
 	}
-	secretRepository := secretrepository.NewRepository(clientStub, random.Name())
+	secretRepository := secretrepo.NewRepository(clientStub, random.Name())
 
-	result, err := secretRepository.Get(t.Context(), random.Name())
+	result, err := secretRepository.Exists(t.Context(), random.Name())
 
-	assert.Nil(t, result)
+	assert.True(t, result)
 	require.ErrorIs(t, err, assert.AnError)
 	assert.True(t, clientStub.called)
 }

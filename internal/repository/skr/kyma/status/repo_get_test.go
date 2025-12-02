@@ -12,7 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/errors"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status"
+	skrkymastatusrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
@@ -31,7 +31,7 @@ func TestGet_ClientCallSucceeds_ReturnsKymaStatus(t *testing.T) {
 		client: clientStub,
 	}
 
-	repo := status.NewRepository(clientCacheStub)
+	repo := skrkymastatusrepo.NewRepository(clientCacheStub)
 
 	result, err := repo.Get(t.Context(), kcpKymaName)
 
@@ -52,7 +52,7 @@ func TestGet_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	clientStub := &getClientStub{
 		err: assert.AnError,
 	}
-	repo := status.NewRepository(&skrClientCacheStub{
+	repo := skrkymastatusrepo.NewRepository(&skrClientCacheStub{
 		client: clientStub,
 	})
 
@@ -68,7 +68,7 @@ func TestGet_ClientReturnsAnError_ReturnsError(t *testing.T) {
 }
 
 func TestGet_ClientNotFound_ReturnsError(t *testing.T) {
-	repo := status.NewRepository(&skrClientCacheStub{
+	repo := skrkymastatusrepo.NewRepository(&skrClientCacheStub{
 		client: nil, // No client available in the cache
 	})
 

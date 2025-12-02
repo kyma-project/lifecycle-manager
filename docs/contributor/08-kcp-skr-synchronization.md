@@ -18,7 +18,7 @@ The v1beta2 API introduces three groups of modules:
 
 By default, without any labels configured on Kyma and ModuleTemplate CRs, a ModuleTemplate CR is synchronized with SAP BTP, Kyma runtime clusters. For every synchronized ModuleTemplate CR, all related ModuleReleaseMeta CRs are synchronized as well.
 
-> [!Note]
+> ### Note
 > Disabling synchronization for already synchronized ModuleTemplates CRs doesn't remove them from the SAP BTP, Kyma runtime clusters. The CRs remain as they are, but any subsequent changes to these ModuleTemplate CRs in the Kyma Control Plane are not synchronized.
 
 For more information, see [`operator.kyma-project.io` Labels](./resources/01-kyma.md#operatorkyma-projectio-labels).
@@ -41,7 +41,7 @@ The Kyma CR serves as the main configuration file shared between KCP and SKR clu
 
 5. Lifecycle Manager monitors the changes by reading the Kyma CR in the SKR, but does not synchronize the KCP Kyma CR.
 
-> [!Note]
+> ### Note
 > The **.spec.modules** field in the KCP Kyma CR remains unchanged and contains only the default modules. The actual module configuration is maintained in the SKR Kyma CR.
 
 For more details about the Kyma CR structure and fields, see [Kyma](./resources/01-kyma.md) CR documentation.

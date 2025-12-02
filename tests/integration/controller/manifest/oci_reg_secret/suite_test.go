@@ -23,13 +23,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
-	"k8s.io/apimachinery/pkg/types"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/google/go-containerregistry/pkg/registry"
 	"go.uber.org/zap/zapcore"
 	apicorev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -51,7 +49,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
-	kymarepository "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
+	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
@@ -60,10 +59,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -146,7 +144,7 @@ var _ = BeforeSuite(func() {
 	extractor := img.NewPathExtractor()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	manifestClient := manifestclient.NewManifestClient(testEventRec, kcpClient)
-	orphanDetectionClient := kymarepository.NewClient(kcpClient)
+	orphanDetectionClient := kymarepo.NewClient(kcpClient)
 	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
 	accessManagerService := testskrcontext.NewFakeAccessManagerService(testEnv, cfg)
 	cachedManifestParser := declarativev2.NewInMemoryCachedManifestParser(declarativev2.DefaultInMemoryParseTTL)
