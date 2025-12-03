@@ -573,7 +573,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentManifestReconciles
 
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
-	orphanDetectionClient := kymarepo.NewClient(mgr.GetClient())
+	orphanDetectionClient := kymarepo.NewRepository(mgr.GetClient())
 	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
 	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr.GetClient(), flagVar), img.NewPathExtractor())
 	clientCache := skrclientcache.NewService()
