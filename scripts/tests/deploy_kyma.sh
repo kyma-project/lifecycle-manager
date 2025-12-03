@@ -41,6 +41,8 @@ metadata:
     skr-domain: "example.domain.com"
   name: kyma-sample
   namespace: kcp-system
+  labels:
+    kyma-project.io/instance-id: "b34bed57-ecd0-4d68-81a7-966e114954b8"
 spec:
   channel: regular
 EOF
