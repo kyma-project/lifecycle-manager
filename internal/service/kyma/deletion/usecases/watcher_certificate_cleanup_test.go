@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -257,13 +258,21 @@ type mockCertificateRepository struct {
 	deleteCalled bool
 }
 
-func (m *mockCertificateRepository) Exists(ctx context.Context, name string) (bool, error) {
+func (m *mockCertificateRepository) Exists(_ context.Context, _ string) (bool, error) {
 	return m.exists, m.existsErr
 }
 
-func (m *mockCertificateRepository) Delete(ctx context.Context, name string) error {
+func (m *mockCertificateRepository) Delete(_ context.Context, _ string) error {
 	m.deleteCalled = true
 	return m.deleteErr
+}
+
+func (m *mockCertificateRepository) Create(_ context.Context, _ string, _ string, _ []string) error {
+	return nil
+}
+
+func (m *mockCertificateRepository) GetRenewalTime(_ context.Context, _ string) (time.Time, error) {
+	return time.Time{}, nil
 }
 
 type mockSecretRepository struct {
@@ -273,11 +282,11 @@ type mockSecretRepository struct {
 	deleteCalled bool
 }
 
-func (m *mockSecretRepository) Exists(ctx context.Context, name string) (bool, error) {
+func (m *mockSecretRepository) Exists(_ context.Context, _ string) (bool, error) {
 	return m.exists, m.existsErr
 }
 
-func (m *mockSecretRepository) Delete(ctx context.Context, name string) error {
+func (m *mockSecretRepository) Delete(_ context.Context, _ string) error {
 	m.deleteCalled = true
 	return m.deleteErr
 }

@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
@@ -101,6 +102,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
@@ -216,11 +218,20 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		accessManagerService,
 		flagVar.SkrClientQPS,
 		flagVar.SkrClientBurst)
+
+	certificateRepository, err := skrwebhook.ComposeCertificateRepository(kcpClient, flagVar)
+	t := reflect.TypeOf(certificateRepository)
+	logger.Info("certificate repository", "type", t)
+	if err != nil {
+		logger.Error(err, "failed to setup certificate repository")
+		os.Exit(bootstrapFailedExitCode)
+	}
 	var skrWebhookManager *watcher.SkrWebhookManifestManager
 	var options ctrlruntime.Options
 	if flagVar.EnableKcpWatcher {
 		skrWebhookManager, err = skrwebhook.ComposeSkrWebhookManager(kcpClient, skrContextProvider,
 			gatewayRepository,
+			certificateRepository,
 			flagVar)
 		if err != nil {
 			logger.Error(err, "failed to setup SKR webhook manager")
@@ -278,7 +289,8 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	metrics.NewFipsMetrics().Update()
 
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
-		kymaMetrics, logger, maintenanceWindow, ociRegistryHost, accessSecretRepository, remoteClientCache)
+		kymaMetrics, logger, maintenanceWindow, ociRegistryHost, accessSecretRepository, remoteClientCache,
+		certificateRepository)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
 		eventRecorder)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, logger,
@@ -429,6 +441,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	skrWebhookManager *watcher.SkrWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
 	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, ociRegistryHost string,
 	accessSecretRepository *secretrepo.Repository, skrClientCache *remote.ClientCache,
+	certificateRepository certificate.CertificateRepository,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -488,7 +501,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	skrWebhookResourcesRepo := webhook.NewResourceRepository(skrClientCache, shared.DefaultRemoteNamespace,
 		skrWebhookManager.BaseResources)
 	removeSkrWebhook := usecases.NewRemoveSkrWebhookResources(skrWebhookResourcesRepo)
-	certificateCleanup := usecases.NewWatcherCertificateCleanup(nil, kcpSecretRepo)
+	certificateCleanup := usecases.NewWatcherCertificateCleanup(certificateRepository, kcpSecretRepo)
 	kymaDeletionService := kymadeletionsvc.NewService(setKcpKymaStateDeleting,
 		setSkrKymaStateDeleting,
 		deleteSkrKyma,

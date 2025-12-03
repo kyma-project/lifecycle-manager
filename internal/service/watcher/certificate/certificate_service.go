@@ -29,6 +29,7 @@ type RenewalService interface {
 type CertificateRepository interface {
 	Create(ctx context.Context, name, commonName string, dnsNames []string) error
 	Delete(ctx context.Context, name string) error
+	Exists(ctx context.Context, name string) (bool, error)
 	GetRenewalTime(ctx context.Context, name string) (time.Time, error)
 }
 
