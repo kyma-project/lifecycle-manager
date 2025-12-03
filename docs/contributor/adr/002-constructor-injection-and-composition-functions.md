@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-It is agreed that [Dependency Inversion](https://medium.com/@inzuael/solid-dependency-inversion-principle-part-5-f5bec43ab22e) is a key principle for solid architecture.
+It is agreed that [Dependency Inversion](https://en.wikipedia.org/wiki/Dependency_inversion_principle) is a key principle for solid architecture.
 Once a consumer abstracted their dependencies properly, the key question is how to fill the abstraction with a concrete implementation.
 
 It has to be decided how and where to resolve dependencies.
