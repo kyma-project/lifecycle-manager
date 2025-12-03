@@ -88,6 +88,7 @@ import (
 	skrcrdrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/crd"
 	skrkymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma"
 	skrkymastatusrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/skr/webhook"
 	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
@@ -447,10 +448,11 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		OCIRegistryHost:        ociRegistryHost,
 		SkrImagePullSecretName: flagVar.SkrImagePullSecret,
 	}
+	kcpSecretRepo := secretrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
 	syncCrdsUseCase := remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil)
 	skrSyncService := skrsync.NewService(
 		skrContextFactory,
-		secretrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+		kcpSecretRepo,
 		&syncCrdsUseCase,
 		flagVar.SkrImagePullSecret)
 
@@ -483,12 +485,14 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			fmt.Sprintf("%s.%s", shared.KymaKind.Plural(), shared.OperatorGroup)),
 		accessSecretRepository,
 		usecase.DeleteSkrKymaCrd)
-	SkrWebhookResourcesRepo := usecases.SkrWebhookResourcesRepository()
-	removeSkrWebhook := usecases.NewRemoveSkrWebhookUseCase(SkrWebhookResourcesRepo,
-		skrWebhookManager.SkrCertificateService)
+	skrWebhookResourcesRepo := webhook.NewResourceRepository(skrClientCache, shared.DefaultRemoteNamespace,
+		skrWebhookManager.BaseResources)
+	removeSkrWebhook := usecases.NewRemoveSkrWebhookResources(skrWebhookResourcesRepo)
+	certificateCleanup := usecases.NewWatcherCertificateCleanup(nil, kcpSecretRepo)
 	kymaDeletionService := kymadeletionsvc.NewService(setKcpKymaStateDeleting,
 		setSkrKymaStateDeleting,
 		deleteSkrKyma,
+		certificateCleanup,
 		removeSkrWebhook,
 		deleteSkrMtCrd,
 		deleteSkrMrmCrd,

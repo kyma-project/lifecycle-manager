@@ -41,9 +41,9 @@ func (w *MetricWriter) Write(res result.Result) {
 		w.metrics.RecordRequeueReason(metrics.RemoteModuleCatalogDeletion, requeueType)
 	case usecase.DeleteManifests:
 		w.metrics.RecordRequeueReason(metrics.CleanupManifestCrs, requeueType)
-	case usecase.DeleteSkrWatcher,
+	case usecase.DeleteWatcherCertificateSetup,
+		usecase.DeleteSkrWebhookResources,
 		usecase.DeleteSkrKymaCrd,
-		usecase.DeleteWatcherCertificate,
 		usecase.DeleteMetrics,
 		usecase.RemoveKymaFinalizers:
 		// These use cases are not tracked by metrics.
