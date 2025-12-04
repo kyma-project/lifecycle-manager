@@ -5,6 +5,7 @@ metadata:
   labels:
     "operator.kyma-project.io/managed-by": "lifecycle-manager"
 spec:
+  manager: "lifecycle-manager"
   labelsToWatch:
     "operator.kyma-project.io/watched-by": "kyma"
   resourceToWatch:
