@@ -145,6 +145,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 			},
 		},
 		Spec: v1beta2.WatcherSpec{
+			Manager: managerInstanceName,
 			ServiceInfo: v1beta2.Service{
 				Port:      8082,
 				Name:      managerInstanceName + "-svc",

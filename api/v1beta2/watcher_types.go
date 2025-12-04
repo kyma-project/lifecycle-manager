@@ -28,6 +28,11 @@ type WatcherSpec struct {
 	// ServiceInfo describes the service information of the listener
 	ServiceInfo Service `json:"serviceInfo"`
 
+	// Manager specifies the component responsible for handling webhook requests.
+	// If not set, falls back to the 'operator.kyma-project.io/managed-by' label.
+	// +optional
+	Manager string `json:"manager,omitempty"`
+
 	// LabelsToWatch describes the labels that should be watched
 	// +optional
 	LabelsToWatch map[string]string `json:"labelsToWatch,omitempty"`
@@ -118,12 +123,25 @@ type Watcher struct {
 //  2. In the KCP, it is used as `http.match.uri.prefix` in the VirtualService to route the incoming
 //     webhook request to the appropriate manager service.
 //
+// The method uses the following priority:
+//  1. First, it checks the spec.Manager field (preferred, explicit configuration)
+//  2. If not set, it falls back to the 'operator.kyma-project.io/managed-by' label (backward compatibility)
+//  3. If neither is set, it returns an empty string
+//
 // Consistency in this name ensures correct routing and handling of webhook validation logic.
 func (watcher *Watcher) GetManagerName() string {
-	if watcher.Labels == nil {
-		return ""
+	// Priority 1: Use explicit spec.Manager field if set
+	if watcher.Spec.Manager != "" {
+		return watcher.Spec.Manager
 	}
-	return watcher.Labels[shared.ManagedBy]
+
+	// Priority 2: Fall back to managed-by label for backward compatibility
+	if watcher.Labels != nil {
+		return watcher.Labels[shared.ManagedBy]
+	}
+
+	// Priority 3: Return empty string if neither is configured
+	return ""
 }
 
 // +kubebuilder:object:root=true
