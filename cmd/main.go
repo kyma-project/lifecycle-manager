@@ -483,14 +483,17 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			fmt.Sprintf("%s.%s", shared.KymaKind.Plural(), shared.OperatorGroup)),
 		accessSecretRepository,
 		usecase.DeleteSkrKymaCrd)
+	deleteMetrics := usecases.NewDeleteMetrics(kymaMetrics)
 
-	kymaDeletionService := kymadeletionsvc.NewService(setKcpKymaStateDeleting,
+	kymaDeletionService := kymadeletionsvc.NewService(
+		setKcpKymaStateDeleting,
 		setSkrKymaStateDeleting,
 		deleteSkrKyma,
 		deleteSkrMtCrd,
 		deleteSkrMrmCrd,
 		deleteSkrKymaCrd,
 		deleteManifests,
+		deleteMetrics,
 	)
 
 	if err := (&kyma.Reconciler{
