@@ -45,7 +45,7 @@ func (w *MetricWriter) Write(res result.Result) {
 		usecase.DeleteSkrKymaCrd,
 		usecase.DeleteWatcherCertificate,
 		usecase.DeleteMetrics,
-		usecase.RemoveKymaFinalizers:
+		usecase.DropKymaFinalizers:
 		// These use cases are not tracked by metrics.
 	}
 }

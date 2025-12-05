@@ -276,10 +276,14 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	maintenanceWindow := initMaintenanceWindow(flagVar.MinMaintenanceWindowSize, logger)
 	metrics.NewFipsMetrics().Update()
 
+	kymaRepo := kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
+
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
-		kymaMetrics, logger, maintenanceWindow, ociRegistryHost, accessSecretRepository, remoteClientCache)
+		kymaMetrics, logger, maintenanceWindow, ociRegistryHost, accessSecretRepository, remoteClientCache,
+		kymaRepo,
+	)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
-		eventRecorder)
+		eventRecorder, kymaRepo)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, logger,
 		ociRegistryHost)
 	setupMandatoryModuleDeletionReconciler(mgr, eventRecorder, flagVar, options, logger)
@@ -427,7 +431,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SkrWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
 	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, ociRegistryHost string,
-	accessSecretRepository *secretrepo.Repository, skrClientCache *remote.ClientCache,
+	accessSecretRepository *secretrepo.Repository, skrClientCache *remote.ClientCache, kymaRepo *kymarepo.Repository,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -484,6 +488,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		accessSecretRepository,
 		usecase.DeleteSkrKymaCrd)
 	deleteMetrics := usecases.NewDeleteMetrics(kymaMetrics)
+	dropKymaFinalizers := usecases.NewDropKymaFinalizers(kymaRepo)
 
 	kymaDeletionService := kymadeletionsvc.NewService(
 		setKcpKymaStateDeleting,
@@ -494,6 +499,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		deleteSkrKymaCrd,
 		deleteManifests,
 		deleteMetrics,
+		dropKymaFinalizers,
 	)
 
 	if err := (&kyma.Reconciler{
@@ -566,6 +572,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	accessManagerService *accessmanager.Service,
 	setupLog logr.Logger,
 	event event.Event,
+	kymaRepo *kymarepo.Repository,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -573,7 +580,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentManifestReconciles
 
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
-	orphanDetectionClient := kymarepo.NewRepository(mgr.GetClient())
+	orphanDetectionClient := kymaRepo
 	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
 	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr.GetClient(), flagVar), img.NewPathExtractor())
 	clientCache := skrclientcache.NewService()

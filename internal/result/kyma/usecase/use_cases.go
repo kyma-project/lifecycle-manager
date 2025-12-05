@@ -13,5 +13,5 @@ const (
 	DeleteWatcherCertificate      result.UseCase = "DeleteWatcherCertificate"
 	DeleteManifests               result.UseCase = "DeleteManifests"
 	DeleteMetrics                 result.UseCase = "DeleteMetrics"
-	RemoveKymaFinalizers          result.UseCase = "RemoveKymaFinalizers"
+	DropKymaFinalizers            result.UseCase = "DropKymaFinalizers"
 )
