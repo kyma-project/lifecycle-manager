@@ -1,0 +1,188 @@
+package webhook
+
+import (
+	"context"
+	"fmt"
+
+	"golang.org/x/sync/errgroup"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/apis/meta/v1beta1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/internal/errors"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
+)
+
+type SkrClientCache interface {
+	Get(key client.ObjectKey) client.Client
+}
+
+//// resourceRef contains the minimal information needed to identify and delete a resource.
+//type resourceRef struct {
+//	Name       string
+//	APIVersion string
+//	Kind       string
+//}
+
+type ResourceRepository struct {
+	resources           []v1beta1.PartialObjectMetadata
+	skrClientCache      SkrClientCache
+	remoteSyncNamespace string
+}
+
+func NewResourceRepository(
+	skrClientCache SkrClientCache,
+	remoteSyncNamespace string,
+	baseResources []*unstructured.Unstructured,
+) *ResourceRepository {
+	resources := make([]v1beta1.PartialObjectMetadata, 0, len(baseResources)+2)
+	for _, res := range baseResources {
+		meta := v1beta1.PartialObjectMetadata{
+			TypeMeta: apimetav1.TypeMeta{
+				Kind:       res.GetKind(),
+				APIVersion: res.GetAPIVersion(),
+			},
+			ObjectMeta: apimetav1.ObjectMeta{
+				Name:      res.GetName(),
+				Namespace: remoteSyncNamespace,
+			},
+		}
+		resources = append(resources, meta)
+	}
+
+	// Add generated resources that are created dynamically from SkrWebhookManifestManager (not read from resources.yaml)
+	resources = append(resources,
+		v1beta1.PartialObjectMetadata{
+			TypeMeta: apimetav1.TypeMeta{
+				Kind:       "ValidatingWebhookConfiguration",
+				APIVersion: admissionregistrationv1.SchemeGroupVersion.String(),
+			},
+			ObjectMeta: apimetav1.ObjectMeta{
+				Name:      skrwebhookresources.SkrResourceName,
+				Namespace: remoteSyncNamespace,
+			},
+		},
+		v1beta1.PartialObjectMetadata{
+			TypeMeta: apimetav1.TypeMeta{
+				Kind:       "Secret",
+				APIVersion: "v1",
+			},
+			ObjectMeta: apimetav1.ObjectMeta{
+				Name:      skrwebhookresources.SkrTLSName,
+				Namespace: remoteSyncNamespace,
+			},
+		},
+	)
+
+	return &ResourceRepository{
+		resources:           resources,
+		skrClientCache:      skrClientCache,
+		remoteSyncNamespace: remoteSyncNamespace,
+	}
+}
+
+// ResourcesExist checks if any of the skr-webhook resources exist in the SKR cluster for the given Kyma.
+func (r *ResourceRepository) ResourcesExist(kymaName string) (bool, error) {
+	skrClient, err := r.getSkrClient(types.NamespacedName{
+		Name:      kymaName,
+		Namespace: r.remoteSyncNamespace,
+	})
+	if err != nil {
+		return false, err
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	errGrp, grpCtx := errgroup.WithContext(ctx)
+	resourceExists := make(chan bool, 1)
+
+	for resIdx := range r.resources {
+		errGrp.Go(func() error {
+			select {
+			case <-grpCtx.Done():
+				// Short-circuit if context is cancelled (resource already found)
+				return nil
+			default:
+			}
+
+			ref := r.resources[resIdx]
+			err := skrClient.Get(grpCtx, client.ObjectKeyFromObject(&ref), &unstructured.Unstructured{})
+			if err != nil {
+				if apierrors.IsNotFound(err) {
+					// Resource does not exist, continue checking others
+					return nil
+				}
+				return fmt.Errorf("failed to check resource %s: %w", ref.Name, err)
+			}
+			select {
+			case resourceExists <- true:
+				cancel()
+			default:
+			}
+			return nil
+		})
+	}
+
+	if err := errGrp.Wait(); err != nil {
+		return false, err
+	}
+
+	select {
+	case <-resourceExists:
+		return true, nil
+	default:
+		return false, nil
+	}
+}
+
+// DeleteWebhookResources deletes all skr-webhook resources from the SKR cluster for the given Kyma.
+func (r *ResourceRepository) DeleteWebhookResources(ctx context.Context, kymaName string) error {
+	skrClient, err := r.getSkrClient(types.NamespacedName{
+		Name:      kymaName,
+		Namespace: r.remoteSyncNamespace,
+	})
+	if err != nil {
+		return err
+	}
+
+	errGrp, grpCtx := errgroup.WithContext(ctx)
+
+	for resIdx := range r.resources {
+		errGrp.Go(func() error {
+			ref := r.resources[resIdx]
+			//resource := &unstructured.Unstructured{}
+			//resource.SetGroupVersionKind(schema.FromAPIVersionAndKind(ref.APIVersion, ref.Kind))
+			//resource.SetName(ref.Name)
+			//resource.SetNamespace(r.remoteSyncNamespace)
+			err := skrClient.Delete(grpCtx, &ref)
+			if client.IgnoreNotFound(err) != nil {
+				return fmt.Errorf("failed to delete resource %s: %w", ref.Name, err)
+			}
+			return nil
+		})
+	}
+
+	if err := errGrp.Wait(); err != nil && !util.IsNotFound(err) {
+		return fmt.Errorf("failed to delete webhook resources: %w", err)
+	}
+
+	return nil
+}
+
+func (r *ResourceRepository) getSkrClient(kymaName types.NamespacedName) (client.Client, error) {
+	skrClient := r.skrClientCache.Get(kymaName)
+
+	if skrClient == nil {
+		// TODO if multiple Repositories are using this error generation, consider creating a shared error instance
+		// or even provide this get functionality with error on the skrClientCache itself
+		return nil, fmt.Errorf("%w: Kyma %s", errors.ErrSkrClientNotFound, kymaName.String())
+	}
+
+	return skrClient, nil
+}

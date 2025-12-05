@@ -137,7 +137,7 @@ func TestMetricWriter_Write(t *testing.T) {
 		// No calls
 		{
 			name:         "Nothing for UseCaseDeleteSkrWatcher",
-			useCase:      usecase.DeleteSkrWatcher,
+			useCase:      usecase.DeleteSkrWebhookResources,
 			err:          nil,
 			expectedCall: false,
 		},
@@ -148,8 +148,8 @@ func TestMetricWriter_Write(t *testing.T) {
 			expectedCall: false,
 		},
 		{
-			name:         "Nothing for UseCaseDeleteWatcherCertificate",
-			useCase:      usecase.DeleteWatcherCertificate,
+			name:         "Nothing for DeleteWatcherCertificateSetup",
+			useCase:      usecase.DeleteWatcherCertificateSetup,
 			err:          nil,
 			expectedCall: false,
 		},

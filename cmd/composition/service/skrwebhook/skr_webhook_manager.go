@@ -39,9 +39,10 @@ var (
 func ComposeSkrWebhookManager(kcpClient client.Client,
 	skrContextProvider remote.SkrContextProvider,
 	repository gateway.IstioGatewayRepository,
+	certificateRepository certificate.CertificateRepository,
 	flagVar *flags.FlagVar,
 ) (*watcher.SkrWebhookManifestManager, error) {
-	skrCertService, err := setupSKRCertService(kcpClient, flagVar)
+	skrCertService, err := setupSKRCertService(kcpClient, certificateRepository, flagVar)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +79,9 @@ func ComposeSkrWebhookManager(kcpClient client.Client,
 		watcherMetrics)
 }
 
-func setupSKRCertService(kcpClient client.Client, flagVar *flags.FlagVar) (*certificate.Service, error) {
+func ComposeCertificateRepository(kcpClient client.Client,
+	flagVar *flags.FlagVar,
+) (certificate.CertificateRepository, error) {
 	certificateConfig := config.CertificateValues{
 		Duration:    flagVar.SelfSignedCertDuration,
 		RenewBefore: flagVar.SelfSignedCertRenewBefore,
@@ -105,6 +108,14 @@ func setupSKRCertService(kcpClient client.Client, flagVar *flags.FlagVar) (*cert
 		return nil, fmt.Errorf("failed to create certificate repository: %w", err)
 	}
 
+	return certRepoImpl, nil
+}
+
+func setupSKRCertService(kcpClient client.Client,
+	certificateRepository certificate.CertificateRepository,
+	flagVar *flags.FlagVar,
+) (*certificate.Service, error) {
+
 	certServiceConfig := certificate.Config{
 		SkrServiceName:     skrwebhookresources.SkrResourceName,
 		SkrNamespace:       flagVar.RemoteSyncNamespace,
@@ -126,5 +137,5 @@ func setupSKRCertService(kcpClient client.Client, flagVar *flags.FlagVar) (*cert
 		return nil, errCertificateManagementNotSupported
 	}
 
-	return certificate.NewService(renewalService, certRepoImpl, secretRepository, certServiceConfig), nil
+	return certificate.NewService(renewalService, certificateRepository, secretRepository, certServiceConfig), nil
 }

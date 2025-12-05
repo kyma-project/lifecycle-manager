@@ -276,11 +276,11 @@ func (r *Reconciler) processDeletion(ctx context.Context, kyma *v1beta2.Kyma) (c
 	case usecase.SetKcpKymaStateDeleting,
 		usecase.SetSkrKymaStateDeleting,
 		usecase.DeleteSkrKyma,
-		usecase.DeleteSkrWatcher,
+		usecase.DeleteWatcherCertificateSetup,
+		usecase.DeleteSkrWebhookResources,
 		usecase.DeleteSkrModuleTemplateCrd,
 		usecase.DeleteSkrModuleReleaseMetaCrd,
 		usecase.DeleteSkrKymaCrd,
-		usecase.DeleteWatcherCertificate,
 		usecase.DeleteManifests,
 		usecase.DeleteMetrics:
 		// error takes precedence over the RequeueAfter
@@ -568,8 +568,6 @@ func checkSKRWebhookReadiness(ctx context.Context, skrClient *remote.SkrContext,
 }
 
 func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
-	logger := logf.FromContext(ctx).V(log.InfoLevel)
-
 	if r.WatcherEnabled() {
 		if err := r.SKRWebhookManager.Remove(ctx, kyma); err != nil {
 			return ctrl.Result{}, err
@@ -592,6 +590,7 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 		return r.requeueWithError(ctx, kyma, err)
 	}
 
+	logger := logf.FromContext(ctx).V(log.InfoLevel)
 	logger.Info("removed remote finalizers")
 
 	if err := r.cleanupManifestCRs(ctx, kyma); err != nil {
