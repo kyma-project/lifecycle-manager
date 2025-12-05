@@ -43,6 +43,7 @@ metadata:
   namespace: kcp-system
   labels:
     kyma-project.io/instance-id: "b34bed57-ecd0-4d68-81a7-966e114954b8"
+    kyma-project.io/runtime-id: "kyma-sample"
 spec:
   channel: regular
 EOF
