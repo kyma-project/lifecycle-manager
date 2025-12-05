@@ -568,7 +568,11 @@ func checkSKRWebhookReadiness(ctx context.Context, skrClient *remote.SkrContext,
 }
 
 func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
-	logger := logf.FromContext(ctx).V(log.InfoLevel)
+	if r.WatcherEnabled() {
+		if err := r.SKRWebhookManager.Remove(ctx, kyma); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
 
 	if err := r.RemoteCatalog.Delete(ctx, kyma.GetNamespacedName()); err != nil {
 		err = fmt.Errorf("failed to delete remote module catalog: %w", err)
@@ -586,6 +590,7 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 		return r.requeueWithError(ctx, kyma, err)
 	}
 
+	logger := logf.FromContext(ctx).V(log.InfoLevel)
 	logger.Info("removed remote finalizers")
 
 	if err := r.cleanupManifestCRs(ctx, kyma); err != nil {

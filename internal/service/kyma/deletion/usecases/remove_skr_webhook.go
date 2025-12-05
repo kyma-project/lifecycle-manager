@@ -39,7 +39,7 @@ func (u *RemoveSkrWebhookResources) IsApplicable(ctx context.Context, kyma *v1be
 
 	resourcesExist, err := u.skrWebhookResourcesRepo.ResourcesExist(kyma.Name)
 	if err != nil {
-		return false, errors.Join(err, errFailedToDetermineApplicability)
+		return false, errors.Join(errFailedToDetermineApplicability, err)
 	}
 
 	return resourcesExist, nil
@@ -51,7 +51,7 @@ func (u *RemoveSkrWebhookResources) Execute(ctx context.Context, kyma *v1beta2.K
 	if err != nil {
 		return result.Result{
 			UseCase: u.Name(),
-			Err:     errors.Join(err, errFailedToRemoveSkrWebhookResources),
+			Err:     errors.Join(errFailedToRemoveSkrWebhookResources, err),
 		}
 	}
 

@@ -107,10 +107,7 @@ func TestResourceRepository_ResourcesExist(t *testing.T) {
 			) error {
 				// Only ValidatingWebhookConfiguration exists
 				if key.Name == skrwebhookresources.SkrResourceName {
-					unstr, ok := obj.(*unstructured.Unstructured)
-					if ok && unstr.GetKind() == "ValidatingWebhookConfiguration" {
-						return nil
-					}
+					return nil
 				}
 				return apierrors.NewNotFound(schema.GroupResource{}, key.Name)
 			},

@@ -45,7 +45,7 @@ func (u *WatcherCertificateCleanup) IsApplicable(ctx context.Context, kyma *v1be
 	certName := name.SkrCertificate(kyma.Name)
 	certificateExists, err := u.certRepo.Exists(ctx, certName)
 	if err != nil {
-		return false, errors.Join(err, errFailedToDetermineWatcherCleanupApplicability)
+		return false, errors.Join(errFailedToDetermineWatcherCleanupApplicability, err)
 	}
 	if certificateExists {
 		return true, nil
@@ -53,7 +53,7 @@ func (u *WatcherCertificateCleanup) IsApplicable(ctx context.Context, kyma *v1be
 
 	secretExists, err := u.secretRepo.Exists(ctx, certName)
 	if err != nil {
-		return false, errors.Join(err, errFailedToDetermineWatcherCleanupApplicability)
+		return false, errors.Join(errFailedToDetermineWatcherCleanupApplicability, err)
 	}
 
 	return secretExists, nil
@@ -64,13 +64,13 @@ func (u *WatcherCertificateCleanup) Execute(ctx context.Context, kyma *v1beta2.K
 	if err := u.certRepo.Delete(ctx, kyma.Name); err != nil {
 		return result.Result{
 			UseCase: u.Name(),
-			Err:     errors.Join(err, errFailedToDeleteWatcherSkrCertificate),
+			Err:     errors.Join(errFailedToDeleteWatcherSkrCertificate, err),
 		}
 	}
 	if err := u.secretRepo.Delete(ctx, kyma.Name); err != nil {
 		return result.Result{
 			UseCase: u.Name(),
-			Err:     errors.Join(err, errFailedToDeleteWatcherSkrSecret),
+			Err:     errors.Join(errFailedToDeleteWatcherSkrSecret, err),
 		}
 	}
 
