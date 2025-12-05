@@ -498,11 +498,13 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			fmt.Sprintf("%s.%s", shared.KymaKind.Plural(), shared.OperatorGroup)),
 		accessSecretRepository,
 		usecase.DeleteSkrKymaCrd)
+	deleteMetrics := usecases.NewDeleteMetrics(kymaMetrics)
 	skrWebhookResourcesRepo := webhook.NewResourceRepository(skrClientCache, shared.DefaultRemoteNamespace,
 		skrWebhookManager.BaseResources)
 	removeSkrWebhook := usecases.NewRemoveSkrWebhookResources(skrWebhookResourcesRepo)
 	certificateCleanup := usecases.NewWatcherCertificateCleanup(certificateRepository, kcpSecretRepo)
-	kymaDeletionService := kymadeletionsvc.NewService(setKcpKymaStateDeleting,
+	kymaDeletionService := kymadeletionsvc.NewService(
+		setKcpKymaStateDeleting,
 		setSkrKymaStateDeleting,
 		deleteSkrKyma,
 		certificateCleanup,
@@ -511,6 +513,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		deleteSkrMrmCrd,
 		deleteSkrKymaCrd,
 		deleteManifests,
+		deleteMetrics,
 	)
 
 	if err := (&kyma.Reconciler{
@@ -590,7 +593,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentManifestReconciles
 
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
-	orphanDetectionClient := kymarepo.NewClient(mgr.GetClient())
+	orphanDetectionClient := kymarepo.NewRepository(mgr.GetClient())
 	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
 	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr.GetClient(), flagVar), img.NewPathExtractor())
 	clientCache := skrclientcache.NewService()

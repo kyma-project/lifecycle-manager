@@ -20,26 +20,26 @@ const (
 
 var errGeneric = errors.New("generic error")
 
-func TestClient_GetKyma_WhenKymaNotFound_ReturnNotFoundError(t *testing.T) {
-	kymaClient := kymarepo.NewClient(&readerStubKymaNotFound{})
-	_, err := kymaClient.GetKyma(t.Context(), kymaName, kymaNamespace)
+func Test_Get_WhenKymaNotFound_ReturnNotFoundError(t *testing.T) {
+	kymaClient := kymarepo.NewRepository(&readerStubKymaNotFound{})
+	_, err := kymaClient.Get(t.Context(), kymaName, kymaNamespace)
 
 	require.Error(t, err)
 	require.True(t, apierrors.IsNotFound(err))
 }
 
-func TestClient_GetKyma_WhenReaderReturnsError_ReturnError(t *testing.T) {
-	kymaClient := kymarepo.NewClient(&readerStubGenericError{})
-	_, err := kymaClient.GetKyma(t.Context(), kymaName, kymaNamespace)
+func Test_Get_WhenReaderReturnsError_ReturnError(t *testing.T) {
+	kymaClient := kymarepo.NewRepository(&readerStubGenericError{})
+	_, err := kymaClient.Get(t.Context(), kymaName, kymaNamespace)
 
 	require.Error(t, err)
 	require.False(t, apierrors.IsNotFound(err))
 	require.ErrorIs(t, err, errGeneric)
 }
 
-func TestClient_GetKyma_WhenKymaFound_ReturnNoError(t *testing.T) {
-	kymaClient := kymarepo.NewClient(&readerStubValidKyma{})
-	foundKyma, err := kymaClient.GetKyma(t.Context(), kymaName, kymaNamespace)
+func Test_Get_WhenKymaFound_ReturnNoError(t *testing.T) {
+	kymaClient := kymarepo.NewRepository(&readerStubValidKyma{})
+	foundKyma, err := kymaClient.Get(t.Context(), kymaName, kymaNamespace)
 
 	require.NoError(t, err)
 	require.Equal(t, kymaName, foundKyma.GetName())

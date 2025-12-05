@@ -103,6 +103,22 @@ func (k *KymaMetrics) CleanupMetrics(kymaName string) {
 	})
 }
 
+func (k *KymaMetrics) HasMetrics(kymaName string) (bool, error) {
+	if hasKymaMetrics, err := hasMetricsForKyma(kymaName,
+		MetricKymaState,
+	); hasKymaMetrics || err != nil {
+		return hasKymaMetrics, err
+	}
+
+	if hasModuleMetrics, err := hasMetricsForKyma(kymaName,
+		MetricModuleState,
+	); hasModuleMetrics || err != nil {
+		return hasModuleMetrics, err
+	}
+
+	return false, nil
+}
+
 // RemoveModuleStateMetrics deletes all 'lifecycle_mgr_module_state' metrics for the matching module.
 func (k *KymaMetrics) RemoveModuleStateMetrics(kymaName, moduleName string) {
 	k.moduleStateGauge.DeletePartialMatch(prometheus.Labels{
@@ -116,7 +132,7 @@ func (k *KymaMetrics) RecordRequeueReason(kymaRequeueReason KymaRequeueReason, r
 }
 
 func (k *KymaMetrics) CleanupNonExistingKymaCrsMetrics(ctx context.Context, kcpClient client.Client) error {
-	currentLifecycleManagerMetrics, err := FetchLifecycleManagerMetrics()
+	currentLifecycleManagerMetrics, err := fetchMetrics(MetricKymaState)
 	if err != nil {
 		return err
 	}
@@ -147,21 +163,6 @@ func (k *KymaMetrics) CleanupNonExistingKymaCrsMetrics(ctx context.Context, kcpC
 	logs.FromContext(ctx).Info("Finished running the metrics cleanup job")
 
 	return nil
-}
-
-func FetchLifecycleManagerMetrics() ([]*prometheusclient.Metric, error) {
-	currentMetrics, err := ctrlmetrics.Registry.Gather()
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch current kyma metrics, %w", err)
-	}
-
-	for _, metric := range currentMetrics {
-		if metric.GetName() == MetricKymaState {
-			return metric.GetMetric(), nil
-		}
-	}
-
-	return nil, nil
 }
 
 func (k *KymaMetrics) setKymaStateGauge(newState shared.State, kymaName, shootID, instanceID string) {
@@ -218,4 +219,62 @@ func getKymaNames(kymaCrs *v1beta2.KymaList) map[string]bool {
 		names[kyma.GetName()] = true
 	}
 	return names
+}
+
+func hasMetricsForKyma(kymaName string, metricName string) (bool, error) {
+	metrics, err := fetchMetrics(metricName)
+	if err != nil {
+		return false, err
+	}
+	filteredMetrics := filterByLabels(metrics, []prometheus.Labels{
+		{KymaNameLabel: kymaName},
+	})
+	if len(filteredMetrics) == 0 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func fetchMetrics(metricName string) ([]*prometheusclient.Metric, error) {
+	currentMetrics, err := ctrlmetrics.Registry.Gather()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch %s metrics: %w", metricName, err)
+	}
+
+	for _, metric := range currentMetrics {
+		if metric.GetName() == metricName {
+			return metric.GetMetric(), nil
+		}
+	}
+
+	return nil, nil
+}
+
+func filterByLabels(metrics []*prometheusclient.Metric, labels []prometheus.Labels) []*prometheusclient.Metric {
+	var filteredMetrics []*prometheusclient.Metric
+	for _, m := range metrics {
+		if matchesLabels(m, labels) {
+			filteredMetrics = append(filteredMetrics, m)
+		}
+	}
+	return filteredMetrics
+}
+
+func matchesLabels(metric *prometheusclient.Metric, labels []prometheus.Labels) bool {
+	metricLabels := make(map[string]string)
+	for _, l := range metric.GetLabel() {
+		metricLabels[l.GetName()] = l.GetValue()
+	}
+
+	// metricLabels must contain all labels with the same value
+	for _, l := range labels {
+		for k, v := range l {
+			if metricLabels[k] != v {
+				return false
+			}
+		}
+	}
+
+	return true
 }
