@@ -5,17 +5,16 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/runtime-watcher/listener/pkg/v2/types"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/runtime-watcher/listener/pkg/v2/types"
 )
 
-var (
-	errParsingRuntimeID = errors.New("error getting runtime id from unstructured event")
-)
+var errParsingRuntimeID = errors.New("error getting runtime id from unstructured event")
 
 type SkrEventHandler struct{}
 
