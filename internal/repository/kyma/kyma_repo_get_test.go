@@ -21,16 +21,16 @@ const (
 var errGeneric = errors.New("generic error")
 
 func Test_Get_WhenKymaNotFound_ReturnNotFoundError(t *testing.T) {
-	kymaClient := kymarepo.NewRepository(&readerStubKymaNotFound{})
-	_, err := kymaClient.Get(t.Context(), kymaName, kymaNamespace)
+	kymaClient := kymarepo.NewRepository(&readerStubKymaNotFound{}, kymaNamespace)
+	_, err := kymaClient.Get(t.Context(), kymaName)
 
 	require.Error(t, err)
 	require.True(t, apierrors.IsNotFound(err))
 }
 
 func Test_Get_WhenReaderReturnsError_ReturnError(t *testing.T) {
-	kymaClient := kymarepo.NewRepository(&readerStubGenericError{})
-	_, err := kymaClient.Get(t.Context(), kymaName, kymaNamespace)
+	kymaClient := kymarepo.NewRepository(&readerStubGenericError{}, kymaNamespace)
+	_, err := kymaClient.Get(t.Context(), kymaName)
 
 	require.Error(t, err)
 	require.False(t, apierrors.IsNotFound(err))
@@ -38,8 +38,8 @@ func Test_Get_WhenReaderReturnsError_ReturnError(t *testing.T) {
 }
 
 func Test_Get_WhenKymaFound_ReturnNoError(t *testing.T) {
-	kymaClient := kymarepo.NewRepository(&readerStubValidKyma{})
-	foundKyma, err := kymaClient.Get(t.Context(), kymaName, kymaNamespace)
+	kymaClient := kymarepo.NewRepository(&readerStubValidKyma{}, kymaNamespace)
+	foundKyma, err := kymaClient.Get(t.Context(), kymaName)
 
 	require.NoError(t, err)
 	require.Equal(t, kymaName, foundKyma.GetName())
@@ -48,7 +48,9 @@ func Test_Get_WhenKymaFound_ReturnNoError(t *testing.T) {
 
 // Reader stubs
 
-type readerStubKymaNotFound struct{}
+type readerStubKymaNotFound struct {
+	client.Client
+}
 
 func (c *readerStubKymaNotFound) Get(_ context.Context, key client.ObjectKey, _ client.Object, _ ...client.GetOption,
 ) error {
@@ -62,7 +64,9 @@ func (c *readerStubKymaNotFound) List(_ context.Context, _ client.ObjectList, _ 
 	return nil
 }
 
-type readerStubGenericError struct{}
+type readerStubGenericError struct {
+	client.Client
+}
 
 func (c *readerStubGenericError) Get(_ context.Context, _ client.ObjectKey, _ client.Object, _ ...client.GetOption,
 ) error {
@@ -73,7 +77,9 @@ func (c *readerStubGenericError) List(_ context.Context, _ client.ObjectList, _ 
 	return nil
 }
 
-type readerStubValidKyma struct{}
+type readerStubValidKyma struct {
+	client.Client
+}
 
 func (c *readerStubValidKyma) Get(_ context.Context, key client.ObjectKey, obj client.Object, _ ...client.GetOption,
 ) error {

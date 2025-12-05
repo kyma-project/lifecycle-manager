@@ -32,6 +32,7 @@ func NewService(
 	deleteSkrKymaCrd UseCase,
 	deleteManifests UseCase,
 	deleteMetrics UseCase,
+	dropKymaFinalizers UseCase,
 ) *Service {
 	return &Service{
 		deletionSteps: []UseCase{
@@ -45,6 +46,7 @@ func NewService(
 			deleteSkrKymaCrd,
 			deleteManifests,
 			deleteMetrics,
+			dropKymaFinalizers,
 		},
 	}
 }
