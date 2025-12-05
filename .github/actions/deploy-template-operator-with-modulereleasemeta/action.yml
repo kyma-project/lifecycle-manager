@@ -2,9 +2,8 @@ name: Deploy template-operator With ModuleReleaseMeta
 description: Deploys a test-specific template-operator and corresponding ModuleReleaseMeta.
 inputs:
   module_version:
-    description: "Version of the template operator to be deployed, should be aligned with the latest version released in github."
+    description: "Version of the template operator to be deployed, should be aligned with the version in versions.yaml"
     required: true
-    default: "1.0.4"
 runs:
   using: composite
   steps:
@@ -22,6 +21,8 @@ runs:
         cp ../lifecycle-manager/scripts/tests/deploy_moduletemplate.sh .
         cp ../lifecycle-manager/scripts/tests/deploy_modulereleasemeta.sh .
         cp ../lifecycle-manager/scripts/tests/deploy_mandatory_modulereleasemeta.sh .
+        cp ../lifecycle-manager/scripts/tests/ocm-config-local-registry.yaml .
+        cp ../lifecycle-manager/scripts/tests/ocm-config-private-registry.yaml .
     - name: Create and apply Template Operator ModuleTemplate from the latest release
       working-directory: template-operator
       if: ${{ matrix.e2e-test != 'mandatory-module' &&
@@ -31,10 +32,9 @@ runs:
         }}
       shell: bash
       run: |
-        modulectl create --config-file ./module-config.yaml --registry http://localhost:5111 --insecure
-        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-        kubectl get crds
-        kubectl apply -f template.yaml
+        yq eval '.images[0].newTag = "${{ inputs.module_version }}"' -i config/manager/deployment/kustomization.yaml
+        make build-manifests
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ inputs.module_version }} ${{ inputs.module_version }} true false true false
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInOlderVersion
       working-directory: template-operator
       if: ${{ matrix.e2e-test != 'mandatory-module' &&
@@ -44,9 +44,10 @@ runs:
         }}
       shell: bash
       run: |
+        yq eval '.images[0].newTag = "${{ env.OlderVersion }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInOlderVersion }}"' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersion }}
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersion }} ${{ inputs.module_version }} true false true false
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInNewerVersion
       working-directory: template-operator
       if: ${{ matrix.e2e-test != 'mandatory-module' &&
@@ -67,18 +68,44 @@ runs:
           REQUIRE_DOWNTIME=false
         fi
 
+        yq eval '.images[0].newTag = "${{ env.NewerVersion }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }} $INCLUDE_DEFAULT_CR $MANDATORY $DEPLOY_MODULETEMPLATE $REQUIRE_DOWNTIME
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }} ${{ inputs.module_version }} $INCLUDE_DEFAULT_CR $MANDATORY $DEPLOY_MODULETEMPLATE $REQUIRE_DOWNTIME
     - name: Create and apply Template Operator ModuleTemplate in private registry
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'oci-reg-cred-secret' }}
       shell: bash
       run: |
-        modulectl create --config-file ./module-config.yaml --registry http://k3d-private-oci-reg.localhost:5001 --registry-credentials myuser:mypass --insecure
-        sed -i 's/k3d-private-oci-reg.localhost:5001/private-oci-reg.localhost:5000/g' ./template.yaml
+        MODULE_CONFIG="./module-config.yaml"
+        REGISTRY_URL="k3d-private-oci-reg.localhost:5001"
+        REGISTRY_CREDS="myuser:mypass"
+        COMPONENT_CONSTRUCTOR_FILE="./component-constructor.yaml"
+        CTF_DIR="./component-ctf"
+        TEMPLATE_FILE="./template.yaml"
+        TARGET_REGISTRY="private-oci-reg.localhost:5000"
+        OCM_CONFIG="./ocm-config-private-registry.yaml"
+
+        echo "creating ModuleTemplate"
+        modulectl create \
+          --config-file "${MODULE_CONFIG}" \
+          --disable-ocm-registry-push \
+          --output-constructor-file "${COMPONENT_CONSTRUCTOR_FILE}"
+
+        echo "pushing OCM components..."
+        ocm --config "${OCM_CONFIG}" add componentversions --create --file "${CTF_DIR}" --skip-digest-generation "${COMPONENT_CONSTRUCTOR_FILE}"
+        ocm --config "${OCM_CONFIG}" transfer ctf \
+          --overwrite \
+          --no-update \
+          "${CTF_DIR}" \
+          "http://${REGISTRY_URL}"
+
+        echo "Verifying component in private registry..."
+        curl -s -u myuser:mypass "http://${REGISTRY_URL}/v2/_catalog" || echo "Warning: Could not verify registry catalog"
+
+        echo "No baseUrl patching needed for private registry..."
         kubectl get crds
-        kubectl apply -f template.yaml
+        kubectl apply -f <(yq eval '.metadata.namespace = "kcp-system"' "${TEMPLATE_FILE}")
     - name: Create and apply ModuleReleaseMeta from the template-operator repo
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'kyma-metrics' ||
@@ -126,9 +153,10 @@ runs:
         }}
       shell: bash
       run: |
+        yq eval '.images[0].newTag = "${{ env.OlderVersionForMandatoryModule }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInOlderVersion }}"' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersionForMandatoryModule }} true true false
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersionForMandatoryModule }} ${{ inputs.module_version }} true true false false
         yq eval 'del(.spec.mandatory)' -i template.yaml
         kubectl apply -f template.yaml
         rm -f template.yaml
@@ -140,9 +168,10 @@ runs:
       working-directory: template-operator
       shell: bash
       run: |
+        yq eval '.images[0].newTag = "${{ env.NewerVersionForMandatoryModule }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersionForMandatoryModule }} true true false
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersionForMandatoryModule }} ${{ inputs.module_version }} true true false false
         yq eval 'del(.spec.mandatory)' -i template.yaml
         cp template.yaml ../lifecycle-manager/tests/e2e/mandatory_template_v2.yaml
     - name: Create and apply ModuleReleaseMeta Template Operator with newer version in fast channel and older version in regular channel
@@ -157,14 +186,16 @@ runs:
       shell: bash
       run: |
         # Create and apply ModuleReleaseMeta with version when deployment is in warning state
+        yq eval '.images[0].newTag = "${{ env.VersionForDeploymentInWarning }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].args) = ["--leader-elect", "--final-state=Warning", "--final-deletion-state=Warning"]' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForDeploymentInWarning }}
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForDeploymentInWarning }} ${{ inputs.module_version }} true false true false
         ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForDeploymentInWarning }}
 
         # Create and apply ModuleReleaseMeta with version when deployment is misconfigured
+        yq eval '.images[0].newTag = "${{ env.VersionForMisconfiguredDeploymentImage }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
-        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].image) = "non-working/path:001"' -i template-operator.yaml
+        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].image) = "non-working/path:0.0.1"' -i template-operator.yaml
         yq eval '(. | select(.kind == "Deployment") | .spec.progressDeadlineSeconds) = 60' -i template-operator.yaml
         yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].livenessProbe) = {
           "httpGet": {"path": "/healthz", "port": 8081},
@@ -174,7 +205,7 @@ runs:
           "httpGet": {"path": "/readyz", "port": 8081},
           "initialDelaySeconds": 5, "periodSeconds": 5, "failureThreshold": 1
         }' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredDeploymentImage }}
+        ./deploy_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredDeploymentImage }} ${{ inputs.module_version }} true false true false
         ./deploy_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:${{ env.VersionForMisconfiguredDeploymentImage }}
     - name: Create ModuleTemplate and ModuleReleaseMeta for Module Status test with StatefulSet
       working-directory: template-operator
@@ -182,23 +213,26 @@ runs:
       shell: bash
       run: |
         # Create and apply ModuleReleaseMeta with version when statefulset is in warning state
+        yq eval '.images[0].newTag = "${{ env.VersionForStatefulSetInWarning }}"' -i config/manager/statefulset/kustomization.yaml
         make build-statefulset-manifests
         yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].args) = ["--leader-elect", "--final-state=Warning", "--final-deletion-state=Warning"]' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForStatefulSetInWarning }}
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForStatefulSetInWarning }} ${{ inputs.module_version }} true false true false
         ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForStatefulSetInWarning }}
 
         # Create and apply ModuleReleaseMeta with version when statefulset is misconfigured
+        yq eval '.images[0].newTag = "${{ env.VersionForMisconfiguredStatefulSetImage }}"' -i config/manager/statefulset/kustomization.yaml
         make build-statefulset-manifests
-        yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].image) = "non-working/path:002"' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredStatefulSetImage }}
+        yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].image) = "non-working/path:0.0.2"' -i template-operator.yaml
+        ./deploy_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredStatefulSetImage }} ${{ inputs.module_version }} true false true false
         ./deploy_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:${{ env.VersionForMisconfiguredStatefulSetImage }}
     - name: Create Template Operator Module without default CR and apply ModuleReleaseMeta
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-without-default-cr' }}
       shell: bash
       run: |
+        yq eval '.images[0].newTag = "${{ env.VersionForNoDefaultCR }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
-        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForNoDefaultCR }} false
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForNoDefaultCR }} ${{ inputs.module_version }} false false true false
         ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForNoDefaultCR }}
     - name: Apply ModuleReleaseMeta with ModuleTemplate with name <modulename>-<channel>
       working-directory: template-operator
@@ -220,3 +254,21 @@ runs:
       shell: bash
       run: |
         kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_transferred.yaml
+    - name: Debug - Check ModuleTemplate and Component Status
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        echo "=== Checking ModuleTemplates in kcp-system ==="
+        kubectl get moduletemplates -n kcp-system -o wide || echo "Failed to get ModuleTemplates"
+
+        echo ""
+        echo "=== Checking ModuleReleaseMeta ==="
+        kubectl get modulereleasemeta -n kcp-system -o wide || echo "Failed to get ModuleReleaseMeta"
+
+        echo ""
+        echo "=== Checking if components are in registry ==="
+        curl -s "http://localhost:5111/v2/_catalog" || echo "Warning: Could not query registry catalog"
+
+        echo ""
+        echo "=== Checking if component version exists ==="
+        curl -s "http://localhost:5111/v2/component-descriptors/kyma-project.io/module/template-operator/tags/list" || echo "Warning: Could not list component tags"

@@ -1,0 +1,74 @@
+name: Install ocm-cli
+description: Installs the OCM CLI binary (Linux amd64) with checksum verification; requires explicit release version.
+inputs:
+  ocm_cli_version:
+    description: Explicit release tag (e.g. v0.32.0). No 'latest'.
+    required: true
+  install_path:
+    description: Directory to place the binary
+    required: false
+    default: $(pwd)/ocm/bin
+  verify_checksum:
+    description: "'true' to verify checksum (sha256)"
+    required: false
+    default: 'true'
+runs:
+  using: composite
+  steps:
+    - name: Validate version input
+      id: validate
+      shell: bash
+      run: |
+        set -euo pipefail
+        VERSION=${{ inputs.ocm_cli_version }}
+        if [ -z "${VERSION}" ]; then
+          echo "Version input empty; aborting." >&2
+          exit 1
+        fi
+        if [ "${VERSION}" = "latest" ] || [ "${VERSION}" = "main" ]; then
+          echo "Dynamic versions ('latest'/'main') are not allowed; provide an explicit tag like v0.32.0." >&2
+          exit 1
+        fi
+        if ! echo "${VERSION}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+          echo "Version '${VERSION}' does not match required pattern MAJOR.MINOR.PATCH." >&2
+          exit 1
+        fi
+        echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+    - name: Download ocm-cli (Linux amd64)
+      shell: bash
+      run: |
+        set -euo pipefail
+        VERSION=${{ steps.validate.outputs.version }}
+        VERSION_NO_V="${VERSION#v}"
+        INSTALL_PATH=${{ inputs.install_path }}
+        mkdir -p "${INSTALL_PATH}"
+
+        ARCHIVE="ocm-${VERSION_NO_V}-linux-amd64.tar.gz"
+        BINARY_URL="https://github.com/open-component-model/ocm/releases/download/v${VERSION}/${ARCHIVE}"
+        SHA_URL="${BINARY_URL}.sha256"
+
+        echo "Downloading ${ARCHIVE}"
+        curl -sSfL "${BINARY_URL}" -o "/tmp/${ARCHIVE}"
+
+        if [ "${{ inputs.verify_checksum }}" = "true" ]; then
+          echo "Verifying checksum"
+          curl -sSfL "${SHA_URL}" -o "/tmp/${ARCHIVE}.sha256"
+          EXPECTED_SHA="$(cat /tmp/${ARCHIVE}.sha256 | tr -d '\n\r')"
+          echo "${EXPECTED_SHA}  /tmp/${ARCHIVE}" | sha256sum -c -
+        else
+          echo "Checksum verification skipped"
+        fi
+
+        tar -xzf "/tmp/${ARCHIVE}" -C "${INSTALL_PATH}"
+        if [ ! -x "${INSTALL_PATH}/ocm" ]; then
+          echo "ocm binary not found after extraction" >&2
+          exit 1
+        fi
+        echo "${INSTALL_PATH}" >> "$GITHUB_PATH"
+    - name: Test ocm installation
+      shell: bash
+      run: |
+        set -euo pipefail
+        INSTALLED_VERSION="$(ocm version | yq -p json -oy '.GitVersion')"
+        echo "OCM CLI version: ${INSTALLED_VERSION}"
+        ocm help >/dev/null

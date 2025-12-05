@@ -10,9 +10,15 @@ outputs:
   k3d_version:
     description: The version of k3d to install. For example, 5.6.0.
     value: ${{ steps.define-variables.outputs.k3d_version }}
+  ocm_cli_version:
+    description: The version of ocm-cli to install. For example, 0.32.0.
+    value: ${{ steps.define-variables.outputs.ocm_cli_version }}
   modulectl_version:
     description: The version of modulectl to install. For example, 1.0.0.
     value: ${{ steps.define-variables.outputs.modulectl_version }}
+  template_operator_version:
+    description: The version of template-operator to checkout. Defaults to value from versions.yaml.
+    value: ${{ steps.define-variables.outputs.template_operator_version }}
   cert_manager_version:
     description: The version of cert-manager to deploy. For example, 1.13.3.
     value: ${{ steps.define-variables.outputs.cert_manager_version }}
@@ -42,7 +48,9 @@ runs:
       run: |
         echo "istio_version=$(yq e '.istio' versions.yaml)" >> $GITHUB_OUTPUT
         echo "k3d_version=$(yq e '.k3d' versions.yaml)" >> $GITHUB_OUTPUT
+        echo "ocm_cli_version=$(yq e '.ocm-cli' versions.yaml)" >> $GITHUB_OUTPUT
         echo "modulectl_version=$(yq e '.modulectl' versions.yaml)" >> $GITHUB_OUTPUT
+        echo "template_operator_version=$(yq e '.template-operator' versions.yaml)" >> $GITHUB_OUTPUT
         echo "cert_manager_version=$(yq e '.certManager' versions.yaml)" >> $GITHUB_OUTPUT
         echo "gardener_cert_manager_version=$(yq e '.gardenerCertManager' versions.yaml)" >> $GITHUB_OUTPUT
         echo "golangci_lint_version=$(yq e '.golangciLint' versions.yaml)" >> $GITHUB_OUTPUT

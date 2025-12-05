@@ -10,7 +10,7 @@ To get the latest CRD in the YAML format, run the following command:
 kubectl get crd moduletemplates.operator.kyma-project.io -o yaml
 ```
 
-> [!Note]
+> ### Note
 > The ModuleTemplate CR is applied in both Kyma Control Plane (KCP) and SAP BTP, Kyma runtime clusters.
 > Lifecycle Manager synchronizes the ModuleTemplates from KCP to the applicable Kyma runtime instances.
 > See [Module Catalog Synchronization](../08-kcp-skr-synchronization.md#module-catalog-synchronization) for more details.
@@ -34,7 +34,7 @@ spec:
   channel: regular
 ```
 
-the module was referenced by any Kyma CR asking for it in the `regular` channel.
+The module was referenced by a Kyma CR asking for it in the `regular` channel.
 
 ### **.spec.data**
 
@@ -108,7 +108,8 @@ spec:
 ```
 ### **.spec.customStateCheck (Deprecated)**
 
-> **CAUTION:** This field was deprecated at the end of July 2024 and will be deleted in the next ModuleTemplate API version. As of the deletion day, you can define the custom state only in a module's custom resource.
+> ### Warning
+> This field was deprecated at the end of July 2024 and will be deleted in the next ModuleTemplate API version. As of the deletion day, you can define the custom state only in a module's custom resource.
 
 The `.spec.customStateCheck` field in Kyma Lifecycle Manager is primarily designed for third-party modules. For non-Kyma modules, the `status.state` might not be present, which the Lifecycle Manager relies on to determine the module state. This field enables users to define custom fields in the module Custom Resource (CR) that can be mapped to valid states supported by Lifecycle Manager.
 
@@ -150,7 +151,7 @@ In this scenario, the `Ready` state will only be reached if both `module.state.f
 
 The core of any ModuleTemplate CR, the descriptor can be one of the schemas mentioned in the latest version of the [OCM Model Specification](https://github.com/open-component-model/ocm-spec/blob/7bfbc171e814e73d6e95cfa07cc85813f89a1d44/doc/01-model/01-model.md#components-and-component-versions). While it is a `runtime.RawExtension` in the Go types, it will be resolved via ValidatingWebhook into an internal descriptor with the help of the official [OCM library](https://github.com/open-component-model/ocm).
 
-By default, it will most likely be easiest to use [modulectl](https://github.com/kyma-project/modulectl/tree/main) and its `create` command to create a template with a valid descriptor, but it can also be generated manually, for example using [OCM CLI](https://github.com/open-component-model/ocm/tree/main/cmds/ocm).
+For more information on how to create ModuleTemplates with component descriptors using modulectl and OCM CLI, see [Creating ModuleTemplates](../14-creating-moduletemplate.md).
 
 ### **.spec.mandatory**
 
