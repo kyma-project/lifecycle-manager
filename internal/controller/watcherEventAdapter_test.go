@@ -37,8 +37,8 @@ func TestAdaptEvents(t *testing.T) {
 		receivedObj := adaptedEvt.Object
 
 		assert.NotNil(t, receivedObj)
-		assert.Equal(t, testEvent.Object.GetName(), receivedObj.GetName())
-		assert.Equal(t, testEvent.Object.GetNamespace(), receivedObj.GetNamespace())
+		assert.Equal(t, testEvent.Object.GetName(), receivedObj.Object.GetName())
+		assert.Equal(t, testEvent.Object.GetNamespace(), receivedObj.Object.GetNamespace())
 	})
 
 	t.Run("The adapted channel gets closed after the source closes", func(t *testing.T) {
