@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/v2/event"
-	"github.com/kyma-project/runtime-watcher/listener/pkg/v2/types"
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/util/workqueue"
@@ -25,6 +23,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/internal/watch"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
+	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/v2/event"
+	"github.com/kyma-project/runtime-watcher/listener/pkg/v2/types"
 )
 
 type SetupOptions struct {
