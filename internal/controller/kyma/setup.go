@@ -30,9 +30,7 @@ type SetupOptions struct {
 
 const controllerName = "kyma"
 
-var (
-	errConvertingWatcherEvent = errors.New("error converting watched object to unstructured event")
-)
+var errConvertingWatcherEvent = errors.New("error converting watched object to unstructured event")
 
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options, settings SetupOptions) error {
 	var verifyFunc watcherevent.Verify
@@ -64,7 +62,8 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 		Watches(&v1beta2.Manifest{},
 			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1beta2.Kyma{},
 				handler.OnlyControllerOwner()), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
-		WatchesRawSource(source.Channel(controller.AdaptEvents(runnableListener.ReceivedEvents), SkrEventHandler())).
+		WatchesRawSource(source.Channel(controller.AdaptEvents(runnableListener.ReceivedEvents),
+			CreateSkrEventHandler())).
 		Complete(r); err != nil {
 		return fmt.Errorf("failed to setup manager for kyma controller: %w", err)
 	}

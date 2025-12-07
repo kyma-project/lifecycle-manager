@@ -4,13 +4,14 @@ import (
 	"context"
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	internalpkg "github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 )
 
 func TestGetRuntimeID_Valid(t *testing.T) {
@@ -50,11 +51,11 @@ func TestBuildRequestFromEvent_Valid(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected ok=true for valid event")
 	}
-	if req.NamespacedName.Name != "rid-456" {
-		t.Fatalf("expected name rid-456, got %s", req.NamespacedName.Name)
+	if req.Name != "rid-456" {
+		t.Fatalf("expected name rid-456, got %s", req.Name)
 	}
-	if req.NamespacedName.Namespace != shared.DefaultControlPlaneNamespace {
-		t.Fatalf("expected namespace %s, got %s", shared.DefaultControlPlaneNamespace, req.NamespacedName.Namespace)
+	if req.Namespace != shared.DefaultControlPlaneNamespace {
+		t.Fatalf("expected namespace %s, got %s", shared.DefaultControlPlaneNamespace, req.Namespace)
 	}
 }
 
@@ -94,57 +95,57 @@ func TestBuildRequestFromEvent_RuntimeIDWrongType(t *testing.T) {
 }
 
 func TestSkrEventHandler_GenericFunc_AddsToQueue(t *testing.T) {
-	h := kyma.SkrEventHandler()
-	rl := internalpkg.RateLimiter(100, 1000, 10, 100)
-	q := workqueue.NewTypedRateLimitingQueue[ctrl.Request](rl)
-	defer q.ShutDown()
+	handler := kyma.CreateSkrEventHandler()
+	rl := internal.RateLimiter(100, 1000, 10, 100)
+	queue := workqueue.NewTypedRateLimitingQueue[ctrl.Request](rl)
+	defer queue.ShutDown()
 
 	unstructuredEvent := &unstructured.Unstructured{}
 	unstructuredEvent.Object = map[string]interface{}{"runtime-id": "rid-789"}
 	ev := event.GenericEvent{Object: unstructuredEvent}
 
 	// Call GenericFunc
-	h.GenericFunc(context.Background(), ev, q)
+	handler.GenericFunc(context.Background(), ev, queue)
 
-	if q.Len() != 1 {
-		t.Fatalf("expected queue length 1, got %d", q.Len())
+	if queue.Len() != 1 {
+		t.Fatalf("expected queue length 1, got %d", queue.Len())
 	}
 	// Verify the enqueued request matches expected NamespacedName
-	item, shutdown := q.Get()
+	item, shutdown := queue.Get()
 	if shutdown {
 		t.Fatalf("unexpected queue shutdown")
 	}
-	q.Done(item)
+	queue.Done(item)
 	req := item
-	if req.NamespacedName.Name != "rid-789" {
-		t.Fatalf("expected name rid-789, got %s", req.NamespacedName.Name)
+	if req.Name != "rid-789" {
+		t.Fatalf("expected name rid-789, got %s", req.Name)
 	}
-	if req.NamespacedName.Namespace != shared.DefaultControlPlaneNamespace {
-		t.Fatalf("expected namespace %s, got %s", shared.DefaultControlPlaneNamespace, req.NamespacedName.Namespace)
+	if req.Namespace != shared.DefaultControlPlaneNamespace {
+		t.Fatalf("expected namespace %s, got %s", shared.DefaultControlPlaneNamespace, req.Namespace)
 	}
 }
 
 func TestSkrEventHandler_GenericFunc_InvalidEvent_NoAdd(t *testing.T) {
-	h := kyma.SkrEventHandler()
-	rl := internalpkg.RateLimiter(100, 1000, 10, 100)
-	q := workqueue.NewTypedRateLimitingQueue[ctrl.Request](rl)
-	defer q.ShutDown()
+	handler := kyma.CreateSkrEventHandler()
+	rl := internal.RateLimiter(100, 1000, 10, 100)
+	queue := workqueue.NewTypedRateLimitingQueue[ctrl.Request](rl)
+	defer queue.ShutDown()
 
 	// invalid: not unstructured (nil object)
 	ev := event.GenericEvent{Object: nil}
-	h.GenericFunc(context.Background(), ev, q)
+	handler.GenericFunc(context.Background(), ev, queue)
 
-	if q.Len() != 0 {
-		t.Fatalf("expected queue length 0 for invalid event, got %d", q.Len())
+	if queue.Len() != 0 {
+		t.Fatalf("expected queue length 0 for invalid event, got %d", queue.Len())
 	}
 
 	// invalid: unstructured without runtime-id
 	unstructuredEvent := &unstructured.Unstructured{}
 	unstructuredEvent.Object = map[string]interface{}{"other": "x"}
 	ev2 := event.GenericEvent{Object: unstructuredEvent}
-	h.GenericFunc(context.Background(), ev2, q)
+	handler.GenericFunc(context.Background(), ev2, queue)
 
-	if q.Len() != 0 {
-		t.Fatalf("expected queue length 0 when runtime-id missing, got %d", q.Len())
+	if queue.Len() != 0 {
+		t.Fatalf("expected queue length 0 when runtime-id missing, got %d", queue.Len())
 	}
 }
