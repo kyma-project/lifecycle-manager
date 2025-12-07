@@ -1,7 +1,6 @@
 package kyma
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,13 +8,9 @@ import (
 	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/v2/event"
 	"github.com/kyma-project/runtime-watcher/listener/pkg/v2/types"
 	apicorev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -37,7 +32,6 @@ const controllerName = "kyma"
 
 var (
 	errConvertingWatcherEvent = errors.New("error converting watched object to unstructured event")
-	errParsingRuntimeID       = errors.New("error getting runtime id from unstructured event")
 )
 
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options, settings SetupOptions) error {
@@ -70,45 +64,10 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 		Watches(&v1beta2.Manifest{},
 			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1beta2.Kyma{},
 				handler.OnlyControllerOwner()), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
-		WatchesRawSource(source.Channel(controller.AdaptEvents(runnableListener.ReceivedEvents), r.skrEventHandler())).
+		WatchesRawSource(source.Channel(controller.AdaptEvents(runnableListener.ReceivedEvents), SkrEventHandler())).
 		Complete(r); err != nil {
 		return fmt.Errorf("failed to setup manager for kyma controller: %w", err)
 	}
 
 	return nil
-}
-
-func (r *Reconciler) skrEventHandler() *handler.Funcs {
-	return &handler.Funcs{
-		GenericFunc: func(ctx context.Context, evnt event.GenericEvent,
-			queue workqueue.TypedRateLimitingInterface[ctrl.Request],
-		) {
-			logger := ctrl.Log.WithName("listener")
-			unstructWatcherEvt, conversionOk := evnt.Object.(*unstructured.Unstructured)
-			if !conversionOk {
-				logger.Error(errConvertingWatcherEvent, fmt.Sprintf("event: %v", evnt.Object))
-				return
-			}
-
-			runtimeID, ok := unstructWatcherEvt.Object["runtime-id"].(string)
-			if !ok {
-				logger.Error(errParsingRuntimeID, fmt.Sprintf("unstructured event: %v", unstructWatcherEvt))
-				return
-			}
-
-			ownerObjectKey := client.ObjectKey{
-				Name:      runtimeID,
-				Namespace: shared.DefaultControlPlaneNamespace,
-			}
-
-			logger.Info(
-				fmt.Sprintf("event received from SKR, adding %s to queue",
-					ownerObjectKey),
-			)
-
-			queue.Add(ctrl.Request{
-				NamespacedName: ownerObjectKey,
-			})
-		},
-	}
 }
