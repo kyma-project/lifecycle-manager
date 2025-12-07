@@ -31,6 +31,7 @@ metadata:
   labels:
     "operator.kyma-project.io/kyma-name": "kyma-sample"
     "operator.kyma-project.io/managed-by": "lifecycle-manager"
+    "kyma-project.io/runtime-id": "kyma-sample"
 data:
   config: $(k3d kubeconfig get skr | sed "s/0\.0\.0\.0/${SKR_HOST}/" | base64 | tr -d '\n')
 ---
