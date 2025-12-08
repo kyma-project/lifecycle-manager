@@ -130,17 +130,17 @@ type Watcher struct {
 //
 // Consistency in this name ensures correct routing and handling of webhook validation logic.
 func (watcher *Watcher) GetManagerName() string {
-	// Priority 1: Use explicit spec.Manager field if set
+	// Use explicit spec.Manager field if set
 	if watcher.Spec.Manager != "" {
 		return watcher.Spec.Manager
 	}
 
-	// Priority 2: Fall back to managed-by label for backward compatibility
+	// Fall back to managed-by label for backward compatibility
+	// Deprecated: The managed-by label fallback is deprecated. Use spec.manager field instead.
 	if watcher.Labels != nil {
 		return watcher.Labels[shared.ManagedBy]
 	}
 
-	// Priority 3: Return empty string if neither is configured
 	return ""
 }
 
