@@ -16,7 +16,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 )
 
-func TestWatcherCertificateCleanup_IsApplicable(t *testing.T) {
+func TestDeleteWatcherCertificateSetup_IsApplicable(t *testing.T) {
 	now := apimetav1.Now()
 	tests := []struct {
 		name               string
@@ -181,7 +181,7 @@ func TestWatcherCertificateCleanup_IsApplicable(t *testing.T) {
 				exists:    testCase.secretExists,
 				existsErr: testCase.secretExistsErr,
 			}
-			useCase := usecases.NewWatcherCertificateCleanup(mockCertRepo, mockSecretRepo)
+			useCase := usecases.NewDeleteWatcherCertificateSetup(mockCertRepo, mockSecretRepo)
 
 			applicable, err := useCase.IsApplicable(context.Background(), testCase.kyma)
 
@@ -201,7 +201,7 @@ func TestWatcherCertificateCleanup_IsApplicable(t *testing.T) {
 	}
 }
 
-func TestWatcherCertificateCleanup_Execute(t *testing.T) {
+func TestDeleteWatcherCertificateSetup_Execute(t *testing.T) {
 	now := apimetav1.Now()
 	kyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
@@ -216,7 +216,7 @@ func TestWatcherCertificateCleanup_Execute(t *testing.T) {
 	t.Run("successfully deletes certificate and secret", func(t *testing.T) {
 		mockCertRepo := &mockCertificateRepository{}
 		mockSecretRepo := &mockSecretRepository{}
-		useCase := usecases.NewWatcherCertificateCleanup(mockCertRepo, mockSecretRepo)
+		useCase := usecases.NewDeleteWatcherCertificateSetup(mockCertRepo, mockSecretRepo)
 
 		res := useCase.Execute(context.Background(), kyma)
 
@@ -234,7 +234,7 @@ func TestWatcherCertificateCleanup_Execute(t *testing.T) {
 			deleteErr: expectedErr,
 		}
 		mockSecretRepo := &mockSecretRepository{}
-		useCase := usecases.NewWatcherCertificateCleanup(mockCertRepo, mockSecretRepo)
+		useCase := usecases.NewDeleteWatcherCertificateSetup(mockCertRepo, mockSecretRepo)
 
 		res := useCase.Execute(context.Background(), kyma)
 
@@ -252,7 +252,7 @@ func TestWatcherCertificateCleanup_Execute(t *testing.T) {
 		mockSecretRepo := &mockSecretRepository{
 			deleteErr: expectedErr,
 		}
-		useCase := usecases.NewWatcherCertificateCleanup(mockCertRepo, mockSecretRepo)
+		useCase := usecases.NewDeleteWatcherCertificateSetup(mockCertRepo, mockSecretRepo)
 
 		res := useCase.Execute(context.Background(), kyma)
 
@@ -266,10 +266,10 @@ func TestWatcherCertificateCleanup_Execute(t *testing.T) {
 	})
 }
 
-func TestWatcherCertificateCleanup_Name(t *testing.T) {
+func TestDeleteWatcherCertificateSetup_Name(t *testing.T) {
 	mockCertRepo := &mockCertificateRepository{}
 	mockSecretRepo := &mockSecretRepository{}
-	useCase := usecases.NewWatcherCertificateCleanup(mockCertRepo, mockSecretRepo)
+	useCase := usecases.NewDeleteWatcherCertificateSetup(mockCertRepo, mockSecretRepo)
 
 	assert.Equal(t, usecase.DeleteWatcherCertificateSetup, useCase.Name())
 }

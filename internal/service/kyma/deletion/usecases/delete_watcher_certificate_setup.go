@@ -24,22 +24,22 @@ type SecretRepository interface {
 	Delete(ctx context.Context, name string) error
 }
 
-type WatcherCertificateCleanup struct {
+type DeleteWatcherCertificateSetup struct {
 	certRepo   certificate.CertificateRepository
 	secretRepo SecretRepository
 }
 
-func NewWatcherCertificateCleanup(
+func NewDeleteWatcherCertificateSetup(
 	certRepo certificate.CertificateRepository,
 	secretRepo SecretRepository,
-) *WatcherCertificateCleanup {
-	return &WatcherCertificateCleanup{
+) *DeleteWatcherCertificateSetup {
+	return &DeleteWatcherCertificateSetup{
 		certRepo:   certRepo,
 		secretRepo: secretRepo,
 	}
 }
 
-func (u *WatcherCertificateCleanup) IsApplicable(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
+func (u *DeleteWatcherCertificateSetup) IsApplicable(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
 	if kyma.DeletionTimestamp.IsZero() || kyma.Status.State != shared.StateDeleting {
 		return false, nil
 	}
@@ -60,7 +60,7 @@ func (u *WatcherCertificateCleanup) IsApplicable(ctx context.Context, kyma *v1be
 	return secretExists, nil
 }
 
-func (u *WatcherCertificateCleanup) Execute(ctx context.Context, kyma *v1beta2.Kyma) result.Result {
+func (u *DeleteWatcherCertificateSetup) Execute(ctx context.Context, kyma *v1beta2.Kyma) result.Result {
 	certName := name.SkrCertificate(kyma.Name)
 
 	if err := u.certRepo.Delete(ctx, certName); err != nil {
@@ -82,6 +82,6 @@ func (u *WatcherCertificateCleanup) Execute(ctx context.Context, kyma *v1beta2.K
 	}
 }
 
-func (u *WatcherCertificateCleanup) Name() result.UseCase {
+func (u *DeleteWatcherCertificateSetup) Name() result.UseCase {
 	return usecase.DeleteWatcherCertificateSetup
 }
