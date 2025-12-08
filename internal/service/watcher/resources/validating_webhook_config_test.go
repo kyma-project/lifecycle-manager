@@ -16,7 +16,9 @@ func TestBuildValidatingWebhookConfigFromWatchers(t *testing.T) {
 	caCert := []byte("ca-cert")
 	remoteNs := "skr-ns"
 	watcherManager := shared.OperatorName
-	watcher := v1beta2.Watcher{
+
+	// Watcher using deprecated managed-by label
+	watcherWithLabel := v1beta2.Watcher{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      "mod1",
 			Namespace: "skr-ns",
@@ -34,6 +36,26 @@ func TestBuildValidatingWebhookConfigFromWatchers(t *testing.T) {
 			LabelsToWatch: map[string]string{"foo": "bar"},
 		},
 	}
+
+	// Watcher using spec.manager field (recommended)
+	watcherWithSpecManager := v1beta2.Watcher{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      "mod2",
+			Namespace: "skr-ns",
+		},
+		Spec: v1beta2.WatcherSpec{
+			Manager: watcherManager,
+			ResourceToWatch: v1beta2.WatchableGVR{
+				Group:    "operator.kyma-project.io",
+				Version:  "*",
+				Resource: "kymas",
+			},
+			Field:         v1beta2.SpecField,
+			LabelsToWatch: map[string]string{"foo": "bar"},
+		},
+	}
+
+	watcher := watcherWithLabel
 	svcPath := "/validate/" + watcherManager
 	want := &admissionregistrationv1.ValidatingWebhookConfiguration{
 		TypeMeta: apimetav1.TypeMeta{
@@ -98,6 +120,64 @@ func TestBuildValidatingWebhookConfigFromWatchers(t *testing.T) {
 			watchers: []v1beta2.Watcher{watcher},
 			remoteNs: remoteNs,
 			want:     want,
+		},
+		{
+			name:     "watcher with spec.manager field",
+			caCert:   caCert,
+			watchers: []v1beta2.Watcher{watcherWithSpecManager},
+			remoteNs: remoteNs,
+			want: func() *admissionregistrationv1.ValidatingWebhookConfiguration {
+				svcPath := "/validate/" + watcherManager
+				return &admissionregistrationv1.ValidatingWebhookConfiguration{
+					TypeMeta: apimetav1.TypeMeta{
+						Kind:       "ValidatingWebhookConfiguration",
+						APIVersion: admissionregistrationv1.SchemeGroupVersion.String(),
+					},
+					ObjectMeta: apimetav1.ObjectMeta{
+						Name:      skrwebhookresources.SkrResourceName,
+						Namespace: remoteNs,
+						Labels: map[string]string{
+							shared.ManagedBy: shared.ManagedByLabelValue,
+						},
+					},
+					Webhooks: []admissionregistrationv1.ValidatingWebhook{
+						{
+							Name:                    "skr-ns.mod2.operator.kyma-project.io",
+							ObjectSelector:          &apimetav1.LabelSelector{MatchLabels: map[string]string{"foo": "bar"}},
+							AdmissionReviewVersions: []string{"v1"},
+							ClientConfig: admissionregistrationv1.WebhookClientConfig{
+								CABundle: caCert,
+								Service: &admissionregistrationv1.ServiceReference{
+									Name:      skrwebhookresources.SkrResourceName,
+									Namespace: remoteNs,
+									Path:      &svcPath,
+								},
+							},
+							Rules: []admissionregistrationv1.RuleWithOperations{
+								{
+									Rule: admissionregistrationv1.Rule{
+										APIGroups:   []string{"operator.kyma-project.io"},
+										APIVersions: []string{"*"},
+										Resources:   []string{"kymas"},
+									},
+									Operations: []admissionregistrationv1.OperationType{
+										"CREATE", "UPDATE", "DELETE",
+									},
+								},
+							},
+							SideEffects: func() *admissionregistrationv1.SideEffectClass {
+								s := admissionregistrationv1.SideEffectClassNoneOnDryRun
+								return &s
+							}(),
+							TimeoutSeconds: func() *int32 { i := int32(15); return &i }(),
+							FailurePolicy: func() *admissionregistrationv1.FailurePolicyType {
+								f := admissionregistrationv1.Ignore
+								return &f
+							}(),
+						},
+					},
+				}
+			}(),
 		},
 		{
 			name:     "no watchers returns empty webhooks",
