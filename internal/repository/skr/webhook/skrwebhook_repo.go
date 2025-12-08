@@ -3,9 +3,11 @@ package webhook
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"golang.org/x/sync/errgroup"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -21,13 +23,6 @@ import (
 type SkrClientCache interface {
 	Get(key client.ObjectKey) client.Client
 }
-
-//// resourceRef contains the minimal information needed to identify and delete a resource.
-//type resourceRef struct {
-//	Name       string
-//	APIVersion string
-//	Kind       string
-//}
 
 type ResourceRepository struct {
 	resources           []v1beta1.PartialObjectMetadata
@@ -59,7 +54,7 @@ func NewResourceRepository(
 	resources = append(resources,
 		v1beta1.PartialObjectMetadata{
 			TypeMeta: apimetav1.TypeMeta{
-				Kind:       "ValidatingWebhookConfiguration",
+				Kind:       reflect.TypeOf(admissionregistrationv1.ValidatingWebhookConfiguration{}).Name(),
 				APIVersion: admissionregistrationv1.SchemeGroupVersion.String(),
 			},
 			ObjectMeta: apimetav1.ObjectMeta{
@@ -69,8 +64,8 @@ func NewResourceRepository(
 		},
 		v1beta1.PartialObjectMetadata{
 			TypeMeta: apimetav1.TypeMeta{
-				Kind:       "Secret",
-				APIVersion: "v1",
+				Kind:       reflect.TypeOf(v1.Secret{}).Name(),
+				APIVersion: v1.SchemeGroupVersion.String(),
 			},
 			ObjectMeta: apimetav1.ObjectMeta{
 				Name:      skrwebhookresources.SkrTLSName,
@@ -156,10 +151,6 @@ func (r *ResourceRepository) DeleteWebhookResources(ctx context.Context, kymaNam
 	for resIdx := range r.resources {
 		errGrp.Go(func() error {
 			ref := r.resources[resIdx]
-			//resource := &unstructured.Unstructured{}
-			//resource.SetGroupVersionKind(schema.FromAPIVersionAndKind(ref.APIVersion, ref.Kind))
-			//resource.SetName(ref.Name)
-			//resource.SetNamespace(r.remoteSyncNamespace)
 			err := skrClient.Delete(grpCtx, &ref)
 			if client.IgnoreNotFound(err) != nil {
 				return fmt.Errorf("failed to delete resource %s: %w", ref.Name, err)
