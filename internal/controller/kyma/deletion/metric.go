@@ -33,6 +33,7 @@ func (w *MetricWriter) Write(res result.Result) {
 	switch res.UseCase {
 	case usecase.SetKcpKymaStateDeleting:
 		w.metrics.RecordRequeueReason(metrics.StatusUpdateToDeleting, requeueType)
+		w.metrics.RecordRequeueReason(metrics.KymaDeletion, requeueType)
 	case usecase.SetSkrKymaStateDeleting:
 		w.metrics.RecordRequeueReason(metrics.StatusSyncToRemote, requeueType)
 	case usecase.DeleteSkrKyma:
