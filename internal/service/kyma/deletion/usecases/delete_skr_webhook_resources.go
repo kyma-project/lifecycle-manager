@@ -23,19 +23,19 @@ type SkrWebhookResourcesRepository interface {
 	DeleteWebhookResources(ctx context.Context, kymaName types.NamespacedName) error
 }
 
-type RemoveSkrWebhookResources struct {
+type DeleteSkrWebhookResources struct {
 	skrWebhookResourcesRepo SkrWebhookResourcesRepository
 }
 
-func NewRemoveSkrWebhookResources(
+func NewDeleteSkrWebhookResources(
 	skrWebhookResourcesRepo SkrWebhookResourcesRepository,
-) *RemoveSkrWebhookResources {
-	return &RemoveSkrWebhookResources{
+) *DeleteSkrWebhookResources {
+	return &DeleteSkrWebhookResources{
 		skrWebhookResourcesRepo: skrWebhookResourcesRepo,
 	}
 }
 
-func (u *RemoveSkrWebhookResources) IsApplicable(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
+func (u *DeleteSkrWebhookResources) IsApplicable(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
 	if kyma.DeletionTimestamp.IsZero() || kyma.Status.State != shared.StateDeleting {
 		return false, nil
 	}
@@ -48,7 +48,7 @@ func (u *RemoveSkrWebhookResources) IsApplicable(ctx context.Context, kyma *v1be
 	return resourcesExist, nil
 }
 
-func (u *RemoveSkrWebhookResources) Execute(ctx context.Context, kyma *v1beta2.Kyma) result.Result {
+func (u *DeleteSkrWebhookResources) Execute(ctx context.Context, kyma *v1beta2.Kyma) result.Result {
 	// Delete webhook resources from SKR cluster
 	err := u.skrWebhookResourcesRepo.DeleteWebhookResources(ctx, kyma.GetNamespacedName())
 	if err != nil {
@@ -64,6 +64,6 @@ func (u *RemoveSkrWebhookResources) Execute(ctx context.Context, kyma *v1beta2.K
 	}
 }
 
-func (u *RemoveSkrWebhookResources) Name() result.UseCase {
+func (u *DeleteSkrWebhookResources) Name() result.UseCase {
 	return usecase.DeleteSkrWebhookResources
 }

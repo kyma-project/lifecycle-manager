@@ -17,7 +17,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
-func TestRemoveSkrWebhookUseCase_IsApplicable(t *testing.T) {
+func TestDeleteSkrWebhookResources_IsApplicable(t *testing.T) {
 	now := apimetav1.Now()
 	tests := []struct {
 		name                       string
@@ -119,7 +119,7 @@ func TestRemoveSkrWebhookUseCase_IsApplicable(t *testing.T) {
 				resourcesExist:    testCase.resourcesExist,
 				resourcesExistErr: testCase.resourcesExistErr,
 			}
-			usecase := usecases.NewRemoveSkrWebhookResources(mockRepo)
+			usecase := usecases.NewDeleteSkrWebhookResources(mockRepo)
 
 			applicable, err := usecase.IsApplicable(context.Background(), testCase.kyma)
 
@@ -137,7 +137,7 @@ func TestRemoveSkrWebhookUseCase_IsApplicable(t *testing.T) {
 	}
 }
 
-func TestRemoveSkrWebhookUseCase_Execute(t *testing.T) {
+func TestDeleteSkrWebhookResources_Execute(t *testing.T) {
 	now := apimetav1.Now()
 	kyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
@@ -152,7 +152,7 @@ func TestRemoveSkrWebhookUseCase_Execute(t *testing.T) {
 
 	t.Run("successfully removes webhook resources", func(t *testing.T) {
 		mockRepo := &mockSkrWebhookResourcesRepository{}
-		useCase := usecases.NewRemoveSkrWebhookResources(mockRepo)
+		useCase := usecases.NewDeleteSkrWebhookResources(mockRepo)
 
 		res := useCase.Execute(context.Background(), kyma)
 
@@ -167,7 +167,7 @@ func TestRemoveSkrWebhookUseCase_Execute(t *testing.T) {
 		mockRepo := &mockSkrWebhookResourcesRepository{
 			deleteResourcesErr: expectedErr,
 		}
-		useCase := usecases.NewRemoveSkrWebhookResources(mockRepo)
+		useCase := usecases.NewDeleteSkrWebhookResources(mockRepo)
 
 		res := useCase.Execute(context.Background(), kyma)
 
@@ -179,9 +179,9 @@ func TestRemoveSkrWebhookUseCase_Execute(t *testing.T) {
 	})
 }
 
-func TestRemoveSkrWebhookUseCase_Name(t *testing.T) {
+func TestDeleteSkrWebhookResources_Name(t *testing.T) {
 	mockRepo := &mockSkrWebhookResourcesRepository{}
-	useCase := usecases.NewRemoveSkrWebhookResources(mockRepo)
+	useCase := usecases.NewDeleteSkrWebhookResources(mockRepo)
 
 	assert.Equal(t, usecase.DeleteSkrWebhookResources, useCase.Name())
 }

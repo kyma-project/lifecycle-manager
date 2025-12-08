@@ -504,7 +504,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	dropKymaFinalizers := usecases.NewDropKymaFinalizers(kymaRepo)
 	skrWebhookResourcesRepo := webhook.NewResourceRepository(skrClientCache, shared.DefaultRemoteNamespace,
 		skrWebhookManager.BaseResources)
-	removeSkrWebhook := usecases.NewRemoveSkrWebhookResources(skrWebhookResourcesRepo)
+	deleteSkrWebhookResources := usecases.NewDeleteSkrWebhookResources(skrWebhookResourcesRepo)
 	istioSystemSecretRepo := secretrepo.NewRepository(kcpClient, shared.IstioNamespace)
 	deleteWatcherCertificateSetup := usecases.NewDeleteWatcherCertificateSetup(certificateRepository, istioSystemSecretRepo)
 	kymaDeletionService := kymadeletionsvc.NewService(
@@ -512,7 +512,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		setSkrKymaStateDeleting,
 		deleteSkrKyma,
 		deleteWatcherCertificateSetup,
-		removeSkrWebhook,
+		deleteSkrWebhookResources,
 		deleteSkrMtCrd,
 		deleteSkrMrmCrd,
 		deleteSkrKymaCrd,
