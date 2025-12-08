@@ -121,6 +121,8 @@ func Test_Delete_Fallthrough_WhenNoUseCaseIsApplicable(t *testing.T) {
 	uc7 := &useCaseStub{isApplicable: false, err: nil}
 	uc8 := &useCaseStub{isApplicable: false, err: nil}
 	uc9 := &useCaseStub{isApplicable: false, err: nil}
+	uc10 := &useCaseStub{isApplicable: false, err: nil}
+	uc11 := &useCaseStub{isApplicable: false, err: nil}
 
 	svc := kymadeletionsvc.NewService(
 		uc1,
@@ -131,9 +133,9 @@ func Test_Delete_Fallthrough_WhenNoUseCaseIsApplicable(t *testing.T) {
 		uc6,
 		uc7,
 		uc8,
-		nil,
-		nil,
 		uc9,
+		uc10,
+		uc11,
 	)
 
 	rslt := svc.Delete(t.Context(), kyma)
@@ -158,6 +160,10 @@ func Test_Delete_Fallthrough_WhenNoUseCaseIsApplicable(t *testing.T) {
 	assert.False(t, uc8.executeCalled)
 	assert.True(t, uc9.isApplicableCalled)
 	assert.False(t, uc9.executeCalled)
+	assert.True(t, uc10.isApplicableCalled)
+	assert.False(t, uc10.executeCalled)
+	assert.True(t, uc11.isApplicableCalled)
+	assert.False(t, uc11.executeCalled)
 	assert.Equal(t, kyma, uc1.receivedKyma)
 	assert.Equal(t, kyma, uc2.receivedKyma)
 	assert.Equal(t, kyma, uc3.receivedKyma)
