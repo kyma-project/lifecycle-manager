@@ -111,12 +111,14 @@ func Test_SynchronizeKymaMetadata_Syncs(t *testing.T) {
 }
 
 func Test_SynchronizeKymaMetadata_SkipsSyncIfLabelsAndAnnotationsUnchanged(t *testing.T) {
+	kcpKyma := builder.NewKymaBuilder().WithName(kymaName).WithNamespace(kymaNamespace).Build()
+
 	skrKyma := builder.NewKymaBuilder().
 		WithLabel(shared.WatchedByLabel, shared.WatchedByLabelValue).
 		WithLabel(shared.ManagedBy, shared.ManagedByLabelValue).
+		WithLabel(shared.RuntimeIDLabel, kcpKyma.Labels[shared.RuntimeIDLabel]).
 		WithAnnotation(shared.OwnedByAnnotation, fmt.Sprintf(shared.OwnedByFormat, kymaNamespace, kymaName)).
 		Build()
-	kcpKyma := builder.NewKymaBuilder().WithName(kymaName).WithNamespace(kymaNamespace).Build()
 
 	eventStub := &eventStub{}
 	clientStub := &clientStub{}
@@ -424,12 +426,13 @@ func Test_syncWatcherLabelsAnnotations_ChangesLabels(t *testing.T) {
 }
 
 func Test_syncWatcherLabelsAnnotations_ReturnsFalseIfLabelsAndAnnotationsUnchanged(t *testing.T) {
+	kcpKyma := builder.NewKymaBuilder().WithName(kymaName).WithNamespace(kymaNamespace).Build()
 	skrKyma := builder.NewKymaBuilder().
 		WithLabel(shared.WatchedByLabel, shared.WatchedByLabelValue).
 		WithLabel(shared.ManagedBy, shared.ManagedByLabelValue).
+		WithLabel(shared.RuntimeIDLabel, kcpKyma.Labels[shared.RuntimeIDLabel]).
 		WithAnnotation(shared.OwnedByAnnotation, fmt.Sprintf(shared.OwnedByFormat, kymaNamespace, kymaName)).
 		Build()
-	kcpKyma := builder.NewKymaBuilder().WithName(kymaName).WithNamespace(kymaNamespace).Build()
 
 	changed := syncWatcherLabelsAnnotations(kcpKyma, skrKyma)
 
