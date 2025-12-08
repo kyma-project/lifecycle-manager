@@ -463,11 +463,11 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		OCIRegistryHost:        ociRegistryHost,
 		SkrImagePullSecretName: flagVar.SkrImagePullSecret,
 	}
-	kcpSecretRepo := secretrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
+	kcpSystemSecretRepo := secretrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
 	syncCrdsUseCase := remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil)
 	skrSyncService := skrsync.NewService(
 		skrContextFactory,
-		kcpSecretRepo,
+		kcpSystemSecretRepo,
 		&syncCrdsUseCase,
 		flagVar.SkrImagePullSecret)
 
@@ -505,7 +505,8 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	skrWebhookResourcesRepo := webhook.NewResourceRepository(skrClientCache, shared.DefaultRemoteNamespace,
 		skrWebhookManager.BaseResources)
 	removeSkrWebhook := usecases.NewRemoveSkrWebhookResources(skrWebhookResourcesRepo)
-	certificateCleanup := usecases.NewWatcherCertificateCleanup(certificateRepository, kcpSecretRepo)
+	istioSystemSecretRepo := secretrepo.NewRepository(kcpClient, shared.IstioNamespace)
+	certificateCleanup := usecases.NewWatcherCertificateCleanup(certificateRepository, istioSystemSecretRepo)
 	kymaDeletionService := kymadeletionsvc.NewService(
 		setKcpKymaStateDeleting,
 		setSkrKymaStateDeleting,
