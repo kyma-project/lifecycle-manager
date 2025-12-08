@@ -62,13 +62,14 @@ func (u *WatcherCertificateCleanup) IsApplicable(ctx context.Context, kyma *v1be
 
 func (u *WatcherCertificateCleanup) Execute(ctx context.Context, kyma *v1beta2.Kyma) result.Result {
 	// Delete SKR certificate from KCP cluster
-	if err := u.certRepo.Delete(ctx, kyma.Name); err != nil {
+	certName := name.SkrCertificate(kyma.Name)
+	if err := u.certRepo.Delete(ctx, certName); err != nil {
 		return result.Result{
 			UseCase: u.Name(),
 			Err:     errors.Join(errFailedToDeleteWatcherSkrCertificate, err),
 		}
 	}
-	if err := u.secretRepo.Delete(ctx, kyma.Name); err != nil {
+	if err := u.secretRepo.Delete(ctx, certName); err != nil {
 		return result.Result{
 			UseCase: u.Name(),
 			Err:     errors.Join(errFailedToDeleteWatcherSkrSecret, err),
