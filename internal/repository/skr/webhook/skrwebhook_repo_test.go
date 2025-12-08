@@ -70,7 +70,7 @@ func TestResourceRepository_ResourcesExist(t *testing.T) {
 		clientCache := &mockSkrClientCache{client: mockClient}
 		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
 
-		exists, err := repo.ResourcesExist(kymaName)
+		exists, err := repo.ResourcesExist(t.Context(), kymaName)
 
 		require.NoError(t, err)
 		assert.True(t, exists)
@@ -92,7 +92,7 @@ func TestResourceRepository_ResourcesExist(t *testing.T) {
 		clientCache := &mockSkrClientCache{client: mockClient}
 		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
 
-		exists, err := repo.ResourcesExist(kymaName)
+		exists, err := repo.ResourcesExist(t.Context(), kymaName)
 
 		require.NoError(t, err)
 		assert.False(t, exists)
@@ -116,7 +116,7 @@ func TestResourceRepository_ResourcesExist(t *testing.T) {
 		clientCache := &mockSkrClientCache{client: mockClient}
 		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
 
-		exists, err := repo.ResourcesExist(kymaName)
+		exists, err := repo.ResourcesExist(t.Context(), kymaName)
 
 		require.NoError(t, err)
 		assert.True(t, exists)
@@ -137,7 +137,7 @@ func TestResourceRepository_ResourcesExist(t *testing.T) {
 		clientCache := &mockSkrClientCache{client: mockClient}
 		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
 
-		exists, err := repo.ResourcesExist(kymaName)
+		exists, err := repo.ResourcesExist(t.Context(), kymaName)
 
 		require.Error(t, err)
 		assert.False(t, exists)
@@ -161,7 +161,7 @@ func TestResourceRepository_ResourcesExist(t *testing.T) {
 		clientCache := &mockSkrClientCache{client: mockClient}
 		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
 
-		exists, err := repo.ResourcesExist(kymaName)
+		exists, err := repo.ResourcesExist(t.Context(), kymaName)
 
 		require.NoError(t, err)
 		assert.True(t, exists)
@@ -350,7 +350,7 @@ func TestResourceRepository_ClientCacheUsage(t *testing.T) {
 		clientCache := &mockSkrClientCache{client: mockClient}
 		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, []*unstructured.Unstructured{})
 
-		_, _ = repo.ResourcesExist(kymaName)
+		_, _ = repo.ResourcesExist(t.Context(), kymaName)
 
 		// The cache should be called with kymaName and remoteSyncNamespace
 		// We can't verify the cache.Get call directly, but we verify the client was used

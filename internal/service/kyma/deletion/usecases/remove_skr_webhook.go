@@ -16,7 +16,7 @@ var (
 )
 
 type SkrWebhookResourcesRepository interface {
-	ResourcesExist(kymaName string) (bool, error)
+	ResourcesExist(ctx context.Context, kymaName string) (bool, error)
 	DeleteWebhookResources(ctx context.Context, kymaName string) error
 }
 
@@ -37,7 +37,7 @@ func (u *RemoveSkrWebhookResources) IsApplicable(ctx context.Context, kyma *v1be
 		return false, nil
 	}
 
-	resourcesExist, err := u.skrWebhookResourcesRepo.ResourcesExist(kyma.Name)
+	resourcesExist, err := u.skrWebhookResourcesRepo.ResourcesExist(ctx, kyma.Name)
 	if err != nil {
 		return false, errors.Join(errFailedToDetermineApplicability, err)
 	}

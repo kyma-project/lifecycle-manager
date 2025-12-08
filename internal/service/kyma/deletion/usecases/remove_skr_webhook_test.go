@@ -175,11 +175,11 @@ type mockSkrWebhookResourcesRepository struct {
 	deleteResourcesCalled bool
 }
 
-func (m *mockSkrWebhookResourcesRepository) ResourcesExist(kymaName string) (bool, error) {
+func (m *mockSkrWebhookResourcesRepository) ResourcesExist(_ context.Context, kymaName string) (bool, error) {
 	return m.resourcesExist, m.resourcesExistErr
 }
 
-func (m *mockSkrWebhookResourcesRepository) DeleteWebhookResources(ctx context.Context, kymaName string) error {
+func (m *mockSkrWebhookResourcesRepository) DeleteWebhookResources(_ context.Context, kymaName string) error {
 	m.deleteResourcesCalled = true
 	return m.deleteResourcesErr
 }

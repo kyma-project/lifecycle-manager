@@ -82,7 +82,10 @@ func NewResourceRepository(
 }
 
 // ResourcesExist checks if any of the skr-webhook resources exist in the SKR cluster for the given Kyma.
-func (r *ResourceRepository) ResourcesExist(kymaName string) (bool, error) {
+func (r *ResourceRepository) ResourcesExist(ctx context.Context, kymaName string) (bool, error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	skrClient, err := r.getSkrClient(types.NamespacedName{
 		Name:      kymaName,
 		Namespace: r.remoteSyncNamespace,
@@ -90,9 +93,6 @@ func (r *ResourceRepository) ResourcesExist(kymaName string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	errGrp, grpCtx := errgroup.WithContext(ctx)
 	resourceExists := make(chan bool, 1)
