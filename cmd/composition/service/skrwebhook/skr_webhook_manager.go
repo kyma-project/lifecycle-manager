@@ -79,6 +79,7 @@ func ComposeSkrWebhookManager(kcpClient client.Client,
 		watcherMetrics)
 }
 
+//nolint:ireturn // chosen implementation shall be abstracted
 func ComposeCertificateRepository(kcpClient client.Client,
 	flagVar *flags.FlagVar,
 ) (certificate.CertificateRepository, error) {
@@ -115,7 +116,6 @@ func setupSKRCertService(kcpClient client.Client,
 	certificateRepository certificate.CertificateRepository,
 	flagVar *flags.FlagVar,
 ) (*certificate.Service, error) {
-
 	certServiceConfig := certificate.Config{
 		SkrServiceName:     skrwebhookresources.SkrResourceName,
 		SkrNamespace:       flagVar.RemoteSyncNamespace,

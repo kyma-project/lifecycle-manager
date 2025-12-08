@@ -166,7 +166,7 @@ func TestResourceRepository_ResourcesExist(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, exists)
 		// Due to parallel execution, at least one should complete, but not necessarily all
-		assert.Greater(t, getCallCount, 0)
+		assert.Positive(t, getCallCount)
 	})
 }
 
@@ -387,9 +387,10 @@ func TestResourceRepository_ClientCacheUsage(t *testing.T) {
 	})
 }
 
-// mockSkrClient embeds client.Client and only implements Get and Delete methods
+// mockSkrClient embeds client.Client and only implements Get and Delete methods.
 type mockSkrClient struct {
 	client.Client
+
 	getFunc    func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error
 	deleteFunc func(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error
 }
@@ -412,7 +413,7 @@ func (m *mockSkrClient) Delete(ctx context.Context, obj client.Object, opts ...c
 	return nil
 }
 
-// mockSkrClientCache implements the SkrClientCache interface
+// mockSkrClientCache implements the SkrClientCache interface.
 type mockSkrClientCache struct {
 	client client.Client
 }
@@ -421,7 +422,7 @@ func (m *mockSkrClientCache) Get(key client.ObjectKey) client.Client {
 	return m.client
 }
 
-// Helper function to create unstructured resources for testing
+// Helper function to create unstructured resources for testing.
 func createUnstructuredResource(name, apiVersion, kind string) *unstructured.Unstructured {
 	gvk := schema.FromAPIVersionAndKind(apiVersion, kind)
 	res := &unstructured.Unstructured{}

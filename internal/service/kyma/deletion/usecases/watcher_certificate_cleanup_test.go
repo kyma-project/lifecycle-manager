@@ -159,26 +159,26 @@ func TestWatcherCertificateCleanup_IsApplicable(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			mockCertRepo := &mockCertificateRepository{
-				exists:    tt.certExists,
-				existsErr: tt.certExistsErr,
+				exists:    testCase.certExists,
+				existsErr: testCase.certExistsErr,
 			}
 			mockSecretRepo := &mockSecretRepository{
-				exists:    tt.secretExists,
-				existsErr: tt.secretExistsErr,
+				exists:    testCase.secretExists,
+				existsErr: testCase.secretExistsErr,
 			}
 			useCase := usecases.NewWatcherCertificateCleanup(mockCertRepo, mockSecretRepo)
 
-			applicable, err := useCase.IsApplicable(context.Background(), tt.kyma)
+			applicable, err := useCase.IsApplicable(context.Background(), testCase.kyma)
 
-			if tt.expectError {
+			if testCase.expectError {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 			}
-			assert.Equal(t, tt.expectedApplicable, applicable)
+			assert.Equal(t, testCase.expectedApplicable, applicable)
 		})
 	}
 }
@@ -202,7 +202,7 @@ func TestWatcherCertificateCleanup_Execute(t *testing.T) {
 
 		res := useCase.Execute(context.Background(), kyma)
 
-		assert.NoError(t, res.Err)
+		require.NoError(t, res.Err)
 		assert.Equal(t, usecase.DeleteWatcherCertificateSetup, res.UseCase)
 		assert.True(t, mockCertRepo.deleteCalled)
 		assert.True(t, mockSecretRepo.deleteCalled)
@@ -218,8 +218,8 @@ func TestWatcherCertificateCleanup_Execute(t *testing.T) {
 
 		res := useCase.Execute(context.Background(), kyma)
 
-		assert.Error(t, res.Err)
-		assert.ErrorIs(t, res.Err, expectedErr)
+		require.Error(t, res.Err)
+		require.ErrorIs(t, res.Err, expectedErr)
 		assert.Equal(t, usecase.DeleteWatcherCertificateSetup, res.UseCase)
 		assert.True(t, mockCertRepo.deleteCalled)
 		assert.False(t, mockSecretRepo.deleteCalled) // Should not be called if cert deletion fails
@@ -235,8 +235,8 @@ func TestWatcherCertificateCleanup_Execute(t *testing.T) {
 
 		res := useCase.Execute(context.Background(), kyma)
 
-		assert.Error(t, res.Err)
-		assert.ErrorIs(t, res.Err, expectedErr)
+		require.Error(t, res.Err)
+		require.ErrorIs(t, res.Err, expectedErr)
 		assert.Equal(t, usecase.DeleteWatcherCertificateSetup, res.UseCase)
 		assert.True(t, mockCertRepo.deleteCalled)
 		assert.True(t, mockSecretRepo.deleteCalled)

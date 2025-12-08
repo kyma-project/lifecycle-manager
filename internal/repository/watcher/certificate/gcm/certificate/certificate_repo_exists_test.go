@@ -95,6 +95,7 @@ func TestExists_WhenClientReturnsOtherError_ReturnsError(t *testing.T) {
 
 type existsClientStub struct {
 	client.Client
+
 	certificate  *gcertv1alpha1.Certificate
 	getCalled    bool
 	getCalledKey client.ObjectKey

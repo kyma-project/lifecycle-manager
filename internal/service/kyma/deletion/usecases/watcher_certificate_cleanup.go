@@ -13,6 +13,7 @@ import (
 )
 
 var (
+	//nolint:revive // no better formatting for this
 	errFailedToDetermineWatcherCleanupApplicability = errors.New("failed to determine applicability for removing SKR certificate")
 	errFailedToDeleteWatcherSkrCertificate          = errors.New("failed to delete SKR certificate")
 	errFailedToDeleteWatcherSkrSecret               = errors.New("failed to delete SKR secret")

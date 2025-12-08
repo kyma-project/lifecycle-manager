@@ -102,22 +102,22 @@ func TestRemoveSkrWebhookUseCase_IsApplicable(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			mockRepo := &mockSkrWebhookResourcesRepository{
-				resourcesExist:    tt.resourcesExist,
-				resourcesExistErr: tt.resourcesExistErr,
+				resourcesExist:    testCase.resourcesExist,
+				resourcesExistErr: testCase.resourcesExistErr,
 			}
 			usecase := usecases.NewRemoveSkrWebhookResources(mockRepo)
 
-			applicable, err := usecase.IsApplicable(context.Background(), tt.kyma)
+			applicable, err := usecase.IsApplicable(context.Background(), testCase.kyma)
 
-			if tt.expectError {
+			if testCase.expectError {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 			}
-			assert.Equal(t, tt.expectedApplicable, applicable)
+			assert.Equal(t, testCase.expectedApplicable, applicable)
 		})
 	}
 }
@@ -140,7 +140,7 @@ func TestRemoveSkrWebhookUseCase_Execute(t *testing.T) {
 
 		res := useCase.Execute(context.Background(), kyma)
 
-		assert.NoError(t, res.Err)
+		require.NoError(t, res.Err)
 		assert.Equal(t, usecase.DeleteSkrWebhookResources, res.UseCase)
 		assert.True(t, mockRepo.deleteResourcesCalled)
 	})
@@ -154,8 +154,8 @@ func TestRemoveSkrWebhookUseCase_Execute(t *testing.T) {
 
 		res := useCase.Execute(context.Background(), kyma)
 
-		assert.Error(t, res.Err)
-		assert.ErrorIs(t, res.Err, expectedErr)
+		require.Error(t, res.Err)
+		require.ErrorIs(t, res.Err, expectedErr)
 		assert.Equal(t, usecase.DeleteSkrWebhookResources, res.UseCase)
 		assert.True(t, mockRepo.deleteResourcesCalled)
 	})

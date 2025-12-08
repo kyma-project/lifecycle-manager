@@ -39,8 +39,8 @@ func TestKymaMetrics_CleanupNonExistingKymaCrsMetrics(t *testing.T) {
 			},
 		},
 	}
-	sc := machineryruntime.NewScheme()
-	machineryutilruntime.Must(v1beta2.AddToScheme(sc))
+	scheme := machineryruntime.NewScheme()
+	machineryutilruntime.Must(v1beta2.AddToScheme(scheme))
 
 	labelValues := []string{
 		kymaName,
@@ -49,7 +49,7 @@ func TestKymaMetrics_CleanupNonExistingKymaCrsMetrics(t *testing.T) {
 		random.Name(),
 	}
 
-	fakeClientBuilder := fake.NewClientBuilder().WithScheme(sc).WithRuntimeObjects(deployedKymas).Build()
+	fakeClientBuilder := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(deployedKymas).Build()
 	ctrlmetrics.Registry.Unregister(sampleGauge)
 	ctrlmetrics.Registry.MustRegister(sampleGauge)
 	// this metric should be kept

@@ -7,7 +7,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
-	v1 "k8s.io/api/core/v1"
+	apicorev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -30,12 +30,14 @@ type ResourceRepository struct {
 	remoteSyncNamespace string
 }
 
+const numDynamicResources = 2
+
 func NewResourceRepository(
 	skrClientCache SkrClientCache,
 	remoteSyncNamespace string,
 	baseResources []*unstructured.Unstructured,
 ) *ResourceRepository {
-	resources := make([]v1beta1.PartialObjectMetadata, 0, len(baseResources)+2)
+	resources := make([]v1beta1.PartialObjectMetadata, 0, len(baseResources)+numDynamicResources)
 	for _, res := range baseResources {
 		meta := v1beta1.PartialObjectMetadata{
 			TypeMeta: apimetav1.TypeMeta{
@@ -50,6 +52,7 @@ func NewResourceRepository(
 		resources = append(resources, meta)
 	}
 
+	//nolint:revive // false positive ¯\_(ツ)_/¯
 	// Add generated resources that are created dynamically from SkrWebhookManifestManager (not read from resources.yaml)
 	resources = append(resources,
 		v1beta1.PartialObjectMetadata{
@@ -64,8 +67,8 @@ func NewResourceRepository(
 		},
 		v1beta1.PartialObjectMetadata{
 			TypeMeta: apimetav1.TypeMeta{
-				Kind:       reflect.TypeOf(v1.Secret{}).Name(),
-				APIVersion: v1.SchemeGroupVersion.String(),
+				Kind:       reflect.TypeOf(apicorev1.Secret{}).Name(),
+				APIVersion: apicorev1.SchemeGroupVersion.String(),
 			},
 			ObjectMeta: apimetav1.ObjectMeta{
 				Name:      skrwebhookresources.SkrTLSName,

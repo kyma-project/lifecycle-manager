@@ -11,6 +11,7 @@ import (
 )
 
 var (
+	//nolint:revive // no better formatting for this
 	errFailedToDetermineApplicability    = errors.New("failed to determine applicability for removing SKR webhook resources")
 	errFailedToRemoveSkrWebhookResources = errors.New("failed to remove SKR webhook resources")
 )
