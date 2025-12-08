@@ -15,13 +15,16 @@ import (
 type metricRepoStub struct {
 	recordCalled bool
 
-	reason      metrics.KymaRequeueReason
+	reasons     []metrics.KymaRequeueReason
 	requeueType queue.RequeueType
 }
 
 func (m *metricRepoStub) RecordRequeueReason(reason metrics.KymaRequeueReason, requeueType queue.RequeueType) {
 	m.recordCalled = true
-	m.reason = reason
+	if m.reasons == nil {
+		m.reasons = []metrics.KymaRequeueReason{}
+	}
+	m.reasons = append(m.reasons, reason)
 	m.requeueType = requeueType
 }
 
@@ -31,7 +34,7 @@ func TestMetricWriter_Write(t *testing.T) {
 		useCase             result.UseCase
 		err                 error
 		expectedCall        bool
-		expectedReason      metrics.KymaRequeueReason
+		expectedReasons     []metrics.KymaRequeueReason
 		expectedRequeueType queue.RequeueType
 	}{
 		// Intended requeues
@@ -40,7 +43,7 @@ func TestMetricWriter_Write(t *testing.T) {
 			useCase:             usecase.SetKcpKymaStateDeleting,
 			err:                 nil,
 			expectedCall:        true,
-			expectedReason:      metrics.StatusUpdateToDeleting,
+			expectedReasons:     []metrics.KymaRequeueReason{metrics.KymaDeletion, metrics.StatusUpdateToDeleting},
 			expectedRequeueType: queue.IntendedRequeue,
 		},
 		{
@@ -48,7 +51,7 @@ func TestMetricWriter_Write(t *testing.T) {
 			useCase:             usecase.SetSkrKymaStateDeleting,
 			err:                 nil,
 			expectedCall:        true,
-			expectedReason:      metrics.StatusSyncToRemote,
+			expectedReasons:     []metrics.KymaRequeueReason{metrics.StatusSyncToRemote},
 			expectedRequeueType: queue.IntendedRequeue,
 		},
 		{
@@ -56,7 +59,7 @@ func TestMetricWriter_Write(t *testing.T) {
 			useCase:             usecase.DeleteSkrKyma,
 			err:                 nil,
 			expectedCall:        true,
-			expectedReason:      metrics.RemoteKymaDeletion,
+			expectedReasons:     []metrics.KymaRequeueReason{metrics.RemoteKymaDeletion},
 			expectedRequeueType: queue.IntendedRequeue,
 		},
 		{
@@ -64,7 +67,7 @@ func TestMetricWriter_Write(t *testing.T) {
 			useCase:             usecase.DeleteSkrModuleTemplateCrd,
 			err:                 nil,
 			expectedCall:        true,
-			expectedReason:      metrics.RemoteModuleCatalogDeletion,
+			expectedReasons:     []metrics.KymaRequeueReason{metrics.RemoteModuleCatalogDeletion},
 			expectedRequeueType: queue.IntendedRequeue,
 		},
 		{
@@ -72,7 +75,7 @@ func TestMetricWriter_Write(t *testing.T) {
 			useCase:             usecase.DeleteSkrModuleReleaseMetaCrd,
 			err:                 nil,
 			expectedCall:        true,
-			expectedReason:      metrics.RemoteModuleCatalogDeletion,
+			expectedReasons:     []metrics.KymaRequeueReason{metrics.RemoteModuleCatalogDeletion},
 			expectedRequeueType: queue.IntendedRequeue,
 		},
 		{
@@ -80,7 +83,7 @@ func TestMetricWriter_Write(t *testing.T) {
 			useCase:             usecase.DeleteManifests,
 			err:                 nil,
 			expectedCall:        true,
-			expectedReason:      metrics.CleanupManifestCrs,
+			expectedReasons:     []metrics.KymaRequeueReason{metrics.CleanupManifestCrs},
 			expectedRequeueType: queue.IntendedRequeue,
 		},
 
@@ -90,7 +93,7 @@ func TestMetricWriter_Write(t *testing.T) {
 			useCase:             usecase.SetKcpKymaStateDeleting,
 			err:                 assert.AnError,
 			expectedCall:        true,
-			expectedReason:      metrics.StatusUpdateToDeleting,
+			expectedReasons:     []metrics.KymaRequeueReason{metrics.KymaDeletion, metrics.StatusUpdateToDeleting},
 			expectedRequeueType: queue.UnexpectedRequeue,
 		},
 		{
@@ -98,7 +101,7 @@ func TestMetricWriter_Write(t *testing.T) {
 			useCase:             usecase.SetSkrKymaStateDeleting,
 			err:                 assert.AnError,
 			expectedCall:        true,
-			expectedReason:      metrics.StatusSyncToRemote,
+			expectedReasons:     []metrics.KymaRequeueReason{metrics.StatusSyncToRemote},
 			expectedRequeueType: queue.UnexpectedRequeue,
 		},
 		{
@@ -106,7 +109,7 @@ func TestMetricWriter_Write(t *testing.T) {
 			useCase:             usecase.DeleteSkrKyma,
 			err:                 assert.AnError,
 			expectedCall:        true,
-			expectedReason:      metrics.RemoteKymaDeletion,
+			expectedReasons:     []metrics.KymaRequeueReason{metrics.RemoteKymaDeletion},
 			expectedRequeueType: queue.UnexpectedRequeue,
 		},
 		{
@@ -114,7 +117,7 @@ func TestMetricWriter_Write(t *testing.T) {
 			useCase:             usecase.DeleteSkrModuleTemplateCrd,
 			err:                 assert.AnError,
 			expectedCall:        true,
-			expectedReason:      metrics.RemoteModuleCatalogDeletion,
+			expectedReasons:     []metrics.KymaRequeueReason{metrics.RemoteModuleCatalogDeletion},
 			expectedRequeueType: queue.UnexpectedRequeue,
 		},
 		{
@@ -122,7 +125,7 @@ func TestMetricWriter_Write(t *testing.T) {
 			useCase:             usecase.DeleteSkrModuleReleaseMetaCrd,
 			err:                 assert.AnError,
 			expectedCall:        true,
-			expectedReason:      metrics.RemoteModuleCatalogDeletion,
+			expectedReasons:     []metrics.KymaRequeueReason{metrics.RemoteModuleCatalogDeletion},
 			expectedRequeueType: queue.UnexpectedRequeue,
 		},
 		{
@@ -130,7 +133,7 @@ func TestMetricWriter_Write(t *testing.T) {
 			useCase:             usecase.DeleteManifests,
 			err:                 assert.AnError,
 			expectedCall:        true,
-			expectedReason:      metrics.CleanupManifestCrs,
+			expectedReasons:     []metrics.KymaRequeueReason{metrics.CleanupManifestCrs},
 			expectedRequeueType: queue.UnexpectedRequeue,
 		},
 
@@ -181,7 +184,7 @@ func TestMetricWriter_Write(t *testing.T) {
 
 			assert.Equal(t, testCase.expectedCall, repoStub.recordCalled)
 			if testCase.expectedCall {
-				assert.Equal(t, testCase.expectedReason, repoStub.reason)
+				assert.ElementsMatch(t, testCase.expectedReasons, repoStub.reasons)
 				assert.Equal(t, testCase.expectedRequeueType, repoStub.requeueType)
 			}
 		})
