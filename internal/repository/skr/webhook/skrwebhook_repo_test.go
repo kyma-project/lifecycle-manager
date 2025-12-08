@@ -229,6 +229,35 @@ func TestResourceRepository_DeleteWebhookResources(t *testing.T) {
 		assert.Equal(t, 5, callCount) // All deletes should be attempted
 	})
 
+	t.Run("NotFound error not hiding consecutive errors", func(t *testing.T) {
+		callCount := 0
+		mockClient := &mockSkrClient{
+			deleteFunc: func(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
+				callCount++
+
+				// not found in second resource
+				if obj.GetName() == "skr-webhook-metrics" {
+					return apierrors.NewNotFound(schema.GroupResource{}, obj.GetName())
+				}
+
+				// real error in third resource
+				if obj.GetName() == "skr-webhook" && obj.GetObjectKind().GroupVersionKind().Kind == "Deployment" {
+					return assert.AnError
+				}
+
+				return nil
+			},
+		}
+
+		clientCache := &mockSkrClientCache{client: mockClient}
+		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
+
+		err := repo.DeleteWebhookResources(context.Background(), kymaName)
+
+		require.ErrorIs(t, err, assert.AnError)
+		assert.Equal(t, 5, callCount) // All deletes should be attempted
+	})
+
 	t.Run("returns error when delete fails with non-NotFound error", func(t *testing.T) {
 		expectedErr := errors.New("permission denied")
 		mockClient := &mockSkrClient{

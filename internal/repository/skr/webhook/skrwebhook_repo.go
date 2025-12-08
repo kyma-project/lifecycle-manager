@@ -152,14 +152,14 @@ func (r *ResourceRepository) DeleteWebhookResources(ctx context.Context, kymaNam
 		errGrp.Go(func() error {
 			ref := r.resources[resIdx]
 			err := skrClient.Delete(grpCtx, &ref)
-			if client.IgnoreNotFound(err) != nil {
+			if err != nil && !util.IsNotFound(err) {
 				return fmt.Errorf("failed to delete resource %s: %w", ref.Name, err)
 			}
 			return nil
 		})
 	}
 
-	if err := errGrp.Wait(); err != nil && !util.IsNotFound(err) {
+	if err := errGrp.Wait(); err != nil {
 		return fmt.Errorf("failed to delete webhook resources: %w", err)
 	}
 
