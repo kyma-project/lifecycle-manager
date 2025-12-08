@@ -12,8 +12,8 @@ import (
 var ErrUnableToDetermineUsecaseApplicability = errors.New("unable to determine usecase applicability")
 
 type UseCase interface {
-	IsApplicable(ctx context.Context, mrm *v1beta2.Kyma) (bool, error)
-	Execute(ctx context.Context, mrm *v1beta2.Kyma) result.Result
+	IsApplicable(ctx context.Context, kyma *v1beta2.Kyma) (bool, error)
+	Execute(ctx context.Context, kyma *v1beta2.Kyma) result.Result
 	Name() result.UseCase
 }
 
@@ -25,6 +25,8 @@ func NewService(
 	setKcpKymaStateDeleting UseCase,
 	setSkrKymaStateDeleting UseCase,
 	deleteSkrKyma UseCase,
+	removeCertificateSetup UseCase,
+	removeSkrWebhook UseCase,
 	deleteSkrMtCrd UseCase,
 	deleteSkrMrmCrd UseCase,
 	deleteSkrKymaCrd UseCase,
@@ -37,6 +39,8 @@ func NewService(
 			setKcpKymaStateDeleting,
 			setSkrKymaStateDeleting,
 			deleteSkrKyma,
+			removeCertificateSetup,
+			removeSkrWebhook,
 			deleteSkrMtCrd,
 			deleteSkrMrmCrd,
 			deleteSkrKymaCrd,

@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
@@ -88,6 +89,7 @@ import (
 	skrcrdrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/crd"
 	skrkymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma"
 	skrkymastatusrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/skr/webhook"
 	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
@@ -100,6 +102,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
@@ -215,11 +218,20 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		accessManagerService,
 		flagVar.SkrClientQPS,
 		flagVar.SkrClientBurst)
+
+	certificateRepository, err := skrwebhook.ComposeCertificateRepository(kcpClient, flagVar)
+	t := reflect.TypeOf(certificateRepository)
+	logger.Info("certificate repository", "type", t)
+	if err != nil {
+		logger.Error(err, "failed to setup certificate repository")
+		os.Exit(bootstrapFailedExitCode)
+	}
 	var skrWebhookManager *watcher.SkrWebhookManifestManager
 	var options ctrlruntime.Options
 	if flagVar.EnableKcpWatcher {
 		skrWebhookManager, err = skrwebhook.ComposeSkrWebhookManager(kcpClient, skrContextProvider,
 			gatewayRepository,
+			certificateRepository,
 			flagVar)
 		if err != nil {
 			logger.Error(err, "failed to setup SKR webhook manager")
@@ -280,8 +292,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
 		kymaMetrics, logger, maintenanceWindow, ociRegistryHost, accessSecretRepository, remoteClientCache,
-		kymaRepo,
-	)
+		certificateRepository, kymaRepo)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
 		eventRecorder, kymaRepo)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, logger,
@@ -431,7 +442,8 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SkrWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
 	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, ociRegistryHost string,
-	accessSecretRepository *secretrepo.Repository, skrClientCache *remote.ClientCache, kymaRepo *kymarepo.Repository,
+	accessSecretRepository *secretrepo.Repository, skrClientCache *remote.ClientCache,
+	certificateRepository certificate.CertificateRepository, kymaRepo *kymarepo.Repository,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -451,10 +463,11 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		OCIRegistryHost:        ociRegistryHost,
 		SkrImagePullSecretName: flagVar.SkrImagePullSecret,
 	}
+	kcpSystemSecretRepo := secretrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
 	syncCrdsUseCase := remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil)
 	skrSyncService := skrsync.NewService(
 		skrContextFactory,
-		secretrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+		kcpSystemSecretRepo,
 		&syncCrdsUseCase,
 		flagVar.SkrImagePullSecret)
 
@@ -489,11 +502,17 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		usecase.DeleteSkrKymaCrd)
 	deleteMetrics := usecases.NewDeleteMetrics(kymaMetrics)
 	dropKymaFinalizers := usecases.NewDropKymaFinalizers(kymaRepo)
-
+	skrWebhookResourcesRepo := webhook.NewResourceRepository(skrClientCache, shared.DefaultRemoteNamespace,
+		skrWebhookManager.BaseResources)
+	removeSkrWebhook := usecases.NewRemoveSkrWebhookResources(skrWebhookResourcesRepo)
+	istioSystemSecretRepo := secretrepo.NewRepository(kcpClient, shared.IstioNamespace)
+	certificateCleanup := usecases.NewWatcherCertificateCleanup(certificateRepository, istioSystemSecretRepo)
 	kymaDeletionService := kymadeletionsvc.NewService(
 		setKcpKymaStateDeleting,
 		setSkrKymaStateDeleting,
 		deleteSkrKyma,
+		certificateCleanup,
+		removeSkrWebhook,
 		deleteSkrMtCrd,
 		deleteSkrMrmCrd,
 		deleteSkrKymaCrd,
