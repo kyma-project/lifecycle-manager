@@ -11,10 +11,12 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/repository/skr/webhook"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
 func TestNewResourceRepository(t *testing.T) {
@@ -40,10 +42,11 @@ func TestNewResourceRepository(t *testing.T) {
 }
 
 func TestResourceRepository_ResourcesExist(t *testing.T) {
-	const (
-		kymaName            = "test-kyma"
-		remoteSyncNamespace = "kyma-system"
-	)
+	const remoteSyncNamespace = "kyma-system"
+	kymaName := types.NamespacedName{
+		Name:      random.Name(),
+		Namespace: random.Name(),
+	}
 
 	baseResources := []*unstructured.Unstructured{
 		createUnstructuredResource("skr-webhook", "v1", "Service"),
@@ -171,10 +174,11 @@ func TestResourceRepository_ResourcesExist(t *testing.T) {
 }
 
 func TestResourceRepository_DeleteWebhookResources(t *testing.T) {
-	const (
-		kymaName            = "test-kyma"
-		remoteSyncNamespace = "kyma-system"
-	)
+	const remoteSyncNamespace = "kyma-system"
+	kymaName := types.NamespacedName{
+		Name:      random.Name(),
+		Namespace: random.Name(),
+	}
 
 	baseResources := []*unstructured.Unstructured{
 		createUnstructuredResource("skr-webhook", "v1", "Service"),
@@ -359,10 +363,11 @@ func TestResourceRepository_DeleteWebhookResources(t *testing.T) {
 
 func TestResourceRepository_ClientCacheUsage(t *testing.T) {
 	t.Run("uses correct client from cache", func(t *testing.T) {
-		const (
-			kymaName            = "test-kyma"
-			remoteSyncNamespace = "kyma-system"
-		)
+		const remoteSyncNamespace = "kyma-system"
+		kymaName := types.NamespacedName{
+			Name:      random.Name(),
+			Namespace: random.Name(),
+		}
 
 		var capturedKey client.ObjectKey
 		mockClient := &mockSkrClient{

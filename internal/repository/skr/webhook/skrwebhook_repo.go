@@ -2,6 +2,7 @@ package webhook
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -15,7 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/internal/errors"
+	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -85,14 +86,11 @@ func NewResourceRepository(
 }
 
 // ResourcesExist checks if any of the skr-webhook resources exist in the SKR cluster for the given Kyma.
-func (r *ResourceRepository) ResourcesExist(ctx context.Context, kymaName string) (bool, error) {
+func (r *ResourceRepository) ResourcesExist(ctx context.Context, kymaName types.NamespacedName) (bool, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	skrClient, err := r.getSkrClient(types.NamespacedName{
-		Name:      kymaName,
-		Namespace: r.remoteSyncNamespace,
-	})
+	skrClient, err := r.getSkrClient(kymaName)
 	if err != nil {
 		return false, err
 	}
@@ -110,12 +108,18 @@ func (r *ResourceRepository) ResourcesExist(ctx context.Context, kymaName string
 			}
 
 			ref := r.resources[resIdx]
-			err := skrClient.Get(grpCtx, client.ObjectKeyFromObject(&ref), &unstructured.Unstructured{})
+			err := skrClient.Get(grpCtx, client.ObjectKeyFromObject(&ref), &ref)
 			if err != nil {
 				if apierrors.IsNotFound(err) {
 					// Resource does not exist, continue checking others
 					return nil
 				}
+
+				if errors.Is(err, context.Canceled) {
+					// Operation was canceled, likely because a resource was found
+					return nil
+				}
+
 				return fmt.Errorf("failed to check resource %s: %w", ref.Name, err)
 			}
 			select {
@@ -140,11 +144,8 @@ func (r *ResourceRepository) ResourcesExist(ctx context.Context, kymaName string
 }
 
 // DeleteWebhookResources deletes all skr-webhook resources from the SKR cluster for the given Kyma.
-func (r *ResourceRepository) DeleteWebhookResources(ctx context.Context, kymaName string) error {
-	skrClient, err := r.getSkrClient(types.NamespacedName{
-		Name:      kymaName,
-		Namespace: r.remoteSyncNamespace,
-	})
+func (r *ResourceRepository) DeleteWebhookResources(ctx context.Context, kymaName types.NamespacedName) error {
+	skrClient, err := r.getSkrClient(kymaName)
 	if err != nil {
 		return err
 	}
@@ -175,7 +176,7 @@ func (r *ResourceRepository) getSkrClient(kymaName types.NamespacedName) (client
 	if skrClient == nil {
 		// TODO if multiple Repositories are using this error generation, consider creating a shared error instance
 		// or even provide this get functionality with error on the skrClientCache itself
-		return nil, fmt.Errorf("%w: Kyma %s", errors.ErrSkrClientNotFound, kymaName.String())
+		return nil, fmt.Errorf("%w: Kyma %s", errorsinternal.ErrSkrClientNotFound, kymaName.String())
 	}
 
 	return skrClient, nil

@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"k8s.io/apimachinery/pkg/types"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
@@ -17,8 +19,8 @@ var (
 )
 
 type SkrWebhookResourcesRepository interface {
-	ResourcesExist(ctx context.Context, kymaName string) (bool, error)
-	DeleteWebhookResources(ctx context.Context, kymaName string) error
+	ResourcesExist(ctx context.Context, kymaName types.NamespacedName) (bool, error)
+	DeleteWebhookResources(ctx context.Context, kymaName types.NamespacedName) error
 }
 
 type RemoveSkrWebhookResources struct {
@@ -38,7 +40,7 @@ func (u *RemoveSkrWebhookResources) IsApplicable(ctx context.Context, kyma *v1be
 		return false, nil
 	}
 
-	resourcesExist, err := u.skrWebhookResourcesRepo.ResourcesExist(ctx, kyma.Name)
+	resourcesExist, err := u.skrWebhookResourcesRepo.ResourcesExist(ctx, kyma.GetNamespacedName())
 	if err != nil {
 		return false, errors.Join(errFailedToDetermineApplicability, err)
 	}
@@ -48,7 +50,7 @@ func (u *RemoveSkrWebhookResources) IsApplicable(ctx context.Context, kyma *v1be
 
 func (u *RemoveSkrWebhookResources) Execute(ctx context.Context, kyma *v1beta2.Kyma) result.Result {
 	// Delete webhook resources from SKR cluster
-	err := u.skrWebhookResourcesRepo.DeleteWebhookResources(ctx, kyma.Name)
+	err := u.skrWebhookResourcesRepo.DeleteWebhookResources(ctx, kyma.GetNamespacedName())
 	if err != nil {
 		return result.Result{
 			UseCase: u.Name(),
