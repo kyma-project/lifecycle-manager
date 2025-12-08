@@ -30,7 +30,7 @@ func BuildValidatingWebhookConfigFromWatchers(caCert []byte, watchers []v1beta2.
 	webhooks := make([]admissionregistrationv1.ValidatingWebhook, 0)
 	for _, watcher := range watchers {
 		managerName := watcher.GetManagerName()
-		// Log deprecation warning if using managed-bylabel fallback
+		// Log deprecation warning if using managed-by label fallback
 		if watcher.Spec.Manager == "" && watcher.Labels != nil && watcher.Labels[shared.ManagedBy] != "" {
 			logger.Info("Watcher using deprecated 'managed-by' label. Migrate to spec.manager field",
 				"watcher", watcher.Name, "namespace", watcher.Namespace, "manager", managerName)
