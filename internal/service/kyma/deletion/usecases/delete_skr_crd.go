@@ -14,7 +14,7 @@ type CrdRepo interface {
 	Delete(ctx context.Context, kymaName types.NamespacedName) error
 }
 
-type DeleteSkrModuleMetadata struct {
+type DeleteSkrCrd struct {
 	skrCrdRepo          CrdRepo
 	skrAccessSecretRepo SkrAccessSecretRepo
 	useCase             result.UseCase
@@ -23,15 +23,15 @@ type DeleteSkrModuleMetadata struct {
 func NewDeleteSkrCrd(skrCrdRepo CrdRepo,
 	skrAccessSecretRepo SkrAccessSecretRepo,
 	useCase result.UseCase,
-) *DeleteSkrModuleMetadata {
-	return &DeleteSkrModuleMetadata{
+) *DeleteSkrCrd {
+	return &DeleteSkrCrd{
 		skrCrdRepo:          skrCrdRepo,
 		skrAccessSecretRepo: skrAccessSecretRepo,
 		useCase:             useCase,
 	}
 }
 
-func (u *DeleteSkrModuleMetadata) IsApplicable(ctx context.Context, kcpKyma *v1beta2.Kyma) (bool, error) {
+func (u *DeleteSkrCrd) IsApplicable(ctx context.Context, kcpKyma *v1beta2.Kyma) (bool, error) {
 	if kcpKyma.DeletionTimestamp.IsZero() {
 		return false, nil
 	}
@@ -45,7 +45,7 @@ func (u *DeleteSkrModuleMetadata) IsApplicable(ctx context.Context, kcpKyma *v1b
 	)
 }
 
-func (u *DeleteSkrModuleMetadata) Execute(ctx context.Context, kcpKyma *v1beta2.Kyma) result.Result {
+func (u *DeleteSkrCrd) Execute(ctx context.Context, kcpKyma *v1beta2.Kyma) result.Result {
 	// deleting the CRDs is sufficient as this also deletes related CRs
 	return result.Result{
 		UseCase: u.Name(),
@@ -53,6 +53,6 @@ func (u *DeleteSkrModuleMetadata) Execute(ctx context.Context, kcpKyma *v1beta2.
 	}
 }
 
-func (u *DeleteSkrModuleMetadata) Name() result.UseCase {
+func (u *DeleteSkrCrd) Name() result.UseCase {
 	return u.useCase
 }
