@@ -2,6 +2,7 @@ package watcher_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 
@@ -43,24 +44,20 @@ var _ = Describe("Watcher Manager Configuration", func() {
 					continue
 				}
 
-				// Parse the Watcher CR
 				var watcher v1beta2.Watcher
-				yamlBytes, err := yaml.Marshal(doc)
+				jsonBytes, err := json.Marshal(doc)
 				Expect(err).ToNot(HaveOccurred())
 
-				err = yaml.Unmarshal(yamlBytes, &watcher)
+				err = json.Unmarshal(jsonBytes, &watcher)
 				Expect(err).ToNot(HaveOccurred(), "should be able to parse Watcher CR")
 
 				watcherFound = true
 
-				// Verify that spec.manager is set to shared.OperatorName
 				Expect(watcher.Spec.Manager).To(Equal(shared.OperatorName),
-					"spec.manager should be set to '%s' to ensure consistent routing configuration",
-					shared.OperatorName)
+					"kyma_watcher.yaml should have spec.manager set to lifecycle-manager")
 
-				// Additional verification: GetManagerName() should return the same value
 				Expect(watcher.GetManagerName()).To(Equal(shared.OperatorName),
-					"GetManagerName() should return '%s'", shared.OperatorName)
+					"GetManagerName() should return spec.manager when it's set")
 
 				break
 			}
@@ -69,17 +66,6 @@ var _ = Describe("Watcher Manager Configuration", func() {
 		})
 
 		It("should have consistent manager configuration between spec field and GetManagerName()", func() {
-			// Test that GetManagerName() prioritizes spec.Manager over label
-			watcher := &v1beta2.Watcher{
-				ObjectMeta: apimetav1.ObjectMeta{},
-				Spec: v1beta2.WatcherSpec{
-					Manager: "lifecycle-manager",
-				},
-			}
-
-			// When spec.Manager is set, it should be returned
-			Expect(watcher.GetManagerName()).To(Equal("lifecycle-manager"))
-
 			// Test backward compatibility: when spec.Manager is empty, fall back to label
 			watcherWithLabel := &v1beta2.Watcher{
 				ObjectMeta: apimetav1.ObjectMeta{
@@ -92,7 +78,8 @@ var _ = Describe("Watcher Manager Configuration", func() {
 				},
 			}
 
-			Expect(watcherWithLabel.GetManagerName()).To(Equal("fallback-manager"))
+			Expect(watcherWithLabel.GetManagerName()).To(Equal("fallback-manager"),
+				"GetManagerName() should fall back to label when spec.Manager is empty")
 
 			// Test priority: spec.Manager takes precedence over label
 			watcherWithBoth := &v1beta2.Watcher{
