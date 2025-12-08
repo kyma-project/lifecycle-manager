@@ -125,8 +125,12 @@ type Watcher struct {
 //
 // The method uses the following priority:
 //  1. First, it checks the spec.Manager field (preferred, explicit configuration)
-//  2. If not set, it falls back to the 'operator.kyma-project.io/managed-by' label (backward compatibility)
+//  2. If not set, it falls back to the 'operator.kyma-project.io/managed-by' label (DEPRECATED, backward compatibility only)
 //  3. If neither is set, it returns an empty string
+//
+// Deprecated label fallback: The 'operator.kyma-project.io/managed-by' label is deprecated in favor of spec.Manager.
+// The label-based approach is maintained for backward compatibility but will be removed in a future release.
+// All new Watcher CRs should use spec.Manager instead.
 //
 // Consistency in this name ensures correct routing and handling of webhook validation logic.
 func (watcher *Watcher) GetManagerName() string {
