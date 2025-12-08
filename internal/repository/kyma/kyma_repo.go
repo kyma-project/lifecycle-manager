@@ -10,6 +10,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 type Repository struct {
@@ -53,5 +54,5 @@ func (r *Repository) DropAllFinalizers(ctx context.Context, kymaName string) err
 		client.RawPatch(client.Merge.Type(), patch),
 	)
 
-	return client.IgnoreNotFound(err)
+	return util.IgnoreNotFound(err)
 }

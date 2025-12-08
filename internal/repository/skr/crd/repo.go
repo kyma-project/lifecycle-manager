@@ -54,7 +54,7 @@ func (r *Repository) Exists(ctx context.Context, kymaName types.NamespacedName) 
 	// not found error => (false, nil)
 	// other error => (true, err)
 	// no error => (true, nil)
-	return !util.IsNotFound(err), client.IgnoreNotFound(err)
+	return !util.IsNotFound(err), util.IgnoreNotFound(err)
 }
 
 func (r *Repository) Delete(ctx context.Context, kymaName types.NamespacedName) error {
@@ -63,7 +63,7 @@ func (r *Repository) Delete(ctx context.Context, kymaName types.NamespacedName) 
 		return err
 	}
 
-	return client.IgnoreNotFound(
+	return util.IgnoreNotFound(
 		skrClient.Delete(ctx,
 			&apiextensionsv1.CustomResourceDefinition{
 				ObjectMeta: apimetav1.ObjectMeta{

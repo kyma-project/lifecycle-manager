@@ -53,7 +53,7 @@ func (r *Repository) Exists(ctx context.Context, kymaName types.NamespacedName) 
 	// not found error => (false, nil)
 	// other error => (true, err)
 	// no error => (true, nil)
-	return !util.IsNotFound(err), client.IgnoreNotFound(err)
+	return !util.IsNotFound(err), util.IgnoreNotFound(err)
 }
 
 func (r *Repository) Delete(ctx context.Context, kymaName types.NamespacedName) error {
@@ -69,7 +69,7 @@ func (r *Repository) Delete(ctx context.Context, kymaName types.NamespacedName) 
 		},
 	}
 
-	return client.IgnoreNotFound(skrClient.Delete(ctx, kyma))
+	return util.IgnoreNotFound(skrClient.Delete(ctx, kyma))
 }
 
 // TODO: this should work as long as we use the same client cache that we passed to KymaSkrContextProvider

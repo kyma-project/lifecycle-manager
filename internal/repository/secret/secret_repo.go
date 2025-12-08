@@ -40,7 +40,7 @@ func (r *Repository) Exists(ctx context.Context, name string) (bool, error) {
 	// not found error => (false, nil)
 	// other error => (true, err)
 	// no error => (true, nil)
-	return !util.IsNotFound(err), client.IgnoreNotFound(err)
+	return !util.IsNotFound(err), util.IgnoreNotFound(err)
 }
 
 func (r *Repository) List(ctx context.Context, labelSelector k8slabels.Selector) (*apicorev1.SecretList, error) {
