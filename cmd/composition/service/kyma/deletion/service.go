@@ -3,6 +3,8 @@ package deletion
 import (
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
@@ -19,7 +21,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion/usecases"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func ComposeKymaDeletionService(kcpClient client.Client,

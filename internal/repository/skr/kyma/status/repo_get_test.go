@@ -11,7 +11,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/errors"
+	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
 	skrkymastatusrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
@@ -80,7 +80,7 @@ func TestGet_ClientNotFound_ReturnsError(t *testing.T) {
 
 	assert.Nil(t, result)
 	require.Error(t, err)
-	require.ErrorIs(t, err, errors.ErrSkrClientNotFound)
+	require.ErrorIs(t, err, errorsinternal.ErrSkrClientNotFound)
 }
 
 type getClientStub struct {

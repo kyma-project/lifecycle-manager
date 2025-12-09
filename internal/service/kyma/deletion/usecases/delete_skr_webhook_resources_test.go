@@ -197,13 +197,17 @@ type mockSkrWebhookResourcesRepository struct {
 	receivedKymaName types.NamespacedName
 }
 
-func (m *mockSkrWebhookResourcesRepository) ResourcesExist(_ context.Context, kymaName types.NamespacedName) (bool, error) {
+func (m *mockSkrWebhookResourcesRepository) ResourcesExist(_ context.Context,
+	kymaName types.NamespacedName,
+) (bool, error) {
 	m.receivedKymaName = kymaName
 	m.resourcesExistCalled = true
 	return m.resourcesExist, m.resourcesExistErr
 }
 
-func (m *mockSkrWebhookResourcesRepository) DeleteWebhookResources(_ context.Context, kymaName types.NamespacedName) error {
+func (m *mockSkrWebhookResourcesRepository) DeleteWebhookResources(_ context.Context,
+	kymaName types.NamespacedName,
+) error {
 	m.receivedKymaName = kymaName
 	m.deleteResourcesCalled = true
 	return m.deleteResourcesErr
