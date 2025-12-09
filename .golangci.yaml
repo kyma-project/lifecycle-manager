@@ -116,8 +116,12 @@ linters:
           alias: metricsserver
         - pkg: github.com/prometheus/client_model/go
           alias: prometheusclient
+        - pkg: github.com/kyma-project/lifecycle-manager/cmd/composition/service/kyma/deletion
+          alias: kymadeletioncmpse
         - pkg: github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl
           alias: testskrcontext
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/errors
+          alias: errorsinternal
         - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/watcher
           alias: watcherctrl
         - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/kyma/deletion

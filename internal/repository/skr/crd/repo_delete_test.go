@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/internal/errors"
+	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
 	skrcrdrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/crd"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
@@ -90,7 +90,7 @@ func TestDelete_ClientNotFound_ReturnsError(t *testing.T) {
 		})
 
 	require.Error(t, err)
-	require.ErrorIs(t, err, errors.ErrSkrClientNotFound)
+	require.ErrorIs(t, err, errorsinternal.ErrSkrClientNotFound)
 }
 
 type deleteClientStub struct {

@@ -14,7 +14,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/errors"
+	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
 	skrkymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
@@ -95,7 +95,7 @@ func TestDelete_ClientNotFound_ReturnsError(t *testing.T) {
 		})
 
 	require.Error(t, err)
-	require.ErrorIs(t, err, errors.ErrSkrClientNotFound)
+	require.ErrorIs(t, err, errorsinternal.ErrSkrClientNotFound)
 }
 
 type deleteClientStub struct {

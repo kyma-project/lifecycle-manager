@@ -11,7 +11,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/errors"
+	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -79,7 +79,7 @@ func (r *Repository) getSkrClient(kymaName types.NamespacedName) (client.Client,
 	skrClient := r.skrClientCache.Get(kymaName)
 
 	if skrClient == nil {
-		return nil, fmt.Errorf("%w: Kyma %s", errors.ErrSkrClientNotFound, kymaName.String())
+		return nil, fmt.Errorf("%w: Kyma %s", errorsinternal.ErrSkrClientNotFound, kymaName.String())
 	}
 
 	return skrClient, nil
