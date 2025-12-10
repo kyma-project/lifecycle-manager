@@ -24,6 +24,7 @@ import (
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"go.uber.org/zap/zapcore"
+	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
@@ -38,12 +39,15 @@ import (
 
 	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
+	kymadeletionctrl "github.com/kyma-project/lifecycle-manager/internal/controller/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
@@ -51,6 +55,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
@@ -62,6 +67,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/service/componentdescriptor"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
+	"github.com/kyma-project/lifecycle-manager/tests/integration/controller/composition"
 
 	_ "ocm.software/ocm/api/ocm"
 
@@ -83,7 +89,7 @@ var (
 	kcpEnv                *envtest.Environment
 	ctx                   context.Context
 	cancel                context.CancelFunc
-	cfg                   *rest.Config
+	restCfg               *rest.Config
 	descriptorProvider    *provider.CachedDescriptorProvider
 	descProviderService   *componentdescriptor.FakeService
 	crdCache              *crd.Cache
@@ -102,6 +108,8 @@ var _ = BeforeSuite(func() {
 	logf.SetLogger(logr)
 	var err error
 	By("bootstrapping test environment")
+
+	flagVar := flags.DefineFlagVar()
 
 	externalCRDs, err := AppendExternalCRDs(
 		filepath.Join(integration.GetProjectRoot(), "config", "samples", "tests", "crds"),
@@ -123,17 +131,19 @@ var _ = BeforeSuite(func() {
 		ErrorIfCRDPathMissing: true,
 	}
 
-	cfg, err = kcpEnv.Start()
+	restCfg, err = kcpEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
-	Expect(cfg).NotTo(BeNil())
+	Expect(restCfg).NotTo(BeNil())
 
 	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(istioscheme.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
 
 	mgr, err = ctrl.NewManager(
-		cfg, ctrl.Options{
+		restCfg,
+		ctrl.Options{
 			Metrics: metricsserver.Options{
 				BindAddress: UseRandomPort,
 			},
@@ -143,7 +153,8 @@ var _ = BeforeSuite(func() {
 				ControlPlaneNamespace,
 				certmanagerv1.SchemeGroupVersion.String(),
 				logr),
-		})
+		},
+	)
 	Expect(err).ToNot(HaveOccurred())
 
 	kcpClient = mgr.GetClient()
@@ -155,7 +166,10 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	Expect(err).NotTo(HaveOccurred())
+	composition.CreateIstioResources(ctx,
+		restCfg,
+		kcpClient,
+	)
 
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
@@ -181,6 +195,34 @@ var _ = BeforeSuite(func() {
 	syncCrdsUseCase := remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache)
 	skrSyncService := skrsync.NewService(nil, nil, &syncCrdsUseCase, "")
 
+	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
+	Expect(err).ToNot(HaveOccurred())
+	gatewayRepository := istiogateway.NewRepository(kcpClientWithoutCache)
+
+	certificateRepository, err := skrwebhook.ComposeCertificateRepository(kcpClient, flagVar)
+	Expect(err).ToNot(HaveOccurred())
+
+	skrWebhookManager := composition.ComposeSkrWebhookManager(
+		kcpClient,
+		testSkrContextFactory,
+		gatewayRepository,
+		certificateRepository,
+		flagVar,
+	)
+
+	kymaMetrics := metrics.NewKymaMetrics(metrics.NewSharedMetrics())
+	deletionEvents := resultevent.NewEventRecorder(testEventRec)
+	deletionMetrics := kymadeletionctrl.NewMetricWriter(kymaMetrics)
+	deletionService := composition.ComposeKymaDeletionService(
+		kcpClient,
+		testSkrContextFactory,
+		skrWebhookManager,
+		certificateRepository,
+		kymaMetrics,
+		testEventRec,
+		flagVar,
+	)
+
 	err = (&kyma.Reconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    testSkrContextFactory,
@@ -189,13 +231,16 @@ var _ = BeforeSuite(func() {
 		DescriptorProvider:   descriptorProvider,
 		SkrSyncService:       skrSyncService,
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
-		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		Metrics:              kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient,
 			descriptorProvider,
 			moduletemplateinfolookup.NewLookup(kcpClient)),
-		Config: kymaReconcilerConfig,
+		Config:          kymaReconcilerConfig,
+		DeletionMetrics: deletionMetrics,
+		DeletionEvents:  deletionEvents,
+		DeletionService: deletionService,
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())

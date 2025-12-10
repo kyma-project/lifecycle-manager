@@ -47,8 +47,11 @@ func ComposeSkrWebhookManager(kcpClient client.Client,
 		return nil, err
 	}
 
-	gatewayService := gateway.NewService(flagVar.IstioGatewayName, flagVar.IstioGatewayNamespace,
-		flagVar.ListenerPortOverwrite, repository)
+	gatewayService := gateway.NewService(flagVar.IstioGatewayName,
+		flagVar.IstioGatewayNamespace,
+		flagVar.ListenerPortOverwrite,
+		repository,
+	)
 
 	resolvedKcpAddr, err := gatewayService.ResolveKcpAddr()
 	if err != nil {
@@ -62,9 +65,13 @@ func ComposeSkrWebhookManager(kcpClient client.Client,
 	watcherMetrics := metrics.NewWatcherMetrics()
 
 	resourceConfigurator := skrwebhookresources.NewResourceConfigurator(
-		flagVar.RemoteSyncNamespace, flagVar.GetWatcherImage(),
+		flagVar.RemoteSyncNamespace,
+		flagVar.GetWatcherImage(),
 		flagVar.WatcherResourceLimitsCPU,
-		flagVar.WatcherResourceLimitsMemory, *resolvedKcpAddr, flagVar.SkrImagePullSecret)
+		flagVar.WatcherResourceLimitsMemory,
+		*resolvedKcpAddr,
+		flagVar.SkrImagePullSecret,
+	)
 
 	chartReaderService := chartreader.NewService(flagVar.WatcherResourcesPath)
 
