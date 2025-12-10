@@ -5,7 +5,6 @@ import (
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -26,15 +25,9 @@ func ResolveWebhookRuleResources(resource string, fieldName v1beta2.FieldName) [
 
 func BuildValidatingWebhookConfigFromWatchers(caCert []byte, watchers []v1beta2.Watcher, remoteNs string,
 ) *admissionregistrationv1.ValidatingWebhookConfiguration {
-	logger := ctrl.Log.WithName("watcher-deprecation")
 	webhooks := make([]admissionregistrationv1.ValidatingWebhook, 0)
 	for _, watcher := range watchers {
 		managerName := watcher.GetManagerName()
-		// Log deprecation warning if using managed-by label fallback
-		if watcher.Spec.Manager == "" && watcher.Labels != nil && watcher.Labels[shared.ManagedBy] != "" {
-			logger.Info("Watcher using deprecated 'managed-by' label. Migrate to spec.manager field",
-				"watcher", watcher.Name, "namespace", watcher.Namespace, "manager", managerName)
-		}
 		webhookName := fmt.Sprintf("%s.%s.%s", watcher.Namespace, watcher.Name, shared.OperatorGroup)
 		svcPath := "/validate/" + managerName
 		watchableResources := ResolveWebhookRuleResources(watcher.Spec.ResourceToWatch.Resource, watcher.Spec.Field)
