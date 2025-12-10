@@ -11,7 +11,6 @@ import (
 	apiappsv1 "k8s.io/api/apps/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -206,11 +205,11 @@ func verifyWebhookConfig(
 				Name:      watcherName,
 			})
 	}
-	expectedModuleName, exists := watcherCR.Labels[shared.ManagedBy]
-	if !exists {
-		return fmt.Errorf("%w: (labels=%v)", ErrManagedByLabelNotFound, watcherCR.Labels)
+	expectedWatcherManagerName := watcherCR.GetManagerName()
+	if expectedWatcherManagerName == "" {
+		return fmt.Errorf("%w: manager name is empty", ErrManagedByLabelNotFound)
 	}
-	expectedSvcPath := fmt.Sprintf(servicePathTpl, expectedModuleName)
+	expectedSvcPath := fmt.Sprintf(servicePathTpl, expectedWatcherManagerName)
 	if *webhook.ClientConfig.Service.Path != expectedSvcPath {
 		return fmt.Errorf("%w: (expected=%s, got=%s)", ErrSvcPathMismatch,
 			expectedSvcPath, *webhook.ClientConfig.Service.Path)
