@@ -91,7 +91,7 @@ func (f *DualClusterFactory) Init(_ context.Context, kyma types.NamespacedName) 
 	f.clientCache.Add(kyma, skrClient)
 
 	// track this envtest so Stop() can stop all started envs
-	f.SkrEnvs.Store(kyma, skrEnv)
+	f.SkrEnvs.Store(kyma.Name, skrEnv)
 
 	return err
 }
