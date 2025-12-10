@@ -41,7 +41,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	kyma := NewTestKyma("kyma-remote-sync-multi-module")
 
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
-	issuer := NewTestIssuer(istioSystemNs)
+	issuer := NewTestIssuer(shared.IstioNamespace)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	tlsSecret := createWatcherSecret(kymaObjKey)
 	gatewaySecret := createGatewaySecret()

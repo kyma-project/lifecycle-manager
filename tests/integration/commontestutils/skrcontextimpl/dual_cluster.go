@@ -16,34 +16,43 @@ import (
 )
 
 var (
-	ErrEmptyRestConfig             = errors.New("rest.Config is nil")
-	ErrSkrEnvNotStarted            = errors.New("SKR envtest environment not started")
-	ErrFailedToGetSkrClientFromMap = errors.New("failed to get SKR client from map")
+	ErrEmptyRestConfig               = errors.New("rest.Config is nil")
+	ErrFailedToGetSkrClientFromCache = errors.New("failed to get SKR client from cache")
 )
 
 type Stopper interface {
 	Stop() error
 }
 
-type DualClusterFactory struct {
-	clients sync.Map
-	scheme  *machineryruntime.Scheme
-	event   event.Event
-	SkrEnvs sync.Map
+type ClientCache interface {
+	Get(key client.ObjectKey) client.Client
+	Add(key client.ObjectKey, value client.Client)
+	Delete(key client.ObjectKey)
 }
 
-func NewDualClusterFactory(scheme *machineryruntime.Scheme, event event.Event) *DualClusterFactory {
+type DualClusterFactory struct {
+	clientCache ClientCache
+	scheme      *machineryruntime.Scheme
+	event       event.Event
+	SkrEnvs     sync.Map
+}
+
+func NewDualClusterFactory(scheme *machineryruntime.Scheme,
+	event event.Event,
+	clientCache ClientCache,
+) *DualClusterFactory {
 	return &DualClusterFactory{
-		clients: sync.Map{},
-		scheme:  scheme,
-		event:   event,
-		SkrEnvs: sync.Map{},
+		clientCache: clientCache,
+		scheme:      scheme,
+		event:       event,
+		SkrEnvs:     sync.Map{},
 	}
 }
 
 func (f *DualClusterFactory) Init(_ context.Context, kyma types.NamespacedName) error {
-	_, ok := f.clients.Load(kyma.Name)
-	if ok {
+	clnt := f.clientCache.Get(kyma)
+	if clnt != nil {
+		// already initialized
 		return nil
 	}
 
@@ -79,7 +88,7 @@ func (f *DualClusterFactory) Init(_ context.Context, kyma types.NamespacedName) 
 		return err
 	}
 
-	f.clients.Store(kyma.Name, skrClient)
+	f.clientCache.Add(kyma, skrClient)
 
 	// track this envtest so Stop() can stop all started envs
 	f.SkrEnvs.Store(kyma.Name, skrEnv)
@@ -88,15 +97,11 @@ func (f *DualClusterFactory) Init(_ context.Context, kyma types.NamespacedName) 
 }
 
 func (f *DualClusterFactory) Get(kyma types.NamespacedName) (*remote.SkrContext, error) {
-	value, ok := f.clients.Load(kyma.Name)
-	if !ok {
-		return nil, ErrSkrEnvNotStarted
+	client := f.clientCache.Get(kyma)
+	if client == nil {
+		return nil, ErrFailedToGetSkrClientFromCache
 	}
-	skrClient, ok := value.(client.Client)
-	if !ok {
-		return nil, ErrFailedToGetSkrClientFromMap
-	}
-	return remote.NewSkrContext(skrClient, f.event), nil
+	return remote.NewSkrContext(client, f.event), nil
 }
 
 func (f *DualClusterFactory) StoreEnv(name string, env *envtest.Environment) error {
@@ -137,7 +142,6 @@ func (f *DualClusterFactory) Stop() error {
 			}
 		}
 		f.SkrEnvs.Delete(key)
-		f.clients.Delete(name)
 		return true
 	})
 

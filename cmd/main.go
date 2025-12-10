@@ -221,10 +221,12 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	var skrWebhookManager *watcher.SkrWebhookManifestManager
 	var options ctrlruntime.Options
 	if flagVar.EnableKcpWatcher {
-		skrWebhookManager, err = skrwebhook.ComposeSkrWebhookManager(kcpClient, skrContextProvider,
+		skrWebhookManager, err = skrwebhook.ComposeSkrWebhookManager(kcpClient,
+			skrContextProvider,
 			gatewayRepository,
 			certificateRepository,
-			flagVar)
+			flagVar,
+		)
 		if err != nil {
 			logger.Error(err, "failed to setup SKR webhook manager")
 			os.Exit(bootstrapFailedExitCode)
