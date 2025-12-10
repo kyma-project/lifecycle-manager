@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
@@ -49,7 +48,7 @@ func Test_NewHTTPRoute_ReturnsError_WhenNoNamespace(t *testing.T) {
 
 func Test_NewHTTPRoute_ReturnsError_WhenNoModuleName(t *testing.T) {
 	watcher := builder.NewWatcherBuilder().Build()
-	watcher.Labels = nil
+	watcher.Spec.Manager = ""
 
 	httpRoute, err := istio.NewHTTPRoute(watcher)
 
@@ -115,7 +114,7 @@ func getWatcherName(watcher *v1beta2.Watcher) string {
 }
 
 func getHTTPRoutePrefix(watcher *v1beta2.Watcher) string {
-	return fmt.Sprintf("/v2/%s/event", watcher.GetLabels()[shared.ManagedBy])
+	return fmt.Sprintf("/v2/%s/event", watcher.GetManagerName())
 }
 
 func getDestinationHost(watcher *v1beta2.Watcher) string {
