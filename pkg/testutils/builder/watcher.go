@@ -4,7 +4,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
@@ -47,9 +46,7 @@ func (builder *WatcherBuilder) WithNamespace(namespace string) *WatcherBuilder {
 }
 
 func (builder *WatcherBuilder) WithManager(manager string) *WatcherBuilder {
-	builder.watcher.Labels = map[string]string{
-		shared.ManagedBy: manager,
-	}
+	builder.watcher.Spec.Manager = manager
 	return builder
 }
 
