@@ -8,17 +8,17 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	kymadeletionsvc "github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 )
 
 func ComposeKymaDeletionService(
 	kcpClient client.Client,
-	testSkrContextFactory *testskrcontext.DualClusterFactory,
+	skrClientCache *remote.ClientCache,
 	skrWebhookManager *watcher.SkrWebhookManifestManager,
 	certificateRepository certificate.CertificateRepository,
 	kymaMetrics *metrics.KymaMetrics,
@@ -27,7 +27,6 @@ func ComposeKymaDeletionService(
 ) *kymadeletionsvc.Service {
 	kymaRepo := kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
 	accessSecretRepository := secretrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
-	skrClientCache := testskrcontext.NewClientCache(testSkrContextFactory)
 
 	return kymadeletioncmpse.ComposeKymaDeletionService(
 		kcpClient,

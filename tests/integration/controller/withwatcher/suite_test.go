@@ -163,7 +163,8 @@ var _ = BeforeSuite(func() {
 	gatewayRepository := istiogateway.NewRepository(kcpClientWithoutCache)
 
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
-	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
+	skrClientCache := remote.NewClientCache()
+	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec, skrClientCache)
 	Expect(err).ToNot(HaveOccurred())
 
 	certificateRepository, err := skrwebhook.ComposeCertificateRepository(kcpClient, flagVar)
@@ -192,7 +193,7 @@ var _ = BeforeSuite(func() {
 	deletionMetrics := kymadeletionctrl.NewMetricWriter(kymaMetrics)
 	deletionService := composition.ComposeKymaDeletionService(
 		kcpClient,
-		testSkrContextFactory,
+		skrClientCache,
 		skrWebhookChartManager,
 		certificateRepository,
 		kymaMetrics,

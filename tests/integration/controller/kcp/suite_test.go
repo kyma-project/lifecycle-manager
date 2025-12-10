@@ -172,7 +172,8 @@ var _ = BeforeSuite(func() {
 	)
 
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
-	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
+	skrClientCache := remote.NewClientCache()
+	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec, skrClientCache)
 	compDescrawBytes := builder.ComponentDescriptorFactoryFromSchema(compdescv2.SchemaVersion)
 	descProviderService = &componentdescriptor.FakeService{}
 	registerDescriptor = func(name, version string) error {
@@ -215,7 +216,7 @@ var _ = BeforeSuite(func() {
 	deletionMetrics := kymadeletionctrl.NewMetricWriter(kymaMetrics)
 	deletionService := composition.ComposeKymaDeletionService(
 		kcpClient,
-		testSkrContextFactory,
+		skrClientCache,
 		skrWebhookManager,
 		certificateRepository,
 		kymaMetrics,

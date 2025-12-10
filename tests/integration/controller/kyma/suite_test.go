@@ -183,7 +183,8 @@ var _ = BeforeSuite(func() {
 	}
 
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
-	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
+	skrClientCache := remote.NewClientCache()
+	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec, skrClientCache)
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
 
@@ -216,7 +217,7 @@ var _ = BeforeSuite(func() {
 	deletionMetrics := kymadeletionctrl.NewMetricWriter(kymaMetrics)
 	deletionService := composition.ComposeKymaDeletionService(
 		kcpClient,
-		testSkrContextFactory,
+		skrClientCache,
 		skrWebhookChartManager,
 		certificateRepository,
 		kymaMetrics,

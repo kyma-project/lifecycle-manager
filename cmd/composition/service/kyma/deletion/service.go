@@ -7,6 +7,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 	kymastatusrepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma/status"
 	manifestrepo "github.com/kyma-project/lifecycle-manager/internal/repository/manifest"
@@ -22,16 +23,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
-type SkrClientCache interface {
-	Get(key client.ObjectKey) client.Client
-}
-
 func ComposeKymaDeletionService(kcpClient client.Client,
 	certificateRepository certificate.CertificateRepository,
 	kymaMetrics *metrics.KymaMetrics,
 	kymaRepo *kymarepo.Repository,
 	accessSecretRepository *secretrepo.Repository,
-	skrClientCache SkrClientCache,
+	skrClientCache *remote.ClientCache,
 	skrWebhookManager *watcher.SkrWebhookManifestManager,
 ) *kymadeletionsvc.Service {
 	kymaStatusRepo := kymastatusrepo.NewRepository(kcpClient.Status())
