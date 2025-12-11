@@ -100,7 +100,7 @@ spec:
 ```
 
 > ### Caution
-> > Module referencing using NamespacedName and FQDN (Fully Qualified Domain Name) has been deprecated.
+> Module referencing using NamespacedName and FQDN (Fully Qualified Domain Name) has been deprecated.
 
 ### **.spec.modules[].managed**
 

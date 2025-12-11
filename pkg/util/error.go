@@ -12,6 +12,11 @@ import (
 	"k8s.io/client-go/discovery"
 )
 
+const (
+	msgTLSCertificateExpired = "expired certificate" // stdlib: crypto/tls/alert.go
+	msgUnauthorized          = ": Unauthorized"      // message we observe when SKR cert is not valid anymore
+)
+
 var (
 	ErrClientUnauthorized   = errors.New("ServerSideApply is unauthorized")
 	ErrClientTLSCertExpired = errors.New("SKR access secret certificate is expired")
@@ -66,7 +71,8 @@ func IsConnectionRelatedError(err error) bool {
 		apierrors.IsForbidden(err) ||
 		isNoSuchHostError(err) ||
 		errors.Is(err, ErrClientTLSCertExpired) ||
-		errors.Is(err, ErrClientUnauthorized)
+		errors.Is(err, ErrClientUnauthorized) ||
+		isRawCertRelatedError(err) // last resort check
 }
 
 func isNoSuchHostError(err error) bool {
@@ -90,4 +96,24 @@ func NestedErrorMessage(err error) string {
 	}
 
 	return res
+}
+
+// isRawCertRelatedError checks if the error message contains common
+// substrings related to certificate issues, such as expired or invalid certificates.
+// These errors may have types that are not easily identifiable (or not exported),
+// so we can't use errors.Is() to check for them.
+// In our code we try to detect these errors and replace them with a well-known error types like
+// ErrClientTLSCertExpired and ErrClientUnauthorized.
+// However, certain code paths may still return "raw" underlying errors and so
+// we need to handle these as well.
+func isRawCertRelatedError(err error) bool {
+	return IsUnauthorizedError(err.Error()) || IsTLSCertExpiredError(err.Error())
+}
+
+func IsUnauthorizedError(errMessage string) bool {
+	return strings.HasSuffix(strings.TrimRight(errMessage, " \n"), msgUnauthorized)
+}
+
+func IsTLSCertExpiredError(errMessage string) bool {
+	return strings.HasSuffix(strings.TrimRight(errMessage, " \n"), msgTLSCertificateExpired)
 }
