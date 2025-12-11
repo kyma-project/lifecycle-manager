@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -165,7 +166,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !kyma.DeletionTimestamp.IsZero() {
-		return r.processDeletion(ctx, kyma)
+		useLegacyKymaDeletion, ok := os.LookupEnv("ENABLE_LEGACY_KYMA_DELETION")
+		if !ok || useLegacyKymaDeletion != "true" {
+			return r.processDeletion(ctx, kyma)
+		}
 	}
 
 	err = skrContext.CreateKymaNamespace(ctx)
