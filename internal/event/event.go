@@ -14,7 +14,7 @@ type Event interface {
 type Reason string
 
 const (
-	maxErrorLength int = 50
+	maxErrorLength int = 100
 )
 
 type RecorderWrapper struct {
