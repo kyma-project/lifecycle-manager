@@ -12,10 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-const (
-	// TODO: discuss whether this message needs to be changed.
-	lastOperationDeleting = "waiting for modules to be deleted"
-)
+const lastOperationDeleting = "waiting for modules to be deleted"
 
 type Repository struct {
 	statusWriter client.StatusWriter
