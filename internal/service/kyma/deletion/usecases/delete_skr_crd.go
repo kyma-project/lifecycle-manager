@@ -3,16 +3,11 @@ package usecases
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/types"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 )
 
-type CrdRepo interface {
-	Exists(ctx context.Context, kymaName types.NamespacedName) (bool, error)
-	Delete(ctx context.Context, kymaName types.NamespacedName) error
-}
+type CrdRepo = ExistsDeleteRepo
 
 type DeleteSkrCrd struct {
 	skrCrdRepo          CrdRepo
