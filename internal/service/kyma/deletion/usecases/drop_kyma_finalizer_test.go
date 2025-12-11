@@ -87,7 +87,7 @@ func Test_DropKymaFinalizer_Execute_Success(t *testing.T) {
 	res := uc.Execute(t.Context(), kcpKyma)
 
 	require.NoError(t, res.Err)
-	assert.Equal(t, usecase.DropKymaFinalizers, res.UseCase)
+	assert.Equal(t, usecase.DropKymaFinalizer, res.UseCase)
 	assert.True(t, kymaRepo.dropFinalizersCalled)
 	assert.Equal(t, kcpKyma.GetName(), kymaRepo.kymaName)
 }
@@ -109,7 +109,7 @@ func Test_DropKymaFinalizer_Execute_Failure(t *testing.T) {
 	res := uc.Execute(t.Context(), kcpKyma)
 
 	require.ErrorIs(t, res.Err, assert.AnError)
-	assert.Equal(t, usecase.DropKymaFinalizers, res.UseCase)
+	assert.Equal(t, usecase.DropKymaFinalizer, res.UseCase)
 	assert.True(t, kymaRepo.dropFinalizersCalled)
 	assert.Equal(t, kcpKyma.GetName(), kymaRepo.kymaName)
 }

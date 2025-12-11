@@ -37,5 +37,5 @@ func (u *DropKymaFinalizer) Execute(ctx context.Context, kcpKyma *v1beta2.Kyma) 
 }
 
 func (u *DropKymaFinalizer) Name() result.UseCase {
-	return usecase.DropKymaFinalizers
+	return usecase.DropKymaFinalizer
 }
