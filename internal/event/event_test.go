@@ -70,11 +70,11 @@ func TestWarningEvent_CalledWithErrorMsgLongerThanMax(t *testing.T) {
 	eventRec := event.NewRecorderWrapper(fakeRecorder)
 
 	k := &v1beta2.Kyma{}
-	err := errors.New("this is a very long error message that should be truncated at the end")
+	err := errors.New("this is a very long error message that should be truncated at the end because it exceeds the maximum length allowed for event messages in Kubernetes")
 	eventRec.Warning(k, "test", err)
 
 	events := <-fakeRecorder.Events
-	expected := "Warning test  error message that should be truncated at the end"
+	expected := "Warning test  truncated at the end because it exceeds the maximum length allowed for event messages in Kubernetes"
 	assert.Contains(t, events, expected)
 }
 
