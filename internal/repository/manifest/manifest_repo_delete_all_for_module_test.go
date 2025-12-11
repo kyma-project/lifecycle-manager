@@ -1,3 +1,4 @@
+//nolint:dupl // delete_all_for_kyma is having same test but should be kept separate
 package manifest_test
 
 import (
