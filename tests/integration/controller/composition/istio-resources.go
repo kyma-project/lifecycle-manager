@@ -20,7 +20,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -41,7 +40,7 @@ func CreateIstioResources(
 	Expect(k8sClient).NotTo(BeNil())
 
 	Expect(createNamespace(ctx, shared.IstioNamespace, kcpClient)).To(Succeed())
-	Expect(createNamespace(ctx, ControlPlaneNamespace, kcpClient)).To(Succeed())
+	Expect(createNamespace(ctx, shared.DefaultControlPlaneNamespace, kcpClient)).To(Succeed())
 
 	istioResources, err := deserializeIstioResources()
 	Expect(err).NotTo(HaveOccurred())
