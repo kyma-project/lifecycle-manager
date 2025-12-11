@@ -102,7 +102,6 @@ type ReconcilerConfig struct {
 	SkrImagePullSecretName string
 }
 
-// TODO: make all fields private and provide constructor.
 type Reconciler struct {
 	client.Client
 	event.Event
