@@ -2,14 +2,15 @@ package kyma
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -34,25 +35,29 @@ func (r *Repository) Get(ctx context.Context, kymaName string) (*v1beta2.Kyma, e
 	return kyma, nil
 }
 
-func (r *Repository) DropAllFinalizers(ctx context.Context, kymaName string) error {
-	pom := &v1beta1.PartialObjectMetadata{
-		TypeMeta: apimetav1.TypeMeta{
-			Kind:       string(shared.KymaKind),
-			APIVersion: v1beta2.GroupVersion.String(),
-		},
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      kymaName,
-			Namespace: r.namespace,
-		},
+func (r *Repository) DropKymaFinalizer(ctx context.Context, kymaName string) error {
+	kyma, err := r.Get(ctx, kymaName)
+	if err != nil {
+		return util.IgnoreNotFound(fmt.Errorf("failed to get current finalizers: %w", err))
+	}
+
+	if !controllerutil.RemoveFinalizer(kyma, shared.KymaFinalizer) {
+		return nil
+	}
+
+	remainingFinalizers, err := json.Marshal(kyma.Finalizers)
+	if err != nil {
+		return fmt.Errorf("failed marshal remaining finalizers: %w", err)
 	}
 
 	// SSA would not work here since currently there are multiple field managers
 	// on the finalizers
-	patch := []byte(`{"metadata":{"finalizers":[]}}`)
-	err := r.client.Patch(ctx,
-		pom,
-		client.RawPatch(client.Merge.Type(), patch),
+	patch := fmt.Appendf(nil, `{"metadata":{"finalizers":%s}}`, remainingFinalizers)
+	return util.IgnoreNotFound(
+		r.client.Patch(ctx,
+			kyma,
+			client.RawPatch(client.Merge.Type(), patch),
+			fieldowners.LifecycleManager,
+		),
 	)
-
-	return util.IgnoreNotFound(err)
 }
