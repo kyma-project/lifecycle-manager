@@ -34,6 +34,25 @@ func Test_DropKymaFinalizer_IsApplicable_KymaFinalizerExists(t *testing.T) {
 	assert.True(t, applicable)
 }
 
+func Test_DropKymaFinalizer_IsApplicable_NoKymaFinalizer(t *testing.T) {
+	kcpKyma := &v1beta2.Kyma{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:       random.Name(),
+			Namespace:  random.Name(),
+			Finalizers: []string{random.Name(), random.Name()},
+		},
+	}
+
+	kymaRepo := &kymaRepoStub{}
+
+	uc := usecases.NewDropKymaFinalizer(kymaRepo)
+
+	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
+
+	require.NoError(t, err)
+	assert.False(t, applicable)
+}
+
 func Test_DropKymaFinalizer_IsApplicable_NoFinalizers(t *testing.T) {
 	kcpKyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
