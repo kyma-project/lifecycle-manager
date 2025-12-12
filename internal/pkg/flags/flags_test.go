@@ -249,11 +249,6 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: ":8082",
 		},
 		{
-			constName:     "DefaultManifestListenerAddr",
-			constValue:    DefaultManifestListenerAddress,
-			expectedValue: ":8083",
-		},
-		{
 			constName:     "DefaultPprofAddress",
 			constValue:    DefaultPprofAddress,
 			expectedValue: ":8084",

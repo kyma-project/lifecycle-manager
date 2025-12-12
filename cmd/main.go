@@ -536,9 +536,6 @@ func setupManifestReconciler(mgr ctrl.Manager,
 		Warning: flagVar.ManifestRequeueWarningInterval,
 		Jitter: queue.NewRequeueJitter(flagVar.ManifestRequeueJitterProbability,
 			flagVar.ManifestRequeueJitterPercentage),
-	}, manifest.SetupOptions{
-		ListenerAddr:                 flagVar.ManifestListenerAddr,
-		EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
 	}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, manifestClient, orphanDetectionService,
 		specResolver, clientCache, skrClient, kcpClient, cachedManifestParser, customStateCheck,
 		flagVar.SkrImagePullSecret); err != nil {
