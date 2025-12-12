@@ -46,7 +46,7 @@ func (w *MetricWriter) Write(res result.Result) {
 		usecase.DeleteSkrWebhookResources,
 		usecase.DeleteSkrKymaCrd,
 		usecase.DeleteMetrics,
-		usecase.DropKymaFinalizers:
+		usecase.DropKymaFinalizer:
 		// These use cases are not tracked by metrics.
 	}
 }
