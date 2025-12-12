@@ -261,10 +261,16 @@ func syncBTPRelatedLabels(kcpKyma, skrKyma *v1beta2.Kyma) bool {
 // syncWatcherLabelsAnnotations adds required labels and annotations to the skrKyma.
 // It returns true if any of the labels or annotations were changed.
 func syncWatcherLabelsAnnotations(kcpKyma, skrKyma *v1beta2.Kyma) bool {
-	labels, labelsChanged := collections.MergeMaps(skrKyma.Labels, map[string]string{
+	targetLabels := map[string]string{
 		shared.WatchedByLabel: shared.WatchedByLabelValue,
 		shared.ManagedBy:      shared.ManagedByLabelValue,
-	})
+	}
+	runtimeIDLabelValue, ok := kcpKyma.Labels[shared.RuntimeIDLabel]
+	if ok {
+		targetLabels[shared.RuntimeIDLabel] = runtimeIDLabelValue
+	}
+
+	labels, labelsChanged := collections.MergeMaps(skrKyma.Labels, targetLabels)
 	skrKyma.Labels = labels
 
 	annotations, annotationsChanged := collections.MergeMaps(skrKyma.Annotations, map[string]string{
