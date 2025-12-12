@@ -81,7 +81,7 @@ func ComposeKymaDeletionService(kcpClient client.Client,
 
 	deleteMetrics := usecases.NewDeleteMetrics(kymaMetrics)
 
-	dropKymaFinalizers := usecases.NewDropKymaFinalizers(kymaRepo)
+	dropKymaFinalizer := usecases.NewDropKymaFinalizer(kymaRepo)
 
 	return kymadeletionsvc.NewService(
 		setKcpKymaStateDeleting,
@@ -94,6 +94,6 @@ func ComposeKymaDeletionService(kcpClient client.Client,
 		deleteSkrKymaCrd,
 		deleteManifests,
 		deleteMetrics,
-		dropKymaFinalizers,
+		dropKymaFinalizer,
 	)
 }

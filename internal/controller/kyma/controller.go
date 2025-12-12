@@ -292,7 +292,7 @@ func (r *Reconciler) processDeletion(ctx context.Context, kyma *v1beta2.Kyma) (c
 		// res.Err != nil => requeue rate limited
 		// res.Err == nil => requeue after
 		return ctrl.Result{RequeueAfter: 1 * time.Second}, res.Err
-	case usecase.DropKymaFinalizers:
+	case usecase.DropKymaFinalizer:
 		// finalizers removed, no need to requeue if there is no error
 	}
 	return ctrl.Result{}, res.Err

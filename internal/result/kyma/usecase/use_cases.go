@@ -13,5 +13,5 @@ const (
 	DeleteSkrKymaCrd              result.UseCase = "DeleteSkrKymaCrd"
 	DeleteManifests               result.UseCase = "DeleteManifests"
 	DeleteMetrics                 result.UseCase = "DeleteMetrics"
-	DropKymaFinalizers            result.UseCase = "DropKymaFinalizers"
+	DropKymaFinalizer             result.UseCase = "DropKymaFinalizer"
 )

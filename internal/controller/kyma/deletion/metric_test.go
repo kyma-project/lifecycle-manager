@@ -163,8 +163,8 @@ func TestMetricWriter_Write(t *testing.T) {
 			expectedCall: false,
 		},
 		{
-			name:         "Nothing for UseCaseRemoveKymaFinalizers",
-			useCase:      usecase.DropKymaFinalizers,
+			name:         "Nothing for UseCaseDropKymaFinalizer",
+			useCase:      usecase.DropKymaFinalizer,
 			err:          nil,
 			expectedCall: false,
 		},
