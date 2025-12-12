@@ -22,6 +22,13 @@ var (
 	ErrClientTLSCertExpired = errors.New("SKR access secret certificate is expired")
 )
 
+func IgnoreNotFound(err error) error {
+	if IsNotFound(err) {
+		return nil
+	}
+	return err
+}
+
 func IsNotFound(err error) bool {
 	if err == nil {
 		return false

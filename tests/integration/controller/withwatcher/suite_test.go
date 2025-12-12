@@ -23,13 +23,9 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/go-logr/logr"
 	"go.uber.org/zap/zapcore"
 	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
-	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -43,36 +39,30 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
+	kymadeletionctrl "github.com/kyma-project/lifecycle-manager/internal/controller/kyma/deletion"
 	watcherctrl "github.com/kyma-project/lifecycle-manager/internal/controller/watcher"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
-	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
-	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate" //nolint:revive // not for import
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
+	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
-	certmanagerrenewal "github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager" //nolint:revive // not for import
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/chartreader"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/gateway"
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/kyma-project/lifecycle-manager/tests/integration/controller/composition"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -88,19 +78,6 @@ var (
 	ctx                   context.Context
 	cancel                context.CancelFunc
 	restCfg               *rest.Config
-	istioResources        []*unstructured.Unstructured
-	logger                logr.Logger
-)
-
-const (
-	istioSystemNs = "istio-system"
-	gatewayName   = "klm-watcher"
-)
-
-var (
-	skrWatcherPath         = filepath.Join(integration.GetProjectRoot(), "skr-webhook")
-	istioResourcesFilePath = filepath.Join(integration.GetProjectRoot(), "config", "samples", "tests",
-		"istio-test-resources.yaml")
 )
 
 func TestAPIs(t *testing.T) {
@@ -115,6 +92,8 @@ var _ = BeforeSuite(func() {
 	logf.SetLogger(logr)
 
 	By("bootstrapping test environment")
+
+	flagVar := flags.DefineFlagVar()
 
 	externalCRDs, err := AppendExternalCRDs(
 		filepath.Join(integration.GetProjectRoot(), "config", "samples", "tests", "crds"),
@@ -174,64 +153,30 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	// This k8sClient is used to install external resources
-	k8sClient, err := client.New(restCfg, client.Options{Scheme: k8sclientscheme.Scheme})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(k8sClient).NotTo(BeNil())
-
-	Expect(createNamespace(ctx, istioSystemNs, kcpClient)).To(Succeed())
-	Expect(createNamespace(ctx, ControlPlaneNamespace, kcpClient)).To(Succeed())
-
-	istioResources, err = deserializeIstioResources()
-	Expect(err).NotTo(HaveOccurred())
-	for _, istioResource := range istioResources {
-		Expect(k8sClient.Create(ctx, istioResource)).To(Succeed())
-	}
-
-	certificateConfig := config.CertificateValues{
-		Duration:    1 * time.Hour,
-		RenewBefore: 5 * time.Minute,
-		KeySize:     flags.DefaultSelfSignedCertKeySize,
-		Namespace:   flags.DefaultIstioNamespace,
-	}
-
-	certificateManagerConfig := certificate.Config{
-		SkrServiceName:     skrwebhookresources.SkrResourceName,
-		SkrNamespace:       flags.DefaultRemoteSyncNamespace,
-		AdditionalDNSNames: []string{},
-		GatewaySecretName:  shared.GatewaySecretName,
-		RenewBuffer:        flags.DefaultSelfSignedCertificateRenewBuffer,
-	}
-	certRepo, err := certmanagercertificate.NewRepository(mgr.GetClient(),
-		"test-issuer",
-		certificateConfig,
+	composition.CreateIstioResources(ctx,
+		restCfg,
+		kcpClient,
 	)
-	Expect(err).ToNot(HaveOccurred())
-	certificateService := certificate.NewService(certmanagerrenewal.NewService(nil), certRepo,
-		secretrepository.NewRepository(mgr.GetClient(), flags.DefaultIstioNamespace), certificateManagerConfig)
+
 	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
 	Expect(err).ToNot(HaveOccurred())
-
 	gatewayRepository := istiogateway.NewRepository(kcpClientWithoutCache)
 
-	gatewayService := gateway.NewService(gatewayName, ControlPlaneNamespace, "", gatewayRepository)
-
-	resolvedKcpAddr, err := gatewayService.ResolveKcpAddr()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
-	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
+	skrClientCache := remote.NewClientCache()
+	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec, skrClientCache)
 	Expect(err).ToNot(HaveOccurred())
 
-	chartReaderService := chartreader.NewService(skrWatcherPath)
-
-	resourceConfigurator := skrwebhookresources.NewResourceConfigurator(
-		flags.DefaultRemoteSyncNamespace, "dummyhost/fake-watcher-image:latest",
-		"200Mi",
-		"1", *resolvedKcpAddr, "")
-
-	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(kcpClient, testSkrContextFactory,
-		flags.DefaultRemoteSyncNamespace,
-		*resolvedKcpAddr, chartReaderService, certificateService, resourceConfigurator, metrics.NewWatcherMetrics())
+	certificateRepository, err := skrwebhook.ComposeCertificateRepository(kcpClient, flagVar)
 	Expect(err).ToNot(HaveOccurred())
+
+	skrWebhookChartManager := composition.ComposeSkrWebhookManager(
+		kcpClient,
+		testSkrContextFactory,
+		gatewayRepository,
+		certificateRepository,
+		flagVar,
+	)
 
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
@@ -243,6 +188,19 @@ var _ = BeforeSuite(func() {
 	syncCrdsUseCase := remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil)
 	skrSyncService := skrsync.NewService(nil, nil, &syncCrdsUseCase, "")
 
+	kymaMetrics := metrics.NewKymaMetrics(metrics.NewSharedMetrics())
+	deletionEvents := resultevent.NewEventRecorder(testEventRec)
+	deletionMetrics := kymadeletionctrl.NewMetricWriter(kymaMetrics)
+	deletionService := composition.ComposeKymaDeletionService(
+		kcpClient,
+		skrClientCache,
+		skrWebhookChartManager,
+		certificateRepository,
+		kymaMetrics,
+		testEventRec,
+		flagVar,
+	)
+
 	err = (&kyma.Reconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    testSkrContextFactory,
@@ -252,10 +210,13 @@ var _ = BeforeSuite(func() {
 		DescriptorProvider:   nil, // no descriptor provider needed for these tests
 		SkrSyncService:       skrSyncService,
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
-		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		Metrics:              kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
-		Config: kymaReconcilerConfig,
+		Config:          kymaReconcilerConfig,
+		DeletionMetrics: deletionMetrics,
+		DeletionEvents:  deletionEvents,
+		DeletionService: deletionService,
 	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -285,7 +246,7 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	// clean up istio resources
-	for _, istioResource := range istioResources {
+	for _, istioResource := range composition.GetIstioResources() {
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, istioResource).Should(Succeed())
@@ -296,12 +257,3 @@ var _ = AfterSuite(func() {
 	Expect(kcpEnv.Stop()).To(Succeed())
 	Expect(testSkrContextFactory.Stop()).To(Succeed())
 })
-
-func createNamespace(ctx context.Context, namespace string, k8sClient client.Client) error {
-	ns := &apicorev1.Namespace{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name: namespace,
-		},
-	}
-	return k8sClient.Create(ctx, ns)
-}

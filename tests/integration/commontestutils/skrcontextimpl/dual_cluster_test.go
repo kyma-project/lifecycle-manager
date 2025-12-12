@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 )
 
@@ -23,7 +24,8 @@ func TestDualClusterFactory(t *testing.T) {
 
 func newFactory() *testskrcontext.DualClusterFactory {
 	scheme := machineryruntime.NewScheme()
-	return testskrcontext.NewDualClusterFactory(scheme, nil)
+	clientCache := remote.NewClientCache()
+	return testskrcontext.NewDualClusterFactory(scheme, nil, clientCache)
 }
 
 func Test_GetBeforeInit(t *testing.T) {
@@ -32,7 +34,7 @@ func Test_GetBeforeInit(t *testing.T) {
 	_, err := dualFactory.Get(types.NamespacedName{Name: "kymaUninitialized"})
 
 	require.Error(t, err)
-	assert.ErrorIs(t, err, testskrcontext.ErrSkrEnvNotStarted)
+	assert.ErrorIs(t, err, testskrcontext.ErrFailedToGetSkrClientFromCache)
 }
 
 func Test_StoreEnv_ValidatesInput(t *testing.T) {

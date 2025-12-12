@@ -10,7 +10,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 )
 
 func TestGet_ClientCallSucceeds_ReturnsSecret(t *testing.T) {
@@ -22,7 +22,7 @@ func TestGet_ClientCallSucceeds_ReturnsSecret(t *testing.T) {
 			},
 		},
 	}
-	secretRepository := secretrepository.NewRepository(clientStub, namespace)
+	secretRepository := secretrepo.NewRepository(clientStub, namespace)
 
 	result, err := secretRepository.Get(t.Context(), secretName)
 
@@ -37,7 +37,7 @@ func TestGet_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	clientStub := &getClientStub{
 		err: assert.AnError,
 	}
-	secretRepository := secretrepository.NewRepository(clientStub, namespace)
+	secretRepository := secretrepo.NewRepository(clientStub, namespace)
 
 	result, err := secretRepository.Get(t.Context(), secretName)
 
@@ -49,13 +49,16 @@ func TestGet_ClientReturnsAnError_ReturnsError(t *testing.T) {
 type getClientStub struct {
 	client.Client
 
+	key client.ObjectKey
+
 	called bool
 	object *apicorev1.Secret
 	err    error
 }
 
-func (c *getClientStub) Get(_ context.Context, _ client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
+func (c *getClientStub) Get(_ context.Context, key client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
 	c.called = true
+	c.key = key
 	if c.object != nil {
 		c.object.DeepCopyInto(obj.(*apicorev1.Secret))
 	}

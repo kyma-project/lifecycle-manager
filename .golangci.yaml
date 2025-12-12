@@ -116,10 +116,16 @@ linters:
           alias: metricsserver
         - pkg: github.com/prometheus/client_model/go
           alias: prometheusclient
+        - pkg: github.com/kyma-project/lifecycle-manager/cmd/composition/service/kyma/deletion
+          alias: kymadeletioncmpse
         - pkg: github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl
           alias: testskrcontext
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/errors
+          alias: errorsinternal
         - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/watcher
           alias: watcherctrl
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/kyma/deletion
+          alias: kymadeletionctrl
         - pkg: github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client
           alias: gatewaysecretclient
         - pkg: github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler
@@ -127,9 +133,21 @@ linters:
         - pkg: github.com/kyma-project/lifecycle-manager/pkg/module/common
           alias: modulecommon
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/kyma
-          alias: kymarepository
+          alias: kymarepo
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/kyma/status
+          alias: kymastatusrepo
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma
+          alias: skrkymarepo
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/skr/crd
+          alias: skrcrdrepo
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status
+          alias: skrkymastatusrepo
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/manifest
+          alias: manifestrepo
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/secret
-          alias: secretrepository
+          alias: secretrepo
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/result/event
+          alias: resultevent
         - pkg: k8s.io/api/networking/v1
           alias: apinetworkv1
         - pkg: github.com/kyma-project/lifecycle-manager/internal/descriptor/cache
@@ -138,6 +156,8 @@ linters:
           alias: skrwebhookresources
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager
           alias: certmanagerrenewal
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion
+          alias: kymadeletionsvc
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/errors
           alias: certerror
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate
@@ -210,6 +230,7 @@ linters:
       - std-error-handling
     rules:
       - linters:
+          - dupword
           - err113
           - fatcontext
           - forcetypeassert
@@ -232,7 +253,7 @@ linters:
       - linters:
           - err113
           - wrapcheck
-        path: tests/integration/commontestutils/
+        path: tests/integration/
       - linters:
           - importas
         text: has alias "" which is not part of config

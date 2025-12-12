@@ -1,6 +1,7 @@
 package event
 
 import (
+	apicorev1 "k8s.io/api/core/v1"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 )
@@ -13,9 +14,7 @@ type Event interface {
 type Reason string
 
 const (
-	typeNormal         = "Normal"
-	typeWarning        = "Warning"
-	maxErrorLength int = 50
+	maxErrorLength int = 100
 )
 
 type RecorderWrapper struct {
@@ -30,14 +29,14 @@ func (e *RecorderWrapper) Normal(obj machineryruntime.Object, reason Reason, msg
 	if obj == nil {
 		return
 	}
-	e.recorder.Event(obj, typeNormal, string(reason), msg)
+	e.recorder.Event(obj, apicorev1.EventTypeNormal, string(reason), msg)
 }
 
 func (e *RecorderWrapper) Warning(obj machineryruntime.Object, reason Reason, err error) {
 	if obj == nil || err == nil {
 		return
 	}
-	e.recorder.Event(obj, typeWarning, string(reason), truncatedErrMsg(err))
+	e.recorder.Event(obj, apicorev1.EventTypeWarning, string(reason), truncatedErrMsg(err))
 }
 
 func truncatedErrMsg(err error) string {

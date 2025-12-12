@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
@@ -54,12 +55,14 @@ import (
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/provider/componentdescriptorcache"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/repository/oci"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/componentdescriptor"
+	kymadeletioncmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/deletion"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/installation"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/istiogatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
+	kymadeletionctrl "github.com/kyma-project/lifecycle-manager/internal/controller/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/manifest"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/purge"
@@ -80,9 +83,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
-	kymarepository "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
-	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
+	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
+	kymadeletionsvc "github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
@@ -197,7 +202,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		os.Exit(bootstrapFailedExitCode)
 	}
 	gatewayRepository := istiogateway.NewRepository(kcpClientWithoutCache)
-	accessSecretRepository := secretrepository.NewRepository(kcpClientWithoutCache, shared.DefaultControlPlaneNamespace)
+	accessSecretRepository := secretrepo.NewRepository(kcpClientWithoutCache, shared.DefaultControlPlaneNamespace)
 	accessManagerService := accessmanager.NewService(accessSecretRepository)
 	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient,
 		remoteClientCache,
@@ -205,12 +210,23 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		accessManagerService,
 		flagVar.SkrClientQPS,
 		flagVar.SkrClientBurst)
+
+	certificateRepository, err := skrwebhook.ComposeCertificateRepository(kcpClient, flagVar)
+	t := reflect.TypeOf(certificateRepository)
+	logger.Info("certificate repository", "type", t)
+	if err != nil {
+		logger.Error(err, "failed to setup certificate repository")
+		os.Exit(bootstrapFailedExitCode)
+	}
 	var skrWebhookManager *watcher.SkrWebhookManifestManager
 	var options ctrlruntime.Options
 	if flagVar.EnableKcpWatcher {
-		skrWebhookManager, err = skrwebhook.ComposeSkrWebhookManager(kcpClient, skrContextProvider,
+		skrWebhookManager, err = skrwebhook.ComposeSkrWebhookManager(kcpClient,
+			skrContextProvider,
 			gatewayRepository,
-			flagVar)
+			certificateRepository,
+			flagVar,
+		)
 		if err != nil {
 			logger.Error(err, "failed to setup SKR webhook manager")
 			os.Exit(bootstrapFailedExitCode)
@@ -266,10 +282,22 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	maintenanceWindow := initMaintenanceWindow(flagVar.MinMaintenanceWindowSize, logger)
 	metrics.NewFipsMetrics().Update()
 
+	kymaRepo := kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
+
+	kymaDeletionSvc := kymadeletioncmpse.ComposeKymaDeletionService(
+		kcpClient,
+		certificateRepository,
+		kymaMetrics,
+		kymaRepo,
+		accessSecretRepository,
+		remoteClientCache,
+		skrWebhookManager,
+	)
+
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
-		kymaMetrics, logger, maintenanceWindow, ociRegistryHost)
+		kymaMetrics, logger, maintenanceWindow, ociRegistryHost, kymaDeletionSvc)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
-		eventRecorder)
+		eventRecorder, kymaRepo)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, logger,
 		ociRegistryHost)
 	setupMandatoryModuleDeletionReconciler(mgr, eventRecorder, flagVar, options, logger)
@@ -417,6 +445,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SkrWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
 	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, ociRegistryHost string,
+	kymaDeletionSvc *kymadeletionsvc.Service,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -436,12 +465,16 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		OCIRegistryHost:        ociRegistryHost,
 		SkrImagePullSecretName: flagVar.SkrImagePullSecret,
 	}
+	kcpSystemSecretRepo := secretrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
 	syncCrdsUseCase := remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil)
 	skrSyncService := skrsync.NewService(
 		skrContextFactory,
-		secretrepository.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+		kcpSystemSecretRepo,
 		&syncCrdsUseCase,
 		flagVar.SkrImagePullSecret)
+
+	deletionMetricsWriter := kymadeletionctrl.NewMetricWriter(kymaMetrics)
+	resultEventRecorder := resultevent.NewEventRecorder(event)
 
 	if err := (&kyma.Reconciler{
 		Client:               kcpClient,
@@ -462,7 +495,10 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			flagVar.RemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
 			moduleTemplateInfoLookup),
-		Config: kymaReconcilerConfig,
+		Config:          kymaReconcilerConfig,
+		DeletionMetrics: deletionMetricsWriter,
+		DeletionEvents:  resultEventRecorder,
+		DeletionService: kymaDeletionSvc,
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,
@@ -510,6 +546,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	accessManagerService *accessmanager.Service,
 	setupLog logr.Logger,
 	event event.Event,
+	kymaRepo *kymarepo.Repository,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -517,7 +554,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentManifestReconciles
 
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
-	orphanDetectionClient := kymarepository.NewRepository(mgr.GetClient())
+	orphanDetectionClient := kymaRepo
 	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
 	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr.GetClient(), flagVar), img.NewPathExtractor())
 	clientCache := skrclientcache.NewService()

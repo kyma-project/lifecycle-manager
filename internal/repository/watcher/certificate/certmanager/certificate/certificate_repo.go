@@ -14,6 +14,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
 	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/errors"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 // GetCacheObjects returns a list of objects that need to be cached for this client.
@@ -113,6 +114,22 @@ func (r *Repository) Delete(ctx context.Context, name string) error {
 	}
 
 	return nil
+}
+
+func (r *Repository) Exists(ctx context.Context, name string) (bool, error) {
+	cert := &certmanagerv1.Certificate{}
+	cert.SetName(name)
+	cert.SetNamespace(r.certConfig.Namespace)
+
+	err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)
+	if err != nil {
+		if util.IgnoreNotFound(err) != nil {
+			return false, fmt.Errorf("failed to check existence of certificate %s-%s: %w", name, r.certConfig.Namespace,
+				err)
+		}
+		return false, nil
+	}
+	return true, nil
 }
 
 func (r *Repository) GetRenewalTime(ctx context.Context, name string) (time.Time, error) {

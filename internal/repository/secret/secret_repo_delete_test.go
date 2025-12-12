@@ -10,12 +10,12 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 )
 
 func TestDelete_ClientCallSucceeds_Returns(t *testing.T) {
 	clientStub := &deleteClientStub{}
-	secretRepository := secretrepository.NewRepository(clientStub, namespace)
+	secretRepository := secretrepo.NewRepository(clientStub, namespace)
 
 	err := secretRepository.Delete(t.Context(), secretName)
 
@@ -30,7 +30,7 @@ func TestDelete_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	clientStub := &deleteClientStub{
 		err: assert.AnError,
 	}
-	secretRepository := secretrepository.NewRepository(clientStub, namespace)
+	secretRepository := secretrepo.NewRepository(clientStub, namespace)
 
 	err := secretRepository.Delete(t.Context(), secretName)
 
@@ -42,7 +42,7 @@ func TestDelete_ClientReturnsNotFoundError_Returns(t *testing.T) {
 	clientStub := &deleteClientStub{
 		err: apierrors.NewNotFound(apicorev1.Resource("secrets"), secretName),
 	}
-	secretRepository := secretrepository.NewRepository(clientStub, namespace)
+	secretRepository := secretrepo.NewRepository(clientStub, namespace)
 
 	err := secretRepository.Delete(t.Context(), secretName)
 

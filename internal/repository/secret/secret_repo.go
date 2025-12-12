@@ -7,6 +7,8 @@ import (
 	apicorev1 "k8s.io/api/core/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 type Repository struct {
@@ -30,6 +32,15 @@ func (r *Repository) Get(ctx context.Context, name string) (*apicorev1.Secret, e
 	}
 
 	return secret, nil
+}
+
+func (r *Repository) Exists(ctx context.Context, name string) (bool, error) {
+	_, err := r.Get(ctx, name)
+
+	// not found error => (false, nil)
+	// other error => (true, err)
+	// no error => (true, nil)
+	return !util.IsNotFound(err), util.IgnoreNotFound(err)
 }
 
 func (r *Repository) List(ctx context.Context, labelSelector k8slabels.Selector) (*apicorev1.SecretList, error) {

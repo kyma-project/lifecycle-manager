@@ -93,6 +93,13 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 				Should(Equal(ErrDeletionTimestampFound))
 		})
 
+		It("Then KCP Kyma CR is in \"Deleting\" State", func() {
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateDeleting).
+				Should(Succeed())
+		})
+
 		It("When SKR Cluster is removed", func() {
 			cmd := exec.Command("sh", "../../scripts/tests/remove_skr_host_from_coredns.sh")
 			out, err := cmd.CombinedOutput()
@@ -104,10 +111,10 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 			GinkgoWriter.Printf(string(out))
 		})
 
-		It("Then KCP Kyma CR is in \"Error\" State", func() {
+		It("Then KCP Kyma CR stays in \"Deleting\" State", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateError).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateDeleting).
 				Should(Succeed())
 		})
 

@@ -22,7 +22,7 @@ packages:
   internal/pkg/resources: 91
   internal/remote: 30
 
-  internal/repository/kyma: 100
+  internal/repository/kyma: 93
   internal/repository/ocm: 100
   internal/repository/ocm/oci: 100
   internal/repository/watcher/certificate: 100

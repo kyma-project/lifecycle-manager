@@ -10,13 +10,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
-	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate" //nolint:revive // not for import
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -88,7 +88,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			certificateService := certificate.NewService(nil, certificateRepo,
-				secretrepository.NewRepository(kcpClient, test.namespace.Name), certificateManagerConfig)
+				secretrepo.NewRepository(kcpClient, test.namespace.Name), certificateManagerConfig)
 
 			err = certificateService.CreateSkrCertificate(ctx, test.kyma)
 			if test.wantCreateErr {

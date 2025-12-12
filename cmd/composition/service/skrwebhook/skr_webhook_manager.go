@@ -13,7 +13,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
-	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate" //nolint:revive // not for import
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
 	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
@@ -39,15 +39,19 @@ var (
 func ComposeSkrWebhookManager(kcpClient client.Client,
 	skrContextProvider remote.SkrContextProvider,
 	repository gateway.IstioGatewayRepository,
+	certificateRepository certificate.CertificateRepository,
 	flagVar *flags.FlagVar,
 ) (*watcher.SkrWebhookManifestManager, error) {
-	skrCertService, err := setupSKRCertService(kcpClient, flagVar)
+	skrCertService, err := setupSKRCertService(kcpClient, certificateRepository, flagVar)
 	if err != nil {
 		return nil, err
 	}
 
-	gatewayService := gateway.NewService(flagVar.IstioGatewayName, flagVar.IstioGatewayNamespace,
-		flagVar.ListenerPortOverwrite, repository)
+	gatewayService := gateway.NewService(flagVar.IstioGatewayName,
+		flagVar.IstioGatewayNamespace,
+		flagVar.ListenerPortOverwrite,
+		repository,
+	)
 
 	resolvedKcpAddr, err := gatewayService.ResolveKcpAddr()
 	if err != nil {
@@ -61,9 +65,13 @@ func ComposeSkrWebhookManager(kcpClient client.Client,
 	watcherMetrics := metrics.NewWatcherMetrics()
 
 	resourceConfigurator := skrwebhookresources.NewResourceConfigurator(
-		flagVar.RemoteSyncNamespace, flagVar.GetWatcherImage(),
+		flagVar.RemoteSyncNamespace,
+		flagVar.GetWatcherImage(),
 		flagVar.WatcherResourceLimitsCPU,
-		flagVar.WatcherResourceLimitsMemory, *resolvedKcpAddr, flagVar.SkrImagePullSecret)
+		flagVar.WatcherResourceLimitsMemory,
+		*resolvedKcpAddr,
+		flagVar.SkrImagePullSecret,
+	)
 
 	chartReaderService := chartreader.NewService(flagVar.WatcherResourcesPath)
 
@@ -78,7 +86,10 @@ func ComposeSkrWebhookManager(kcpClient client.Client,
 		watcherMetrics)
 }
 
-func setupSKRCertService(kcpClient client.Client, flagVar *flags.FlagVar) (*certificate.Service, error) {
+//nolint:ireturn // chosen implementation shall be abstracted
+func ComposeCertificateRepository(kcpClient client.Client,
+	flagVar *flags.FlagVar,
+) (certificate.CertificateRepository, error) {
 	certificateConfig := config.CertificateValues{
 		Duration:    flagVar.SelfSignedCertDuration,
 		RenewBefore: flagVar.SelfSignedCertRenewBefore,
@@ -105,6 +116,13 @@ func setupSKRCertService(kcpClient client.Client, flagVar *flags.FlagVar) (*cert
 		return nil, fmt.Errorf("failed to create certificate repository: %w", err)
 	}
 
+	return certRepoImpl, nil
+}
+
+func setupSKRCertService(kcpClient client.Client,
+	certificateRepository certificate.CertificateRepository,
+	flagVar *flags.FlagVar,
+) (*certificate.Service, error) {
 	certServiceConfig := certificate.Config{
 		SkrServiceName:     skrwebhookresources.SkrResourceName,
 		SkrNamespace:       flagVar.RemoteSyncNamespace,
@@ -113,7 +131,7 @@ func setupSKRCertService(kcpClient client.Client, flagVar *flags.FlagVar) (*cert
 		RenewBuffer:        flagVar.SelfSignedCertRenewBuffer,
 	}
 
-	secretRepository := secretrepository.NewRepository(kcpClient, flagVar.IstioNamespace)
+	secretRepository := secretrepo.NewRepository(kcpClient, flagVar.IstioNamespace)
 
 	var renewalService certificate.RenewalService
 	switch flagVar.CertificateManagement {
@@ -126,5 +144,5 @@ func setupSKRCertService(kcpClient client.Client, flagVar *flags.FlagVar) (*cert
 		return nil, errCertificateManagementNotSupported
 	}
 
-	return certificate.NewService(renewalService, certRepoImpl, secretRepository, certServiceConfig), nil
+	return certificate.NewService(renewalService, certificateRepository, secretRepository, certServiceConfig), nil
 }

@@ -8,7 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -27,7 +27,7 @@ func AccessSecretExists(ctx context.Context, clnt client.Client, kymaName string
 }
 
 func GetAccessSecret(ctx context.Context, clnt client.Client, name string) (*apicorev1.Secret, error) {
-	accessSecretRepository := secretrepository.NewRepository(clnt, shared.DefaultControlPlaneNamespace)
+	accessSecretRepository := secretrepo.NewRepository(clnt, shared.DefaultControlPlaneNamespace)
 	accessSecretService := accessmanager.NewService(accessSecretRepository)
 	return accessSecretService.GetAccessSecretByKyma(ctx, name)
 }
