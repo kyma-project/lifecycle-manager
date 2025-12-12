@@ -16,25 +16,22 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-type SkrClientCache interface {
-	Get(key client.ObjectKey) client.Client
-}
+type SkrClientRetrieverFunc func(kymaName types.NamespacedName) (client.Client, error)
 
 type ResourceRepository struct {
 	resources           []v1beta1.PartialObjectMetadata
-	skrClientCache      SkrClientCache
+	getSkrClient        SkrClientRetrieverFunc
 	remoteSyncNamespace string
 }
 
 const numDynamicResources = 2
 
 func NewResourceRepository(
-	skrClientCache SkrClientCache,
+	getSkrClient SkrClientRetrieverFunc,
 	remoteSyncNamespace string,
 	baseResources []*unstructured.Unstructured,
 ) *ResourceRepository {
@@ -80,7 +77,7 @@ func NewResourceRepository(
 
 	return &ResourceRepository{
 		resources:           resources,
-		skrClientCache:      skrClientCache,
+		getSkrClient:        getSkrClient,
 		remoteSyncNamespace: remoteSyncNamespace,
 	}
 }
@@ -120,7 +117,7 @@ func (r *ResourceRepository) ResourcesExist(ctx context.Context, kymaName types.
 					return nil
 				}
 
-				return fmt.Errorf("failed to check resource %s: %w", ref.Name, err)
+				return fmt.Errorf("resource name %s: %w", ref.Name, err)
 			}
 			select {
 			case resourceExists <- true:
@@ -132,7 +129,7 @@ func (r *ResourceRepository) ResourcesExist(ctx context.Context, kymaName types.
 	}
 
 	if err := errGrp.Wait(); err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to check resource: %w", err)
 	}
 
 	select {
@@ -168,16 +165,4 @@ func (r *ResourceRepository) DeleteWebhookResources(ctx context.Context, kymaNam
 	}
 
 	return nil
-}
-
-func (r *ResourceRepository) getSkrClient(kymaName types.NamespacedName) (client.Client, error) {
-	skrClient := r.skrClientCache.Get(kymaName)
-
-	if skrClient == nil {
-		// TODO if multiple Repositories are using this error generation, consider creating a shared error instance
-		// or even provide this get functionality with error on the skrClientCache itself
-		return nil, fmt.Errorf("%w: Kyma %s", errorsinternal.ErrSkrClientNotFound, kymaName.String())
-	}
-
-	return skrClient, nil
 }

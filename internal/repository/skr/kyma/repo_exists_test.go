@@ -32,11 +32,11 @@ func TestExists_ClientCallSucceeds_ReturnsTrue(t *testing.T) {
 		},
 	}
 
-	clientCacheStub := &skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: clientStub,
 	}
 
-	repo := skrkymarepo.NewRepository(clientCacheStub)
+	repo := skrkymarepo.NewRepository(clientRetrieverStub.retrieverFunc())
 
 	result, err := repo.Exists(t.Context(), kcpKymaName)
 
@@ -44,7 +44,7 @@ func TestExists_ClientCallSucceeds_ReturnsTrue(t *testing.T) {
 	assert.True(t, result)
 	assert.True(t, clientStub.called)
 	// kcpKymaName used to get the client
-	assert.Equal(t, kcpKymaName, clientCacheStub.receivedKey)
+	assert.Equal(t, kcpKymaName, clientRetrieverStub.receivedKey)
 	// standard Kyma name used to get the Kyma from SKR
 	assert.Equal(t, types.NamespacedName{
 		Name:      shared.DefaultRemoteKymaName,
@@ -68,11 +68,11 @@ func TestExists_ClientCallFailsWithNotFound_ReturnsFalse(t *testing.T) {
 		}, random.Name()),
 	}
 
-	clientCacheStub := &skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: clientStub,
 	}
 
-	repo := skrkymarepo.NewRepository(clientCacheStub)
+	repo := skrkymarepo.NewRepository(clientRetrieverStub.retrieverFunc())
 
 	result, err := repo.Exists(t.Context(), kcpKymaName)
 
@@ -80,7 +80,7 @@ func TestExists_ClientCallFailsWithNotFound_ReturnsFalse(t *testing.T) {
 	assert.False(t, result)
 	assert.True(t, clientStub.called)
 	// kcpKymaName used to get the client
-	assert.Equal(t, kcpKymaName, clientCacheStub.receivedKey)
+	assert.Equal(t, kcpKymaName, clientRetrieverStub.receivedKey)
 	// standard Kyma name used to get the Kyma from SKR
 	assert.Equal(t, types.NamespacedName{
 		Name:      shared.DefaultRemoteKymaName,
@@ -101,11 +101,11 @@ func TestExists_ClientCallFails_ReturnsTrue(t *testing.T) {
 		err: assert.AnError,
 	}
 
-	clientCacheStub := &skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: clientStub,
 	}
 
-	repo := skrkymarepo.NewRepository(clientCacheStub)
+	repo := skrkymarepo.NewRepository(clientRetrieverStub.retrieverFunc())
 
 	result, err := repo.Exists(t.Context(), kcpKymaName)
 
@@ -113,7 +113,7 @@ func TestExists_ClientCallFails_ReturnsTrue(t *testing.T) {
 	assert.True(t, result)
 	assert.True(t, clientStub.called)
 	// kcpKymaName used to get the client
-	assert.Equal(t, kcpKymaName, clientCacheStub.receivedKey)
+	assert.Equal(t, kcpKymaName, clientRetrieverStub.receivedKey)
 	// standard Kyma name used to get the Kyma from SKR
 	assert.Equal(t, types.NamespacedName{
 		Name:      shared.DefaultRemoteKymaName,
