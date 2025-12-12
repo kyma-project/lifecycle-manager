@@ -82,7 +82,7 @@ func (r *Repository) SetStateDeleting(ctx context.Context, kymaName types.Namesp
 		client.ForceOwnership,
 		fieldowners.LifecycleManager,
 	); err != nil {
-		return errors.Join(err, errStatusPatchFailed)
+		return errors.Join(errStatusPatchFailed, err)
 	}
 
 	return nil
