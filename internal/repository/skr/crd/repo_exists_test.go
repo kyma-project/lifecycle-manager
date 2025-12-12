@@ -27,18 +27,18 @@ func TestExists_ClientCallSucceeds_ReturnsTrue(t *testing.T) {
 		object: &v1beta1.PartialObjectMetadata{},
 	}
 
-	clientCacheStub := &skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: clientStub,
 	}
 
-	repo := skrcrdrepo.NewRepository(clientCacheStub, crdName)
+	repo := skrcrdrepo.NewRepository(clientRetrieverStub.retrieverFunc(), crdName)
 
 	result, err := repo.Exists(t.Context(), kymaName)
 
 	require.NoError(t, err)
 	assert.True(t, result)
 	assert.True(t, clientStub.called)
-	assert.Equal(t, kymaName, clientCacheStub.receivedKey)
+	assert.Equal(t, kymaName, clientRetrieverStub.receivedKey)
 	assert.Equal(t, types.NamespacedName{Name: crdName}, clientStub.receivedKey)
 }
 
@@ -53,18 +53,18 @@ func TestExists_ClientCallFailsWithNotFound_ReturnsFalse(t *testing.T) {
 		}, crdName),
 	}
 
-	clientCacheStub := &skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: clientStub,
 	}
 
-	repo := skrcrdrepo.NewRepository(clientCacheStub, crdName)
+	repo := skrcrdrepo.NewRepository(clientRetrieverStub.retrieverFunc(), crdName)
 
 	result, err := repo.Exists(t.Context(), kymaName)
 
 	require.NoError(t, err)
 	assert.False(t, result)
 	assert.True(t, clientStub.called)
-	assert.Equal(t, kymaName, clientCacheStub.receivedKey)
+	assert.Equal(t, kymaName, clientRetrieverStub.receivedKey)
 	assert.Equal(t, types.NamespacedName{Name: crdName}, clientStub.receivedKey)
 }
 
@@ -76,25 +76,26 @@ func TestExists_ClientCallFailsWithOtherError_ReturnsError(t *testing.T) {
 		err: assert.AnError,
 	}
 
-	clientCacheStub := &skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: clientStub,
 	}
 
-	repo := skrcrdrepo.NewRepository(clientCacheStub, crdName)
+	repo := skrcrdrepo.NewRepository(clientRetrieverStub.retrieverFunc(), crdName)
 
 	result, err := repo.Exists(t.Context(), kymaName)
 
 	require.ErrorIs(t, err, assert.AnError)
 	assert.True(t, result)
 	assert.True(t, clientStub.called)
-	assert.Equal(t, kymaName, clientCacheStub.receivedKey)
+	assert.Equal(t, kymaName, clientRetrieverStub.receivedKey)
 	assert.Equal(t, types.NamespacedName{Name: crdName}, clientStub.receivedKey)
 }
 
 func TestExists_ClientNotFound_ReturnsError(t *testing.T) {
-	repo := skrcrdrepo.NewRepository(&skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: nil, // No client available in the cache
-	}, random.Name())
+	}
+	repo := skrcrdrepo.NewRepository(clientRetrieverStub.retrieverFunc(), random.Name())
 
 	result, err := repo.Exists(context.Background(),
 		types.NamespacedName{

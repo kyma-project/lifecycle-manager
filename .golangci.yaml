@@ -230,6 +230,7 @@ linters:
       - std-error-handling
     rules:
       - linters:
+          - dupword
           - err113
           - fatcontext
           - forcetypeassert
@@ -252,7 +253,7 @@ linters:
       - linters:
           - err113
           - wrapcheck
-        path: tests/integration/commontestutils/
+        path: tests/integration/
       - linters:
           - importas
         text: has alias "" which is not part of config

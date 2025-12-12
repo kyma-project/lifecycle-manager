@@ -2,6 +2,7 @@ package status
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -12,22 +13,21 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
-	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
 )
 
 const operationSetStateDeleting = ".status.State set to Deleting"
 
-type SkrClientCache interface {
-	Get(key client.ObjectKey) client.Client
-}
+var errStatusPatchFailed = errors.New("status patch failed")
+
+type SkrClientRetrieverFunc func(kymaName types.NamespacedName) (client.Client, error)
 
 type Repository struct {
-	skrClientCache SkrClientCache
+	getSkrClient SkrClientRetrieverFunc
 }
 
-func NewRepository(skrClientCache SkrClientCache) *Repository {
+func NewRepository(getSkrClient SkrClientRetrieverFunc) *Repository {
 	return &Repository{
-		skrClientCache: skrClientCache,
+		getSkrClient: getSkrClient,
 	}
 }
 
@@ -45,7 +45,7 @@ func (r *Repository) Get(ctx context.Context, kymaName types.NamespacedName) (*v
 		},
 		kyma,
 	); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get Kyma CR from SKR: %w", err)
 	}
 
 	return &kyma.Status, nil
@@ -75,24 +75,15 @@ func (r *Repository) SetStateDeleting(ctx context.Context, kymaName types.Namesp
 		},
 	}
 
-	return skrClient.Status().Patch(
+	if err := skrClient.Status().Patch(
 		ctx,
 		kyma,
 		client.Apply,
 		client.ForceOwnership,
 		fieldowners.LifecycleManager,
-	)
-}
-
-// TODO: this should work as long as we use the same client cache that we passed to KymaSkrContextProvider
-// it however depends on KymaSkrContextProvider.Init being called. As of now, this is the case, but we
-// should re-think how we use the client cache.
-func (r *Repository) getSkrClient(kymaName types.NamespacedName) (client.Client, error) {
-	skrClient := r.skrClientCache.Get(kymaName)
-
-	if skrClient == nil {
-		return nil, fmt.Errorf("%w: Kyma %s", errorsinternal.ErrSkrClientNotFound, kymaName.String())
+	); err != nil {
+		return errors.Join(errStatusPatchFailed, err)
 	}
 
-	return skrClient, nil
+	return nil
 }

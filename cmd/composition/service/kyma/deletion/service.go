@@ -3,9 +3,11 @@ package deletion
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
@@ -34,13 +36,24 @@ func ComposeKymaDeletionService(kcpClient client.Client,
 	kymaStatusRepo := kymastatusrepo.NewRepository(kcpClient.Status())
 	setKcpKymaStateDeleting := usecases.NewSetKymaStatusDeletingUseCase(kymaStatusRepo)
 
+	// Create the SKR client retriever function from the same cache instance
+	// This serves only as an adapter until we have a better way of managing SKR clients
+	// See issue: https://github.com/kyma-project/lifecycle-manager/issues/2888
+	skrClientRetrieverFunc := func(kymaName types.NamespacedName) (client.Client, error) {
+		skrClient := skrClientCache.Get(kymaName)
+		if skrClient == nil {
+			return nil, fmt.Errorf("%w: Kyma %s", errorsinternal.ErrSkrClientNotFound, kymaName.String())
+		}
+		return skrClient, nil
+	}
+
 	setSkrKymaStateDeleting := usecases.NewSetSkrKymaStateDeleting(
-		skrkymastatusrepo.NewRepository(skrClientCache),
+		skrkymastatusrepo.NewRepository(skrClientRetrieverFunc),
 		accessSecretRepository,
 	)
 
 	deleteSkrKyma := usecases.NewDeleteSkrKyma(
-		skrkymarepo.NewRepository(skrClientCache),
+		skrkymarepo.NewRepository(skrClientRetrieverFunc),
 		accessSecretRepository,
 	)
 
@@ -53,22 +66,22 @@ func ComposeKymaDeletionService(kcpClient client.Client,
 		istioSystemSecretRepo,
 	)
 
-	skrWebhookResourcesRepo := webhook.NewResourceRepository(skrClientCache, shared.DefaultRemoteNamespace,
+	skrWebhookResourcesRepo := webhook.NewResourceRepository(skrClientRetrieverFunc, shared.DefaultRemoteNamespace,
 		skrWebhookManager.BaseResources)
 	deleteSkrWebhookResources := usecases.NewDeleteSkrWebhookResources(skrWebhookResourcesRepo)
 
 	deleteSkrMtCrd := usecases.NewDeleteSkrCrd(
-		skrcrdrepo.NewRepository(skrClientCache,
+		skrcrdrepo.NewRepository(skrClientRetrieverFunc,
 			fmt.Sprintf("%s.%s", shared.ModuleTemplateKind.Plural(), shared.OperatorGroup)),
 		accessSecretRepository,
 		usecase.DeleteSkrModuleTemplateCrd)
 	deleteSkrMrmCrd := usecases.NewDeleteSkrCrd(
-		skrcrdrepo.NewRepository(skrClientCache,
+		skrcrdrepo.NewRepository(skrClientRetrieverFunc,
 			fmt.Sprintf("%s.%s", shared.ModuleReleaseMetaKind.Plural(), shared.OperatorGroup)),
 		accessSecretRepository,
 		usecase.DeleteSkrModuleReleaseMetaCrd)
 	deleteSkrKymaCrd := usecases.NewDeleteSkrCrd(
-		skrcrdrepo.NewRepository(skrClientCache,
+		skrcrdrepo.NewRepository(skrClientRetrieverFunc,
 			fmt.Sprintf("%s.%s", shared.KymaKind.Plural(), shared.OperatorGroup)),
 		accessSecretRepository,
 		usecase.DeleteSkrKymaCrd)

@@ -3,6 +3,7 @@ package webhook_test
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,15 +28,15 @@ func TestNewResourceRepository(t *testing.T) {
 			createUnstructuredResource("skr-webhook", "apps/v1", "Deployment"),
 		}
 
-		clientCache := &mockSkrClientCache{}
-		repo := webhook.NewResourceRepository(clientCache, "kyma-system", baseResources)
+		retriever := mockSkrClientRetriever(nil)
+		repo := webhook.NewResourceRepository(retriever, "kyma-system", baseResources)
 
 		assert.NotNil(t, repo)
 	})
 
 	t.Run("initializes with empty base resources", func(t *testing.T) {
-		clientCache := &mockSkrClientCache{}
-		repo := webhook.NewResourceRepository(clientCache, "kyma-system", []*unstructured.Unstructured{})
+		retriever := mockSkrClientRetriever(nil)
+		repo := webhook.NewResourceRepository(retriever, "kyma-system", []*unstructured.Unstructured{})
 
 		assert.NotNil(t, repo)
 	})
@@ -70,8 +71,8 @@ func TestResourceRepository_ResourcesExist(t *testing.T) {
 			},
 		}
 
-		clientCache := &mockSkrClientCache{client: mockClient}
-		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
+		retriever := mockSkrClientRetriever(mockClient)
+		repo := webhook.NewResourceRepository(retriever, remoteSyncNamespace, baseResources)
 
 		exists, err := repo.ResourcesExist(t.Context(), kymaName)
 
@@ -92,8 +93,8 @@ func TestResourceRepository_ResourcesExist(t *testing.T) {
 			},
 		}
 
-		clientCache := &mockSkrClientCache{client: mockClient}
-		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
+		retriever := mockSkrClientRetriever(mockClient)
+		repo := webhook.NewResourceRepository(retriever, remoteSyncNamespace, baseResources)
 
 		exists, err := repo.ResourcesExist(t.Context(), kymaName)
 
@@ -116,8 +117,8 @@ func TestResourceRepository_ResourcesExist(t *testing.T) {
 			},
 		}
 
-		clientCache := &mockSkrClientCache{client: mockClient}
-		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
+		retriever := mockSkrClientRetriever(mockClient)
+		repo := webhook.NewResourceRepository(retriever, remoteSyncNamespace, baseResources)
 
 		exists, err := repo.ResourcesExist(t.Context(), kymaName)
 
@@ -137,8 +138,8 @@ func TestResourceRepository_ResourcesExist(t *testing.T) {
 			},
 		}
 
-		clientCache := &mockSkrClientCache{client: mockClient}
-		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
+		retriever := mockSkrClientRetriever(mockClient)
+		repo := webhook.NewResourceRepository(retriever, remoteSyncNamespace, baseResources)
 
 		exists, err := repo.ResourcesExist(t.Context(), kymaName)
 
@@ -161,8 +162,8 @@ func TestResourceRepository_ResourcesExist(t *testing.T) {
 			},
 		}
 
-		clientCache := &mockSkrClientCache{client: mockClient}
-		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
+		retriever := mockSkrClientRetriever(mockClient)
+		repo := webhook.NewResourceRepository(retriever, remoteSyncNamespace, baseResources)
 
 		exists, err := repo.ResourcesExist(t.Context(), kymaName)
 
@@ -196,8 +197,8 @@ func TestResourceRepository_DeleteWebhookResources(t *testing.T) {
 			},
 		}
 
-		clientCache := &mockSkrClientCache{client: mockClient}
-		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
+		retriever := mockSkrClientRetriever(mockClient)
+		repo := webhook.NewResourceRepository(retriever, remoteSyncNamespace, baseResources)
 
 		err := repo.DeleteWebhookResources(context.Background(), kymaName)
 
@@ -224,8 +225,8 @@ func TestResourceRepository_DeleteWebhookResources(t *testing.T) {
 			},
 		}
 
-		clientCache := &mockSkrClientCache{client: mockClient}
-		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
+		retriever := mockSkrClientRetriever(mockClient)
+		repo := webhook.NewResourceRepository(retriever, remoteSyncNamespace, baseResources)
 
 		err := repo.DeleteWebhookResources(context.Background(), kymaName)
 
@@ -253,8 +254,8 @@ func TestResourceRepository_DeleteWebhookResources(t *testing.T) {
 			},
 		}
 
-		clientCache := &mockSkrClientCache{client: mockClient}
-		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
+		retriever := mockSkrClientRetriever(mockClient)
+		repo := webhook.NewResourceRepository(retriever, remoteSyncNamespace, baseResources)
 
 		err := repo.DeleteWebhookResources(context.Background(), kymaName)
 
@@ -270,8 +271,8 @@ func TestResourceRepository_DeleteWebhookResources(t *testing.T) {
 			},
 		}
 
-		clientCache := &mockSkrClientCache{client: mockClient}
-		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
+		retriever := mockSkrClientRetriever(mockClient)
+		repo := webhook.NewResourceRepository(retriever, remoteSyncNamespace, baseResources)
 
 		err := repo.DeleteWebhookResources(context.Background(), kymaName)
 
@@ -288,8 +289,8 @@ func TestResourceRepository_DeleteWebhookResources(t *testing.T) {
 			},
 		}
 
-		clientCache := &mockSkrClientCache{client: mockClient}
-		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
+		retriever := mockSkrClientRetriever(mockClient)
+		repo := webhook.NewResourceRepository(retriever, remoteSyncNamespace, baseResources)
 
 		err := repo.DeleteWebhookResources(context.Background(), kymaName)
 
@@ -311,8 +312,8 @@ func TestResourceRepository_DeleteWebhookResources(t *testing.T) {
 			},
 		}
 
-		clientCache := &mockSkrClientCache{client: mockClient}
-		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
+		retriever := mockSkrClientRetriever(mockClient)
+		repo := webhook.NewResourceRepository(retriever, remoteSyncNamespace, baseResources)
 
 		err := repo.DeleteWebhookResources(context.Background(), kymaName)
 
@@ -332,8 +333,8 @@ func TestResourceRepository_DeleteWebhookResources(t *testing.T) {
 			},
 		}
 
-		clientCache := &mockSkrClientCache{client: mockClient}
-		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
+		retriever := mockSkrClientRetriever(mockClient)
+		repo := webhook.NewResourceRepository(retriever, remoteSyncNamespace, baseResources)
 
 		err := repo.DeleteWebhookResources(context.Background(), kymaName)
 
@@ -343,26 +344,26 @@ func TestResourceRepository_DeleteWebhookResources(t *testing.T) {
 
 	t.Run("deletes all resources in parallel", func(t *testing.T) {
 		// This test verifies parallel execution by checking that all resources are processed
-		deletedCount := 0
+		var deletedCount int32
 		mockClient := &mockSkrClient{
 			deleteFunc: func(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
-				deletedCount++
+				atomic.AddInt32(&deletedCount, 1)
 				return nil
 			},
 		}
 
-		clientCache := &mockSkrClientCache{client: mockClient}
-		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, baseResources)
+		retriever := mockSkrClientRetriever(mockClient)
+		repo := webhook.NewResourceRepository(retriever, remoteSyncNamespace, baseResources)
 
 		err := repo.DeleteWebhookResources(context.Background(), kymaName)
 
 		require.NoError(t, err)
-		assert.Equal(t, 5, deletedCount) // 3 base + 2 generated
+		assert.Equal(t, int32(5), atomic.LoadInt32(&deletedCount)) // 3 base + 2 generated
 	})
 }
 
 func TestResourceRepository_ClientCacheUsage(t *testing.T) {
-	t.Run("uses correct client from cache", func(t *testing.T) {
+	t.Run("uses correct client from retriever", func(t *testing.T) {
 		const remoteSyncNamespace = "kyma-system"
 		kymaName := types.NamespacedName{
 			Name:      random.Name(),
@@ -381,13 +382,13 @@ func TestResourceRepository_ClientCacheUsage(t *testing.T) {
 			},
 		}
 
-		clientCache := &mockSkrClientCache{client: mockClient}
-		repo := webhook.NewResourceRepository(clientCache, remoteSyncNamespace, []*unstructured.Unstructured{})
+		retriever := mockSkrClientRetriever(mockClient)
+		repo := webhook.NewResourceRepository(retriever, remoteSyncNamespace, []*unstructured.Unstructured{})
 
 		_, _ = repo.ResourcesExist(t.Context(), kymaName)
 
-		// The cache should be called with kymaName and remoteSyncNamespace
-		// We can't verify the cache.Get call directly, but we verify the client was used
+		// The retriever function should be called with kymaName
+		// We verify the client was used by checking the captured key
 		assert.NotEmpty(t, capturedKey.Name)
 	})
 }
@@ -418,13 +419,14 @@ func (m *mockSkrClient) Delete(ctx context.Context, obj client.Object, opts ...c
 	return nil
 }
 
-// mockSkrClientCache implements the SkrClientCache interface.
-type mockSkrClientCache struct {
-	client client.Client
-}
-
-func (m *mockSkrClientCache) Get(key client.ObjectKey) client.Client {
-	return m.client
+// mockSkrClientRetriever creates a function that returns the mock client.
+func mockSkrClientRetriever(mockClient client.Client) func(kymaName types.NamespacedName) (client.Client, error) {
+	return func(kymaName types.NamespacedName) (client.Client, error) {
+		if mockClient == nil {
+			return nil, errors.New("client not found")
+		}
+		return mockClient, nil
+	}
 }
 
 // Helper function to create unstructured resources for testing.

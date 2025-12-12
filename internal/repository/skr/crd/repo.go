@@ -2,7 +2,6 @@ package crd
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -11,25 +10,22 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-type SkrClientCache interface {
-	Get(key client.ObjectKey) client.Client
-}
+type SkrClientRetrieverFunc func(kymaName types.NamespacedName) (client.Client, error)
 
 type Repository struct {
-	skrClientCache SkrClientCache
-	crdName        string
+	getSkrClient SkrClientRetrieverFunc
+	crdName      string
 }
 
-func NewRepository(skrClientCache SkrClientCache,
+func NewRepository(getSkrClient SkrClientRetrieverFunc,
 	crdName string,
 ) *Repository {
 	return &Repository{
-		skrClientCache: skrClientCache,
-		crdName:        crdName,
+		getSkrClient: getSkrClient,
+		crdName:      crdName,
 	}
 }
 
@@ -70,17 +66,4 @@ func (r *Repository) Delete(ctx context.Context, kymaName types.NamespacedName) 
 					Name: r.crdName,
 				},
 			}))
-}
-
-// TODO: this should work as long as we use the same client cache that we passed to KymaSkrContextProvider
-// it however depends on KymaSkrContextProvider.Init being called. As of now, this is the case, but we
-// should re-think how we use the client cache.
-func (r *Repository) getSkrClient(kymaName types.NamespacedName) (client.Client, error) {
-	skrClient := r.skrClientCache.Get(kymaName)
-
-	if skrClient == nil {
-		return nil, fmt.Errorf("%w: Kyma %s", errorsinternal.ErrSkrClientNotFound, kymaName.String())
-	}
-
-	return skrClient, nil
 }

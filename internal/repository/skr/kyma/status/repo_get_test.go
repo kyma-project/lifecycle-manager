@@ -27,11 +27,11 @@ func TestGet_ClientCallSucceeds_ReturnsKymaStatus(t *testing.T) {
 		},
 	}
 
-	clientCacheStub := &skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: clientStub,
 	}
 
-	repo := skrkymastatusrepo.NewRepository(clientCacheStub)
+	repo := skrkymastatusrepo.NewRepository(clientRetrieverStub.retrieverFunc())
 
 	result, err := repo.Get(t.Context(), kcpKymaName)
 
@@ -40,7 +40,7 @@ func TestGet_ClientCallSucceeds_ReturnsKymaStatus(t *testing.T) {
 	assert.Equal(t, shared.StateReady, result.State)
 	assert.True(t, clientStub.called)
 	// kcpKymaName used to get the client
-	assert.Equal(t, kcpKymaName, clientCacheStub.receivedKey)
+	assert.Equal(t, kcpKymaName, clientRetrieverStub.receivedKey)
 	// standard Kyma name used to get the Kyma from SKR
 	assert.Equal(t, types.NamespacedName{
 		Name:      shared.DefaultRemoteKymaName,
@@ -52,9 +52,10 @@ func TestGet_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	clientStub := &getClientStub{
 		err: assert.AnError,
 	}
-	repo := skrkymastatusrepo.NewRepository(&skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: clientStub,
-	})
+	}
+	repo := skrkymastatusrepo.NewRepository(clientRetrieverStub.retrieverFunc())
 
 	result, err := repo.Get(t.Context(),
 		types.NamespacedName{
@@ -68,9 +69,10 @@ func TestGet_ClientReturnsAnError_ReturnsError(t *testing.T) {
 }
 
 func TestGet_ClientNotFound_ReturnsError(t *testing.T) {
-	repo := skrkymastatusrepo.NewRepository(&skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: nil, // No client available in the cache
-	})
+	}
+	repo := skrkymastatusrepo.NewRepository(clientRetrieverStub.retrieverFunc())
 
 	result, err := repo.Get(t.Context(),
 		types.NamespacedName{

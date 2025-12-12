@@ -125,7 +125,6 @@ func TestSetKymaStatusDeletingUseCase_Execute(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			// TODO: re-align whether to use mocks or stubs
 			mockRepo := &kymaStatusRepositoryStub{}
 			mockRepo.On("UpdateStatusDeleting",
 				mock.Anything,

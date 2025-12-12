@@ -23,18 +23,18 @@ func TestDelete_ClientCallSucceeds(t *testing.T) {
 	crdName := random.Name()
 
 	clientStub := &deleteClientStub{}
-	clientCacheStub := &skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: clientStub,
 	}
 
-	repo := skrcrdrepo.NewRepository(clientCacheStub, crdName)
+	repo := skrcrdrepo.NewRepository(clientRetrieverStub.retrieverFunc(), crdName)
 
 	err := repo.Delete(context.Background(), kymaName)
 
 	require.NoError(t, err)
 	assert.True(t, clientStub.called)
 	// kymaName used to get the client
-	assert.Equal(t, kymaName, clientCacheStub.receivedKey)
+	assert.Equal(t, kymaName, clientRetrieverStub.receivedKey)
 	// CRD name used to delete the CRD
 	assert.Equal(t, crdName, clientStub.deletedObject.GetName())
 }
@@ -43,9 +43,10 @@ func TestDelete_ClientReturnsAnError(t *testing.T) {
 	clientStub := &deleteClientStub{
 		err: assert.AnError,
 	}
-	repo := skrcrdrepo.NewRepository(&skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: clientStub,
-	}, random.Name())
+	}
+	repo := skrcrdrepo.NewRepository(clientRetrieverStub.retrieverFunc(), random.Name())
 
 	err := repo.Delete(context.Background(),
 		types.NamespacedName{
@@ -64,9 +65,10 @@ func TestDelete_ClientIgnoresNotFoundError(t *testing.T) {
 			Resource: reflect.TypeOf(apiextensionsv1.CustomResourceDefinition{}).Name(),
 		}, random.Name()),
 	}
-	repo := skrcrdrepo.NewRepository(&skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: clientStub,
-	}, random.Name())
+	}
+	repo := skrcrdrepo.NewRepository(clientRetrieverStub.retrieverFunc(), random.Name())
 
 	err := repo.Delete(context.Background(),
 		types.NamespacedName{
@@ -79,9 +81,10 @@ func TestDelete_ClientIgnoresNotFoundError(t *testing.T) {
 }
 
 func TestDelete_ClientNotFound_ReturnsError(t *testing.T) {
-	repo := skrcrdrepo.NewRepository(&skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: nil, // No client available in the cache
-	}, random.Name())
+	}
+	repo := skrcrdrepo.NewRepository(clientRetrieverStub.retrieverFunc(), random.Name())
 
 	err := repo.Delete(context.Background(),
 		types.NamespacedName{

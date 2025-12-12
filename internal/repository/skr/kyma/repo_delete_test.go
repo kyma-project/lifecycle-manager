@@ -23,18 +23,18 @@ func TestDelete_ClientCallSucceeds(t *testing.T) {
 	kcpKymaName := types.NamespacedName{Name: random.Name(), Namespace: random.Name()}
 
 	clientStub := &deleteClientStub{}
-	clientCacheStub := &skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: clientStub,
 	}
 
-	repo := skrkymarepo.NewRepository(clientCacheStub)
+	repo := skrkymarepo.NewRepository(clientRetrieverStub.retrieverFunc())
 
 	err := repo.Delete(t.Context(), kcpKymaName)
 
 	require.NoError(t, err)
 	assert.True(t, clientStub.called)
 	// kcpKymaName used to get the client
-	assert.Equal(t, kcpKymaName, clientCacheStub.receivedKey)
+	assert.Equal(t, kcpKymaName, clientRetrieverStub.receivedKey)
 	// standard Kyma name used to delete the Kyma from SKR
 	assert.Equal(t, &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
@@ -48,9 +48,10 @@ func TestDelete_ClientReturnsAnError(t *testing.T) {
 	clientStub := &deleteClientStub{
 		err: assert.AnError,
 	}
-	repo := skrkymarepo.NewRepository(&skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: clientStub,
-	})
+	}
+	repo := skrkymarepo.NewRepository(clientRetrieverStub.retrieverFunc())
 
 	err := repo.Delete(t.Context(),
 		types.NamespacedName{
@@ -69,9 +70,10 @@ func TestDelete_ClientIgnoresNotFoundError(t *testing.T) {
 			Resource: string(shared.KymaKind),
 		}, random.Name()),
 	}
-	repo := skrkymarepo.NewRepository(&skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: clientStub,
-	})
+	}
+	repo := skrkymarepo.NewRepository(clientRetrieverStub.retrieverFunc())
 
 	err := repo.Delete(t.Context(),
 		types.NamespacedName{
@@ -84,9 +86,10 @@ func TestDelete_ClientIgnoresNotFoundError(t *testing.T) {
 }
 
 func TestDelete_ClientNotFound_ReturnsError(t *testing.T) {
-	repo := skrkymarepo.NewRepository(&skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: nil, // No client available in the cache
-	})
+	}
+	repo := skrkymarepo.NewRepository(clientRetrieverStub.retrieverFunc())
 
 	err := repo.Delete(t.Context(),
 		types.NamespacedName{

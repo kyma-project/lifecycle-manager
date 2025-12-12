@@ -25,11 +25,11 @@ func TestSetStateDeleting_ClientCallSucceeds(t *testing.T) {
 	clientStub := &clientStub{
 		status: statusClientStub,
 	}
-	clientCacheStub := &skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: clientStub,
 	}
 
-	repo := skrkymastatusrepo.NewRepository(clientCacheStub)
+	repo := skrkymastatusrepo.NewRepository(clientRetrieverStub.retrieverFunc())
 
 	err := repo.SetStateDeleting(t.Context(), kcpKymaName)
 
@@ -37,7 +37,7 @@ func TestSetStateDeleting_ClientCallSucceeds(t *testing.T) {
 	assert.True(t, statusClientStub.called)
 	assert.NotNil(t, statusClientStub.patchedObject)
 	// kcpKymaName used to get the client
-	assert.Equal(t, kcpKymaName, clientCacheStub.receivedKey)
+	assert.Equal(t, kcpKymaName, clientRetrieverStub.receivedKey)
 	// standard Kyma name used to get the Kyma from SKR
 	assert.Equal(t, shared.DefaultRemoteKymaName, statusClientStub.patchedObject.Name)
 	assert.Equal(t, shared.DefaultRemoteNamespace, statusClientStub.patchedObject.Namespace)
@@ -60,11 +60,11 @@ func TestSetStateDeleting_ClientReturnsAnError(t *testing.T) {
 	clientStub := &clientStub{
 		status: statusClientStub,
 	}
-	clientCacheStub := &skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: clientStub,
 	}
 
-	repo := skrkymastatusrepo.NewRepository(clientCacheStub)
+	repo := skrkymastatusrepo.NewRepository(clientRetrieverStub.retrieverFunc())
 
 	err := repo.SetStateDeleting(context.Background(),
 		types.NamespacedName{
@@ -77,9 +77,10 @@ func TestSetStateDeleting_ClientReturnsAnError(t *testing.T) {
 }
 
 func TestSetStateDeleting_ClientNotFound(t *testing.T) {
-	repo := skrkymastatusrepo.NewRepository(&skrClientCacheStub{
+	clientRetrieverStub := &skrClientRetrieverStub{
 		client: nil, // No client available in the cache
-	})
+	}
+	repo := skrkymastatusrepo.NewRepository(clientRetrieverStub.retrieverFunc())
 
 	err := repo.SetStateDeleting(context.Background(),
 		types.NamespacedName{
