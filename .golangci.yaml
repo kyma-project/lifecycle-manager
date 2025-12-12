@@ -230,6 +230,7 @@ linters:
       - std-error-handling
     rules:
       - linters:
+          - dupword
           - err113
           - fatcontext
           - forcetypeassert

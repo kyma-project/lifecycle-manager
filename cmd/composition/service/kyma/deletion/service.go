@@ -38,7 +38,7 @@ func ComposeKymaDeletionService(kcpClient client.Client,
 
 	// Create the SKR client retriever function from the same cache instance
 	// This serves only as an adapter until we have a better way of managing SKR clients
-	// See issue:
+	// See issue: https://github.com/kyma-project/lifecycle-manager/issues/2888
 	skrClientRetrieverFunc := func(kymaName types.NamespacedName) (client.Client, error) {
 		skrClient := skrClientCache.Get(kymaName)
 		if skrClient == nil {
