@@ -28,7 +28,7 @@ func NewDropKymaFinalizer(kymaRepo KymaRepo) *DropKymaFinalizer {
 }
 
 func (u *DropKymaFinalizer) IsApplicable(ctx context.Context, kcpKyma *v1beta2.Kyma) (bool, error) {
-	return controllerutil.ContainsFinalizer(kcpKyma, shared.KymaFinalizer), nil
+	return controllerutil.ContainsFinalizer(kcpKyma, kymaFinalizer), nil
 }
 
 func (u *DropKymaFinalizer) Execute(ctx context.Context, kcpKyma *v1beta2.Kyma) result.Result {
