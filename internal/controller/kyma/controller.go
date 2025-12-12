@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -123,6 +124,9 @@ type Reconciler struct {
 	DeletionService DeletionService
 }
 
+// https://github.com/kyma-project/lifecycle-manager/issues/2943
+//
+//nolint:funlen // disable for kyma controller until we remove legacy deletion with above issue
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("Kyma reconciliation started")
@@ -165,7 +169,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !kyma.DeletionTimestamp.IsZero() {
-		return r.processDeletion(ctx, kyma)
+		useLegacyKymaDeletion, ok := os.LookupEnv("ENABLE_LEGACY_KYMA_DELETION")
+		if !ok || useLegacyKymaDeletion != "true" {
+			return r.processDeletion(ctx, kyma)
+		}
 	}
 
 	err = skrContext.CreateKymaNamespace(ctx)
