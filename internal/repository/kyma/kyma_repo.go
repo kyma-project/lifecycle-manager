@@ -8,7 +8,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -35,13 +34,13 @@ func (r *Repository) Get(ctx context.Context, kymaName string) (*v1beta2.Kyma, e
 	return kyma, nil
 }
 
-func (r *Repository) DropKymaFinalizer(ctx context.Context, kymaName string) error {
+func (r *Repository) DropFinalizer(ctx context.Context, kymaName string, finalizer string) error {
 	kyma, err := r.Get(ctx, kymaName)
 	if err != nil {
 		return util.IgnoreNotFound(fmt.Errorf("failed to get current finalizers: %w", err))
 	}
 
-	if !controllerutil.RemoveFinalizer(kyma, shared.KymaFinalizer) {
+	if !controllerutil.RemoveFinalizer(kyma, finalizer) {
 		return nil
 	}
 

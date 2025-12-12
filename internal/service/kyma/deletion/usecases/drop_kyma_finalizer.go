@@ -11,8 +11,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 )
 
+const kymaFinalizer = shared.KymaFinalizer
+
 type KymaRepo interface {
-	DropKymaFinalizer(ctx context.Context, kymaName string) error
+	DropFinalizer(ctx context.Context, kymaName string, finalizer string) error
 }
 
 type DropKymaFinalizer struct {
@@ -32,7 +34,7 @@ func (u *DropKymaFinalizer) IsApplicable(ctx context.Context, kcpKyma *v1beta2.K
 func (u *DropKymaFinalizer) Execute(ctx context.Context, kcpKyma *v1beta2.Kyma) result.Result {
 	return result.Result{
 		UseCase: u.Name(),
-		Err:     u.kymaRepo.DropKymaFinalizer(ctx, kcpKyma.GetName()),
+		Err:     u.kymaRepo.DropFinalizer(ctx, kcpKyma.GetName(), kymaFinalizer),
 	}
 }
 

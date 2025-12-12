@@ -109,6 +109,7 @@ func Test_DropKymaFinalizer_Execute_Success(t *testing.T) {
 	assert.Equal(t, usecase.DropKymaFinalizer, res.UseCase)
 	assert.True(t, kymaRepo.dropFinalizersCalled)
 	assert.Equal(t, kcpKyma.GetName(), kymaRepo.kymaName)
+	assert.Equal(t, shared.KymaFinalizer, kymaRepo.capturedFinalizer)
 }
 
 func Test_DropKymaFinalizer_Execute_Failure(t *testing.T) {
@@ -131,6 +132,7 @@ func Test_DropKymaFinalizer_Execute_Failure(t *testing.T) {
 	assert.Equal(t, usecase.DropKymaFinalizer, res.UseCase)
 	assert.True(t, kymaRepo.dropFinalizersCalled)
 	assert.Equal(t, kcpKyma.GetName(), kymaRepo.kymaName)
+	assert.Equal(t, shared.KymaFinalizer, kymaRepo.capturedFinalizer)
 }
 
 type kymaRepoStub struct {
@@ -139,10 +141,13 @@ type kymaRepoStub struct {
 	dropFinalizersCalled bool
 	kymaName             string
 	dropFinalizersErr    error
+
+	capturedFinalizer string
 }
 
-func (r *kymaRepoStub) DropKymaFinalizer(_ context.Context, kymaName string) error {
+func (r *kymaRepoStub) DropFinalizer(_ context.Context, kymaName string, finalizer string) error {
 	r.dropFinalizersCalled = true
 	r.kymaName = kymaName
+	r.capturedFinalizer = finalizer
 	return r.dropFinalizersErr
 }

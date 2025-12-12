@@ -33,7 +33,7 @@ func TestRepository_DropAllFinalizers(t *testing.T) {
 
 		repo := kymarepo.NewRepository(stub, testNamespace)
 
-		err := repo.DropKymaFinalizer(t.Context(), testKymaName)
+		err := repo.DropFinalizer(t.Context(), testKymaName, shared.KymaFinalizer)
 
 		require.NoError(t, err)
 		assert.True(t, stub.patchCalled)
@@ -56,7 +56,7 @@ func TestRepository_DropAllFinalizers(t *testing.T) {
 
 		repo := kymarepo.NewRepository(stub, testNamespace)
 
-		err := repo.DropKymaFinalizer(t.Context(), testKymaName)
+		err := repo.DropFinalizer(t.Context(), testKymaName, shared.KymaFinalizer)
 
 		require.NoError(t, err)
 		assert.False(t, stub.patchCalled)
@@ -76,7 +76,27 @@ func TestRepository_DropAllFinalizers(t *testing.T) {
 
 		repo := kymarepo.NewRepository(stub, testNamespace)
 
-		err := repo.DropKymaFinalizer(t.Context(), testKymaName)
+		err := repo.DropFinalizer(t.Context(), testKymaName, shared.KymaFinalizer)
+
+		require.NoError(t, err)
+		assert.False(t, stub.patchCalled)
+		assert.Equal(t, testNamespace, stub.capturedObjectKey.Namespace)
+		assert.Equal(t, testKymaName, stub.capturedObjectKey.Name)
+	})
+
+	t.Run("no-op when empty finalizer arg", func(t *testing.T) {
+		finalizers := []string{random.Name(), random.Name()}
+		stub := &clientStub{
+			kyma: &v1beta2.Kyma{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Finalizers: finalizers,
+				},
+			},
+		}
+
+		repo := kymarepo.NewRepository(stub, testNamespace)
+
+		err := repo.DropFinalizer(t.Context(), testKymaName, "")
 
 		require.NoError(t, err)
 		assert.False(t, stub.patchCalled)
@@ -88,7 +108,7 @@ func TestRepository_DropAllFinalizers(t *testing.T) {
 		stub := &clientStub{getErr: assert.AnError}
 		repo := kymarepo.NewRepository(stub, testNamespace)
 
-		err := repo.DropKymaFinalizer(t.Context(), testKymaName)
+		err := repo.DropFinalizer(t.Context(), testKymaName, shared.KymaFinalizer)
 
 		require.ErrorIs(t, err, assert.AnError)
 		assert.Contains(t, err.Error(), "failed to get current finalizers")
@@ -109,7 +129,7 @@ func TestRepository_DropAllFinalizers(t *testing.T) {
 		}
 		repo := kymarepo.NewRepository(stub, testNamespace)
 
-		err := repo.DropKymaFinalizer(t.Context(), testKymaName)
+		err := repo.DropFinalizer(t.Context(), testKymaName, shared.KymaFinalizer)
 
 		require.NoError(t, err)
 		assert.False(t, stub.patchCalled)
@@ -130,7 +150,7 @@ func TestRepository_DropAllFinalizers(t *testing.T) {
 
 		repo := kymarepo.NewRepository(stub, testNamespace)
 
-		err := repo.DropKymaFinalizer(t.Context(), testKymaName)
+		err := repo.DropFinalizer(t.Context(), testKymaName, shared.KymaFinalizer)
 
 		require.ErrorIs(t, err, assert.AnError)
 		assert.True(t, stub.patchCalled)
@@ -157,7 +177,7 @@ func TestRepository_DropAllFinalizers(t *testing.T) {
 
 		repo := kymarepo.NewRepository(stub, testNamespace)
 
-		err := repo.DropKymaFinalizer(t.Context(), testKymaName)
+		err := repo.DropFinalizer(t.Context(), testKymaName, shared.KymaFinalizer)
 
 		require.NoError(t, err)
 		assert.True(t, stub.patchCalled)
