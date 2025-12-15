@@ -41,7 +41,7 @@ func (u *DeleteSkrCrd) IsApplicable(ctx context.Context, kcpKyma *v1beta2.Kyma) 
 }
 
 func (u *DeleteSkrCrd) Execute(ctx context.Context, kcpKyma *v1beta2.Kyma) result.Result {
-	// deleting the CRDs is sufficient as this also deletes related CRs
+	// deleting the CRD also deletes related CRs
 	return result.Result{
 		UseCase: u.Name(),
 		Err:     u.skrCrdRepo.Delete(ctx, kcpKyma.GetNamespacedName()),
