@@ -11,30 +11,83 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/errors/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
+	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 	kymadeletionsvc "github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
+func Test_NewService_ReturnsError_WhenUseCasesAreOutOfOrder(t *testing.T) {
+	useCases := setupUseCases()
+	// swap two use cases to simulate out-of-order scenario
+	useCases[2], useCases[3] = useCases[3], useCases[2]
+
+	svc, err := kymadeletionsvc.NewService(
+		useCases[0],
+		useCases[1],
+		useCases[2],
+		useCases[3],
+		useCases[4],
+		useCases[5],
+		useCases[6],
+		useCases[7],
+		useCases[8],
+		useCases[9],
+		useCases[10],
+	)
+
+	require.Nil(t, svc)
+	require.ErrorIs(t, err, kymadeletionsvc.ErrUseCasesOutOfOrder)
+	require.Contains(t, err.Error(), "expected use case DeleteSkrKyma at position 2 but found DeleteCertificateSetup")
+	require.Contains(t, err.Error(), "expected use case DeleteCertificateSetup at position 3 but found DeleteSkrKyma")
+}
+
+func Test_NewService_ReturnsError_WhenSameUseCaseTwice(t *testing.T) {
+	useCases := setupUseCases()
+	// duplicate a use case to simulate out-of-order scenario
+	useCases[2] = useCases[1]
+
+	svc, err := kymadeletionsvc.NewService(
+		useCases[0],
+		useCases[1],
+		useCases[2],
+		useCases[3],
+		useCases[4],
+		useCases[5],
+		useCases[6],
+		useCases[7],
+		useCases[8],
+		useCases[9],
+		useCases[10],
+	)
+
+	require.Nil(t, svc)
+	require.ErrorIs(t, err, kymadeletionsvc.ErrUseCasesOutOfOrder)
+}
+
 func Test_Delete_ReturnsError_WhenIsApplicableReturnsError(t *testing.T) {
 	kyma := &v1beta2.Kyma{}
-	uc1 := &useCaseStub{isApplicable: true, err: assert.AnError}
+	useCases := setupUseCases()
+	uc1 := useCases[0]
+	uc1.err = assert.AnError
+	uc1.isApplicable = true
 
-	svc := kymadeletionsvc.NewService(
-		uc1,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
+	svc, err := kymadeletionsvc.NewService(
+		useCases[0],
+		useCases[1],
+		useCases[2],
+		useCases[3],
+		useCases[4],
+		useCases[5],
+		useCases[6],
+		useCases[7],
+		useCases[8],
+		useCases[9],
+		useCases[10],
 	)
 
 	result := svc.Delete(t.Context(), kyma)
 
+	require.NoError(t, err)
 	require.ErrorIs(t, result.Err, assert.AnError)
 	assert.Equal(t, uc1.Name(), result.UseCase)
 	assert.True(t, uc1.isApplicableCalled)
@@ -44,26 +97,31 @@ func Test_Delete_ReturnsError_WhenIsApplicableReturnsError(t *testing.T) {
 
 func Test_Delete_ReturnsEarly_WhenIsApplicableReturnsError(t *testing.T) {
 	kyma := &v1beta2.Kyma{}
-	uc1 := &useCaseStub{isApplicable: false, err: nil}
-	uc2 := &useCaseStub{isApplicable: true, err: assert.AnError}
-	uc3 := &useCaseStub{isApplicable: false, err: nil}
+	useCases := setupUseCases()
+	uc1 := useCases[0]
+	uc2 := useCases[1]
+	uc3 := useCases[2]
 
-	svc := kymadeletionsvc.NewService(
-		uc1,
-		uc2,
-		uc3,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
+	uc2.isApplicable = true
+	uc2.err = assert.AnError
+
+	svc, err := kymadeletionsvc.NewService(
+		useCases[0],
+		useCases[1],
+		useCases[2],
+		useCases[3],
+		useCases[4],
+		useCases[5],
+		useCases[6],
+		useCases[7],
+		useCases[8],
+		useCases[9],
+		useCases[10],
 	)
 
 	result := svc.Delete(t.Context(), kyma)
 
+	require.NoError(t, err)
 	require.ErrorIs(t, result.Err, assert.AnError)
 	assert.Equal(t, uc2.Name(), result.UseCase)
 	assert.True(t, uc1.isApplicableCalled)
@@ -78,26 +136,31 @@ func Test_Delete_ReturnsEarly_WhenIsApplicableReturnsError(t *testing.T) {
 
 func Test_Delete_ExecutesOnlyFirstApplicableUseCase(t *testing.T) {
 	kyma := &v1beta2.Kyma{}
-	uc1 := &useCaseStub{isApplicable: false, err: nil}
-	uc2 := &useCaseStub{isApplicable: true, err: nil}
-	uc3 := &useCaseStub{isApplicable: true, err: nil}
+	useCases := setupUseCases()
+	uc1 := useCases[0]
+	uc2 := useCases[1]
+	uc3 := useCases[2]
 
-	svc := kymadeletionsvc.NewService(
-		uc1,
-		uc2,
-		uc3,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
+	uc2.isApplicable = true
+	uc3.isApplicable = true
+
+	svc, err := kymadeletionsvc.NewService(
+		useCases[0],
+		useCases[1],
+		useCases[2],
+		useCases[3],
+		useCases[4],
+		useCases[5],
+		useCases[6],
+		useCases[7],
+		useCases[8],
+		useCases[9],
+		useCases[10],
 	)
 
 	result := svc.Delete(t.Context(), kyma)
 
+	require.NoError(t, err)
 	require.NoError(t, result.Err)
 	assert.Equal(t, uc2.Name(), result.UseCase)
 	assert.True(t, uc1.isApplicableCalled)
@@ -112,34 +175,36 @@ func Test_Delete_ExecutesOnlyFirstApplicableUseCase(t *testing.T) {
 
 func Test_Delete_Fallthrough_WhenNoUseCaseIsApplicable(t *testing.T) {
 	kyma := &v1beta2.Kyma{}
-	uc1 := &useCaseStub{isApplicable: false, err: nil}
-	uc2 := &useCaseStub{isApplicable: false, err: nil}
-	uc3 := &useCaseStub{isApplicable: false, err: nil}
-	uc4 := &useCaseStub{isApplicable: false, err: nil}
-	uc5 := &useCaseStub{isApplicable: false, err: nil}
-	uc6 := &useCaseStub{isApplicable: false, err: nil}
-	uc7 := &useCaseStub{isApplicable: false, err: nil}
-	uc8 := &useCaseStub{isApplicable: false, err: nil}
-	uc9 := &useCaseStub{isApplicable: false, err: nil}
-	uc10 := &useCaseStub{isApplicable: false, err: nil}
-	uc11 := &useCaseStub{isApplicable: false, err: nil}
+	useCases := setupUseCases()
+	uc1 := useCases[0]
+	uc2 := useCases[1]
+	uc3 := useCases[2]
+	uc4 := useCases[3]
+	uc5 := useCases[4]
+	uc6 := useCases[5]
+	uc7 := useCases[6]
+	uc8 := useCases[7]
+	uc9 := useCases[8]
+	uc10 := useCases[9]
+	uc11 := useCases[10]
 
-	svc := kymadeletionsvc.NewService(
-		uc1,
-		uc2,
-		uc3,
-		uc4,
-		uc5,
-		uc6,
-		uc7,
-		uc8,
-		uc9,
-		uc10,
-		uc11,
+	svc, err := kymadeletionsvc.NewService(
+		useCases[0],
+		useCases[1],
+		useCases[2],
+		useCases[3],
+		useCases[4],
+		useCases[5],
+		useCases[6],
+		useCases[7],
+		useCases[8],
+		useCases[9],
+		useCases[10],
 	)
 
 	rslt := svc.Delete(t.Context(), kyma)
 
+	require.NoError(t, err)
 	require.ErrorIs(t, rslt.Err, deletion.ErrNoUseCaseApplicable)
 	assert.Equal(t, result.UseCase(""), rslt.UseCase)
 	assert.True(t, uc1.isApplicableCalled)
@@ -175,11 +240,13 @@ func Test_Delete_Fallthrough_WhenNoUseCaseIsApplicable(t *testing.T) {
 
 func Test_Delete_ExecutesCorrectOrderOfUseCases(t *testing.T) {
 	kyma := &v1beta2.Kyma{}
+	useCases := setupUseCases()
 
+	// recording order of the first three should be sufficient
 	recordedOrder := []string{}
-	uc1 := &orderRecordingUseCaseStub{recorder: &recordedOrder}
-	uc2 := &orderRecordingUseCaseStub{recorder: &recordedOrder}
-	uc3 := &orderRecordingUseCaseStub{recorder: &recordedOrder}
+	uc1 := &orderRecordingUseCaseStub{recorder: &recordedOrder, name: usecase.SetKcpKymaStateDeleting}
+	uc2 := &orderRecordingUseCaseStub{recorder: &recordedOrder, name: usecase.SetSkrKymaStateDeleting}
+	uc3 := &orderRecordingUseCaseStub{recorder: &recordedOrder, name: usecase.DeleteSkrKyma}
 
 	executionOrder := []string{
 		fmt.Sprintf("%s-%s", uc1.Name(), "isApplicable"),
@@ -193,18 +260,18 @@ func Test_Delete_ExecutesCorrectOrderOfUseCases(t *testing.T) {
 		fmt.Sprintf("%s-%s", uc3.Name(), "execute"),
 	}
 
-	svc := kymadeletionsvc.NewService(
+	svc, _ := kymadeletionsvc.NewService(
 		uc1,
 		uc2,
 		uc3,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
+		useCases[3],
+		useCases[4],
+		useCases[5],
+		useCases[6],
+		useCases[7],
+		useCases[8],
+		useCases[9],
+		useCases[10],
 	)
 
 	_ = svc.Delete(t.Context(), kyma)
@@ -283,4 +350,20 @@ func (u *orderRecordingUseCaseStub) Name() result.UseCase {
 
 func (u *orderRecordingUseCaseStub) record(phase string) {
 	*u.recorder = append(*u.recorder, fmt.Sprintf("%s-%s", u.Name(), phase))
+}
+
+func setupUseCases() []*useCaseStub {
+	return []*useCaseStub{
+		{isApplicable: false, err: nil, name: usecase.SetKcpKymaStateDeleting},
+		{isApplicable: false, err: nil, name: usecase.SetSkrKymaStateDeleting},
+		{isApplicable: false, err: nil, name: usecase.DeleteSkrKyma},
+		{isApplicable: false, err: nil, name: usecase.DeleteWatcherCertificateSetup},
+		{isApplicable: false, err: nil, name: usecase.DeleteSkrWebhookResources},
+		{isApplicable: false, err: nil, name: usecase.DeleteSkrModuleTemplateCrd},
+		{isApplicable: false, err: nil, name: usecase.DeleteSkrModuleReleaseMetaCrd},
+		{isApplicable: false, err: nil, name: usecase.DeleteSkrKymaCrd},
+		{isApplicable: false, err: nil, name: usecase.DeleteManifests},
+		{isApplicable: false, err: nil, name: usecase.DeleteMetrics},
+		{isApplicable: false, err: nil, name: usecase.DropKymaFinalizer},
+	}
 }

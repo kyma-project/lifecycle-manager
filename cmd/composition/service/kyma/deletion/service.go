@@ -25,6 +25,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
+//nolint:funlen // composition function
 func ComposeKymaDeletionService(kcpClient client.Client,
 	certificateRepository certificate.CertificateRepository,
 	kymaMetrics *metrics.KymaMetrics,
@@ -96,7 +97,7 @@ func ComposeKymaDeletionService(kcpClient client.Client,
 
 	dropKymaFinalizer := usecases.NewDropKymaFinalizer(kymaRepo)
 
-	return kymadeletionsvc.NewService(
+	svc, err := kymadeletionsvc.NewService(
 		setKcpKymaStateDeleting,
 		setSkrKymaStateDeleting,
 		deleteSkrKyma,
@@ -109,4 +110,9 @@ func ComposeKymaDeletionService(kcpClient client.Client,
 		deleteMetrics,
 		dropKymaFinalizer,
 	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to compose Kyma deletion service: %v", err))
+	}
+
+	return svc
 }

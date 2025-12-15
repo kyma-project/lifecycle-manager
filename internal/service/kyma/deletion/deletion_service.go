@@ -3,13 +3,18 @@ package deletion
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/errors/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
+	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 )
 
-var ErrUnableToDetermineUsecaseApplicability = errors.New("unable to determine usecase applicability")
+var (
+	ErrUnableToDetermineUsecaseApplicability = errors.New("unable to determine usecase applicability")
+	ErrUseCasesOutOfOrder                    = errors.New("deletion use cases are not in the expected order")
+)
 
 type UseCase interface {
 	IsApplicable(ctx context.Context, kyma *v1beta2.Kyma) (bool, error)
@@ -33,8 +38,8 @@ func NewService(
 	deleteManifests UseCase,
 	deleteMetrics UseCase,
 	dropKymaFinalizers UseCase,
-) *Service {
-	return &Service{
+) (*Service, error) {
+	svc := &Service{
 		deletionSteps: []UseCase{
 			setKcpKymaStateDeleting,
 			setSkrKymaStateDeleting,
@@ -49,6 +54,12 @@ func NewService(
 			dropKymaFinalizers,
 		},
 	}
+
+	if err := svc.enforceUseCaseOrder(); err != nil {
+		return nil, err
+	}
+
+	return svc, nil
 }
 
 func (s *Service) Delete(ctx context.Context, kyma *v1beta2.Kyma) result.Result {
@@ -68,4 +79,40 @@ func (s *Service) Delete(ctx context.Context, kyma *v1beta2.Kyma) result.Result 
 	return result.Result{
 		Err: deletion.ErrNoUseCaseApplicable,
 	}
+}
+
+func (s *Service) enforceUseCaseOrder() error {
+	expectedUseCaseOrder := []result.UseCase{
+		usecase.SetKcpKymaStateDeleting,
+		usecase.SetSkrKymaStateDeleting,
+		usecase.DeleteSkrKyma,
+		usecase.DeleteWatcherCertificateSetup,
+		usecase.DeleteSkrWebhookResources,
+		usecase.DeleteSkrModuleTemplateCrd,
+		usecase.DeleteSkrModuleReleaseMetaCrd,
+		usecase.DeleteSkrKymaCrd,
+		usecase.DeleteManifests,
+		usecase.DeleteMetrics,
+		usecase.DropKymaFinalizer,
+	}
+
+	var err error
+	for idx, expectedUseCase := range expectedUseCaseOrder {
+		if s.deletionSteps[idx].Name() != expectedUseCase {
+			err = errors.Join(err,
+				//nolint:err113 // we are wrapping below
+				fmt.Errorf("expected use case %s at position %d but found %s",
+					expectedUseCase,
+					idx,
+					s.deletionSteps[idx].Name(),
+				),
+			)
+		}
+	}
+
+	if err != nil {
+		return errors.Join(ErrUseCasesOutOfOrder, err)
+	}
+
+	return nil
 }
