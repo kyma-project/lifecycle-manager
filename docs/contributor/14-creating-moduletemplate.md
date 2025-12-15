@@ -1,4 +1,4 @@
-# Creating ModuleTemplate with modulectl and OCM CLI
+# Creating ModuleTemplates with modulectl and OCM CLI
 
 This guide describes how to create ModuleTemplate custom resources using [modulectl](https://github.com/kyma-project/modulectl) in combination with [OCM CLI](https://github.com/open-component-model/ocm).
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
@@ -15,10 +14,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-)
-
-const (
-	msgTLSCertificateExpired = "expired certificate" // stdlib: crypto/tls/alert.go
 )
 
 var (
@@ -143,7 +138,7 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 	err := c.clnt.Patch(ctx, obj, client.Apply, client.ForceOwnership, c.owner)
 	if err != nil {
 		return fmt.Errorf(
-			"patch for %s failed: %w", info.ObjectName(), c.supressLongClientErrors(err),
+			"patch for %s failed: %w", info.ObjectName(), supressLongClientErrors(err),
 		)
 	}
 
@@ -151,27 +146,29 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 	return nil
 }
 
-func (c *ConcurrentDefaultSSA) supressLongClientErrors(clientErr error) error {
-	if err, suppressed := c.suppressUnauthorized(clientErr); suppressed {
+func supressLongClientErrors(clientErr error) error {
+	if err, suppressed := suppressUnauthorized(clientErr); suppressed {
 		return err
 	}
-	if err, suppressed := c.suppressTLSExpired(clientErr); suppressed {
+	if err, suppressed := suppressTLSExpired(clientErr); suppressed {
 		return err
 	}
 	return clientErr
 }
 
-// suppressUnauthorized replaces client-go error with our own in order to suppress it's very long Error() payload.
-func (c *ConcurrentDefaultSSA) suppressUnauthorized(src error) (error, bool) {
-	if strings.HasSuffix(strings.TrimRight(src.Error(), " \n"), ": Unauthorized") {
+// suppressUnauthorized replaces client-go error with our own in order to suppress it's very long Error() payload
+// and to make it typed for easier handling.
+func suppressUnauthorized(src error) (error, bool) {
+	if util.IsUnauthorizedError(src.Error()) {
 		return util.ErrClientUnauthorized, true
 	}
 	return src, false
 }
 
-// suppressTLSExpired replaces client-go error with our own in order to suppress it's very long Error() payload.
-func (c *ConcurrentDefaultSSA) suppressTLSExpired(src error) (error, bool) {
-	if strings.HasSuffix(strings.TrimRight(src.Error(), " \n"), msgTLSCertificateExpired) {
+// suppressTLSExpired replaces client-go error with our own in order to suppress it's very long Error() payload
+// and to make it typed for easier handling.
+func suppressTLSExpired(src error) (error, bool) {
+	if util.IsTLSCertExpiredError(src.Error()) {
 		return util.ErrClientTLSCertExpired, true
 	}
 	return src, false
