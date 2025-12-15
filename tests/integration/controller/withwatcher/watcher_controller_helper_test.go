@@ -108,11 +108,9 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      managerInstanceName,
 			Namespace: ControlPlaneNamespace,
-			Labels: map[string]string{
-				shared.ManagedBy: managerInstanceName,
-			},
 		},
 		Spec: v1beta2.WatcherSpec{
+			Manager: managerInstanceName,
 			ServiceInfo: v1beta2.Service{
 				Port:      8082,
 				Name:      managerInstanceName + "-svc",

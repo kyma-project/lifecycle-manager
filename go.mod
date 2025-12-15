@@ -46,6 +46,7 @@ require (
 	github.com/distribution/reference v0.6.0
 	github.com/go-co-op/gocron v1.37.0
 	github.com/prometheus/client_model v0.6.2
+	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.34.3
 	k8s.io/apiextensions-apiserver v0.34.3
 	k8s.io/apimachinery v0.34.3
@@ -402,7 +403,6 @@ require (
 	gopkg.in/op/go-logging.v1 v1.0.0-20160211212156-b2cb9fa56473 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.19.0 // indirect
 	k8s.io/component-base v0.34.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
