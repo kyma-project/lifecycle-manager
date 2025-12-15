@@ -30,8 +30,8 @@ func CreateSkrEventHandler() *handler.Funcs {
 			}
 			logger.Info(fmt.Sprintf("event received from SKR, adding %s to queue", req.NamespacedName))
 			fmt.Printf( //nolint:forbidigo // debug line
-				"===[DEBUG]====> event received from SKR, adding %s to queue",
-				req.NamespacedName)
+				"===[DEBUG]====> event received from SKR, adding %s to queue. Event: %v\n",
+				req.NamespacedName, evnt.Object)
 			queue.Add(req)
 		},
 	}
