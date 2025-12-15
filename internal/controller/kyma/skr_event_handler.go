@@ -23,9 +23,15 @@ func CreateSkrEventHandler() *handler.Funcs {
 			req, ok := BuildRequestFromEvent(evnt)
 			if !ok {
 				logger.Error(errConvertingWatcherEvent, fmt.Sprintf("event: %v", evnt.Object))
+				fmt.Printf( //nolint:forbidigo // debug line
+					"===[DEBUG]====> %s: event: %v\n",
+					errConvertingWatcherEvent, evnt.Object)
 				return
 			}
 			logger.Info(fmt.Sprintf("event received from SKR, adding %s to queue", req.NamespacedName))
+			fmt.Printf( //nolint:forbidigo // debug line
+				"===[DEBUG]====> event received from SKR, adding %s to queue",
+				req.NamespacedName)
 			queue.Add(req)
 		},
 	}
