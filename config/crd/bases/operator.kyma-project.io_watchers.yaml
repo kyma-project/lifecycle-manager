@@ -341,9 +341,8 @@ spec:
                 description: LabelsToWatch describes the labels that should be watched
                 type: object
               manager:
-                description: |-
-                  Manager specifies the component responsible for handling webhook requests.
-                  If not set, falls back to the 'operator.kyma-project.io/managed-by' label.
+                description: Manager specifies the component responsible for handling
+                  webhook requests.
                 type: string
               resourceToWatch:
                 description: ResourceToWatch is the GroupVersionResource of the resource

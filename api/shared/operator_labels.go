@@ -9,10 +9,6 @@ const (
 	ControllerName = OperatorGroup + Separator + "controller-name"
 	ChannelLabel   = OperatorGroup + Separator + "channel"
 	// ManagedBy defines the controller managing the resource.
-	//
-	// Deprecated: The 'operator.kyma-project.io/managed-by' label is deprecated.
-	// Use the spec.manager field in the Watcher CR instead.
-	// This label is maintained for backward compatibility and will be removed in a future release.
 	ManagedBy           = OperatorGroup + Separator + "managed-by"
 	ManagedByLabelValue = kymaValue
 	kymaValue           = "kyma"

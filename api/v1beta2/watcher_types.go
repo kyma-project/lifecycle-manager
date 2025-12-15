@@ -29,7 +29,6 @@ type WatcherSpec struct {
 	ServiceInfo Service `json:"serviceInfo"`
 
 	// Manager specifies the component responsible for handling webhook requests.
-	// If not set, falls back to the 'operator.kyma-project.io/managed-by' label.
 	// +optional
 	Manager string `json:"manager,omitempty"`
 
@@ -115,32 +114,12 @@ type Watcher struct {
 	Status WatcherStatus `json:"status,omitempty"`
 }
 
-// GetManagerName returns the name of the manager component responsible for handling webhook requests.
-//
-// This value is used in two places:
-//  1. In the SKR cluster, it is set as `clientConfig.service.path` in the ValidatingWebhookConfiguration,
-//     indicating which backend manager service should receive the webhook call.
-//  2. In the KCP, it is used as `http.match.uri.prefix` in the VirtualService to route the incoming
-//     webhook request to the appropriate manager service.
-//
-// The method uses the following priority:
-//  1. First, it checks the spec.Manager field (preferred, explicit configuration)
-//  2. If not set, it falls back to the 'operator.kyma-project.io/managed-by' label (DEPRECATED, backward compatibility only)
-//  3. If neither is set, it returns an empty string
-//
-// Deprecated label fallback: The 'operator.kyma-project.io/managed-by' label is deprecated in favor of spec.Manager.
-// The label-based approach is maintained for backward compatibility but will be removed in a future release.
-// All new Watcher CRs should use spec.Manager instead.
-//
-// Consistency in this name ensures correct routing and handling of webhook validation logic.
+// GetManagerName returns the manager component name responsible for handling webhook requests.
 func (watcher *Watcher) GetManagerName() string {
-	// Use explicit spec.Manager field if set
 	if watcher.Spec.Manager != "" {
 		return watcher.Spec.Manager
 	}
 
-	// Fall back to managed-by label for backward compatibility
-	// Deprecated: The managed-by label fallback is deprecated. Use spec.manager field instead.
 	if watcher.Labels != nil {
 		return watcher.Labels[shared.ManagedBy]
 	}
