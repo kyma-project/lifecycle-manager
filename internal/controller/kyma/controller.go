@@ -169,8 +169,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !kyma.DeletionTimestamp.IsZero() {
-		useLegacyKymaDeletion, ok := os.LookupEnv("ENABLE_LEGACY_KYMA_DELETION")
-		if !ok || useLegacyKymaDeletion != "true" {
+		envValue, isDefined := os.LookupEnv("ENABLE_LEGACY_KYMA_DELETION")
+		useLegacyKymaDeletion := isDefined && envValue == "true"
+		if !useLegacyKymaDeletion {
 			return r.processDeletion(ctx, kyma)
 		}
 	}
