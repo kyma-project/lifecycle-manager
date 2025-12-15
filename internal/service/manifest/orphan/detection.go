@@ -15,7 +15,7 @@ const orphanedManifestTolerance = 5 * time.Minute
 var ErrOrphanedManifest = errors.New("orphaned manifest detected")
 
 type KymaRepository interface {
-	Get(ctx context.Context, kymaName string, kymaNamespace string) (*v1beta2.Kyma, error)
+	Get(ctx context.Context, kymaName string) (*v1beta2.Kyma, error)
 }
 
 type DetectionService struct {
@@ -55,7 +55,7 @@ func (s *DetectionService) getParentKyma(ctx context.Context, manifest *v1beta2.
 		return nil, fmt.Errorf("cannot get parent Kyma name: %w", err)
 	}
 
-	kyma, err := s.repository.Get(ctx, kymaName, manifest.GetNamespace())
+	kyma, err := s.repository.Get(ctx, kymaName)
 	if err != nil {
 		if util.IsNotFound(err) {
 			return nil, fmt.Errorf("%w: parent Kyma does not exist", ErrOrphanedManifest)

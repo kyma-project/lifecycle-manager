@@ -20,11 +20,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"time"
 
 	"golang.org/x/sync/errgroup"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,6 +41,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/result"
+	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -61,6 +66,18 @@ const (
 	updateStatusError event.Reason = "UpdateStatusError"
 	patchStatusError  event.Reason = "PatchStatus"
 )
+
+type DeletionMetricWriter interface {
+	Write(res result.Result)
+}
+
+type DeletionEventRecorder interface {
+	Record(ctx context.Context, obj machineryruntime.Object, res result.Result)
+}
+
+type DeletionService interface {
+	Delete(ctx context.Context, kyma *v1beta2.Kyma) result.Result
+}
 
 type SKRWebhookManager interface {
 	Reconcile(ctx context.Context, kyma *v1beta2.Kyma) error
@@ -101,8 +118,15 @@ type Reconciler struct {
 	Metrics        *metrics.KymaMetrics
 	RemoteCatalog  *remote.RemoteCatalog
 	TemplateLookup *templatelookup.TemplateLookup
+
+	DeletionMetrics DeletionMetricWriter
+	DeletionEvents  DeletionEventRecorder
+	DeletionService DeletionService
 }
 
+// https://github.com/kyma-project/lifecycle-manager/issues/2943
+//
+//nolint:funlen // disable for kyma controller until we remove legacy deletion with above issue
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("Kyma reconciliation started")
@@ -142,6 +166,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)
 		setModuleStatusesToError(kyma, err.Error())
 		return r.requeueWithError(ctx, kyma, err)
+	}
+
+	if !kyma.DeletionTimestamp.IsZero() {
+		envValue, isDefined := os.LookupEnv("ENABLE_LEGACY_KYMA_DELETION")
+		useLegacyKymaDeletion := isDefined && envValue == "true"
+		if !useLegacyKymaDeletion {
+			return r.processDeletion(ctx, kyma)
+		}
 	}
 
 	err = skrContext.CreateKymaNamespace(ctx)
@@ -234,6 +266,37 @@ func (r *Reconciler) UpdateModuleTemplatesIfNeeded(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (r *Reconciler) processDeletion(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
+	res := r.DeletionService.Delete(ctx, kyma)
+
+	if util.IsConnectionRelatedError(res.Err) {
+		r.SkrContextFactory.InvalidateCache(kyma.GetNamespacedName())
+	}
+
+	r.DeletionMetrics.Write(res)
+	r.DeletionEvents.Record(ctx, kyma, res)
+
+	switch res.UseCase {
+	case usecase.SetKcpKymaStateDeleting,
+		usecase.SetSkrKymaStateDeleting,
+		usecase.DeleteSkrKyma,
+		usecase.DeleteWatcherCertificateSetup,
+		usecase.DeleteSkrWebhookResources,
+		usecase.DeleteSkrModuleTemplateCrd,
+		usecase.DeleteSkrModuleReleaseMetaCrd,
+		usecase.DeleteSkrKymaCrd,
+		usecase.DeleteManifests,
+		usecase.DeleteMetrics:
+		// error takes precedence over the RequeueAfter
+		// res.Err != nil => requeue rate limited
+		// res.Err == nil => requeue after
+		return ctrl.Result{RequeueAfter: 1 * time.Second}, res.Err
+	case usecase.DropKymaFinalizer:
+		// finalizers removed, no need to requeue if there is no error
+	}
+	return ctrl.Result{}, res.Err
 }
 
 func (r *Reconciler) requeueWithError(ctx context.Context, kyma *v1beta2.Kyma, err error) (ctrl.Result, error) {
@@ -511,8 +574,6 @@ func checkSKRWebhookReadiness(ctx context.Context, skrClient *remote.SkrContext,
 }
 
 func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
-	logger := logf.FromContext(ctx).V(log.InfoLevel)
-
 	if r.WatcherEnabled() {
 		if err := r.SKRWebhookManager.Remove(ctx, kyma); err != nil {
 			return ctrl.Result{}, err
@@ -535,6 +596,7 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 		return r.requeueWithError(ctx, kyma, err)
 	}
 
+	logger := logf.FromContext(ctx).V(log.InfoLevel)
 	logger.Info("removed remote finalizers")
 
 	if err := r.cleanupManifestCRs(ctx, kyma); err != nil {

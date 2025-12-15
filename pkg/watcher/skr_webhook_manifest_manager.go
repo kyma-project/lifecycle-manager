@@ -57,7 +57,7 @@ type SkrWebhookManifestManager struct {
 	remoteSyncNamespace   string
 	kcpAddr               skrwebhookresources.KCPAddr
 	chartReaderService    *chartreader.Service
-	baseResources         []*unstructured.Unstructured
+	BaseResources         []*unstructured.Unstructured
 	watcherMetrics        WatcherMetrics
 	skrCertificateService SKRCertificateService
 	resourceConfigurator  *skrwebhookresources.ResourceConfigurator
@@ -78,7 +78,7 @@ func NewSKRWebhookManifestManager(kcpClient client.Client, skrContextFactory rem
 		remoteSyncNamespace:   remoteSyncNamespace,
 		kcpAddr:               resolvedKcpAddr,
 		chartReaderService:    chartReaderService,
-		baseResources:         baseResources,
+		BaseResources:         baseResources,
 		watcherMetrics:        watcherMetrics,
 		skrCertificateService: skrCertificateService,
 		resourceConfigurator:  resourceConfigurator,
@@ -245,7 +245,7 @@ func (m *SkrWebhookManifestManager) getRawManifestClientObjects(ctx context.Cont
 		return nil, fmt.Errorf("failed to get SKR certificate secret: %w", err)
 	}
 
-	for _, baseRes := range m.baseResources {
+	for _, baseRes := range m.BaseResources {
 		resource := baseRes.DeepCopy()
 		resource.SetLabels(collections.MergeMapsSilent(resource.GetLabels(), map[string]string{
 			shared.ManagedBy: shared.ManagedByLabelValue,
@@ -281,11 +281,11 @@ func (m *SkrWebhookManifestManager) getCertificateData(ctx context.Context,
 }
 
 func (m *SkrWebhookManifestManager) getBaseClientObjects() []client.Object {
-	if len(m.baseResources) == 0 {
+	if len(m.BaseResources) == 0 {
 		return nil
 	}
 	baseClientObjects := make([]client.Object, 0)
-	for _, res := range m.baseResources {
+	for _, res := range m.BaseResources {
 		resCopy := res.DeepCopy()
 		baseClientObjects = append(baseClientObjects, resCopy)
 	}
