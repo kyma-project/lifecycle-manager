@@ -28,6 +28,10 @@ type WatcherSpec struct {
 	// ServiceInfo describes the service information of the listener
 	ServiceInfo Service `json:"serviceInfo"`
 
+	// Manager specifies the component responsible for handling webhook requests.
+	// +optional
+	Manager string `json:"manager,omitempty"`
+
 	// LabelsToWatch describes the labels that should be watched
 	// +optional
 	LabelsToWatch map[string]string `json:"labelsToWatch,omitempty"`
@@ -112,6 +116,9 @@ type Watcher struct {
 
 // GetManagerName returns the name of the manager component responsible for handling webhook requests.
 //
+// The manager name is determined from spec.Manager field (preferred) or falls to the
+// 'operator.kyma-project.io/managed-by' label for backward compatibility.
+//
 // This value is used in two places:
 //  1. In the SKR cluster, it is set as `clientConfig.service.path` in the ValidatingWebhookConfiguration,
 //     indicating which backend manager service should receive the webhook call.
@@ -120,10 +127,15 @@ type Watcher struct {
 //
 // Consistency in this name ensures correct routing and handling of webhook validation logic.
 func (watcher *Watcher) GetManagerName() string {
-	if watcher.Labels == nil {
-		return ""
+	if watcher.Spec.Manager != "" {
+		return watcher.Spec.Manager
 	}
-	return watcher.Labels[shared.ManagedBy]
+
+	if watcher.Labels != nil {
+		return watcher.Labels[shared.ManagedBy]
+	}
+
+	return ""
 }
 
 // +kubebuilder:object:root=true

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/v2/event"
 	"github.com/kyma-project/runtime-watcher/listener/pkg/v2/types"
@@ -64,7 +63,7 @@ func SetupWithManager(mgr manager.Manager,
 	}
 
 	runnableListener := watcherevent.NewSKREventListener(
-		settings.ListenerAddr, strings.ToLower(shared.OperatorName),
+		settings.ListenerAddr, shared.OperatorName,
 		verifyFunc,
 	)
 
