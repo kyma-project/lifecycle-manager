@@ -15,9 +15,6 @@ import (
 )
 
 func TestExists_ClientCallSucceeds_ReturnsExists(t *testing.T) {
-	kymaName := random.Name()
-	repoNamespace := random.Name()
-
 	clientStub := &getClientStub{
 		object: &apicorev1.Secret{
 			ObjectMeta: apimetav1.ObjectMeta{
@@ -26,34 +23,31 @@ func TestExists_ClientCallSucceeds_ReturnsExists(t *testing.T) {
 			},
 		},
 	}
-	secretRepository := secretrepo.NewRepository(clientStub, repoNamespace)
+	secretRepository := secretrepo.NewRepository(clientStub, namespace)
 
-	result, err := secretRepository.Exists(t.Context(), kymaName)
+	result, err := secretRepository.Exists(t.Context(), secretName)
 
 	require.NoError(t, err)
 	assert.True(t, result)
 	assert.True(t, clientStub.called)
 	assert.Equal(t,
-		client.ObjectKey{Name: kymaName, Namespace: repoNamespace},
+		client.ObjectKey{Name: secretName, Namespace: namespace},
 		clientStub.key)
 }
 
 func TestExists_ClientCallFailsWithNotFound_ReturnsNotExists(t *testing.T) {
-	kymaName := random.Name()
-	repoNamespace := random.Name()
-
 	clientStub := &getClientStub{
-		err: apierrors.NewNotFound(apicorev1.Resource("secrets"), kymaName),
+		err: apierrors.NewNotFound(apicorev1.Resource("secrets"), secretName),
 	}
-	secretRepository := secretrepo.NewRepository(clientStub, repoNamespace)
+	secretRepository := secretrepo.NewRepository(clientStub, namespace)
 
-	result, err := secretRepository.Exists(t.Context(), kymaName)
+	result, err := secretRepository.Exists(t.Context(), secretName)
 
 	require.NoError(t, err)
 	assert.False(t, result)
 	assert.True(t, clientStub.called)
 	assert.Equal(t,
-		client.ObjectKey{Name: kymaName, Namespace: repoNamespace},
+		client.ObjectKey{Name: secretName, Namespace: namespace},
 		clientStub.key)
 }
 

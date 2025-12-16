@@ -31,7 +31,7 @@ func (u *DeleteSkrCrd) IsApplicable(ctx context.Context, kcpKyma *v1beta2.Kyma) 
 		return false, nil
 	}
 
-	if exists, err := u.skrAccessSecretRepo.Exists(ctx, kcpKyma.GetName()); !exists || err != nil {
+	if exists, err := u.skrAccessSecretRepo.ExistsForKyma(ctx, kcpKyma.GetName()); !exists || err != nil {
 		return false, err
 	}
 

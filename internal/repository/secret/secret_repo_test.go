@@ -54,6 +54,8 @@ func TestList_ClientCallSucceeds_ReturnsSecrets(t *testing.T) {
 type listClientStub struct {
 	client.Client
 
+	err error
+
 	called        bool
 	list          *apicorev1.SecretList
 	lastSelector  k8slabels.Selector
@@ -75,6 +77,10 @@ func (c *listClientStub) List(_ context.Context, obj client.ObjectList, opts ...
 			}
 		}
 	}
-	c.list.DeepCopyInto(obj.(*apicorev1.SecretList))
-	return nil
+
+	if c.list != nil {
+		c.list.DeepCopyInto(obj.(*apicorev1.SecretList))
+	}
+
+	return c.err
 }
