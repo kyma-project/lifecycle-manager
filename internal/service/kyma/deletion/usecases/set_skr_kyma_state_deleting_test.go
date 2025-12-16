@@ -81,7 +81,7 @@ func TestIsApplicable_False_DeletionTimestampNotSet(t *testing.T) {
 }
 
 func TestIsApplicable_False_SecretDoesNotExist(t *testing.T) {
-	kyma := &v1beta2.Kyma{
+	kcpKyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:              random.Name(),
 			Namespace:         random.Name(),
@@ -95,16 +95,16 @@ func TestIsApplicable_False_SecretDoesNotExist(t *testing.T) {
 
 	uc := usecases.NewSetSkrKymaStateDeleting(nil, skrAccessSecretRepo)
 
-	applicable, err := uc.IsApplicable(t.Context(), kyma)
+	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
 
 	require.NoError(t, err)
 	assert.False(t, applicable)
 	assert.True(t, skrAccessSecretRepo.called)
-	assert.Equal(t, kyma.GetName(), skrAccessSecretRepo.kymaName)
+	assert.Equal(t, kcpKyma.GetName(), skrAccessSecretRepo.kymaName)
 }
 
 func TestIsApplicable_False_SecretRepoReturnsError(t *testing.T) {
-	kyma := &v1beta2.Kyma{
+	kcpKyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:              random.Name(),
 			Namespace:         random.Name(),
@@ -118,12 +118,12 @@ func TestIsApplicable_False_SecretRepoReturnsError(t *testing.T) {
 
 	uc := usecases.NewSetSkrKymaStateDeleting(nil, skrAccessSecretRepo)
 
-	applicable, err := uc.IsApplicable(t.Context(), kyma)
+	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
 
 	require.ErrorIs(t, err, assert.AnError)
 	assert.False(t, applicable)
 	assert.True(t, skrAccessSecretRepo.called)
-	assert.Equal(t, kyma.GetName(), skrAccessSecretRepo.kymaName)
+	assert.Equal(t, kcpKyma.GetName(), skrAccessSecretRepo.kymaName)
 }
 
 func TestIsApplicable_False_KymaAlreadyInDeletingState(t *testing.T) {

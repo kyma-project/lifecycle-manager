@@ -62,6 +62,29 @@ func TestDeleteSkrCrd_IsApplicable_False_SecretDoesNotExist(t *testing.T) {
 	assert.Equal(t, kcpKyma.GetName(), skrAccessSecretRepo.kymaName)
 }
 
+func TestDeleteSkrCrd_IsApplicable_False_SecretRepoReturnsError(t *testing.T) {
+	kcpKyma := &v1beta2.Kyma{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:              random.Name(),
+			Namespace:         random.Name(),
+			DeletionTimestamp: &apimetav1.Time{Time: time.Now()},
+		},
+	}
+
+	skrAccessSecretRepo := &skrAccessSecretRepoStub{
+		err: assert.AnError,
+	}
+
+	uc := usecases.NewDeleteSkrCrd(nil, skrAccessSecretRepo, result.UseCase(random.Name()))
+
+	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
+
+	require.ErrorIs(t, err, assert.AnError)
+	assert.False(t, applicable)
+	assert.True(t, skrAccessSecretRepo.called)
+	assert.Equal(t, kcpKyma.GetName(), skrAccessSecretRepo.kymaName)
+}
+
 func TestDeleteSkrCrd_IsApplicable_True_CrdExists(t *testing.T) {
 	kcpKyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{

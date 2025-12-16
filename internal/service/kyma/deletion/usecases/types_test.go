@@ -15,7 +15,7 @@ type skrAccessSecretRepoStub struct {
 	err      error
 }
 
-func (r *skrAccessSecretRepoStub) Exists(_ context.Context, kymaName string) (bool, error) {
+func (r *skrAccessSecretRepoStub) ExistsForKyma(_ context.Context, kymaName string) (bool, error) {
 	r.called = true
 	r.kymaName = kymaName
 	return r.exists, r.err

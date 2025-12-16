@@ -8,6 +8,7 @@ import (
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -34,8 +35,17 @@ func (r *Repository) Get(ctx context.Context, name string) (*apicorev1.Secret, e
 	return secret, nil
 }
 
-func (r *Repository) Exists(ctx context.Context, name string) (bool, error) {
-	_, err := r.Get(ctx, name)
+func (r *Repository) ExistsForKyma(ctx context.Context, kymaName string) (bool, error) {
+	secrets, err := r.List(ctx, k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kymaName}))
+	if err != nil {
+		return false, err
+	}
+
+	return len(secrets.Items) > 0, nil
+}
+
+func (r *Repository) Exists(ctx context.Context, secretName string) (bool, error) {
+	_, err := r.Get(ctx, secretName)
 
 	// not found error => (false, nil)
 	// other error => (true, err)

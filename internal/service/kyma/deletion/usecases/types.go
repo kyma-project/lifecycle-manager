@@ -7,7 +7,7 @@ import (
 )
 
 type SkrAccessSecretRepo interface {
-	Exists(ctx context.Context, name string) (bool, error)
+	ExistsForKyma(ctx context.Context, kymaName string) (bool, error)
 }
 
 type ExistsDeleteRepo interface {
