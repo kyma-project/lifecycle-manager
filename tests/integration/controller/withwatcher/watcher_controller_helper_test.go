@@ -3,8 +3,6 @@ package withwatcher_test
 import (
 	"context"
 	"errors"
-	"io"
-	"os"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -12,8 +10,6 @@ import (
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -26,7 +22,6 @@ import (
 )
 
 const (
-	defaultBufferSize    = 2048
 	componentToBeRemoved = "compass"
 	componentToBeUpdated = "lifecycle-manager"
 )
@@ -96,33 +91,6 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1b
 	})
 }
 
-func deserializeIstioResources() ([]*unstructured.Unstructured, error) {
-	var istioResourcesList []*unstructured.Unstructured
-
-	file, err := os.Open(istioResourcesFilePath)
-	if err != nil {
-		return nil, err
-	}
-	defer func(file io.ReadCloser) {
-		err := file.Close()
-		if err != nil {
-			logger.Error(err, "failed to close test resources", "path", istioResourcesFilePath)
-		}
-	}(file)
-	decoder := machineryaml.NewYAMLOrJSONDecoder(file, defaultBufferSize)
-	for {
-		istioResource := &unstructured.Unstructured{}
-		err = decoder.Decode(istioResource)
-		if err == nil {
-			istioResourcesList = append(istioResourcesList, istioResource)
-		}
-		if errors.Is(err, io.EOF) {
-			break
-		}
-	}
-	return istioResourcesList, nil
-}
-
 func isEven(idx int) bool {
 	return idx%2 == 0
 }
@@ -140,11 +108,9 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      managerInstanceName,
 			Namespace: ControlPlaneNamespace,
-			Labels: map[string]string{
-				shared.ManagedBy: managerInstanceName,
-			},
 		},
 		Spec: v1beta2.WatcherSpec{
+			Manager: managerInstanceName,
 			ServiceInfo: v1beta2.Service{
 				Port:      8082,
 				Name:      managerInstanceName + "-svc",
@@ -170,7 +136,7 @@ func createWatcherSecret(kymaObjKey client.ObjectKey) *apicorev1.Secret {
 	return &apicorev1.Secret{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      kymaObjKey.Name + "-webhook-tls",
-			Namespace: istioSystemNs,
+			Namespace: shared.IstioNamespace,
 			Labels: map[string]string{
 				shared.ManagedBy: shared.OperatorName,
 			},
@@ -188,7 +154,7 @@ func createGatewaySecret() *apicorev1.Secret {
 	return &apicorev1.Secret{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      "klm-istio-gateway",
-			Namespace: istioSystemNs,
+			Namespace: shared.IstioNamespace,
 			Annotations: map[string]string{
 				shared.LastModifiedAtAnnotation: apimetav1.Now().Add(-1 * time.Hour).Format(time.RFC3339),
 			},

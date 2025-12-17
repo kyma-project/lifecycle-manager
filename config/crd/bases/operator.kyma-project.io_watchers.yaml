@@ -340,6 +340,10 @@ spec:
                   type: string
                 description: LabelsToWatch describes the labels that should be watched
                 type: object
+              manager:
+                description: Manager specifies the component responsible for handling
+                  webhook requests.
+                type: string
               resourceToWatch:
                 description: ResourceToWatch is the GroupVersionResource of the resource
                   that should be watched.

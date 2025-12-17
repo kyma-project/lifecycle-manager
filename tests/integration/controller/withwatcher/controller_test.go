@@ -41,7 +41,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	kyma := NewTestKyma("kyma-remote-sync-multi-module")
 
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
-	issuer := NewTestIssuer(istioSystemNs)
+	issuer := NewTestIssuer(shared.IstioNamespace)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	tlsSecret := createWatcherSecret(kymaObjKey)
 	gatewaySecret := createGatewaySecret()
@@ -206,11 +206,11 @@ func verifyWebhookConfig(
 				Name:      watcherName,
 			})
 	}
-	expectedModuleName, exists := watcherCR.Labels[shared.ManagedBy]
-	if !exists {
-		return fmt.Errorf("%w: (labels=%v)", ErrManagedByLabelNotFound, watcherCR.Labels)
+	expectedWatcherManagerName := watcherCR.GetManagerName()
+	if expectedWatcherManagerName == "" {
+		return fmt.Errorf("%w: manager name is empty", ErrManagedByLabelNotFound)
 	}
-	expectedSvcPath := fmt.Sprintf(servicePathTpl, expectedModuleName)
+	expectedSvcPath := fmt.Sprintf(servicePathTpl, expectedWatcherManagerName)
 	if *webhook.ClientConfig.Service.Path != expectedSvcPath {
 		return fmt.Errorf("%w: (expected=%s, got=%s)", ErrSvcPathMismatch,
 			expectedSvcPath, *webhook.ClientConfig.Service.Path)

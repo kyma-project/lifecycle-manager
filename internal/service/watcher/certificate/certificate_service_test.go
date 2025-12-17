@@ -416,6 +416,10 @@ func (c *certRepoStub) Delete(_ context.Context, name string) error {
 	return c.deleteErr
 }
 
+func (c *certRepoStub) Exists(_ context.Context, _ string) (bool, error) {
+	return false, nil
+}
+
 func (c *certRepoStub) GetRenewalTime(_ context.Context, _ string) (time.Time, error) {
 	c.getRenewalTimeCalled = true
 	return c.renewalTime, c.getRenewalTimeErr

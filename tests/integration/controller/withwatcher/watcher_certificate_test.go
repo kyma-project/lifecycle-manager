@@ -25,7 +25,7 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 	kyma := NewTestKyma("kyma-remote-sync-cert")
 
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
-	issuer := NewTestIssuer(istioSystemNs)
+	issuer := NewTestIssuer(shared.IstioNamespace)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	tlsSecret := createWatcherSecret(kymaObjKey)
 	skrTLSSecretObjKey := client.ObjectKey{
@@ -108,7 +108,7 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 func getCertificate(clnt client.Client, kymaName string) (*certmanagerv1.Certificate, error) {
 	certificateCR := &certmanagerv1.Certificate{}
 	err := clnt.Get(ctx,
-		client.ObjectKey{Name: kymaName + "-webhook-tls", Namespace: istioSystemNs},
+		client.ObjectKey{Name: kymaName + "-webhook-tls", Namespace: shared.IstioNamespace},
 		certificateCR)
 	return certificateCR, err
 }

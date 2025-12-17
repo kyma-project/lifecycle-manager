@@ -17,7 +17,7 @@ patches:
         value: --skr-watcher-path=/skr-webhook
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --skr-watcher-image-tag=2.0.8
+        value: --skr-watcher-image-tag=2.0.9
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --skr-watcher-image-registry=europe-docker.pkg.dev/kyma-project/prod

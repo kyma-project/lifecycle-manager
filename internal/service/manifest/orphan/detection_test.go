@@ -130,19 +130,19 @@ func generateDefaultManifest() *v1beta2.Manifest {
 
 type clientStubKymaNotFound struct{}
 
-func (c *clientStubKymaNotFound) Get(_ context.Context, kymaName string, _ string) (*v1beta2.Kyma, error) {
+func (c *clientStubKymaNotFound) Get(_ context.Context, kymaName string) (*v1beta2.Kyma, error) {
 	return nil, apierrors.NewNotFound(schema.GroupResource{Group: "v1beta2", Resource: "kyma"}, kymaName)
 }
 
 type clientStubGenericError struct{}
 
-func (c *clientStubGenericError) Get(_ context.Context, _ string, _ string) (*v1beta2.Kyma, error) {
+func (c *clientStubGenericError) Get(_ context.Context, _ string) (*v1beta2.Kyma, error) {
 	return nil, errGeneric
 }
 
 type clientStubEmptyModuleStatus struct{}
 
-func (c *clientStubEmptyModuleStatus) Get(_ context.Context, _ string, _ string) (*v1beta2.Kyma, error) {
+func (c *clientStubEmptyModuleStatus) Get(_ context.Context, _ string) (*v1beta2.Kyma, error) {
 	return &v1beta2.Kyma{
 		Status: v1beta2.KymaStatus{
 			Modules: []v1beta2.ModuleStatus{},
@@ -152,7 +152,7 @@ func (c *clientStubEmptyModuleStatus) Get(_ context.Context, _ string, _ string)
 
 type clientStubModuleStatusWithNilManifest struct{}
 
-func (c *clientStubModuleStatusWithNilManifest) Get(_ context.Context, _ string, _ string) (*v1beta2.Kyma, error) {
+func (c *clientStubModuleStatusWithNilManifest) Get(_ context.Context, _ string) (*v1beta2.Kyma, error) {
 	return &v1beta2.Kyma{
 		Status: v1beta2.KymaStatus{
 			Modules: []v1beta2.ModuleStatus{
@@ -173,7 +173,7 @@ func (c *clientStubModuleStatusWithNilManifest) Get(_ context.Context, _ string,
 
 type clientStubModuleNoReference struct{}
 
-func (c *clientStubModuleNoReference) Get(_ context.Context, _ string, _ string) (*v1beta2.Kyma, error) {
+func (c *clientStubModuleNoReference) Get(_ context.Context, _ string) (*v1beta2.Kyma, error) {
 	return &v1beta2.Kyma{
 		Status: v1beta2.KymaStatus{
 			Modules: []v1beta2.ModuleStatus{
@@ -191,7 +191,7 @@ func (c *clientStubModuleNoReference) Get(_ context.Context, _ string, _ string)
 
 type clientStubModuleValidReference struct{}
 
-func (c *clientStubModuleValidReference) Get(_ context.Context, _ string, _ string) (*v1beta2.Kyma, error) {
+func (c *clientStubModuleValidReference) Get(_ context.Context, _ string) (*v1beta2.Kyma, error) {
 	return &v1beta2.Kyma{
 		Status: v1beta2.KymaStatus{
 			Modules: []v1beta2.ModuleStatus{

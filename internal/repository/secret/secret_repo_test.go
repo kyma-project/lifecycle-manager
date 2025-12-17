@@ -11,7 +11,7 @@ import (
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
@@ -36,7 +36,7 @@ func TestList_ClientCallSucceeds_ReturnsSecrets(t *testing.T) {
 		},
 	}
 	clientStub := &listClientStub{}
-	secretRepository := secretrepository.NewRepository(clientStub, namespace)
+	secretRepository := secretrepo.NewRepository(clientStub, namespace)
 
 	selector := k8slabels.SelectorFromSet(k8slabels.Set{"app": "test"})
 	_ = clientStub.SetSecrets([]apicorev1.Secret{*secret1, *secret2})
@@ -53,6 +53,8 @@ func TestList_ClientCallSucceeds_ReturnsSecrets(t *testing.T) {
 
 type listClientStub struct {
 	client.Client
+
+	err error
 
 	called        bool
 	list          *apicorev1.SecretList
@@ -75,6 +77,10 @@ func (c *listClientStub) List(_ context.Context, obj client.ObjectList, opts ...
 			}
 		}
 	}
-	c.list.DeepCopyInto(obj.(*apicorev1.SecretList))
-	return nil
+
+	if c.list != nil {
+		c.list.DeepCopyInto(obj.(*apicorev1.SecretList))
+	}
+
+	return c.err
 }
