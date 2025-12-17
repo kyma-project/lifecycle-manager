@@ -2,6 +2,7 @@ package kyma
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -14,46 +15,64 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
-func CreateSkrEventHandler() *handler.Funcs {
+var (
+	ErrHandlingWatcherEvent   = errors.New("error handling watcher event")
+	ErrConvertingWatcherEvent = errors.New("failed to convert event object")
+	ErrExtractingRuntimeID    = errors.New("failed to extract runtime ID from event data")
+)
+
+type KymaLookupService interface {
+	NameByRuntimeID(ctx context.Context, runtimeID string) (string, error)
+}
+
+func CreateSkrEventHandler(kymaLookup KymaLookupService) *handler.Funcs {
 	return &handler.Funcs{
 		GenericFunc: func(ctx context.Context, evnt event.GenericEvent,
 			queue workqueue.TypedRateLimitingInterface[ctrl.Request],
 		) {
 			logger := ctrl.Log.WithName("listener")
-			req, ok := BuildRequestFromEvent(evnt)
-			if !ok {
-				logger.Error(errConvertingWatcherEvent, fmt.Sprintf("event: %v", evnt.Object))
+			runtimeID, err := GetRuntimeIDFromEvent(evnt)
+			if err != nil {
+				logger.Error(fmt.Errorf("%w: %w", ErrHandlingWatcherEvent, err), fmt.Sprintf("event: %v", evnt.Object))
 				fmt.Printf( //nolint:forbidigo // debug line
 					"===[DEBUG]====> %s: event: %v\n",
-					errConvertingWatcherEvent, evnt.Object)
+					err, evnt.Object)
 				return
 			}
+			kcpKymaName, err := kymaLookup.NameByRuntimeID(ctx, runtimeID)
+			if err != nil {
+				logger.Error(fmt.Errorf("%w: %w", ErrHandlingWatcherEvent, err), fmt.Sprintf("event: %v", evnt.Object))
+				return
+			}
+
+			kcpKymaKey := client.ObjectKey{
+				Name:      kcpKymaName,
+				Namespace: shared.DefaultControlPlaneNamespace,
+			}
+			req := ctrl.Request{NamespacedName: kcpKymaKey}
 			logger.Info(fmt.Sprintf("event received from SKR, adding %s to queue", req.NamespacedName))
 			fmt.Printf( //nolint:forbidigo // debug line
 				"===[DEBUG]====> event received from SKR, adding %s to queue. Event: %v\n",
 				req.NamespacedName, evnt.Object)
+
 			queue.Add(req)
 		},
 	}
 }
 
-func BuildRequestFromEvent(evnt event.GenericEvent) (ctrl.Request, bool) {
+func GetRuntimeIDFromEvent(evnt event.GenericEvent) (string, error) {
 	unstruct, ok := evnt.Object.(*unstructured.Unstructured)
 	if !ok {
-		return ctrl.Request{}, false
+		return "", ErrConvertingWatcherEvent
 	}
-	runtimeID, ok := GetRuntimeID(unstruct)
+	runtimeID, ok := ExtractRuntimeIDFromMap(unstruct)
 	if !ok {
-		return ctrl.Request{}, false
+		return "", ErrExtractingRuntimeID
 	}
-	ownerObjectKey := client.ObjectKey{
-		Name:      runtimeID,
-		Namespace: shared.DefaultControlPlaneNamespace,
-	}
-	return ctrl.Request{NamespacedName: ownerObjectKey}, true
+	return runtimeID, nil
 }
 
-func GetRuntimeID(unstructuredEvent *unstructured.Unstructured) (string, bool) {
+func ExtractRuntimeIDFromMap(unstructuredEvent *unstructured.Unstructured) (string, bool) {
 	runtimeId, ok := unstructuredEvent.Object["runtime-id"]
 	if !ok {
 		return "", false

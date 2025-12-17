@@ -2,6 +2,7 @@ package kyma_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -14,10 +15,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 )
 
-func TestGetRuntimeID_Valid(t *testing.T) {
+func TestExtractRuntimeIDFromMap_Valid(t *testing.T) {
 	unstructuredEvent := &unstructured.Unstructured{}
 	unstructuredEvent.Object = map[string]interface{}{"runtime-id": "rid-123"}
-	rid, ok := kyma.GetRuntimeID(unstructuredEvent)
+	rid, ok := kyma.ExtractRuntimeIDFromMap(unstructuredEvent)
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -26,76 +27,64 @@ func TestGetRuntimeID_Valid(t *testing.T) {
 	}
 }
 
-func TestGetRuntimeID_Missing(t *testing.T) {
+func TestExtractRuntimeIDFromMap_Missing(t *testing.T) {
 	unstructuredEvent := &unstructured.Unstructured{}
 	unstructuredEvent.Object = map[string]interface{}{"other": "x"}
-	_, ok := kyma.GetRuntimeID(unstructuredEvent)
+	_, ok := kyma.ExtractRuntimeIDFromMap(unstructuredEvent)
 	if ok {
 		t.Fatalf("expected ok=false when runtime-id missing")
 	}
 }
 
-func TestGetRuntimeID_WrongType(t *testing.T) {
+func TestExtractRuntimeIDFromMap_WrongType(t *testing.T) {
 	unstructuredEvent := &unstructured.Unstructured{}
 	unstructuredEvent.Object = map[string]interface{}{"runtime-id": 123}
-	_, ok := kyma.GetRuntimeID(unstructuredEvent)
+	_, ok := kyma.ExtractRuntimeIDFromMap(unstructuredEvent)
 	if ok {
 		t.Fatalf("expected ok=false when runtime-id not string")
 	}
 }
 
-func TestBuildRequestFromEvent_Valid(t *testing.T) {
+func TestGetRuntimeIDFromEvent_Valid(t *testing.T) {
 	unstructuredEvent := &unstructured.Unstructured{}
 	unstructuredEvent.Object = map[string]interface{}{"runtime-id": "rid-456"}
-	req, ok := kyma.BuildRequestFromEvent(event.GenericEvent{Object: unstructuredEvent})
-	if !ok {
-		t.Fatalf("expected ok=true for valid event")
+	runtimeID, err := kyma.GetRuntimeIDFromEvent(event.GenericEvent{Object: unstructuredEvent})
+	if err != nil {
+		t.Fatalf("expected no error for a valid event")
 	}
-	if req.Name != "rid-456" {
-		t.Fatalf("expected name rid-456, got %s", req.Name)
-	}
-	if req.Namespace != shared.DefaultControlPlaneNamespace {
-		t.Fatalf("expected namespace %s, got %s", shared.DefaultControlPlaneNamespace, req.Namespace)
+	if runtimeID != "rid-456" {
+		t.Fatalf("expected name rid-456, got %s", runtimeID)
 	}
 }
 
-func TestBuildRequestFromEvent_NotUnstructured(t *testing.T) {
+func TestGetRuntimeIDFromEvent_NotUnstructured(t *testing.T) {
 	// Object is nil, which does not satisfy *unstructured.Unstructured
-	req, ok := kyma.BuildRequestFromEvent(event.GenericEvent{Object: nil})
-	if ok {
-		t.Fatalf("expected ok=false when event object is not unstructured")
-	}
-	if (req != ctrl.Request{}) {
-		t.Fatalf("expected zero request when not unstructured")
+	_, err := kyma.GetRuntimeIDFromEvent(event.GenericEvent{Object: nil})
+	if !errors.Is(err, kyma.ErrConvertingWatcherEvent) {
+		t.Fatalf("expected error when event object is not unstructured")
 	}
 }
 
-func TestBuildRequestFromEvent_MissingRuntimeID(t *testing.T) {
+func TestGetRuntimeIDFromEvent_MissingRuntimeID(t *testing.T) {
 	unstructuredEvent := &unstructured.Unstructured{}
 	unstructuredEvent.Object = map[string]interface{}{"other": "x"}
-	req, ok := kyma.BuildRequestFromEvent(event.GenericEvent{Object: unstructuredEvent})
-	if ok {
-		t.Fatalf("expected ok=false when runtime-id missing")
-	}
-	if (req != ctrl.Request{}) {
-		t.Fatalf("expected zero request when runtime-id missing")
+	_, err := kyma.GetRuntimeIDFromEvent(event.GenericEvent{Object: unstructuredEvent})
+	if !errors.Is(err, kyma.ErrExtractingRuntimeID) {
+		t.Fatalf("expected error when runtime-id missing")
 	}
 }
 
-func TestBuildRequestFromEvent_RuntimeIDWrongType(t *testing.T) {
+func TestGetRuntimeIDFromEvent_RuntimeIDWrongType(t *testing.T) {
 	unstructuredEvent := &unstructured.Unstructured{}
 	unstructuredEvent.Object = map[string]interface{}{"runtime-id": 123}
-	req, ok := kyma.BuildRequestFromEvent(event.GenericEvent{Object: unstructuredEvent})
-	if ok {
-		t.Fatalf("expected ok=false when runtime-id not string")
-	}
-	if (req != ctrl.Request{}) {
-		t.Fatalf("expected zero request when runtime-id wrong type")
+	_, err := kyma.GetRuntimeIDFromEvent(event.GenericEvent{Object: unstructuredEvent})
+	if !errors.Is(err, kyma.ErrExtractingRuntimeID) {
+		t.Fatalf("expected error when runtime-id has a wrong type")
 	}
 }
 
 func TestSkrEventHandler_GenericFunc_AddsToQueue(t *testing.T) {
-	handler := kyma.CreateSkrEventHandler()
+	handler := kyma.CreateSkrEventHandler(&mockKymaLookup{"kyma-789"})
 	rl := internal.RateLimiter(100, 1000, 10, 100)
 	queue := workqueue.NewTypedRateLimitingQueue[ctrl.Request](rl)
 	defer queue.ShutDown()
@@ -117,16 +106,34 @@ func TestSkrEventHandler_GenericFunc_AddsToQueue(t *testing.T) {
 	}
 	queue.Done(item)
 	req := item
-	if req.Name != "rid-789" {
-		t.Fatalf("expected name rid-789, got %s", req.Name)
+	if req.Name != "kyma-789" {
+		t.Fatalf("expected name kyma-789, got %s", req.Name)
 	}
 	if req.Namespace != shared.DefaultControlPlaneNamespace {
 		t.Fatalf("expected namespace %s, got %s", shared.DefaultControlPlaneNamespace, req.Namespace)
 	}
 }
 
+func TestSkrEventHandler_GenericFunc_ResolverError_NoAdd(t *testing.T) {
+	handler := kyma.CreateSkrEventHandler(&errorKymaLookup{})
+	rl := internal.RateLimiter(100, 1000, 10, 100)
+	queue := workqueue.NewTypedRateLimitingQueue[ctrl.Request](rl)
+	defer queue.ShutDown()
+
+	unstructuredEvent := &unstructured.Unstructured{}
+	unstructuredEvent.Object = map[string]interface{}{"runtime-id": "rid-789"}
+	ev := event.GenericEvent{Object: unstructuredEvent}
+
+	// Call GenericFunc
+	handler.GenericFunc(context.Background(), ev, queue)
+
+	if queue.Len() != 0 {
+		t.Fatalf("expected queue length 0, got %d", queue.Len())
+	}
+}
+
 func TestSkrEventHandler_GenericFunc_InvalidEvent_NoAdd(t *testing.T) {
-	handler := kyma.CreateSkrEventHandler()
+	handler := kyma.CreateSkrEventHandler(&mockKymaLookup{"kyma-789"})
 	rl := internal.RateLimiter(100, 1000, 10, 100)
 	queue := workqueue.NewTypedRateLimitingQueue[ctrl.Request](rl)
 	defer queue.ShutDown()
@@ -148,4 +155,18 @@ func TestSkrEventHandler_GenericFunc_InvalidEvent_NoAdd(t *testing.T) {
 	if queue.Len() != 0 {
 		t.Fatalf("expected queue length 0 when runtime-id missing, got %d", queue.Len())
 	}
+}
+
+type mockKymaLookup struct {
+	expectedKymaName string
+}
+
+func (m *mockKymaLookup) NameByRuntimeID(ctx context.Context, runtimeID string) (string, error) {
+	return m.expectedKymaName, nil
+}
+
+type errorKymaLookup struct{}
+
+func (e *errorKymaLookup) NameByRuntimeID(ctx context.Context, runtimeID string) (string, error) {
+	return "", errors.New("mock resolver error")
 }

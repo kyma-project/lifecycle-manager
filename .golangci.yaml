@@ -158,6 +158,8 @@ linters:
           alias: certmanagerrenewal
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion
           alias: kymadeletionsvc
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/service/kyma/lookup
+          alias: kymalookupsvc
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/errors
           alias: certerror
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate

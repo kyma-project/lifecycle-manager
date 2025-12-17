@@ -79,6 +79,10 @@ type DeletionService interface {
 	Delete(ctx context.Context, kyma *v1beta2.Kyma) result.Result
 }
 
+type LookupService interface {
+	ByRuntimeID(ctx context.Context, runtimeID string) (*v1beta2.Kyma, error)
+}
+
 type SKRWebhookManager interface {
 	Reconcile(ctx context.Context, kyma *v1beta2.Kyma) error
 	Remove(ctx context.Context, kyma *v1beta2.Kyma) error
@@ -122,6 +126,7 @@ type Reconciler struct {
 	DeletionMetrics DeletionMetricWriter
 	DeletionEvents  DeletionEventRecorder
 	DeletionService DeletionService
+	LookupService   LookupService
 }
 
 // https://github.com/kyma-project/lifecycle-manager/issues/2943
