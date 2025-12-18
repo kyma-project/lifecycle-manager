@@ -32,7 +32,7 @@ func NewService(repo Repository) *Service {
 func (s *Service) ByRuntimeID(ctx context.Context, runtimeID string) (*v1beta2.Kyma, error) {
 	res, err := s.byRuntimeID(ctx, runtimeID)
 	if err != nil {
-		return nil, fmt.Errorf("%w with runtimeID==%s: %w", ErrLookup, runtimeID, err)
+		return nil, fmt.Errorf("%w with runtimeID=%s: %w", ErrLookup, runtimeID, err)
 	}
 	return res, nil
 }

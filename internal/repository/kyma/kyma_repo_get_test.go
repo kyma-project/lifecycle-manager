@@ -3,6 +3,7 @@ package kyma_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -10,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 )
 
@@ -74,11 +76,13 @@ func (c *readerStubGenericError) Get(_ context.Context, _ client.ObjectKey, _ cl
 }
 
 func (c *readerStubGenericError) List(_ context.Context, _ client.ObjectList, _ ...client.ListOption) error {
-	return nil
+	return errGeneric
 }
 
 type readerStubValidKyma struct {
 	client.Client
+
+	listItems []client.Object
 }
 
 func (c *readerStubValidKyma) Get(_ context.Context, key client.ObjectKey, obj client.Object, _ ...client.GetOption,
@@ -88,6 +92,17 @@ func (c *readerStubValidKyma) Get(_ context.Context, key client.ObjectKey, obj c
 	return nil
 }
 
-func (c *readerStubValidKyma) List(_ context.Context, _ client.ObjectList, _ ...client.ListOption) error {
+func (c *readerStubValidKyma) List(_ context.Context, list client.ObjectList, _ ...client.ListOption) error {
+	kymaList, ok := list.(*v1beta2.KymaList)
+	if !ok {
+		return fmt.Errorf("expected KymaList but got %T", list)
+	}
+	for _, item := range c.listItems {
+		kymaItem, ok := item.(*v1beta2.Kyma)
+		if !ok {
+			return fmt.Errorf("expected KymaList but got %T", item)
+		}
+		kymaList.Items = append(kymaList.Items, *kymaItem)
+	}
 	return nil
 }
