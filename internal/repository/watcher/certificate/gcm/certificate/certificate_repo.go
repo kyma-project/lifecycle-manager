@@ -80,6 +80,7 @@ func (r *Repository) Create(ctx context.Context, name, commonName string, dnsNam
 		Spec: gcertv1alpha1.CertificateSpec{
 			CommonName:   &commonName,
 			Duration:     &apimetav1.Duration{Duration: r.certConfig.Duration},
+			RenewBefore:  &apimetav1.Duration{Duration: r.certConfig.RenewBefore},
 			DNSNames:     dnsNames,
 			SecretName:   &name,
 			SecretLabels: certificate.GetCertificateLabels(),
@@ -92,11 +93,6 @@ func (r *Repository) Create(ctx context.Context, name, commonName string, dnsNam
 				Size:      &keySize,
 			},
 		},
-	}
-
-	// temporary workaround to be reverted in https://github.com/kyma-project/lifecycle-manager/issues/2788
-	if r.certConfig.RenewBefore > time.Duration(0) {
-		cert.Spec.RenewBefore = &apimetav1.Duration{Duration: r.certConfig.RenewBefore}
 	}
 
 	// Patch instead of Create + IgnoreAlreadyExists for cases where we change the config of certificates, e.g. duration
