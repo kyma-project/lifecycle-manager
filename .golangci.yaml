@@ -118,6 +118,8 @@ linters:
           alias: prometheusclient
         - pkg: github.com/kyma-project/lifecycle-manager/cmd/composition/service/kyma/deletion
           alias: kymadeletioncmpse
+        - pkg: github.com/kyma-project/lifecycle-manager/cmd/composition/service/kyma/lookup
+          alias: kymalookupcmpse
         - pkg: github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl
           alias: testskrcontext
         - pkg: github.com/kyma-project/lifecycle-manager/internal/errors

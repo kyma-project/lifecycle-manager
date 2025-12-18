@@ -56,6 +56,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/repository/oci"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/componentdescriptor"
 	kymadeletioncmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/kyma/deletion"
+	kymalookupcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/kyma/lookup"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/deletion"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/installation"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
@@ -295,7 +296,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		skrWebhookManager,
 	)
 
-	kymaLookupSvc := kymalookupsvc.NewService(kymaRepo)
+	kymaLookupSvc := kymalookupcmpse.ComposeKymaLookupService(kymaRepo)
 
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
 		kymaMetrics, logger, maintenanceWindow, ociRegistryHost, kymaDeletionSvc, kymaLookupSvc)

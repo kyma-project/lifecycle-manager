@@ -34,9 +34,6 @@ func CreateSkrEventHandler(kymaLookup KymaLookupService) *handler.Funcs {
 			runtimeID, err := GetRuntimeIDFromEvent(evnt)
 			if err != nil {
 				logger.Error(fmt.Errorf("%w: %w", ErrHandlingWatcherEvent, err), fmt.Sprintf("event: %v", evnt.Object))
-				fmt.Printf( //nolint:forbidigo // debug line
-					"===[DEBUG]====> %s: event: %v\n",
-					err, evnt.Object)
 				return
 			}
 			kcpKymaName, err := kymaLookup.NameByRuntimeID(ctx, runtimeID)
@@ -51,9 +48,6 @@ func CreateSkrEventHandler(kymaLookup KymaLookupService) *handler.Funcs {
 			}
 			req := ctrl.Request{NamespacedName: kcpKymaKey}
 			logger.Info(fmt.Sprintf("event received from SKR, adding %s to queue", req.NamespacedName))
-			fmt.Printf( //nolint:forbidigo // debug line
-				"===[DEBUG]====> event received from SKR, adding %s to queue. Event: %v\n",
-				req.NamespacedName, evnt.Object)
 
 			queue.Add(req)
 		},
