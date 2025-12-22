@@ -1,6 +1,6 @@
 module github.com/kyma-project/lifecycle-manager
 
-go 1.23.4
+go 1.25.1
 
 replace (
 	github.com/kyma-project/lifecycle-manager/api => ./api
@@ -22,7 +22,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
 	github.com/prometheus/client_golang v1.20.5
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.uber.org/zap v1.27.0
 	golang.org/x/sync v0.10.0
 	golang.org/x/time v0.9.0
@@ -355,3 +355,5 @@ require (
 	sigs.k8s.io/release-utils v0.8.5 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.2 // indirect
 )
+
+replace github.com/ThalesIgnite/crypto11 => github.com/ThalesGroup/crypto11 v1.6.0
