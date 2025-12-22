@@ -62,7 +62,6 @@ const (
 	DefaultMetricsAddress                                               = ":8080"
 	DefaultProbeAddress                                                 = ":8081"
 	DefaultKymaListenerAddress                                          = ":8082"
-	DefaultManifestListenerAddress                                      = ":8083"
 	DefaultPprofAddress                                                 = ":8084"
 	DefaultWatcherImageName                                             = "runtime-watcher"
 	DefaultWatcherImageRegistry                                         = "europe-docker.pkg.dev/kyma-project/prod"
@@ -107,8 +106,6 @@ func DefineFlagVar() *FlagVar {
 		"Address and port for binding of health probe endpoint.")
 	flag.StringVar(&flagVar.KymaListenerAddr, "kyma-skr-listener-bind-address", DefaultKymaListenerAddress,
 		"Address and port for binding the SKR event listener for Kyma resources.")
-	flag.StringVar(&flagVar.ManifestListenerAddr, "manifest-skr-listener-bind-address", DefaultManifestListenerAddress,
-		"Address and port for binding the SKR event listener for Manifest resources.")
 	flag.StringVar(&flagVar.PprofAddr, "pprof-bind-address", DefaultPprofAddress,
 		"Address and port for binding of pprof profiling endpoint.")
 	flag.IntVar(&flagVar.MaxConcurrentKymaReconciles, "max-concurrent-kyma-reconciles",
@@ -311,7 +308,7 @@ type FlagVar struct {
 	EnableKcpWatcher                               bool
 	EnableWebhooks                                 bool
 	ProbeAddr                                      string
-	KymaListenerAddr, ManifestListenerAddr         string
+	KymaListenerAddr                               string
 	MaxConcurrentKymaReconciles                    int
 	MaxConcurrentManifestReconciles                int
 	MaxConcurrentWatcherReconciles                 int
