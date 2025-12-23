@@ -506,9 +506,8 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		LookupService:   kymaLookupSvc,
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
-			ListenerAddr:                 flagVar.KymaListenerAddr,
-			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
-			IstioNamespace:               flagVar.IstioNamespace,
+			ListenerAddr:   flagVar.KymaListenerAddr,
+			IstioNamespace: flagVar.IstioNamespace,
 		},
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
