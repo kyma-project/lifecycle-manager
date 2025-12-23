@@ -3,10 +3,8 @@ package kyma
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/v2/event"
-	"github.com/kyma-project/runtime-watcher/listener/pkg/v2/types"
 	apicorev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -19,30 +17,19 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/internal/watch"
-	"github.com/kyma-project/lifecycle-manager/pkg/security"
 )
 
 type SetupOptions struct {
-	ListenerAddr                 string
-	EnableDomainNameVerification bool
-	IstioNamespace               string
+	ListenerAddr   string
+	IstioNamespace string
 }
 
 const controllerName = "kyma"
 
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options, settings SetupOptions) error {
-	var verifyFunc watcherevent.Verify
-	if settings.EnableDomainNameVerification {
-		verifyFunc = security.NewRequestVerifier(mgr.GetClient()).Verify
-	} else {
-		verifyFunc = func(r *http.Request, watcherEvtObject *types.WatchEvent) error {
-			return nil
-		}
-	}
 	runnableListener := watcherevent.NewSKREventListener(
 		settings.ListenerAddr,
 		shared.OperatorName,
-		verifyFunc,
 	)
 
 	if err := mgr.Add(runnableListener); err != nil {
