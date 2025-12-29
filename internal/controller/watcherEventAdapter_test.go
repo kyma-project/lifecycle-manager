@@ -72,8 +72,8 @@ func TestAdaptEvents(t *testing.T) {
 
 func testObject() *types.WatchEvent {
 	// Taken from `runtime-watcher/listener/pkg/v2/event/watcher_event_test.go`
+	// Owner field removed in listener v1.4.0
 	return &types.WatchEvent{
-		Owner:      types.ObjectKey{Name: "kyma", Namespace: apimetav1.NamespaceDefault},
 		Watched:    types.ObjectKey{Name: "watched-resource", Namespace: "some-namespace"},
 		WatchedGvk: apimetav1.GroupVersionKind{Kind: "kyma", Group: "operator.kyma-project.io", Version: "v1alpha1"},
 	}

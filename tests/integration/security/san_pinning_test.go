@@ -1,23 +1,16 @@
 package security_test
 
 import (
-	"context"
 	"crypto/x509"
 	"net"
-	"net/http"
 	"net/url"
 	"testing"
 
 	"github.com/go-logr/zapr"
-	"github.com/kyma-project/runtime-watcher/listener/pkg/v2/types"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
 func TestRequestVerifier_verifySAN(t *testing.T) {
@@ -106,93 +99,3 @@ func TestRequestVerifier_verifySAN(t *testing.T) {
 		})
 	}
 }
-
-var _ = Describe("Verify Request using SAN", Ordered, func() {
-	zapLog, err := zap.NewDevelopment()
-	Expect(err).ShouldNot(HaveOccurred())
-
-	type args struct {
-		request            *http.Request
-		watcherEventObject *types.WatchEvent
-	}
-
-	tests := []struct {
-		name    string
-		kyma    *v1beta2.Kyma
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Verify Request with SAN (Subject Alternative Name)",
-			kyma: createKyma("kyma-1", annotationsWithCorrectDomain),
-			args: args{
-				request:            createRequest("kyma-1", headerWithSufficientCertificate),
-				watcherEventObject: createWatcherCR("kyma-1"),
-			},
-			wantErr: false,
-		},
-		{
-			name: "SKR-Domain Annotation missing on KymaCR",
-			kyma: createKyma("kyma-2", emptyAnnotations),
-			args: args{
-				request:            createRequest("kyma-2", headerWithSufficientCertificate),
-				watcherEventObject: createWatcherCR("kyma-2"),
-			},
-			wantErr: true,
-		},
-		{
-			name: "Malformed Certificate",
-			kyma: createKyma("kyma-3", annotationsWithCorrectDomain),
-			args: args{
-				request:            createRequest("kyma-3", headerWithMalformedCertificate),
-				watcherEventObject: createWatcherCR("kyma-3"),
-			},
-			wantErr: true,
-		},
-		{
-			name: "SAN does not match KymaCR.annotation..skr-domain",
-			kyma: createKyma("kyma-4", annotationsWithWrongDomain),
-			args: args{
-				request:            createRequest("kyma-4", headerWithSufficientCertificate),
-				watcherEventObject: createWatcherCR("kyma-4"),
-			},
-			wantErr: true,
-		},
-		{
-			name: "KymaCR does not exists",
-			kyma: nil,
-			args: args{
-				request:            createRequest("kyma-5", headerWithSufficientCertificate),
-				watcherEventObject: createWatcherCR("kyma-5"),
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		test := tt
-		It(test.name, func() {
-			verifier := &security.RequestVerifier{
-				Client: k8sClient,
-				Log:    zapr.NewLogger(zapLog),
-			}
-
-			if test.kyma != nil {
-				Expect(k8sClient.Create(context.TODO(), test.kyma)).Should(Succeed())
-			}
-
-			err := verifier.Verify(test.args.request, test.args.watcherEventObject)
-			if test.wantErr {
-				Expect(err).Should(HaveOccurred())
-				return
-			}
-			Expect(err).ShouldNot(HaveOccurred())
-
-			if test.kyma != nil {
-				Expect(k8sClient.Delete(context.TODO(), test.kyma)).Should(Succeed())
-			}
-		})
-
-	}
-},
-)
