@@ -100,7 +100,6 @@ This document provides a list of flags that can be set to control some specific 
 | `manifest-skr-listener-bind-address` | string | :8083                                   | Address and port for binding the SKR event listener for Manifest resources                                                                                                                  |
 | `additional-dns-names`               | string | ""                                      | Additional DNS Names which are added to SKR certificates as SANs. Input should be given as comma-separated list, for example "--additional-dns-names=localhost,127.0.0.1,host.k3d.internal" |
 | `listener-port-overwrite`            | string | ""                                      | Port that is mapped to HTTP port of the local k3d cluster using --port 9443:443@loadbalancer when creating the KCP cluster                                                                  |
-| `enable-domain-name-pinning`         | bool   | true                                    | Enable verification of incoming listener request by comparing SAN with SKR domain in Kyma CR                                                                                                |
 
 ## Leader Election Values
 

@@ -22,8 +22,7 @@ import (
 const controllerName = "manifest"
 
 type SetupOptions struct {
-	ListenerAddr                 string
-	EnableDomainNameVerification bool
+	ListenerAddr string
 }
 
 func SetupWithManager(mgr manager.Manager,
