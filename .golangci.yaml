@@ -35,6 +35,7 @@ linters:
     gomoddirectives:
       replace-allow-list:
         - github.com/kyma-project/lifecycle-manager/api
+        - github.com/ThalesIgnite/crypto11
       replace-local: true
     importas:
       alias:
