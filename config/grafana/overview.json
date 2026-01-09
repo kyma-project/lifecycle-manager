@@ -460,7 +460,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(controller_runtime_reconcile_total{controller=~\"kyma|watcher|purge|manifest|mandatory-module-installation|mandatory-module-deletion\",job=\"klm-controller-manager-metrics\"}[$__rate_interval])",
+          "expr": "rate(controller_runtime_reconcile_total{controller=~\"kyma|watcher|purge|manifest|mandatory-module-installation|mandatory-module-deletion\",job=\"klm-controller-manager-metrics\", result=\"success\"}[$__rate_interval])",
           "hide": false,
           "instant": false,
           "interval": "",
