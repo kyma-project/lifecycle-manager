@@ -26,7 +26,7 @@ require (
 	github.com/google/go-containerregistry v0.20.7
 	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20231202142526-55ffb0092afd
 	github.com/jellydator/ttlcache/v3 v3.4.0
-	github.com/onsi/ginkgo/v2 v2.27.4
+	github.com/onsi/ginkgo/v2 v2.27.5
 	github.com/onsi/gomega v1.39.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/stretchr/testify v1.11.1
