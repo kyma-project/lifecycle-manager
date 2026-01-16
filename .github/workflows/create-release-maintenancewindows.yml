@@ -6,10 +6,12 @@ on:
         description: "Semantic version to release (e.g. 1.2.3 or v1.2.3)"
         required: true
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   call-create-release:
+    permissions:
+      contents: write
     uses: ./.github/workflows/create-release-go-module.yml
     with:
       version: ${{ github.event.inputs.version }}
