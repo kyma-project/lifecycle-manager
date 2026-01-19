@@ -114,7 +114,6 @@ This document provides a list of flags that can be set to control some specific 
 
 | Flag                         | Type     | Default Value | Description                                                                                                           |
 |------------------------------|----------|---------------|-----------------------------------------------------------------------------------------------------------------------|
-| `enable-purge-finalizer`     | bool     | false         | Enable Purge controller. Please make sure to provide a value for `skip-finalizer-purging-for` if this flag is enabled |
 | `purge-finalizer-timeout`    | duration | 5m            | Duration after a Kyma's deletion timestamp when the remaining resources should be purged in the SKR                   |
 | `skip-finalizer-purging-for` | string   | ""            | CRDs to be excluded from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'          |
 

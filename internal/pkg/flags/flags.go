@@ -220,8 +220,6 @@ func DefineFlagVar() *FlagVar {
 		"Duration of the failure max delay for rate limiting in all controllers.")
 	flag.DurationVar(&flagVar.CacheSyncTimeout, "cache-sync-timeout", DefaultCacheSyncTimeout,
 		"Duration of the cache sync timeout in all controllers.")
-	flag.BoolVar(&flagVar.EnableDomainNameVerification, "enable-domain-name-pinning", false,
-		"[Deprecated] Enable verification of incoming listener request by comparing SAN with SKR domain in Kyma CR.")
 	flag.IntVar(
 		&flagVar.LogLevel, "log-level", DefaultLogLevel,
 		"Log level. Enter negative or positive values to increase verbosity. 0 has the lowest verbosity.",
@@ -294,7 +292,6 @@ func DefineFlagVar() *FlagVar {
 type FlagVar struct {
 	CertificateManagement                          string
 	MetricsAddr                                    string
-	EnableDomainNameVerification                   bool
 	EnableLeaderElection                           bool
 	LeaderElectionLeaseDuration                    time.Duration
 	LeaderElectionRenewDeadline                    time.Duration
