@@ -22,7 +22,6 @@ import (
 	"testing"
 	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"go.uber.org/zap/zapcore"
 	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -142,18 +141,14 @@ var _ = BeforeSuite(func() {
 	Expect(istioscheme.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
-
+	
 	mgr, err = ctrl.NewManager(
 		restCfg, ctrl.Options{
 			Metrics: metricsserver.Options{
 				BindAddress: randomPort,
 			},
 			Scheme: k8sclientscheme.Scheme,
-			Cache: setup.SetupCacheOptions(false,
-				"istio-system",
-				ControlPlaneNamespace,
-				certmanagerv1.SchemeGroupVersion.String(),
-				logr),
+			Cache:  setup.NewDefaultCacheOptions().GetCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
 

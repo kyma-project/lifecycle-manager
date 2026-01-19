@@ -155,8 +155,7 @@ func main() {
 		go pprofStartServer(flagVar.PprofAddr, flagVar.PprofServerTimeout, setupLog)
 	}
 
-	cacheOptions := setup.SetupCacheOptions(flagVar.IsKymaManaged,
-		flagVar.IstioNamespace,
+	cacheOptions := setup.SetupCacheOptions(flagVar.IstioNamespace,
 		flagVar.IstioGatewayNamespace,
 		flagVar.CertificateManagement,
 		setupLog,
@@ -465,7 +464,6 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 
 	kymaReconcilerConfig := kyma.ReconcilerConfig{
 		RemoteSyncNamespace:    flagVar.RemoteSyncNamespace,
-		IsManagedKyma:          flagVar.IsKymaManaged,
 		OCIRegistryHost:        ociRegistryHost,
 		SkrImagePullSecretName: flagVar.SkrImagePullSecret,
 	}
@@ -532,7 +530,6 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 		Event:                 event,
 		PurgeFinalizerTimeout: flagVar.PurgeFinalizerTimeout,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.SkipPurgingFor),
-		IsManagedKyma:         flagVar.IsKymaManaged,
 		Metrics:               metrics.NewPurgeMetrics(),
 	}).SetupWithManager(
 		mgr, options,

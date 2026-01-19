@@ -22,7 +22,6 @@ import (
 	"testing"
 	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
@@ -105,11 +104,7 @@ var _ = BeforeSuite(func() {
 				BindAddress: useRandomPort,
 			},
 			Scheme: k8sclientscheme.Scheme,
-			Cache: setup.SetupCacheOptions(false,
-				"istio-system",
-				ControlPlaneNamespace,
-				certmanagerv1.SchemeGroupVersion.String(),
-				logr),
+			Cache:  setup.NewDefaultCacheOptions().GetCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
 

@@ -19,22 +19,17 @@ import (
 
 const bootstrapFailedExitCode = 1
 
-func SetupCacheOptions(isKymaManaged bool,
+func SetupCacheOptions(
 	istioNamespace string,
 	kcpNamespace string,
 	certificateManagement string,
 	setupLog logr.Logger,
 ) cache.Options {
-	if isKymaManaged {
-		options := &KcpCacheOptions{
-			istioNamespace:             istioNamespace,
-			kcpNamespace:               kcpNamespace,
-			certManagementCacheObjects: getCertManagementCacheObjects(certificateManagement, setupLog),
-		}
-		return options.GetCacheOptions()
+	options := &KcpCacheOptions{
+		istioNamespace:             istioNamespace,
+		kcpNamespace:               kcpNamespace,
+		certManagementCacheObjects: getCertManagementCacheObjects(certificateManagement, setupLog),
 	}
-
-	options := &DefaultCacheOptions{}
 	return options.GetCacheOptions()
 }
 
@@ -44,6 +39,10 @@ type CacheOptions interface {
 
 type DefaultCacheOptions struct {
 	CacheOptions cache.Options
+}
+
+func NewDefaultCacheOptions() CacheOptions {
+	return &DefaultCacheOptions{}
 }
 
 func (c *DefaultCacheOptions) GetCacheOptions() cache.Options {

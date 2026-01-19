@@ -102,7 +102,6 @@ type SkrSyncService interface {
 // Usually read from flags or environment variables.
 type ReconcilerConfig struct {
 	RemoteSyncNamespace    string
-	IsManagedKyma          bool
 	OCIRegistryHost        string
 	SkrImagePullSecretName string
 }
@@ -237,10 +236,6 @@ func (r *Reconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
 
 func (r *Reconciler) WatcherEnabled() bool {
 	return r.SKRWebhookManager != nil
-}
-
-func (r *Reconciler) IsKymaManaged() bool {
-	return r.Config.IsManagedKyma
 }
 
 func (r *Reconciler) SkrImagePullSecretSyncEnabled() bool {

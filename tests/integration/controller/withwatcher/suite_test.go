@@ -60,9 +60,10 @@ import (
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 	"github.com/kyma-project/lifecycle-manager/tests/integration/controller/composition"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -136,11 +137,7 @@ var _ = BeforeSuite(func() {
 				BindAddress: metricsBindAddress,
 			},
 			Scheme: k8sclientscheme.Scheme,
-			Cache: setup.SetupCacheOptions(false,
-				"istio-system",
-				ControlPlaneNamespace,
-				certmanagerv1.SchemeGroupVersion.String(),
-				logr),
+			Cache:  setup.NewDefaultCacheOptions().GetCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
 

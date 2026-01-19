@@ -263,7 +263,6 @@ func DefineFlagVar() *FlagVar {
 		"Duration after which the Istio Gateway Secret is enqueued after unsuccessful reconciliation.")
 	flag.BoolVar(&flagVar.UseLegacyStrategyForIstioGatewaySecret, "legacy-strategy-for-istio-gateway-secret",
 		false, "Use the legacy strategy (with downtime) for the Istio Gateway Secret.")
-	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", true, "Use managed Kyma mode.")
 	flag.StringVar(&flagVar.DropCrdStoredVersionMap, "drop-crd-stored-version-map", DefaultDropCrdStoredVersionMap,
 		"API versions to be dropped from the storage version. The input format should be a "+
 			"comma-separated list of API versions, where each API version is in the format 'kind:version'.")
@@ -347,7 +346,6 @@ type FlagVar struct {
 	PurgeFinalizerTimeout                      time.Duration
 	SkipPurgingFor                             string
 	RemoteSyncNamespace                        string
-	IsKymaManaged                              bool
 	SelfSignedCertDuration                     time.Duration
 	SelfSignedCertRenewBefore                  time.Duration
 	SelfSignedCertRenewBuffer                  time.Duration
