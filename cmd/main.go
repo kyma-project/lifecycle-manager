@@ -221,31 +221,29 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 	var skrWebhookManager *watcher.SkrWebhookManifestManager
 	var options ctrlruntime.Options
-	if flagVar.EnableKcpWatcher {
-		skrWebhookManager, err = skrwebhook.ComposeSkrWebhookManager(kcpClient,
-			skrContextProvider,
-			gatewayRepository,
-			certificateRepository,
-			flagVar,
-		)
-		if err != nil {
-			logger.Error(err, "failed to setup SKR webhook manager")
-			os.Exit(bootstrapFailedExitCode)
-		}
-		setupKcpWatcherReconciler(mgr, options, eventRecorder, flagVar, logger)
-		var gatewaysecretclnt gatewaysecretclient.CertificateInterface
-		gatewaysecretclnt, err = setup.SetupCertInterface(kcpClient, flagVar)
-		if err != nil {
-			logger.Error(err, "failed to setup certificate client")
-			os.Exit(bootstrapFailedExitCode)
-		}
-		err = istiogatewaysecret.SetupReconciler(mgr, gatewaysecretclnt,
-			flagVar,
-			options)
-		if err != nil {
-			logger.Error(err, "unable to create controller", "controller", "Istio")
-			os.Exit(bootstrapFailedExitCode)
-		}
+	skrWebhookManager, err = skrwebhook.ComposeSkrWebhookManager(kcpClient,
+		skrContextProvider,
+		gatewayRepository,
+		certificateRepository,
+		flagVar,
+	)
+	if err != nil {
+		logger.Error(err, "failed to setup SKR webhook manager")
+		os.Exit(bootstrapFailedExitCode)
+	}
+	setupKcpWatcherReconciler(mgr, options, eventRecorder, flagVar, logger)
+	var gatewaysecretclnt gatewaysecretclient.CertificateInterface
+	gatewaysecretclnt, err = setup.SetupCertInterface(kcpClient, flagVar)
+	if err != nil {
+		logger.Error(err, "failed to setup certificate client")
+		os.Exit(bootstrapFailedExitCode)
+	}
+	err = istiogatewaysecret.SetupReconciler(mgr, gatewaysecretclnt,
+		flagVar,
+		options)
+	if err != nil {
+		logger.Error(err, "unable to create controller", "controller", "Istio")
+		os.Exit(bootstrapFailedExitCode)
 	}
 
 	sharedMetrics := metrics.NewSharedMetrics()

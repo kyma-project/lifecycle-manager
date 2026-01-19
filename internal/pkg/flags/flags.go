@@ -193,8 +193,6 @@ func DefineFlagVar() *FlagVar {
 			" limit when there are sudden spikes in request volume.")
 	flag.BoolVar(&flagVar.EnableWebhooks, "enable-webhooks", false,
 		"Enable Validation/Conversion Webhooks.")
-	flag.BoolVar(&flagVar.EnableKcpWatcher, "enable-kcp-watcher", true,
-		"Enable KCP Watcher controller to reconcile Watcher CRs.")
 	flag.StringVar(&flagVar.AdditionalDNSNames, "additional-dns-names", "",
 		"Additional DNS Names which are added to SKR certificates as SANs. Input should be given as "+
 			"comma-separated list, for example \"--additional-dns-names=localhost,127.0.0.1,host.k3d.internal\".")
@@ -304,7 +302,6 @@ type FlagVar struct {
 	LeaderElectionRenewDeadline                    time.Duration
 	LeaderElectionRetryPeriod                      time.Duration
 	EnablePurgeFinalizer                           bool
-	EnableKcpWatcher                               bool
 	EnableWebhooks                                 bool
 	ProbeAddr                                      string
 	KymaListenerAddr                               string
@@ -373,17 +370,15 @@ type FlagVar struct {
 }
 
 func (f FlagVar) Validate() error {
-	if f.EnableKcpWatcher {
-		if f.WatcherImageTag == "" {
-			return ErrMissingWatcherImageTag
-		}
-		if f.WatcherImageRegistry == "" {
-			return ErrMissingWatcherImageRegistry
-		}
-		dirInfo, err := os.Stat(f.WatcherResourcesPath)
-		if err != nil || !dirInfo.IsDir() {
-			return ErrWatcherDirNotExist
-		}
+	if f.WatcherImageTag == "" {
+		return ErrMissingWatcherImageTag
+	}
+	if f.WatcherImageRegistry == "" {
+		return ErrMissingWatcherImageRegistry
+	}
+	dirInfo, err := os.Stat(f.WatcherResourcesPath)
+	if err != nil || !dirInfo.IsDir() {
+		return ErrWatcherDirNotExist
 	}
 
 	if f.LeaderElectionRenewDeadline >= f.LeaderElectionLeaseDuration {

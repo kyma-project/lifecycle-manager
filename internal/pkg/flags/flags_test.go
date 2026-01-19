@@ -339,7 +339,7 @@ func Test_Flags_Validate(t *testing.T) {
 		},
 		{
 			name:  "WatcherImageTag is required",
-			flags: newFlagVarBuilder().withEnabledKcpWatcher(true).withWatcherImageTag("").build(),
+			flags: newFlagVarBuilder().withWatcherImageTag("").build(),
 			err:   ErrMissingWatcherImageTag,
 		},
 		{
@@ -349,7 +349,7 @@ func Test_Flags_Validate(t *testing.T) {
 		},
 		{
 			name:  "WatcherImageRegistry is required",
-			flags: newFlagVarBuilder().withEnabledKcpWatcher(true).withWatcherImageRegistry("").build(),
+			flags: newFlagVarBuilder().withWatcherImageRegistry("").build(),
 			err:   ErrMissingWatcherImageRegistry,
 		},
 		{
@@ -359,7 +359,7 @@ func Test_Flags_Validate(t *testing.T) {
 		},
 		{
 			name:  "WatcherResourcesPath is required",
-			flags: newFlagVarBuilder().withEnabledKcpWatcher(true).withWatcherResourcesPath("").build(),
+			flags: newFlagVarBuilder().withWatcherResourcesPath("").build(),
 			err:   ErrWatcherDirNotExist,
 		},
 		{
@@ -469,7 +469,6 @@ func newFlagVarBuilder() *flagVarBuilder {
 
 	return builder.
 		withCertificateManagement(certmanagerv1.SchemeGroupVersion.String()).
-		withEnabledKcpWatcher(false).
 		withWatcherImageTag("v1.0.0").
 		withWatcherImageName("runtime-watcher").
 		withWatcherImageRegistry("foo.bar").
@@ -488,11 +487,6 @@ func (b *flagVarBuilder) build() FlagVar {
 
 func (b *flagVarBuilder) withCertificateManagement(certificateManagement string) *flagVarBuilder {
 	b.flags.CertificateManagement = certificateManagement
-	return b
-}
-
-func (b *flagVarBuilder) withEnabledKcpWatcher(enabled bool) *flagVarBuilder {
-	b.flags.EnableKcpWatcher = enabled
 	return b
 }
 
