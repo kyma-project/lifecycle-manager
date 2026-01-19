@@ -141,7 +141,7 @@ var _ = BeforeSuite(func() {
 	Expect(istioscheme.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
-	
+
 	mgr, err = ctrl.NewManager(
 		restCfg, ctrl.Options{
 			Metrics: metricsserver.Options{
@@ -185,7 +185,6 @@ var _ = BeforeSuite(func() {
 
 	kymaReconcilerConfig := kyma.ReconcilerConfig{
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
-		IsManagedKyma:       true,
 		OCIRegistryHost:     staticOCIRegistryHost,
 	}
 

@@ -185,7 +185,6 @@ var _ = BeforeSuite(func() {
 
 	kymaReconcilerConfig := kyma.ReconcilerConfig{
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
-		IsManagedKyma:       true,
 	}
 
 	syncCrdsUseCase := remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache)
