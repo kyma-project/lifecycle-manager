@@ -227,7 +227,7 @@ func DefineFlagVar() *FlagVar {
 	flag.StringVar(&flagVar.SkipPurgingFor, "skip-finalizer-purging-for", "", "CRDs to be excluded "+
 		"from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'.")
 	flag.StringVar(&flagVar.RemoteSyncNamespace, "sync-namespace", DefaultRemoteSyncNamespace,
-		"Namespace for syncing remote Kyma and module catalog.")
+		"Namespace in SKR clusters where Kyma resources and module catalog are synchronized from the control plane.")
 	flag.DurationVar(&flagVar.SelfSignedCertDuration, "self-signed-cert-duration", DefaultSelfSignedCertDuration,
 		"Duration of self-signed certificate. Minimum: 1h.")
 	flag.DurationVar(&flagVar.SelfSignedCertRenewBefore, "self-signed-cert-renew-before",
