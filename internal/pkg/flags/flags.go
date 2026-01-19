@@ -226,8 +226,6 @@ func DefineFlagVar() *FlagVar {
 		&flagVar.LogLevel, "log-level", DefaultLogLevel,
 		"Log level. Enter negative or positive values to increase verbosity. 0 has the lowest verbosity.",
 	)
-	flag.BoolVar(&flagVar.EnablePurgeFinalizer, "enable-purge-finalizer", true,
-		"Enable Purge controller.")
 	flag.DurationVar(&flagVar.PurgeFinalizerTimeout, "purge-finalizer-timeout", DefaultPurgeFinalizerTimeout,
 		"Duration after a Kyma's deletion timestamp when the remaining resources should be purged in the SKR.")
 	flag.StringVar(&flagVar.SkipPurgingFor, "skip-finalizer-purging-for", "", "CRDs to be excluded "+
@@ -301,7 +299,6 @@ type FlagVar struct {
 	LeaderElectionLeaseDuration                    time.Duration
 	LeaderElectionRenewDeadline                    time.Duration
 	LeaderElectionRetryPeriod                      time.Duration
-	EnablePurgeFinalizer                           bool
 	EnableWebhooks                                 bool
 	ProbeAddr                                      string
 	KymaListenerAddr                               string

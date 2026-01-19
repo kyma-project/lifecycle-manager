@@ -303,9 +303,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		ociRegistryHost)
 	setupMandatoryModuleDeletionReconciler(mgr, eventRecorder, flagVar, options, logger)
 
-	if flagVar.EnablePurgeFinalizer {
-		setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, logger)
-	}
+	setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, logger)
 
 	if flagVar.EnableWebhooks {
 		// enable conversion webhook for CRDs here
