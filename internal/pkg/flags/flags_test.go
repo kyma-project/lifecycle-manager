@@ -343,19 +343,9 @@ func Test_Flags_Validate(t *testing.T) {
 			err:   ErrMissingWatcherImageTag,
 		},
 		{
-			name:  "WatcherImageTag is NOT required",
-			flags: newFlagVarBuilder().withWatcherImageTag("").build(),
-			err:   nil,
-		},
-		{
 			name:  "WatcherImageRegistry is required",
 			flags: newFlagVarBuilder().withWatcherImageRegistry("").build(),
 			err:   ErrMissingWatcherImageRegistry,
-		},
-		{
-			name:  "WatcherImageRegistry is NOT required",
-			flags: newFlagVarBuilder().withWatcherImageRegistry("").build(),
-			err:   nil,
 		},
 		{
 			name:  "LeaderElectionRenewDeadline > LeaderElectionLeaseDuration",

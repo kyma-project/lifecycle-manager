@@ -359,7 +359,6 @@ type FlagVar struct {
 }
 
 func (f FlagVar) Validate() error {
-
 	if f.WatcherImageTag == "" {
 		return ErrMissingWatcherImageTag
 	}
