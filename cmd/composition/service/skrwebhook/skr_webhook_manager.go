@@ -3,6 +3,7 @@ package skrwebhook
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -34,14 +35,27 @@ var (
 	errCertificateManagementNotSupported = errors.New(
 		"certificate management not supported, please check the certificate management configuration",
 	)
+
+	ErrWatcherDirNotExist = errors.New("failed to locate watcher resource manifest folder")
 )
+
+const DefaultResourcesPath = "./skr-webhook"
 
 func ComposeSkrWebhookManager(kcpClient client.Client,
 	skrContextProvider remote.SkrContextProvider,
 	repository gateway.IstioGatewayRepository,
 	certificateRepository certificate.CertificateRepository,
 	flagVar *flags.FlagVar,
+	watcherResourcesPath string,
 ) (*watcher.SkrWebhookManifestManager, error) {
+	if watcherResourcesPath == "" {
+		watcherResourcesPath = DefaultResourcesPath
+	}
+	dirInfo, err := os.Stat(watcherResourcesPath)
+	if err != nil || !dirInfo.IsDir() {
+		return nil, ErrWatcherDirNotExist
+	}
+
 	skrCertService, err := setupSKRCertService(kcpClient, certificateRepository, flagVar)
 	if err != nil {
 		return nil, err
@@ -73,7 +87,7 @@ func ComposeSkrWebhookManager(kcpClient client.Client,
 		flagVar.SkrImagePullSecret,
 	)
 
-	chartReaderService := chartreader.NewService(flagVar.WatcherResourcesPath)
+	chartReaderService := chartreader.NewService(watcherResourcesPath)
 
 	return watcher.NewSKRWebhookManifestManager(
 		kcpClient,

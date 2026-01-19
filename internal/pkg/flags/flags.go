@@ -4,7 +4,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"os"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -79,7 +78,6 @@ const (
 var (
 	ErrMissingWatcherImageTag      = errors.New("runtime watcher image tag is not provided")
 	ErrMissingWatcherImageRegistry = errors.New("runtime watcher image registry is not provided")
-	ErrWatcherDirNotExist          = errors.New("failed to locate watcher resource manifest folder")
 	ErrLeaderElectionTimeoutConfig = errors.New(
 		"configured leader-election-renew-deadline must be less than leader-election-lease-duration",
 	)
@@ -271,8 +269,6 @@ func DefineFlagVar() *FlagVar {
 		"Resource limit for memory allocation to the SKR webhook.")
 	flag.StringVar(&flagVar.WatcherResourceLimitsCPU, "skr-webhook-cpu-limits", DefaultWatcherResourceLimitsCPU,
 		"Resource limit for CPU allocation to the SKR webhook.")
-	flag.StringVar(&flagVar.WatcherResourcesPath, "skr-watcher-path", DefaultWatcherResourcesPath,
-		"Path to the static SKR Watcher resources.")
 	flag.IntVar(&flagVar.MetricsCleanupIntervalInMinutes, "metrics-cleanup-interval",
 		DefaultMetricsCleanupIntervalInMinutes,
 		"Interval (in minutes) at which the cleanup of non-existing Kyma CRs metrics runs.")
@@ -350,7 +346,6 @@ type FlagVar struct {
 	WatcherImageRegistry                       string
 	WatcherResourceLimitsMemory                string
 	WatcherResourceLimitsCPU                   string
-	WatcherResourcesPath                       string
 	MetricsCleanupIntervalInMinutes            int
 	ManifestRequeueJitterProbability           float64
 	ManifestRequeueJitterPercentage            float64
@@ -364,15 +359,12 @@ type FlagVar struct {
 }
 
 func (f FlagVar) Validate() error {
+
 	if f.WatcherImageTag == "" {
 		return ErrMissingWatcherImageTag
 	}
 	if f.WatcherImageRegistry == "" {
 		return ErrMissingWatcherImageRegistry
-	}
-	dirInfo, err := os.Stat(f.WatcherResourcesPath)
-	if err != nil || !dirInfo.IsDir() {
-		return ErrWatcherDirNotExist
 	}
 
 	if f.LeaderElectionRenewDeadline >= f.LeaderElectionLeaseDuration {

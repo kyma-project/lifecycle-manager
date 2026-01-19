@@ -358,16 +358,6 @@ func Test_Flags_Validate(t *testing.T) {
 			err:   nil,
 		},
 		{
-			name:  "WatcherResourcesPath is required",
-			flags: newFlagVarBuilder().withWatcherResourcesPath("").build(),
-			err:   ErrWatcherDirNotExist,
-		},
-		{
-			name:  "WatcherResourcesPath is NOT required",
-			flags: newFlagVarBuilder().withWatcherResourcesPath("").build(),
-			err:   nil,
-		},
-		{
 			name:  "LeaderElectionRenewDeadline > LeaderElectionLeaseDuration",
 			flags: newFlagVarBuilder().withLeaderElectionRenewDeadline(2).withLeaderElectionLeaseDuration(1).build(),
 			err:   ErrLeaderElectionTimeoutConfig,
@@ -472,7 +462,6 @@ func newFlagVarBuilder() *flagVarBuilder {
 		withWatcherImageTag("v1.0.0").
 		withWatcherImageName("runtime-watcher").
 		withWatcherImageRegistry("foo.bar").
-		withWatcherResourcesPath("./skr-webhook").
 		withLeaderElectionRenewDeadline(120 * time.Second).
 		withLeaderElectionLeaseDuration(180 * time.Second).
 		withSelfSignedCertKeySize(4096).
@@ -502,11 +491,6 @@ func (b *flagVarBuilder) withWatcherImageName(name string) *flagVarBuilder {
 
 func (b *flagVarBuilder) withWatcherImageRegistry(registry string) *flagVarBuilder {
 	b.flags.WatcherImageRegistry = registry
-	return b
-}
-
-func (b *flagVarBuilder) withWatcherResourcesPath(path string) *flagVarBuilder {
-	b.flags.WatcherResourcesPath = path
 	return b
 }
 

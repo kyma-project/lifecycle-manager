@@ -17,7 +17,6 @@
         "--kyma-requeue-busy-interval=5s",
         "--leader-elect=false",
         "--skr-watcher-image-tag=latest",
-        "--skr-watcher-path=${cwd}/skr-webhook",
         "--oci-registry-host=http://localhost:5000"
       ],
       "env": {

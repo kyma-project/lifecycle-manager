@@ -11,9 +11,6 @@ patches:
     patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --skr-watcher-path=/skr-webhook
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
         value: --skr-watcher-image-tag=2.1.1
       - op: add
         path: /spec/template/spec/containers/0/args/-
