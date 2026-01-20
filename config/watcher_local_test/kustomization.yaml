@@ -56,9 +56,6 @@ patches:
         value: --failure-base-delay=5s
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --is-kyma-managed
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
         value: --kyma-requeue-success-interval=20s
       - op: add
         path: /spec/template/spec/containers/0/args/-

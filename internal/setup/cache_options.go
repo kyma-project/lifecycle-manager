@@ -41,7 +41,7 @@ type DefaultCacheOptions struct {
 	CacheOptions cache.Options
 }
 
-// nolint:ireturn // return interface
+//nolint:ireturn // return interface
 func NewDefaultCacheOptions() CacheOptions {
 	return &DefaultCacheOptions{}
 }
