@@ -16,7 +16,7 @@ This ADR serves as documentation what CA, intermediate and client certificates e
 
 It is decided that only a CA certificate and client certificates signed by this CA are used. Intermediate certificates are skipped for simplicity as no usage outside of Runtime Watcher mechanism is expected and since there is no need for individually rotating CA, server and client certificates. The CA certificate therefore also serves as the server certificate.
 
-The resulting setup is depicted in the figure below. Only the secrets storing the certificates are shown, the related *Certificate* Custom Resources are skipped for simplicity. The color orange indicates the current CA certificate while yellow indicates the previous CA certificate before rotation. Purple indicates a client certificate. The CA certificate is stored in the secret *klm-watcher*. This CA certificate is reused as the server certificate in the secret *klm-istio-gateway*. Additionally, all previously existing CA certificates are stored in the CA bundle in the secret *klm-istio-gateway* until they have expired. The client certificates are stored in *\*-webhook-tls* secrets and synced to the SKR together with the CA bundle from the *klm-istio-gateawy* secret as secret named *skr-webhook-tls*.
+The resulting setup is depicted in the figure below. Only the secrets storing the certificates are shown, the related *Certificate* Custom Resources are skipped for simplicity. The color orange indicates the current CA certificate while green indicates the previous CA certificate. Yellow indicates a client certificate that has been signed by the orange CA certificate. The CA certificate is stored in the secret *klm-watcher*. This CA certificate is reused as the server certificate in the secret *klm-istio-gateway*. Additionally, all previously existing CA certificates are stored in the CA bundle in the secret *klm-istio-gateway* until they have expired. The client certificates are stored in *\*-webhook-tls* secrets and synced to the SKR together with the CA bundle from the *klm-istio-gateawy* secret as secret named *skr-webhook-tls*.
 
 > In restricted markets, *Gardener certificate-management* is used instead of *cert-manager*. For simplicity, this is ignored in the figure and only *cert-manager* is shown.
 >
@@ -28,9 +28,13 @@ Upon rotation of the CA certificate, the following steps are executed.
 
 Once due, *cert-manager* issues a new self-signed CA certificate and stores it in the *klm-watcher* secret (1). This is done automatically by *cert-manager* based on certificate duration and renew before buffer.
 
+In the figure, the orange CA certificate is replaced by its blue successor.
+
 ### 2 - Update server CA bundle
 
 KLM watches the *klm-watcher* certificate (2a). When it changes, KLM adds the new CA certificate to the CA bundle in *klm-istio-gateway* (2b). It further adds the `lastModifiedAt` annotation to the *klm-istio-gateway* secret indicating the last time the CA bundle was updated. In this step, also all previously stored CA certificates stored in the CA bundle are removed if they have expired.
+
+In the figure, the new blue CA certificate is pushed into the CA bundle.
 
 ### 3 - Delete client certificate secrets
 
@@ -38,19 +42,27 @@ As part of the Kyma CR reconciliation, KLM gets the *klm-istio-gateway* to deter
 
 > In restricted markets where *Gardener certificate-management* is used instead of *cert-manager*, the secret is not deleted. Instead, the `renew: true` spec field is set on the related certificate resource.
 
+In the figure, the outdated yellow client certificate is deleted.
+
 ### 4 - Re-issue client certificates
 
 The deleted *\*-webhook-tls* secret forces *cert-manager* to re-issue the client certificate (4). Since the CA certificate has been rotated, the new client certificate is signed by the new CA certificate.
+
+In the figure, cert-manager re-issues a purple client certificate signed by the blue CA certificate.
 
 ### 5 - Sync re-issued client certificates to SKR
 
 As part of the next Kyma CR reconciliation, KLM again gets the *klm-istio-gateway* secret to determine the last time the CA bundle was updated (5a). Now, since the *\*-webhook-tls* secret containing the related client certificate is newer than the `lastModifiedAt` annotation of the *klm-istio-gateway* (5b), KLM doesn't delete the *\*-webhook-tls* secret again. Instead, it syncs the client certificate together with the updated CA bundle to the SKR (5c).
 
+In the figure, the yellow client certificate is replaced by the new pruple one and the CA bundle is updated to the newer one including the blue CA certificate.
+
 ### 6 - Switch the server certificate
 
 After some grace period, KLM switches the server certificate stored in *klm-istio-gateway* for the latest CA certificate in *klm-watcher* (6). This is done as part of the regular reconciliation of the *klm-watcher* secret.
 
-![](../assets/watcher-certificates.drawio.svg)
+In the figure, the orange server certificate is replaced by the blue CA certificate.
+
+![watcher certificates](../assets/watcher-certificates/watcher-certificates.gif)
 
 ## Consequences
 
