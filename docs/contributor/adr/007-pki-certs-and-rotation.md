@@ -60,6 +60,9 @@ The following key criteria **MUST** be ensured:
   - otherwise, client certificates may be generated that the server doesn't trust yet
 - **6** MUST only happen after all client certificates have been renewed with the new CA certificate (4) and synced to the SKR (5c)
   - otherwise, clients that haven't received the new CA bundle don't trust the server anymore
+  - for simplicity, the switch of the server certificate is implemented to happen after a certain grace priod after CA certificate rotation
+    - for not yet renewed client certificates, a metric is written and alerted on after some initial buffer
+    - the renewal is only checked on KCP side and it is assumed that once the certificate on KCP is renewed, it is also synced to the SKR successfully
 
 As per the setup described above and the key criteria, the following holds true and therefore we have a zero-downtime rotation:
 
