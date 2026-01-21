@@ -54,11 +54,10 @@ After some grace period, KLM switches the server certificate stored in *klm-isti
 
 The following key criteria **MUST** be ensured:
 
-- **3b** MUST only happen once the new CA certificate has been added to the CA bundle in *klm-istio-gateway*
+- **3b** MUST only happen once the new CA certificate has been added to the CA bundle in *klm-istio-gateway* (2b)
   - otherwise, client certificates may be generated that the server doesn't trust yet
-- **6** MUST only happen after all client certificates have been renewed with the new CA certificate
-  - this is not strictly necessary as the *skr-webhook* keeps trusting all previous server certificates until their expiry
-  - it is beneficial to switch them swiftly though as this simplifies understanding of the setup
+- **6** MUST only happen after all client certificates have been renewed with the new CA certificate (4) and synced to the SKR (5c)
+  - otherwise, clients that haven't received the new CA bundle don't trust the server anymore
 
 As per the setup described above and the key criteria, the following holds true and therefore we have a zero-downtime rotation:
 
