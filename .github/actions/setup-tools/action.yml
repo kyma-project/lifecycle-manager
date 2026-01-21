@@ -39,7 +39,7 @@ runs:
     - uses: ./lifecycle-manager/.github/actions/install-k3d
       with:
         k3d_version: ${{ inputs.k3d_version }}
-    - uses: actions/setup-go@v5
+    - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
       with:
         go-version-file: ${{ inputs.go-version-file }}
         cache-dependency-path: ${{ inputs.cache-dependency-path }}
