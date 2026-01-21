@@ -19,6 +19,8 @@ It is decided that only a CA certificate and client certificates signed by this 
 The resulting setup is depicted in the figure below. Only the secrets storing the certificates are shown, the related *Certificate* Custom Resources are skipped for simplicity. The color orange indicates the current CA certificate while yellow indicates the previous CA certificate before rotation. Purple indicates a client certificate. The CA certificate is stored in the secret *klm-watcher*. This CA certificate is reused as the server certificate in the secret *klm-istio-gateway*. Additionally, all previously existing CA certificates are stored in the CA bundle in the secret *klm-istio-gateway* until they have expired. The client certificates are stored in *\*-webhook-tls* secrets and synced to the SKR together with the CA bundle from the *klm-istio-gateawy* secret as secret named *skr-webhook-tls*.
 
 > In restricted markets, *Gardener certificate-management* is used instead of *cert-manager*. For simplicity, this is ignored in the figure and only *cert-manager* is shown.
+>
+> Since *klm-watcher* is a self-signed CA certificate, the `ca.crt` and `tls.crt` stored in the secret are the same. In the figure,t he `ca.crt` entry is ommited for simplicity.
 
 Upon rotation of the CA certificate, the following steps are executed.
 
