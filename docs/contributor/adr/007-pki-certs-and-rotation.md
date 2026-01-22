@@ -7,7 +7,7 @@ Accepted
 ## Context
 
 Lifecycle Manager (KLM) uses a Public Key Infrastructure (PKI) to secure communication between the Runtime Watcher in runtimes and KLM in Kyma Control Plane (KCP).
-This ADR serves as documentation of which Certificate Authority (CA), intermediate, and client certificates exist and how they are rotated.
+This ADR serves as documentation of which Certificate Authority (CA), intermediate, and client certificates exist in KCP and how they are rotated, as well as how they are distributed to SKRs.
 
 ## Decision
 
