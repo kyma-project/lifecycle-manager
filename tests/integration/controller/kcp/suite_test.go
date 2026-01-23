@@ -22,7 +22,6 @@ import (
 	"testing"
 	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"go.uber.org/zap/zapcore"
 	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -148,11 +147,7 @@ var _ = BeforeSuite(func() {
 				BindAddress: UseRandomPort,
 			},
 			Scheme: k8sclientscheme.Scheme,
-			Cache: setup.SetupCacheOptions(false,
-				"istio-system",
-				ControlPlaneNamespace,
-				certmanagerv1.SchemeGroupVersion.String(),
-				logr),
+			Cache:  setup.NewDefaultCacheOptions().GetCacheOptions(),
 		},
 	)
 	Expect(err).ToNot(HaveOccurred())
@@ -190,7 +185,6 @@ var _ = BeforeSuite(func() {
 
 	kymaReconcilerConfig := kyma.ReconcilerConfig{
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
-		IsManagedKyma:       true,
 	}
 
 	syncCrdsUseCase := remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache)

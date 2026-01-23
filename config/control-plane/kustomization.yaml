@@ -46,9 +46,6 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --failure-base-delay=5s
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
-        value: --is-kyma-managed
   - target:
       kind: ConfigMap
       name: dashboard-(overview|status|watcher|mandatory-modules)

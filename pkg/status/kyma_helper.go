@@ -16,20 +16,17 @@ type KymaHelper struct {
 	client.StatusWriter
 
 	recordKymaStatusMetrics func(ctx context.Context, kyma *v1beta2.Kyma)
-	isManagedKyma           bool
 }
 
 type HelperClient interface {
 	Status() client.StatusWriter
 	UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma)
-	IsKymaManaged() bool
 }
 
 func Helper(handler HelperClient) *KymaHelper {
 	return &KymaHelper{
 		StatusWriter:            handler.Status(),
 		recordKymaStatusMetrics: handler.UpdateMetrics,
-		isManagedKyma:           handler.IsKymaManaged(),
 	}
 }
 
@@ -55,16 +52,13 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 		LastUpdateTime: apimetav1.NewTime(time.Now()),
 	}
 
-	fieldOwner := shared.UnmanagedKyma
-	if k.isManagedKyma {
-		fieldOwner = shared.OperatorName
-	}
+	fieldOwner := shared.OperatorName
 	if err := k.Patch(ctx, kyma, client.Apply, SubResourceOpts(client.ForceOwnership),
 		client.FieldOwner(fieldOwner)); err != nil {
 		return fmt.Errorf("status could not be updated: %w", err)
 	}
 
-	if k.isManagedKyma && k.recordKymaStatusMetrics != nil {
+	if k.recordKymaStatusMetrics != nil {
 		k.recordKymaStatusMetrics(ctx, kyma)
 	}
 

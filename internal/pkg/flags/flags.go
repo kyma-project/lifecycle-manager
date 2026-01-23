@@ -4,7 +4,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"os"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -65,7 +64,6 @@ const (
 	DefaultPprofAddress                                                 = ":8084"
 	DefaultWatcherImageName                                             = "runtime-watcher"
 	DefaultWatcherImageRegistry                                         = "europe-docker.pkg.dev/kyma-project/prod"
-	DefaultWatcherResourcesPath                                         = "./skr-webhook"
 	DefaultWatcherResourceLimitsCPU                                     = "0.1"
 	DefaultWatcherResourceLimitsMemory                                  = "200Mi"
 	DefaultDropCrdStoredVersionMap                                      = "Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1" //nolint:revive // keep it readible
@@ -79,7 +77,6 @@ const (
 var (
 	ErrMissingWatcherImageTag      = errors.New("runtime watcher image tag is not provided")
 	ErrMissingWatcherImageRegistry = errors.New("runtime watcher image registry is not provided")
-	ErrWatcherDirNotExist          = errors.New("failed to locate watcher resource manifest folder")
 	ErrLeaderElectionTimeoutConfig = errors.New(
 		"configured leader-election-renew-deadline must be less than leader-election-lease-duration",
 	)
@@ -193,8 +190,6 @@ func DefineFlagVar() *FlagVar {
 			" limit when there are sudden spikes in request volume.")
 	flag.BoolVar(&flagVar.EnableWebhooks, "enable-webhooks", false,
 		"Enable Validation/Conversion Webhooks.")
-	flag.BoolVar(&flagVar.EnableKcpWatcher, "enable-kcp-watcher", true,
-		"Enable KCP Watcher controller to reconcile Watcher CRs.")
 	flag.StringVar(&flagVar.AdditionalDNSNames, "additional-dns-names", "",
 		"Additional DNS Names which are added to SKR certificates as SANs. Input should be given as "+
 			"comma-separated list, for example \"--additional-dns-names=localhost,127.0.0.1,host.k3d.internal\".")
@@ -222,20 +217,16 @@ func DefineFlagVar() *FlagVar {
 		"Duration of the failure max delay for rate limiting in all controllers.")
 	flag.DurationVar(&flagVar.CacheSyncTimeout, "cache-sync-timeout", DefaultCacheSyncTimeout,
 		"Duration of the cache sync timeout in all controllers.")
-	flag.BoolVar(&flagVar.EnableDomainNameVerification, "enable-domain-name-pinning", false,
-		"[Deprecated] Enable verification of incoming listener request by comparing SAN with SKR domain in Kyma CR.")
 	flag.IntVar(
 		&flagVar.LogLevel, "log-level", DefaultLogLevel,
 		"Log level. Enter negative or positive values to increase verbosity. 0 has the lowest verbosity.",
 	)
-	flag.BoolVar(&flagVar.EnablePurgeFinalizer, "enable-purge-finalizer", true,
-		"Enable Purge controller.")
 	flag.DurationVar(&flagVar.PurgeFinalizerTimeout, "purge-finalizer-timeout", DefaultPurgeFinalizerTimeout,
 		"Duration after a Kyma's deletion timestamp when the remaining resources should be purged in the SKR.")
 	flag.StringVar(&flagVar.SkipPurgingFor, "skip-finalizer-purging-for", "", "CRDs to be excluded "+
 		"from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'.")
 	flag.StringVar(&flagVar.RemoteSyncNamespace, "sync-namespace", DefaultRemoteSyncNamespace,
-		"Namespace for syncing remote Kyma and module catalog.")
+		"Namespace in SKR clusters where Kyma resources and module catalog are synchronized from the control plane.")
 	flag.DurationVar(&flagVar.SelfSignedCertDuration, "self-signed-cert-duration", DefaultSelfSignedCertDuration,
 		"Duration of self-signed certificate. Minimum: 1h.")
 	flag.DurationVar(&flagVar.SelfSignedCertRenewBefore, "self-signed-cert-renew-before",
@@ -263,7 +254,6 @@ func DefineFlagVar() *FlagVar {
 		"Duration after which the Istio Gateway Secret is enqueued after unsuccessful reconciliation.")
 	flag.BoolVar(&flagVar.UseLegacyStrategyForIstioGatewaySecret, "legacy-strategy-for-istio-gateway-secret",
 		false, "Use the legacy strategy (with downtime) for the Istio Gateway Secret.")
-	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", true, "Use managed Kyma mode.")
 	flag.StringVar(&flagVar.DropCrdStoredVersionMap, "drop-crd-stored-version-map", DefaultDropCrdStoredVersionMap,
 		"API versions to be dropped from the storage version. The input format should be a "+
 			"comma-separated list of API versions, where each API version is in the format 'kind:version'.")
@@ -278,8 +268,6 @@ func DefineFlagVar() *FlagVar {
 		"Resource limit for memory allocation to the SKR webhook.")
 	flag.StringVar(&flagVar.WatcherResourceLimitsCPU, "skr-webhook-cpu-limits", DefaultWatcherResourceLimitsCPU,
 		"Resource limit for CPU allocation to the SKR webhook.")
-	flag.StringVar(&flagVar.WatcherResourcesPath, "skr-watcher-path", DefaultWatcherResourcesPath,
-		"Path to the static SKR Watcher resources.")
 	flag.IntVar(&flagVar.MetricsCleanupIntervalInMinutes, "metrics-cleanup-interval",
 		DefaultMetricsCleanupIntervalInMinutes,
 		"Interval (in minutes) at which the cleanup of non-existing Kyma CRs metrics runs.")
@@ -299,13 +287,10 @@ func DefineFlagVar() *FlagVar {
 type FlagVar struct {
 	CertificateManagement                          string
 	MetricsAddr                                    string
-	EnableDomainNameVerification                   bool
 	EnableLeaderElection                           bool
 	LeaderElectionLeaseDuration                    time.Duration
 	LeaderElectionRenewDeadline                    time.Duration
 	LeaderElectionRetryPeriod                      time.Duration
-	EnablePurgeFinalizer                           bool
-	EnableKcpWatcher                               bool
 	EnableWebhooks                                 bool
 	ProbeAddr                                      string
 	KymaListenerAddr                               string
@@ -347,7 +332,6 @@ type FlagVar struct {
 	PurgeFinalizerTimeout                      time.Duration
 	SkipPurgingFor                             string
 	RemoteSyncNamespace                        string
-	IsKymaManaged                              bool
 	SelfSignedCertDuration                     time.Duration
 	SelfSignedCertRenewBefore                  time.Duration
 	SelfSignedCertRenewBuffer                  time.Duration
@@ -361,7 +345,6 @@ type FlagVar struct {
 	WatcherImageRegistry                       string
 	WatcherResourceLimitsMemory                string
 	WatcherResourceLimitsCPU                   string
-	WatcherResourcesPath                       string
 	MetricsCleanupIntervalInMinutes            int
 	ManifestRequeueJitterProbability           float64
 	ManifestRequeueJitterPercentage            float64
@@ -375,17 +358,11 @@ type FlagVar struct {
 }
 
 func (f FlagVar) Validate() error {
-	if f.EnableKcpWatcher {
-		if f.WatcherImageTag == "" {
-			return ErrMissingWatcherImageTag
-		}
-		if f.WatcherImageRegistry == "" {
-			return ErrMissingWatcherImageRegistry
-		}
-		dirInfo, err := os.Stat(f.WatcherResourcesPath)
-		if err != nil || !dirInfo.IsDir() {
-			return ErrWatcherDirNotExist
-		}
+	if f.WatcherImageTag == "" {
+		return ErrMissingWatcherImageTag
+	}
+	if f.WatcherImageRegistry == "" {
+		return ErrMissingWatcherImageRegistry
 	}
 
 	if f.LeaderElectionRenewDeadline >= f.LeaderElectionLeaseDuration {

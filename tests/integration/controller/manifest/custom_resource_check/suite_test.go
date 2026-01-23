@@ -23,7 +23,6 @@ import (
 	"testing"
 	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/google/go-containerregistry/pkg/registry"
 	"go.uber.org/zap/zapcore"
 	apicorev1 "k8s.io/api/core/v1"
@@ -59,9 +58,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -122,11 +122,7 @@ var _ = BeforeSuite(func() {
 	if !found {
 		metricsBindAddress = ":0"
 	}
-	cacheOpts := setup.SetupCacheOptions(false,
-		"istio-system",
-		ControlPlaneNamespace,
-		certmanagerv1.SchemeGroupVersion.String(),
-		logr)
+	cacheOpts := setup.NewDefaultCacheOptions().GetCacheOptions()
 	syncPeriod := 2 * time.Second
 	cacheOpts.SyncPeriod = &syncPeriod
 

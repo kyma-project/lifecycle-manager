@@ -27,7 +27,6 @@ func ComposeSkrWebhookManager(
 	certificateRepository certificate.CertificateRepository,
 	flagVar *flags.FlagVar,
 ) *watcher.SkrWebhookManifestManager {
-	flagVar.WatcherResourcesPath = filepath.Join(integration.GetProjectRoot(), "skr-webhook")
 	flagVar.SelfSignedCertDuration = selfSignedCertDuration
 	flagVar.SelfSignedCertRenewBefore = selfSignedCertRenewBefore
 	flagVar.WatcherImageRegistry = "dummyhost"
@@ -41,6 +40,7 @@ func ComposeSkrWebhookManager(
 		gatewayRepository,
 		certificateRepository,
 		flagVar,
+		filepath.Join(integration.GetProjectRoot(), "skr-webhook"),
 	)
 	return skrWebhookManager
 }

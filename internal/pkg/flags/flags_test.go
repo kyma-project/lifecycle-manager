@@ -264,11 +264,6 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: "europe-docker.pkg.dev/kyma-project/prod",
 		},
 		{
-			constName:     "DefaultWatcherResourcesPath",
-			constValue:    DefaultWatcherResourcesPath,
-			expectedValue: "./skr-webhook",
-		},
-		{
 			constName:     "DefaultWatcherResourceLimitsCPU",
 			constValue:    DefaultWatcherResourceLimitsCPU,
 			expectedValue: "0.1",
@@ -339,33 +334,13 @@ func Test_Flags_Validate(t *testing.T) {
 		},
 		{
 			name:  "WatcherImageTag is required",
-			flags: newFlagVarBuilder().withEnabledKcpWatcher(true).withWatcherImageTag("").build(),
+			flags: newFlagVarBuilder().withWatcherImageTag("").build(),
 			err:   ErrMissingWatcherImageTag,
 		},
 		{
-			name:  "WatcherImageTag is NOT required",
-			flags: newFlagVarBuilder().withWatcherImageTag("").build(),
-			err:   nil,
-		},
-		{
 			name:  "WatcherImageRegistry is required",
-			flags: newFlagVarBuilder().withEnabledKcpWatcher(true).withWatcherImageRegistry("").build(),
-			err:   ErrMissingWatcherImageRegistry,
-		},
-		{
-			name:  "WatcherImageRegistry is NOT required",
 			flags: newFlagVarBuilder().withWatcherImageRegistry("").build(),
-			err:   nil,
-		},
-		{
-			name:  "WatcherResourcesPath is required",
-			flags: newFlagVarBuilder().withEnabledKcpWatcher(true).withWatcherResourcesPath("").build(),
-			err:   ErrWatcherDirNotExist,
-		},
-		{
-			name:  "WatcherResourcesPath is NOT required",
-			flags: newFlagVarBuilder().withWatcherResourcesPath("").build(),
-			err:   nil,
+			err:   ErrMissingWatcherImageRegistry,
 		},
 		{
 			name:  "LeaderElectionRenewDeadline > LeaderElectionLeaseDuration",
@@ -469,11 +444,9 @@ func newFlagVarBuilder() *flagVarBuilder {
 
 	return builder.
 		withCertificateManagement(certmanagerv1.SchemeGroupVersion.String()).
-		withEnabledKcpWatcher(false).
 		withWatcherImageTag("v1.0.0").
 		withWatcherImageName("runtime-watcher").
 		withWatcherImageRegistry("foo.bar").
-		withWatcherResourcesPath("./skr-webhook").
 		withLeaderElectionRenewDeadline(120 * time.Second).
 		withLeaderElectionLeaseDuration(180 * time.Second).
 		withSelfSignedCertKeySize(4096).
@@ -491,11 +464,6 @@ func (b *flagVarBuilder) withCertificateManagement(certificateManagement string)
 	return b
 }
 
-func (b *flagVarBuilder) withEnabledKcpWatcher(enabled bool) *flagVarBuilder {
-	b.flags.EnableKcpWatcher = enabled
-	return b
-}
-
 func (b *flagVarBuilder) withWatcherImageTag(tag string) *flagVarBuilder {
 	b.flags.WatcherImageTag = tag
 	return b
@@ -508,11 +476,6 @@ func (b *flagVarBuilder) withWatcherImageName(name string) *flagVarBuilder {
 
 func (b *flagVarBuilder) withWatcherImageRegistry(registry string) *flagVarBuilder {
 	b.flags.WatcherImageRegistry = registry
-	return b
-}
-
-func (b *flagVarBuilder) withWatcherResourcesPath(path string) *flagVarBuilder {
-	b.flags.WatcherResourcesPath = path
 	return b
 }
 

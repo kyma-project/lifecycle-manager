@@ -54,7 +54,6 @@ type Reconciler struct {
 	SkrContextFactory     remote.SkrContextProvider
 	PurgeFinalizerTimeout time.Duration
 	SkipCRDs              matcher.CRDMatcherFunc
-	IsManagedKyma         bool
 	Metrics               *metrics.PurgeMetrics
 }
 
@@ -97,10 +96,6 @@ func (r *Reconciler) UpdateStatus(ctx context.Context, kyma *v1beta2.Kyma, state
 }
 
 func (r *Reconciler) UpdateMetrics(_ context.Context, _ *v1beta2.Kyma) {}
-
-func (r *Reconciler) IsKymaManaged() bool {
-	return r.IsManagedKyma
-}
 
 func handleKymaNotFoundError(logger logr.Logger, kyma *v1beta2.Kyma, err error) (ctrl.Result, error) {
 	if util.IsNotFound(err) {
