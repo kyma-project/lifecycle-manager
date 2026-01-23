@@ -264,11 +264,6 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: "europe-docker.pkg.dev/kyma-project/prod",
 		},
 		{
-			constName:     "DefaultWatcherResourcesPath",
-			constValue:    DefaultWatcherResourcesPath,
-			expectedValue: "./skr-webhook",
-		},
-		{
 			constName:     "DefaultWatcherResourceLimitsCPU",
 			constValue:    DefaultWatcherResourceLimitsCPU,
 			expectedValue: "0.1",

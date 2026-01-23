@@ -64,7 +64,6 @@ const (
 	DefaultPprofAddress                                                 = ":8084"
 	DefaultWatcherImageName                                             = "runtime-watcher"
 	DefaultWatcherImageRegistry                                         = "europe-docker.pkg.dev/kyma-project/prod"
-	DefaultWatcherResourcesPath                                         = "./skr-webhook"
 	DefaultWatcherResourceLimitsCPU                                     = "0.1"
 	DefaultWatcherResourceLimitsMemory                                  = "200Mi"
 	DefaultDropCrdStoredVersionMap                                      = "Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1" //nolint:revive // keep it readible
