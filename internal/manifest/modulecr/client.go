@@ -165,8 +165,11 @@ func (c *Client) GetAllModuleCRsExcludingDefaultCR(ctx context.Context,
 	defaultModuleCR := manifest.Spec.Resource.DeepCopy()
 	moduleCRGvk := defaultModuleCR.GroupVersionKind()
 
-	allResourcesWithModuleCRGroupKind, err := c.listResourcesByGroupKindInNamespace(ctx, moduleCRGvk,
-		defaultModuleCR.GetNamespace())
+	// List all Module CRs across all namespaces using REST mapper
+	// This is required by ADR https://github.com/kyma-project/community/issues/972
+	// which states: "lifecycle-manager uses ALL CRs of the Module CRD as the 'gate'
+	// before proceeding with the deletion of the module"
+	allResourcesWithModuleCRGroupKind, err := c.listResourcesByGroupKindInAllNamespaces(ctx, moduleCRGvk)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list Module CRs by group kind: %w", err)
 	}
@@ -203,6 +206,38 @@ func (c *Client) listResourcesByGroupKindInNamespace(ctx context.Context,
 		if err := c.List(ctx, list, &client.ListOptions{
 			Namespace: namespace,
 		}); err != nil && !util.IsNotFound(err) {
+			continue
+		}
+
+		allItems = append(allItems, list.Items...)
+	}
+	return allItems, nil
+}
+
+// listResourcesByGroupKindInAllNamespaces lists all resources matching the given GroupVersionKind
+// across ALL namespaces. This is required by ADR #972 to check all Module CRs before deletion.
+func (c *Client) listResourcesByGroupKindInAllNamespaces(ctx context.Context,
+	gvk schema.GroupVersionKind,
+) ([]unstructured.Unstructured, error) {
+	mappings, err := c.RESTMapper().RESTMappings(schema.GroupKind{
+		Group: gvk.Group,
+		Kind:  gvk.Kind,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get REST mappings for %s.%s: %w", gvk.Group, gvk.Kind, err)
+	}
+
+	var allItems []unstructured.Unstructured
+	for _, mapping := range mappings {
+		list := &unstructured.UnstructuredList{}
+		list.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   mapping.GroupVersionKind.Group,
+			Version: mapping.GroupVersionKind.Version,
+			Kind:    mapping.GroupVersionKind.Kind,
+		})
+
+		// Empty ListOptions means search across ALL namespaces
+		if err := c.List(ctx, list, &client.ListOptions{}); err != nil && !util.IsNotFound(err) {
 			continue
 		}
 

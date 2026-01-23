@@ -277,3 +277,93 @@ func getRestMapper() *meta.DefaultRESTMapper {
 
 	return mapper
 }
+
+func TestClient_GetAllModuleCRsExcludingDefaultCR_WithCRsInDifferentNamespaces(t *testing.T) {
+	// Given a manifest CR with default CR in kyma-system namespace and additional Module CRs in different namespaces
+	scheme := machineryruntime.NewScheme()
+	err := v1beta2.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	kcpClient := fake.NewClientBuilder().WithScheme(scheme).WithRESTMapper(getRestMapper()).Build()
+	skrClient := modulecr.NewClient(kcpClient)
+
+	manifest := testutils.NewTestManifest("test-manifest")
+	moduleCR := unstructured.Unstructured{}
+	moduleCR.SetGroupVersionKind(
+		schema.GroupVersionKind{
+			Group:   templatev1alpha1.GroupVersion.Group,
+			Version: templatev1alpha1.GroupVersion.Version,
+			Kind:    string(templatev1alpha1.SampleKind),
+		},
+	)
+	const defaultModuleName = "default-resource"
+	moduleCR.SetName(defaultModuleName)
+	moduleCR.SetNamespace(shared.DefaultRemoteNamespace)
+	manifest.Spec.Resource = &moduleCR
+	err = kcpClient.Create(t.Context(), manifest.Spec.Resource)
+	require.NoError(t, err)
+
+	err = kcpClient.Create(t.Context(), manifest)
+	require.NoError(t, err)
+
+	// Create a Module CR in the default namespace
+	const moduleName2 = "resource-in-default-ns"
+	moduleCR2 := unstructured.Unstructured{}
+	moduleCR2.SetName(moduleName2)
+	moduleCR2.SetNamespace("default")
+	moduleCR2.SetGroupVersionKind(moduleCR.GroupVersionKind())
+	err = skrClient.Create(t.Context(), &moduleCR2)
+	require.NoError(t, err)
+
+	// Create another Module CR in a custom namespace
+	const moduleName3 = "resource-in-custom-ns"
+	moduleCR3 := unstructured.Unstructured{}
+	moduleCR3.SetName(moduleName3)
+	moduleCR3.SetNamespace("custom-namespace")
+	moduleCR3.SetGroupVersionKind(moduleCR.GroupVersionKind())
+	err = skrClient.Create(t.Context(), &moduleCR3)
+	require.NoError(t, err)
+
+	// Create a Module CR with the same name as default but in a different namespace
+	// This tests that we compare both name AND namespace
+	moduleCR4 := unstructured.Unstructured{}
+	moduleCR4.SetName(defaultModuleName)
+	moduleCR4.SetNamespace("another-namespace")
+	moduleCR4.SetGroupVersionKind(moduleCR.GroupVersionKind())
+	err = skrClient.Create(t.Context(), &moduleCR4)
+	require.NoError(t, err)
+
+	// When Getting all Module CRs excluding the default CR
+	moduleCRs, err := skrClient.GetAllModuleCRsExcludingDefaultCR(t.Context(), manifest)
+	require.NoError(t, err)
+
+	// Then all non-default Module CRs should be returned (3 CRs from different namespaces)
+	require.Len(t, moduleCRs, 3)
+
+	// Verify that the default CR (same name AND namespace) is excluded
+	for _, moduleCR := range moduleCRs {
+		isDefaultCR := moduleCR.GetName() == defaultModuleName &&
+			moduleCR.GetNamespace() == shared.DefaultRemoteNamespace
+		assert.False(t, isDefaultCR, "Default Module CR should be excluded")
+	}
+
+	// Verify all expected CRs are present
+	foundInDefault := false
+	foundInCustom := false
+	foundSameNameDiffNs := false
+	for _, moduleCR := range moduleCRs {
+		if moduleCR.GetName() == moduleName2 && moduleCR.GetNamespace() == "default" {
+			foundInDefault = true
+		}
+		if moduleCR.GetName() == moduleName3 && moduleCR.GetNamespace() == "custom-namespace" {
+			foundInCustom = true
+		}
+		if moduleCR.GetName() == defaultModuleName && moduleCR.GetNamespace() == "another-namespace" {
+			foundSameNameDiffNs = true
+		}
+	}
+	assert.True(t, foundInDefault, "Module CR in default namespace should be found")
+	assert.True(t, foundInCustom, "Module CR in custom namespace should be found")
+	assert.True(t, foundSameNameDiffNs, "Module CR with same name but different namespace should be found")
+}
+

@@ -181,6 +181,12 @@ module-deletion-with-multiple-crs-create-and-delete-policy:
 module-deletion-with-multiple-crs-ignore-policy:
 	$(GO_TEST) "Blocking Module Deletion With Multiple Module CRs with Ignore Policy"
 
+module-deletion-cross-namespace-ignore-policy:
+	$(GO_TEST) "Blocking Module Deletion With Module CRs in Different Namespaces"
+
+module-deletion-cross-namespace-create-and-delete-policy:
+	$(GO_TEST) "Blocking Module Deletion With Module CRs in Different Namespaces (CreateAndDelete Policy)"
+
 module-transferred-to-another-oci-registry:
 	$(GO_TEST) "Module Transferred to Another OCI Registry"
 
