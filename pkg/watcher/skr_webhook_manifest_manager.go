@@ -17,6 +17,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/secret/data"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/chartreader"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
@@ -104,6 +105,9 @@ func (m *SkrWebhookManifestManager) Reconcile(ctx context.Context, kyma *v1beta2
 	m.writeCertificateRenewalMetrics(ctx, kyma.Name, logger)
 
 	if err = m.skrCertificateService.RenewSkrCertificate(ctx, kyma.Name); err != nil {
+		if errors.Is(err, certificate.ErrWaitingForSkrCertificateToBeReIssued) {
+			return err
+		}
 		return fmt.Errorf("failed to renew SKR certificate: %w", err)
 	}
 

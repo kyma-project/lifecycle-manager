@@ -17,8 +17,9 @@ import (
 )
 
 var (
-	ErrDomainAnnotationEmpty   = errors.New("domain annotation is empty")
-	ErrDomainAnnotationMissing = errors.New("domain annotation is missing")
+	ErrDomainAnnotationEmpty                = errors.New("domain annotation is empty")
+	ErrDomainAnnotationMissing              = errors.New("domain annotation is missing")
+	ErrWaitingForSkrCertificateToBeReIssued = errors.New("waiting for SKR certificate to be issued")
 )
 
 type RenewalService interface {
@@ -108,7 +109,7 @@ func (c *Service) RenewSkrCertificate(ctx context.Context, kymaName string) erro
 
 	skrCertificateSecret, err := c.secretRepo.Get(ctx, name.SkrCertificate(kymaName))
 	if err != nil {
-		return fmt.Errorf("failed to get SKR certificate secret: %w", err)
+		return errors.Join(ErrWaitingForSkrCertificateToBeReIssued, err)
 	}
 
 	if !c.renewalService.SkrSecretNeedsRenewal(gatewaySecret, skrCertificateSecret) {

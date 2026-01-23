@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Exporting the path to the kubeconfig file
+export KUBECONFIG=$HOME/.k3d/kcp-local.yaml
+
+for i in {1..100}; do
+  cat <<EOF | kubectl delete -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-cert-$i
+  namespace: istio-system
+EOF
+
+  if [ $? -ne 0 ]; then
+    echo "[$(basename "$0")] Cert deployment failed for test-cert-$i"
+    exit 1
+  fi
+
+done
+
+echo "[$(basename "$0")] All certs deployed successfully"
