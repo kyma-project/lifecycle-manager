@@ -80,6 +80,8 @@ jobs:
           - watcher-zero-downtime
           - module-deletion-with-multiple-crs-create-and-delete-policy
           - module-deletion-with-multiple-crs-ignore-policy
+          - module-deletion-cross-namespace-ignore-policy
+          - module-deletion-cross-namespace-create-and-delete-policy
           - oci-reg-cred-secret
           - module-transferred-to-another-oci-registry
           - simulate-skr-secret-rotation-evict-client-cache
