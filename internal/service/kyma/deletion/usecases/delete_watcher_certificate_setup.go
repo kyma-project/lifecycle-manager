@@ -8,7 +8,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/name"
 )
 
@@ -24,13 +23,18 @@ type SecretRepository interface {
 	Delete(ctx context.Context, name string) error
 }
 
+type CertificateRepository interface {
+	Exists(ctx context.Context, certName string) (bool, error)
+	Delete(ctx context.Context, name string) error
+}
+
 type DeleteWatcherCertificateSetup struct {
-	certRepo   certificate.CertificateRepository
+	certRepo   CertificateRepository
 	secretRepo SecretRepository
 }
 
 func NewDeleteWatcherCertificateSetup(
-	certRepo certificate.CertificateRepository,
+	certRepo CertificateRepository,
 	secretRepo SecretRepository,
 ) *DeleteWatcherCertificateSetup {
 	return &DeleteWatcherCertificateSetup{

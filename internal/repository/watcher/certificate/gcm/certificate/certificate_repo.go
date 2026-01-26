@@ -23,7 +23,8 @@ var (
 	ErrGCMRepoConfigKeySizeOutOfRange     = errors.New("KeySize is out of range for int32")
 	ErrInputStringNotContainValidDates    = errors.New("input string does not contain valid dates")
 	ErrCertificateStatusNotContainMessage = errors.New("certificate status does not contain message")
-	dateRegex                             = regexp.MustCompile(`valid from (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC) to (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC)`) //nolint:revive //keep regex readible
+
+	dateRegex = regexp.MustCompile(`valid from (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC) to (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC)`) //nolint:revive //keep regex readible
 )
 
 const regexMatchesCount = 3
@@ -61,10 +62,6 @@ func NewRepository(kcpClient client.Client,
 		issuerNamespace,
 		certConfig,
 	}, nil
-}
-
-func (r *Repository) Renew(ctx context.Context, name string) error {
-	return nil
 }
 
 func (r *Repository) Create(ctx context.Context, name, commonName string, dnsNames []string) error {
@@ -120,6 +117,26 @@ func (r *Repository) Delete(ctx context.Context, name string) error {
 
 	if err := r.kcpClient.Delete(ctx, cert); client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("failed to delete certificate %s-%s: %w", name, r.certConfig.Namespace, err)
+	}
+
+	return nil
+}
+
+func (r *Repository) Renew(ctx context.Context, name string) error {
+	var cert *gcertv1alpha1.Certificate
+	var err error
+	if cert, err = r.get(ctx, name); err != nil || cert == nil {
+		return fmt.Errorf("could not get certificate for renewal: %w", err)
+	}
+
+	if cert.Spec.EnsureRenewedAfter != nil {
+		cert.Spec.EnsureRenewedAfter = nil
+	}
+
+	cert.Spec.Renew = boolPtr(true)
+
+	if err = r.update(ctx, cert); err != nil {
+		return fmt.Errorf("failed to update certificate for renewal: %w", err)
 	}
 
 	return nil
@@ -209,4 +226,28 @@ func parseValidity(input string) (time.Time, time.Time, error) {
 	}
 
 	return notBefore, notAfter, nil
+}
+
+func (r *Repository) get(ctx context.Context, name string) (*gcertv1alpha1.Certificate, error) {
+	cert := &gcertv1alpha1.Certificate{}
+	cert.SetName(name)
+	cert.SetNamespace(r.certConfig.Namespace)
+
+	if err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+		return nil, fmt.Errorf("failed to get GCM Certificate %s-%s: %w", name, r.certConfig.Namespace, err)
+	}
+
+	return cert, nil
+}
+
+func (r *Repository) update(ctx context.Context, cert *gcertv1alpha1.Certificate) error {
+	if err := r.kcpClient.Update(ctx, cert); err != nil {
+		return fmt.Errorf("failed to update GCM Certificate %s-%s: %w", cert.Name, cert.Namespace, err)
+	}
+
+	return nil
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }

@@ -177,69 +177,78 @@ func TestDeleteSkrCertificate_SecretRepositoryReturnsError_ReturnsError(t *testi
 	assert.True(t, secretRepo.deleteCalled)
 }
 
-func TestRenewSkrCertificate_WhenSecretsIndicateRenew_CallsRenewalServiceRenew(t *testing.T) {
-	secretRepo := &secretRepoStub{}
+func TestRenewSkrCertificate_WhenNeedsRenew_CallsRenewalServiceRenew(t *testing.T) {
 	renewalService := &renewalServiceStub{skrNeedsReturn: true}
-	certService := certificate.NewService(renewalService, &certRepoStub{}, secretRepo, certificate.Config{
-		GatewaySecretName: gatewaySecretName,
-	})
+	certService := certificate.NewService(renewalService,
+		&certRepoStub{},
+		nil,
+		certificate.Config{
+			GatewaySecretName: gatewaySecretName,
+		},
+	)
 
 	err := certService.RenewSkrCertificate(t.Context(), kymaName)
 
 	require.NoError(t, err)
-	assert.True(t, secretRepo.getCalled)
-	assert.False(t, secretRepo.deleteCalled)
 	assert.Equal(t, 1, renewalService.renewCalls)
+	assert.Equal(t, 1, renewalService.skrNeedsCalls)
 	assert.Equal(t, kymaName+expectedCertNameSuffix, renewalService.renewLastCallArg)
+	assert.Equal(t, kymaName+expectedCertNameSuffix, renewalService.skrNeedsLastCallArg)
 }
 
 func TestRenewSkrCertificate_WhenSecretsIndicateNoRenew_RenewalServiceRenewIsNotCalled(t *testing.T) {
-	secretRepo := &secretRepoStub{}
 	renewalService := &renewalServiceStub{skrNeedsReturn: false}
-	certService := certificate.NewService(renewalService, &certRepoStub{}, secretRepo, certificate.Config{
-		GatewaySecretName: gatewaySecretName,
-	})
+	certService := certificate.NewService(renewalService,
+		&certRepoStub{},
+		nil,
+		certificate.Config{
+			GatewaySecretName: gatewaySecretName,
+		},
+	)
 
 	err := certService.RenewSkrCertificate(t.Context(), kymaName)
 
 	require.NoError(t, err)
-	assert.True(t, secretRepo.getCalled)
+	assert.Equal(t, 1, renewalService.skrNeedsCalls)
 	assert.Equal(t, 0, renewalService.renewCalls)
-	assert.Empty(t, renewalService.renewLastCallArg)
 }
 
-func TestRenewSkrCertificate_SecretRepositoryGetReturnsError_ReturnsError(t *testing.T) {
-	secretRepo := &secretRepoStub{
-		getErrors: []error{assert.AnError},
-	}
-	renewalService := &renewalServiceStub{}
-	certService := certificate.NewService(renewalService, &certRepoStub{}, secretRepo, certificate.Config{
-		GatewaySecretName: gatewaySecretName,
-	})
+func TestRenewSkrCertificate_WhenNeedsRenewReturnsError_RenewalServiceRenewIsNotCalled(t *testing.T) {
+	renewalService := &renewalServiceStub{skrNeedsErr: assert.AnError}
+	certService := certificate.NewService(renewalService,
+		&certRepoStub{},
+		nil,
+		certificate.Config{
+			GatewaySecretName: gatewaySecretName,
+		},
+	)
 
 	err := certService.RenewSkrCertificate(t.Context(), kymaName)
 
 	require.ErrorIs(t, err, assert.AnError)
-	require.ErrorContains(t, err, "failed to get gateway certificate secret")
-	assert.True(t, secretRepo.getCalled)
 	assert.Equal(t, 0, renewalService.renewCalls)
+	assert.Equal(t, 1, renewalService.skrNeedsCalls)
+	assert.Equal(t, kymaName+expectedCertNameSuffix, renewalService.skrNeedsLastCallArg)
+	assert.Contains(t, err.Error(), "failed to determine if SKR certificate needs renewal")
 }
 
 func TestRenewSkrCertificate_RenewalServiceReturnsError_ReturnsError(t *testing.T) {
-	secretRepo := &secretRepoStub{}
 	renewalService := &renewalServiceStub{
 		skrNeedsReturn: true,
 		renewErr:       assert.AnError,
 	}
-	certService := certificate.NewService(renewalService, &certRepoStub{}, secretRepo, certificate.Config{
-		GatewaySecretName: gatewaySecretName,
-	})
+	certService := certificate.NewService(renewalService,
+		&certRepoStub{},
+		nil,
+		certificate.Config{
+			GatewaySecretName: gatewaySecretName,
+		},
+	)
 
 	err := certService.RenewSkrCertificate(t.Context(), kymaName)
 
 	require.ErrorIs(t, err, assert.AnError)
-	require.ErrorContains(t, err, "failed to delete SKR certificate secret")
-	assert.True(t, secretRepo.getCalled)
+	require.ErrorContains(t, err, "failed to renew SKR certificate")
 	assert.Equal(t, 1, renewalService.renewCalls)
 	assert.Equal(t, kymaName+expectedCertNameSuffix, renewalService.renewLastCallArg)
 }
@@ -342,120 +351,6 @@ func TestGetSkrCertificateSecret_SecretRepositoryReturnsNotFound_ReturnsError(t 
 	require.ErrorContains(t, err, "failed to get SKR certificate secret")
 	assert.Nil(t, result)
 	assert.True(t, secretRepo.getCalled)
-}
-
-func TestGetGatewayCertificateSecret_SecretRepositoryReturnsSecret_ReturnsSecret(t *testing.T) {
-	secretRepo := &secretRepoStub{
-		getSecrets: []*apicorev1.Secret{
-			{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Name:      gatewaySecretName,
-					Namespace: certNamespace,
-				},
-			},
-		},
-	}
-	certService := certificate.NewService(&renewalServiceStub{}, &certRepoStub{}, secretRepo, certificate.Config{
-		GatewaySecretName: gatewaySecretName,
-	})
-
-	result, err := certService.GetGatewayCertificateSecret(t.Context())
-
-	require.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.True(t, secretRepo.getCalled)
-	assert.Equal(t, gatewaySecretName, result.Name)
-	assert.Equal(t, certNamespace, result.Namespace)
-}
-
-func TestGetGatewayCertificateSecret_SecretRepositoryReturnsError_ReturnsError(t *testing.T) {
-	secretRepo := &secretRepoStub{
-		getErrors: []error{assert.AnError},
-	}
-	certService := certificate.NewService(&renewalServiceStub{}, &certRepoStub{}, secretRepo, certificate.Config{
-		GatewaySecretName: gatewaySecretName,
-	})
-
-	result, err := certService.GetGatewayCertificateSecret(t.Context())
-
-	require.Error(t, err)
-	require.ErrorContains(t, err, "failed to get gateway certificate secret")
-	assert.Nil(t, result)
-	assert.True(t, secretRepo.getCalled)
-}
-
-// Test stubs
-
-type certRepoStub struct {
-	createCalled         bool
-	createErr            error
-	createName           string
-	createCommonName     string
-	createDNSNames       []string
-	deleteCalled         bool
-	deleteErr            error
-	deleteName           string
-	getRenewalTimeCalled bool
-	renewalTime          time.Time
-	getRenewalTimeErr    error
-}
-
-func (c *certRepoStub) Create(_ context.Context, name, commonName string,
-	dnsNames []string,
-) error {
-	c.createCalled = true
-	c.createName = name
-	c.createCommonName = commonName
-	c.createDNSNames = dnsNames
-	return c.createErr
-}
-
-func (c *certRepoStub) Delete(_ context.Context, name string) error {
-	c.deleteCalled = true
-	c.deleteName = name
-	return c.deleteErr
-}
-
-func (c *certRepoStub) Exists(_ context.Context, _ string) (bool, error) {
-	return false, nil
-}
-
-func (c *certRepoStub) GetRenewalTime(_ context.Context, _ string) (time.Time, error) {
-	c.getRenewalTimeCalled = true
-	return c.renewalTime, c.getRenewalTimeErr
-}
-
-type secretRepoStub struct {
-	getCalled    bool
-	getErrors    []error
-	getSecrets   []*apicorev1.Secret
-	deleteCalled bool
-	deleteName   string
-	deleteErr    error
-}
-
-func (c *secretRepoStub) Get(_ context.Context, _ string) (*apicorev1.Secret, error) {
-	c.getCalled = true
-
-	var secret *apicorev1.Secret
-	if len(c.getSecrets) > 0 {
-		secret = c.getSecrets[0]
-		c.getSecrets = c.getSecrets[1:]
-	}
-
-	var err error
-	if len(c.getErrors) > 0 {
-		err = c.getErrors[0]
-		c.getErrors = c.getErrors[1:]
-	}
-
-	return secret, err
-}
-
-func (c *secretRepoStub) Delete(_ context.Context, name string) error {
-	c.deleteCalled = true
-	c.deleteName = name
-	return c.deleteErr
 }
 
 func TestCertificateManager_GetGatewayCertificateSecretData(t *testing.T) {
@@ -609,16 +504,92 @@ func TestCertificateManager_GetSkrCertificateSecretData(t *testing.T) {
 	}
 }
 
+// Test stubs
+
+type certRepoStub struct {
+	createCalled         bool
+	createErr            error
+	createName           string
+	createCommonName     string
+	createDNSNames       []string
+	deleteCalled         bool
+	deleteErr            error
+	deleteName           string
+	getRenewalTimeCalled bool
+	renewalTime          time.Time
+	getRenewalTimeErr    error
+}
+
+func (c *certRepoStub) Create(_ context.Context, name, commonName string,
+	dnsNames []string,
+) error {
+	c.createCalled = true
+	c.createName = name
+	c.createCommonName = commonName
+	c.createDNSNames = dnsNames
+	return c.createErr
+}
+
+func (c *certRepoStub) Delete(_ context.Context, name string) error {
+	c.deleteCalled = true
+	c.deleteName = name
+	return c.deleteErr
+}
+
+func (c *certRepoStub) Exists(_ context.Context, _ string) (bool, error) {
+	return false, nil
+}
+
+func (c *certRepoStub) GetRenewalTime(_ context.Context, _ string) (time.Time, error) {
+	c.getRenewalTimeCalled = true
+	return c.renewalTime, c.getRenewalTimeErr
+}
+
+type secretRepoStub struct {
+	getCalled    bool
+	getErrors    []error
+	getSecrets   []*apicorev1.Secret
+	deleteCalled bool
+	deleteName   string
+	deleteErr    error
+}
+
+func (c *secretRepoStub) Get(_ context.Context, _ string) (*apicorev1.Secret, error) {
+	c.getCalled = true
+
+	var secret *apicorev1.Secret
+	if len(c.getSecrets) > 0 {
+		secret = c.getSecrets[0]
+		c.getSecrets = c.getSecrets[1:]
+	}
+
+	var err error
+	if len(c.getErrors) > 0 {
+		err = c.getErrors[0]
+		c.getErrors = c.getErrors[1:]
+	}
+
+	return secret, err
+}
+
+func (c *secretRepoStub) Delete(_ context.Context, name string) error {
+	c.deleteCalled = true
+	c.deleteName = name
+	return c.deleteErr
+}
+
 type renewalServiceStub struct {
 	renewCalls       int
 	renewLastCallArg string
 	renewErr         error
 
-	skrNeedsCalls  int
-	skrNeedsReturn bool
+	skrNeedsCalls       int
+	skrNeedsLastCallArg string
+	skrNeedsReturn      bool
+	skrNeedsErr         error
 }
 
-func (r *renewalServiceStub) Renew(_ context.Context, name string) error {
+func (r *renewalServiceStub) RenewSkrCertificate(_ context.Context, name string) error {
 	r.renewCalls++
 	r.renewLastCallArg = name
 	if r.renewErr != nil {
@@ -628,7 +599,11 @@ func (r *renewalServiceStub) Renew(_ context.Context, name string) error {
 	return nil
 }
 
-func (r *renewalServiceStub) SkrSecretNeedsRenewal(_, _ *apicorev1.Secret) bool {
+func (r *renewalServiceStub) SkrCertificateNeedsRenewal(_ context.Context, name string) (bool, error) {
 	r.skrNeedsCalls++
-	return r.skrNeedsReturn
+	r.skrNeedsLastCallArg = name
+	if r.skrNeedsErr != nil {
+		return false, r.skrNeedsErr
+	}
+	return r.skrNeedsReturn, nil
 }
