@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"strings"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -18,10 +19,8 @@ import (
 	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate" //nolint:revive // not for import
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
 	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/renewal"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	certmanagerrenewal "github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager" //nolint:revive // not for import
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/gcm"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/chartreader"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/gateway"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
@@ -39,8 +38,6 @@ var (
 	ErrWatcherDirNotExist = errors.New("failed to locate watcher resource manifest folder")
 )
 
-const DefaultResourcesPath = "./skr-webhook"
-
 func ComposeSkrWebhookManager(kcpClient client.Client,
 	skrContextProvider remote.SkrContextProvider,
 	repository gateway.IstioGatewayRepository,
@@ -49,7 +46,8 @@ func ComposeSkrWebhookManager(kcpClient client.Client,
 	watcherResourcesPath string,
 ) (*watcher.SkrWebhookManifestManager, error) {
 	if watcherResourcesPath == "" {
-		watcherResourcesPath = DefaultResourcesPath
+		pwd, _ := os.Getwd()
+		watcherResourcesPath = path.Join(pwd, "..", "skr-webhook")
 	}
 	dirInfo, err := os.Stat(watcherResourcesPath)
 	if err != nil || !dirInfo.IsDir() {
@@ -150,10 +148,10 @@ func setupSKRCertService(kcpClient client.Client,
 	var renewalService certificate.RenewalService
 	switch flagVar.CertificateManagement {
 	case certmanagerv1.SchemeGroupVersion.String():
-		renewalService = certmanagerrenewal.NewService(secretRepository)
-	case gcertv1alpha1.SchemeGroupVersion.String():
-		renewalCertRepo := renewal.NewRepository(kcpClient, flagVar.IstioNamespace)
-		renewalService = gcm.NewService(renewalCertRepo)
+		renewalService = certmanagerrenewal.NewService(certificateRepository)
+	// case gcertv1alpha1.SchemeGroupVersion.String():
+	// 	renewalCertRepo := renewal.NewRepository(kcpClient, flagVar.IstioNamespace)
+	// 	renewalService = gcm.NewService(renewalCertRepo)
 	default:
 		return nil, errCertificateManagementNotSupported
 	}

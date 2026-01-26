@@ -63,6 +63,10 @@ func NewRepository(kcpClient client.Client,
 	}, nil
 }
 
+func (r *Repository) Renew(ctx context.Context, name string) error {
+	return nil
+}
+
 func (r *Repository) Create(ctx context.Context, name, commonName string, dnsNames []string) error {
 	//nolint:gosec // save as of the guard clause in constructor
 	keySize := gcertv1alpha1.PrivateKeySize(int32(r.certConfig.KeySize))

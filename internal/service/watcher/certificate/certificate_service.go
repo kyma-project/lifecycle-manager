@@ -23,14 +23,16 @@ var (
 
 type RenewalService interface {
 	Renew(ctx context.Context, name string) error
-	SkrSecretNeedsRenewal(gatewaySecret, skrSecret *apicorev1.Secret) bool
+	SkrSecretNeedsRenewal(gatewaySecret *apicorev1.Secret, clientCertNotBefore time.Time) bool
 }
 
 type CertificateRepository interface {
+	Renew(ctx context.Context, name string) error
 	Create(ctx context.Context, name, commonName string, dnsNames []string) error
 	Delete(ctx context.Context, name string) error
 	Exists(ctx context.Context, name string) (bool, error)
 	GetRenewalTime(ctx context.Context, name string) (time.Time, error)
+	GetValidity(ctx context.Context, name string) (time.Time, time.Time, error)
 }
 
 type SecretRepository interface {
@@ -106,12 +108,12 @@ func (c *Service) RenewSkrCertificate(ctx context.Context, kymaName string) erro
 		return fmt.Errorf("failed to get gateway certificate secret: %w", err)
 	}
 
-	skrCertificateSecret, err := c.secretRepo.Get(ctx, name.SkrCertificate(kymaName))
+	clientCertNotBefore, _, err := c.certRepo.GetValidity(ctx, name.SkrCertificate(kymaName))
 	if err != nil {
-		return fmt.Errorf("failed to get SKR certificate secret: %w", err)
+		return fmt.Errorf("failed to get SKR certificate validity: %w", err)
 	}
 
-	if !c.renewalService.SkrSecretNeedsRenewal(gatewaySecret, skrCertificateSecret) {
+	if !c.renewalService.SkrSecretNeedsRenewal(gatewaySecret, clientCertNotBefore) {
 		return nil
 	}
 

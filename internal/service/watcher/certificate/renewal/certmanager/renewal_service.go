@@ -10,23 +10,23 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
-type SecretRepository interface {
-	Delete(ctx context.Context, name string) error
+type CertRepository interface {
+	Renew(ctx context.Context, name string) error
 }
 
 type Service struct {
-	secretRepository SecretRepository
+	certRepo CertRepository
 }
 
-func NewService(certRepo SecretRepository) *Service {
+func NewService(certRepo CertRepository) *Service {
 	return &Service{
-		secretRepository: certRepo,
+		certRepo: certRepo,
 	}
 }
 
 func (s *Service) Renew(ctx context.Context, name string) error {
-	if err := s.secretRepository.Delete(ctx, name); err != nil {
-		return fmt.Errorf("failed to renew SKR certificate secret. Deletion failed: %w", err)
+	if err := s.certRepo.Renew(ctx, name); err != nil {
+		return fmt.Errorf("failed to renew SKR certificate secret: %w", err)
 	}
 
 	return nil
@@ -34,7 +34,7 @@ func (s *Service) Renew(ctx context.Context, name string) error {
 
 // SkrSecretNeedsRenewal checks if the SKR Secret needs to be renewed.
 // Renewal is required if the gateway certificate secret is newer than the SKR certificate secret.
-func (s *Service) SkrSecretNeedsRenewal(gatewaySecret, skrSecret *apicorev1.Secret) bool {
+func (s *Service) SkrSecretNeedsRenewal(gatewaySecret *apicorev1.Secret, clientCertNotBefore time.Time) bool {
 	gwSecretLastModifiedAtValue, ok := gatewaySecret.Annotations[shared.LastModifiedAtAnnotation]
 	// always renew if the annotation is not set
 	if !ok {
@@ -47,5 +47,5 @@ func (s *Service) SkrSecretNeedsRenewal(gatewaySecret, skrSecret *apicorev1.Secr
 		return true
 	}
 
-	return skrSecret.CreationTimestamp.Time.Before(gwSecretLastModifiedAt)
+	return clientCertNotBefore.Before(gwSecretLastModifiedAt)
 }

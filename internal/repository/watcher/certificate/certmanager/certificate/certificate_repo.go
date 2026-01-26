@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -44,6 +47,32 @@ func NewRepository(
 		issuerName,
 		certConfig,
 	}, nil
+}
+
+func (r *Repository) Renew(ctx context.Context, name string) error {
+	cert := &certmanagerv1.Certificate{}
+	if err := r.kcpClient.Get(ctx,
+		client.ObjectKey{
+			Name:      name,
+			Namespace: r.certConfig.Namespace,
+		},
+		cert,
+	); err != nil {
+		return fmt.Errorf("failed to get certificate %s-%s: %w", name, r.certConfig.Namespace, err)
+	}
+
+	apiutil.SetCertificateCondition(cert,
+		cert.Generation,
+		cmapi.CertificateConditionIssuing,
+		cmmeta.ConditionTrue,
+		"ManuallyTriggered",
+		"Certificate re-issuance manually triggered")
+
+	if err := r.kcpClient.Status().Update(ctx, cert); err != nil {
+		return fmt.Errorf("failed to update certificate %s-%s status: %w", name, r.certConfig.Namespace, err)
+	}
+
+	return nil
 }
 
 func (r *Repository) Create(ctx context.Context, name, commonName string, dnsNames []string) error {
