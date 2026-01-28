@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
 	"strings"
 	"time"
 
@@ -57,8 +56,7 @@ func ComposeSkrWebhookManager(kcpClient client.Client,
 	watcherResourcesPath string,
 ) (*watcher.SkrWebhookManifestManager, error) {
 	if watcherResourcesPath == "" {
-		pwd, _ := os.Getwd()
-		watcherResourcesPath = path.Join(pwd, "..", "skr-webhook")
+		watcherResourcesPath = "./skr-webhook"
 	}
 	dirInfo, err := os.Stat(watcherResourcesPath)
 	if err != nil || !dirInfo.IsDir() {
