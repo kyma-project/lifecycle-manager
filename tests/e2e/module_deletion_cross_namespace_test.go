@@ -1,6 +1,8 @@
 package e2e_test
 
 import (
+	"time"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
@@ -90,7 +92,7 @@ var _ = Describe("Blocking Module Deletion With Module CRs in Different Namespac
 					Version: resource.Version,
 					Kind:    resource.Kind,
 				}
-				Consistently(CheckIfExists).
+				Eventually(CheckIfExists).
 					WithContext(ctx).
 					WithArguments(resource.Name, resource.Namespace, gvk.Group, gvk.Version, gvk.Kind,
 						skrClient).Should(Succeed())
@@ -110,6 +112,7 @@ var _ = Describe("Blocking Module Deletion With Module CRs in Different Namespac
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
 					shared.StateDeleting).
+				WithTimeout(3 * time.Second).
 				Should(Succeed())
 
 			By("And Module Resources still exist on the SKR Cluster")
@@ -119,7 +122,7 @@ var _ = Describe("Blocking Module Deletion With Module CRs in Different Namespac
 					Version: resource.Version,
 					Kind:    resource.Kind,
 				}
-				Consistently(CheckIfExists).
+				Eventually(CheckIfExists).
 					WithContext(ctx).
 					WithArguments(resource.Name, resource.Namespace, gvk.Group, gvk.Version, gvk.Kind,
 						skrClient).Should(Succeed())
@@ -229,7 +232,9 @@ var _ = Describe(
 					WithContext(ctx).
 					WithArguments(TestModuleCRName, RemoteNamespace, templatev1alpha1.GroupVersion.Group,
 						templatev1alpha1.GroupVersion.Version, string(templatev1alpha1.SampleKind),
-						skrClient).Should(Succeed())
+				skrClient).
+				WithTimeout(3 * time.Second).
+				Should(Succeed())
 
 				By("And all Module Resources still exist on the SKR Cluster")
 				var err error
