@@ -33,7 +33,8 @@ func NewClient(client client.Client) *Client {
 	}
 }
 
-func (c *Client) GetDefaultCR(ctx context.Context, manifest *v1beta2.Manifest) (*unstructured.Unstructured,
+func (c *Client) GetDefaultCR(ctx context.Context, manifest *v1beta2.Manifest) (
+	*unstructured.Unstructured,
 	error,
 ) {
 	if manifest.Spec.Resource == nil || manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
@@ -59,7 +60,8 @@ func (c *Client) GetDefaultCR(ctx context.Context, manifest *v1beta2.Manifest) (
 	return resourceCR, nil
 }
 
-func (c *Client) CheckDefaultCRDeletion(ctx context.Context, manifestCR *v1beta2.Manifest) (bool,
+func (c *Client) CheckDefaultCRDeletion(ctx context.Context, manifestCR *v1beta2.Manifest) (
+	bool,
 	error,
 ) {
 	if manifestCR.Spec.Resource == nil || manifestCR.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
@@ -139,7 +141,9 @@ func (c *Client) SyncDefaultModuleCR(ctx context.Context, manifest *v1beta2.Mani
 }
 
 func (c *Client) GetAllModuleCRsExcludingDefaultCR(ctx context.Context,
-	manifest *v1beta2.Manifest) ([]unstructured.Unstructured,
+	manifest *v1beta2.Manifest,
+) (
+	[]unstructured.Unstructured,
 	error,
 ) {
 	if manifest.Spec.Resource == nil {
@@ -147,27 +151,36 @@ func (c *Client) GetAllModuleCRsExcludingDefaultCR(ctx context.Context,
 	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
-	resourceList := &unstructured.UnstructuredList{}
-	resourceList.SetGroupVersionKind(resource.GroupVersionKind())
-	if err := c.List(ctx, resourceList, &client.ListOptions{
-		Namespace: resource.GetNamespace(),
-	}); err != nil && !util.IsNotFound(err) {
+	gvk := resource.GroupVersionKind()
+
+	metaList := &apimetav1.PartialObjectMetadataList{}
+	metaList.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   gvk.Group,
+		Version: gvk.Version,
+		Kind:    gvk.Kind + "List",
+	})
+
+	if err := c.List(ctx, metaList, client.InNamespace(resource.GetNamespace())); err != nil {
+		if util.IsNotFound(err) {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("failed to list resources: %w", err)
 	}
 
-	// If the CustomResourcePolicy is Ignore, we return all module CRs including the default CR
-	if manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
-		return resourceList.Items, nil
-	}
-
-	var withoutDefaultCR []unstructured.Unstructured
-	for _, item := range resourceList.Items {
-		if item.GetName() != resource.GetName() {
-			withoutDefaultCR = append(withoutDefaultCR, item)
+	var results []unstructured.Unstructured
+	for _, item := range metaList.Items {
+		if manifest.Spec.CustomResourcePolicy != v1beta2.CustomResourcePolicyIgnore &&
+			item.GetName() == resource.GetName() {
+			continue
 		}
+		u := unstructured.Unstructured{}
+		u.SetGroupVersionKind(item.GroupVersionKind())
+		u.SetName(item.GetName())
+		u.SetNamespace(item.GetNamespace())
+		results = append(results, u)
 	}
 
-	return withoutDefaultCR, nil
+	return results, nil
 }
 
 func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool, error) {
