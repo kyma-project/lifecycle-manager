@@ -33,7 +33,8 @@ func NewClient(client client.Client) *Client {
 	}
 }
 
-func (c *Client) GetDefaultCR(ctx context.Context, manifest *v1beta2.Manifest) (*unstructured.Unstructured,
+func (c *Client) GetDefaultCR(ctx context.Context, manifest *v1beta2.Manifest) (
+	*unstructured.Unstructured,
 	error,
 ) {
 	if manifest.Spec.Resource == nil || manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
@@ -59,7 +60,8 @@ func (c *Client) GetDefaultCR(ctx context.Context, manifest *v1beta2.Manifest) (
 	return resourceCR, nil
 }
 
-func (c *Client) CheckDefaultCRDeletion(ctx context.Context, manifestCR *v1beta2.Manifest) (bool,
+func (c *Client) CheckDefaultCRDeletion(ctx context.Context, manifestCR *v1beta2.Manifest) (
+	bool,
 	error,
 ) {
 	if manifestCR.Spec.Resource == nil || manifestCR.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
@@ -139,7 +141,9 @@ func (c *Client) SyncDefaultModuleCR(ctx context.Context, manifest *v1beta2.Mani
 }
 
 func (c *Client) GetAllModuleCRsExcludingDefaultCR(ctx context.Context,
-	manifest *v1beta2.Manifest) ([]unstructured.Unstructured,
+	manifest *v1beta2.Manifest,
+) (
+	[]unstructured.Unstructured,
 	error,
 ) {
 	if manifest.Spec.Resource == nil {
@@ -147,22 +151,45 @@ func (c *Client) GetAllModuleCRsExcludingDefaultCR(ctx context.Context,
 	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
-	resourceList := &unstructured.UnstructuredList{}
-	resourceList.SetGroupVersionKind(resource.GroupVersionKind())
-	if err := c.List(ctx, resourceList, &client.ListOptions{
-		Namespace: resource.GetNamespace(),
-	}); err != nil && !util.IsNotFound(err) {
-		return nil, fmt.Errorf("failed to list resources: %w", err)
+	gvk := resource.GroupVersionKind()
+
+	// Use RESTMapper to find all resources of this GroupKind across all versions
+	mappings, err := c.RESTMapper().RESTMappings(schema.GroupKind{
+		Group: gvk.Group,
+		Kind:  gvk.Kind,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get REST mappings: %w", err)
+	}
+
+	var allItems []unstructured.Unstructured
+	for _, mapping := range mappings {
+		list := &unstructured.UnstructuredList{}
+		list.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   mapping.GroupVersionKind.Group,
+			Version: mapping.GroupVersionKind.Version,
+			Kind:    mapping.GroupVersionKind.Kind,
+		})
+
+		if err := c.List(ctx, list, &client.ListOptions{
+			Namespace: resource.GetNamespace(),
+		}); err != nil && !util.IsNotFound(err) {
+			continue
+		}
+
+		allItems = append(allItems, list.Items...)
 	}
 
 	// If the CustomResourcePolicy is Ignore, we return all module CRs including the default CR
 	if manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
-		return resourceList.Items, nil
+		return allItems, nil
 	}
 
 	var withoutDefaultCR []unstructured.Unstructured
-	for _, item := range resourceList.Items {
-		if item.GetName() != resource.GetName() {
+	for _, item := range allItems {
+		if item.GetName() != resource.GetName() || item.GetNamespace() != resource.GetNamespace() ||
+			item.GroupVersionKind().Group != gvk.Group || item.GroupVersionKind().Kind != gvk.Kind ||
+			item.GroupVersionKind().Version != gvk.Version {
 			withoutDefaultCR = append(withoutDefaultCR, item)
 		}
 	}

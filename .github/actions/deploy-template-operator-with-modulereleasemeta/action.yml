@@ -19,6 +19,7 @@ runs:
       shell: bash
       run: |
         cp ../lifecycle-manager/scripts/tests/deploy_moduletemplate.sh .
+        cp ../lifecycle-manager/scripts/tests/deploy_moduletemplate_with_api_upgrade.sh .
         cp ../lifecycle-manager/scripts/tests/deploy_modulereleasemeta.sh .
         cp ../lifecycle-manager/scripts/tests/deploy_mandatory_modulereleasemeta.sh .
         cp ../lifecycle-manager/scripts/tests/ocm-config-local-registry.yaml .
@@ -71,7 +72,13 @@ runs:
         yq eval '.images[0].newTag = "${{ env.NewerVersion }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }} ${{ inputs.module_version }} $INCLUDE_DEFAULT_CR $MANDATORY $DEPLOY_MODULETEMPLATE $REQUIRE_DOWNTIME
+        
+        if [[ "${{ matrix.e2e-test }}" == "module-api-upgrade-under-blocked-deletion" ]]; then
+          ./deploy_moduletemplate_with_api_upgrade.sh ${{ env.ModuleName }} ${{ env.NewerVersion }} ${{ inputs.module_version }} $INCLUDE_DEFAULT_CR $MANDATORY $DEPLOY_MODULETEMPLATE $REQUIRE_DOWNTIME
+        else
+          ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }} ${{ inputs.module_version }} $INCLUDE_DEFAULT_CR $MANDATORY $DEPLOY_MODULETEMPLATE $REQUIRE_DOWNTIME
+        fi
+
     - name: Create and apply Template Operator ModuleTemplate in private registry
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'oci-reg-cred-secret' }}
@@ -133,6 +140,7 @@ runs:
       if: ${{ matrix.e2e-test == 'module-upgrade-channel-switch' ||
         matrix.e2e-test == 'modulereleasemeta-module-upgrade-new-version' ||
         matrix.e2e-test == 'modulereleasemeta-upgrade-under-deletion' ||
+        matrix.e2e-test == 'module-api-upgrade-under-blocked-deletion' ||
         matrix.e2e-test == 'modulereleasemeta-sync' ||
         matrix.e2e-test == 'module-status-on-skr-connection-lost' ||
         matrix.e2e-test == 'modulereleasemeta-not-allowed-installation' ||
