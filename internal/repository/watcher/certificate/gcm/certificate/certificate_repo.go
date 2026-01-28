@@ -143,11 +143,7 @@ func (r *Repository) Renew(ctx context.Context, name string) error {
 }
 
 func (r *Repository) Exists(ctx context.Context, name string) (bool, error) {
-	cert := &gcertv1alpha1.Certificate{}
-	cert.SetName(name)
-	cert.SetNamespace(r.certConfig.Namespace)
-
-	err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)
+	_, err := r.get(ctx, name)
 	if err != nil {
 		if util.IgnoreNotFound(err) != nil {
 			return false, fmt.Errorf("failed to check existence of certificate %s-%s: %w", name, r.certConfig.Namespace,
@@ -160,11 +156,8 @@ func (r *Repository) Exists(ctx context.Context, name string) (bool, error) {
 
 // GetRenewalTime returns the expiration date of the certificate minus the renewal time.
 func (r *Repository) GetRenewalTime(ctx context.Context, name string) (time.Time, error) {
-	cert := &gcertv1alpha1.Certificate{}
-	cert.SetName(name)
-	cert.SetNamespace(r.certConfig.Namespace)
-
-	if err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+	cert, err := r.get(ctx, name)
+	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, r.certConfig.Namespace, err)
 	}
 
@@ -182,11 +175,8 @@ func (r *Repository) GetRenewalTime(ctx context.Context, name string) (time.Time
 }
 
 func (r *Repository) GetValidity(ctx context.Context, name string) (time.Time, time.Time, error) {
-	cert := &gcertv1alpha1.Certificate{}
-	cert.SetName(name)
-	cert.SetNamespace(r.certConfig.Namespace)
-
-	if err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+	cert, err := r.get(ctx, name)
+	if err != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf(
 			"failed to get certificate %s-%s: %w",
 			name,
