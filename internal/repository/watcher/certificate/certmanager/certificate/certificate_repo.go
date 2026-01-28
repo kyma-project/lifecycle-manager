@@ -123,7 +123,11 @@ func (r *Repository) Delete(ctx context.Context, name string) error {
 }
 
 func (r *Repository) Exists(ctx context.Context, name string) (bool, error) {
-	_, err := r.getCertificate(ctx, name)
+	cert := &certmanagerv1.Certificate{}
+	cert.SetName(name)
+	cert.SetNamespace(r.certConfig.Namespace)
+
+	err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)
 	if err != nil {
 		if util.IgnoreNotFound(err) != nil {
 			return false, fmt.Errorf("failed to check existence of certificate %s-%s: %w", name, r.certConfig.Namespace,
@@ -135,8 +139,14 @@ func (r *Repository) Exists(ctx context.Context, name string) (bool, error) {
 }
 
 func (r *Repository) Renew(ctx context.Context, name string) error {
-	cert, err := r.getCertificate(ctx, name)
-	if err != nil {
+	cert := &certmanagerv1.Certificate{}
+	if err := r.kcpClient.Get(ctx,
+		client.ObjectKey{
+			Name:      name,
+			Namespace: r.certConfig.Namespace,
+		},
+		cert,
+	); err != nil {
 		return fmt.Errorf("failed to get certificate %s-%s: %w", name, r.certConfig.Namespace, err)
 	}
 
