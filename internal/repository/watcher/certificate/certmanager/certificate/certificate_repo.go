@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	certmanagerapiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -152,10 +150,10 @@ func (r *Repository) Renew(ctx context.Context, name string) error {
 		return fmt.Errorf("failed to get certificate %s-%s: %w", name, r.certConfig.Namespace, err)
 	}
 
-	apiutil.SetCertificateCondition(cert,
+	certmanagerapiutil.SetCertificateCondition(cert,
 		cert.Generation,
-		cmapi.CertificateConditionIssuing,
-		cmmeta.ConditionTrue,
+		certmanagerv1.CertificateConditionIssuing,
+		certmanagermetav1.ConditionTrue,
 		renewalReason,
 		renewalMessage)
 

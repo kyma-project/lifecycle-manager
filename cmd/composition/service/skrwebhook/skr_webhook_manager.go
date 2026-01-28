@@ -65,10 +65,7 @@ func ComposeSkrWebhookManager(kcpClient client.Client,
 		return nil, ErrWatcherDirNotExist
 	}
 
-	skrCertService, err := setupSKRCertService(kcpClient, certificateRepository, flagVar)
-	if err != nil {
-		return nil, err
-	}
+	skrCertService := setupSKRCertService(kcpClient, certificateRepository, flagVar)
 
 	gatewayService := gateway.NewService(flagVar.IstioGatewayName,
 		flagVar.IstioGatewayNamespace,
@@ -145,7 +142,7 @@ func ComposeCertificateRepository(kcpClient client.Client,
 func setupSKRCertService(kcpClient client.Client,
 	certificateRepository CertificateRepository,
 	flagVar *flags.FlagVar,
-) (*certificate.Service, error) {
+) *certificate.Service {
 	certServiceConfig := certificate.Config{
 		SkrServiceName:     skrwebhookresources.SkrResourceName,
 		SkrNamespace:       flagVar.RemoteSyncNamespace,
@@ -161,5 +158,9 @@ func setupSKRCertService(kcpClient client.Client,
 		shared.GatewaySecretName,
 	)
 
-	return certificate.NewService(renewalService, certificateRepository, secretRepository, certServiceConfig), nil
+	return certificate.NewService(renewalService,
+		certificateRepository,
+		secretRepository,
+		certServiceConfig,
+	)
 }

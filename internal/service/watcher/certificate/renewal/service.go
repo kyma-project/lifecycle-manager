@@ -2,12 +2,16 @@ package renewal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	apicorev1 "k8s.io/api/core/v1"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
+
+var ErrGatewaySecretMissingLastModifiedAt = errors.New("gateway secret is missing lastModifiedAt annotation")
 
 type CertificateRepository interface {
 	Renew(ctx context.Context, name string) error
@@ -65,7 +69,7 @@ func (s *Service) getGatewaySecretLastModifiedAt(ctx context.Context) (time.Time
 
 	lastModifiedAtValue, ok := gatewaySecret.Annotations[shared.LastModifiedAtAnnotation]
 	if !ok {
-		return time.Time{}, fmt.Errorf("gateway secret is missing lastModifiedAt annotation")
+		return time.Time{}, ErrGatewaySecretMissingLastModifiedAt
 	}
 
 	lastModifiedAt, err := time.Parse(time.RFC3339, lastModifiedAtValue)

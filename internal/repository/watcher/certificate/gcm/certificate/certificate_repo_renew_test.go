@@ -12,14 +12,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
+	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
 )
 
 var truer = true
 
 func TestRenew_Succeeds(t *testing.T) {
 	kcpClient := &clientStub{}
-	certRepo, _ := certificate.NewRepository(kcpClient,
+	certRepo, _ := gcmcertificate.NewRepository(kcpClient,
 		issuerName,
 		issuerNamespace,
 		config.CertificateValues{
@@ -43,7 +43,7 @@ func TestRenew_GetCertificateError(t *testing.T) {
 	kcpClient := &clientStub{
 		getErr: assert.AnError,
 	}
-	certRepo, _ := certificate.NewRepository(kcpClient,
+	certRepo, _ := gcmcertificate.NewRepository(kcpClient,
 		issuerName,
 		issuerNamespace,
 		config.CertificateValues{
@@ -65,7 +65,7 @@ func TestRenew_UpdateCertificateError(t *testing.T) {
 	kcpClient := &clientStub{
 		updateErr: assert.AnError,
 	}
-	certRepo, _ := certificate.NewRepository(kcpClient,
+	certRepo, _ := gcmcertificate.NewRepository(kcpClient,
 		issuerName,
 		issuerNamespace,
 		config.CertificateValues{

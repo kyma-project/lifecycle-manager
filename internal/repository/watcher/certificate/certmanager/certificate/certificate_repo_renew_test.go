@@ -5,8 +5,7 @@ import (
 	"testing"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,10 +45,19 @@ func TestRenew_Success(t *testing.T) {
 	assert.Equal(t, certName, clientStub.getCalledKey.Name)
 	assert.Equal(t, certNamespace, clientStub.getCalledKey.Namespace)
 	assert.Len(t, clientStub.statusReceivedObj.Status.Conditions, 1)
-	assert.Equal(t, cmapi.CertificateConditionIssuing, clientStub.statusReceivedObj.Status.Conditions[0].Type)
+	assert.Equal(t,
+		certmanagerv1.CertificateConditionIssuing,
+		clientStub.statusReceivedObj.Status.Conditions[0].Type,
+	)
 	assert.Equal(t, "ManuallyTriggered", clientStub.statusReceivedObj.Status.Conditions[0].Reason)
-	assert.Equal(t, "Certificate re-issuance manually triggered", clientStub.statusReceivedObj.Status.Conditions[0].Message)
-	assert.Equal(t, cmmeta.ConditionTrue, clientStub.statusReceivedObj.Status.Conditions[0].Status)
+	assert.Equal(t,
+		"Certificate re-issuance manually triggered",
+		clientStub.statusReceivedObj.Status.Conditions[0].Message,
+	)
+	assert.Equal(t,
+		certmanagermetav1.ConditionTrue,
+		clientStub.statusReceivedObj.Status.Conditions[0].Status,
+	)
 	assert.Equal(t, int64(4711), clientStub.statusReceivedObj.Generation)
 }
 

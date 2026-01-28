@@ -8,7 +8,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 )
 
-type SkrKymaRepo = ExistsDeleteRepo
+type SkrKymaRepo = ExistsDeleteByKymaNameRepo
 
 type DeleteSkrKyma struct {
 	skrKymaRepo         SkrKymaRepo

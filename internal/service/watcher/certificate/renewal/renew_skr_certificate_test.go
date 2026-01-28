@@ -3,9 +3,10 @@ package renewal_test
 import (
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal"
 )
 
 func TestRenewSkrCertificate_Succeeds(t *testing.T) {

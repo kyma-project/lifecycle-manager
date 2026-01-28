@@ -18,15 +18,10 @@ var (
 	errFailedToDeleteWatcherSkrSecret               = errors.New("failed to delete SKR secret")
 )
 
-type SecretRepository interface {
-	Exists(ctx context.Context, name string) (bool, error)
-	Delete(ctx context.Context, name string) error
-}
-
-type CertificateRepository interface {
-	Exists(ctx context.Context, certName string) (bool, error)
-	Delete(ctx context.Context, name string) error
-}
+type (
+	SecretRepository      = ExistsDeleteByNameRepo
+	CertificateRepository = ExistsDeleteByNameRepo
+)
 
 type DeleteWatcherCertificateSetup struct {
 	certRepo   CertificateRepository
