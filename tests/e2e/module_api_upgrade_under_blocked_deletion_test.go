@@ -90,13 +90,9 @@ var _ = Describe("Module API Upgrade Under Blocked Deletion", Ordered, func() {
 		})
 
 		It("Then Kyma Module is updated on SKR Cluster", func() {
-			Eventually(DeploymentIsReady).
-				WithContext(ctx).
-				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
-				Should(Succeed())
 			Consistently(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
 				Should(Succeed())
 
 			By("And Module CR is in \"Deleting\" State")

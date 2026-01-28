@@ -153,34 +153,48 @@ func (c *Client) GetAllModuleCRsExcludingDefaultCR(ctx context.Context,
 	resource := manifest.Spec.Resource.DeepCopy()
 	gvk := resource.GroupVersionKind()
 
-	metaList := &apimetav1.PartialObjectMetadataList{}
-	metaList.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   gvk.Group,
-		Version: gvk.Version,
-		Kind:    gvk.Kind + "List",
+	// Use RESTMapper to find all resources of this GroupKind across all versions
+	mappings, err := c.RESTMapper().RESTMappings(schema.GroupKind{
+		Group: gvk.Group,
+		Kind:  gvk.Kind,
 	})
-
-	if err := c.List(ctx, metaList, client.InNamespace(resource.GetNamespace())); err != nil {
-		if util.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("failed to list resources: %w", err)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get REST mappings: %w", err)
 	}
 
-	var results []unstructured.Unstructured
-	for _, item := range metaList.Items {
-		if manifest.Spec.CustomResourcePolicy != v1beta2.CustomResourcePolicyIgnore &&
-			item.GetName() == resource.GetName() {
+	var allItems []unstructured.Unstructured
+	for _, mapping := range mappings {
+		list := &unstructured.UnstructuredList{}
+		list.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   mapping.GroupVersionKind.Group,
+			Version: mapping.GroupVersionKind.Version,
+			Kind:    mapping.GroupVersionKind.Kind,
+		})
+
+		if err := c.List(ctx, list, &client.ListOptions{
+			Namespace: resource.GetNamespace(),
+		}); err != nil && !util.IsNotFound(err) {
 			continue
 		}
-		u := unstructured.Unstructured{}
-		u.SetGroupVersionKind(item.GroupVersionKind())
-		u.SetName(item.GetName())
-		u.SetNamespace(item.GetNamespace())
-		results = append(results, u)
+
+		allItems = append(allItems, list.Items...)
 	}
 
-	return results, nil
+	// If the CustomResourcePolicy is Ignore, we return all module CRs including the default CR
+	if manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
+		return allItems, nil
+	}
+
+	var withoutDefaultCR []unstructured.Unstructured
+	for _, item := range allItems {
+		if item.GetName() != resource.GetName() || item.GetNamespace() != resource.GetNamespace() ||
+			item.GroupVersionKind().Group != gvk.Group || item.GroupVersionKind().Kind != gvk.Kind ||
+			item.GroupVersionKind().Version != gvk.Version {
+			withoutDefaultCR = append(withoutDefaultCR, item)
+		}
+	}
+
+	return withoutDefaultCR, nil
 }
 
 func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool, error) {
