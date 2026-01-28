@@ -21,7 +21,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
 	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal" //nolint:revive // not for import
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/chartreader"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/gateway"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"

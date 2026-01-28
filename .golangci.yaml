@@ -159,8 +159,6 @@ linters:
           alias: descriptorcache
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources
           alias: skrwebhookresources
-        - pkg: github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager
-          alias: certmanagerrenewal
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion
           alias: kymadeletionsvc
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/kyma/lookup
