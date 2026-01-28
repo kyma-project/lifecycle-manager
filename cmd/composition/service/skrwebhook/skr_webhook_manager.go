@@ -39,6 +39,8 @@ var (
 	ErrWatcherDirNotExist = errors.New("failed to locate watcher resource manifest folder")
 )
 
+const DefaultResourcesPath = "./skr-webhook"
+
 type CertificateRepository interface {
 	Create(ctx context.Context, name, commonName string, dnsNames []string) error
 	Delete(ctx context.Context, name string) error
@@ -56,7 +58,7 @@ func ComposeSkrWebhookManager(kcpClient client.Client,
 	watcherResourcesPath string,
 ) (*watcher.SkrWebhookManifestManager, error) {
 	if watcherResourcesPath == "" {
-		watcherResourcesPath = "./skr-webhook"
+		watcherResourcesPath = DefaultResourcesPath
 	}
 	dirInfo, err := os.Stat(watcherResourcesPath)
 	if err != nil || !dirInfo.IsDir() {
