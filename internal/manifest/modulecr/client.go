@@ -149,9 +149,17 @@ func (c *Client) GetAllModuleCRsExcludingDefaultCR(ctx context.Context,
 	resource := manifest.Spec.Resource.DeepCopy()
 	resourceList := &unstructured.UnstructuredList{}
 	resourceList.SetGroupVersionKind(resource.GroupVersionKind())
-	if err := c.List(ctx, resourceList, &client.ListOptions{
-		Namespace: resource.GetNamespace(),
-	}); err != nil && !util.IsNotFound(err) {
+
+	// List all Module CRs across all namespaces (or cluster-wide if cluster-scoped)
+	// This is required by ADR https://github.com/kyma-project/community/issues/972
+	// which states: "lifecycle-manager uses ALL CRs of the Module CRD as the 'gate'
+	// before proceeding with the deletion of the module"
+	listOptions := &client.ListOptions{}
+
+	// For namespace-scoped resources, we need to list across all namespaces
+	// For cluster-scoped resources, the namespace filter is ignored anyway
+	// Note: We intentionally do NOT set Namespace to ensure we check ALL Module CRs
+	if err := c.List(ctx, resourceList, listOptions); err != nil && !util.IsNotFound(err) {
 		return nil, fmt.Errorf("failed to list resources: %w", err)
 	}
 
@@ -162,7 +170,9 @@ func (c *Client) GetAllModuleCRsExcludingDefaultCR(ctx context.Context,
 
 	var withoutDefaultCR []unstructured.Unstructured
 	for _, item := range resourceList.Items {
-		if item.GetName() != resource.GetName() {
+		// Exclude the default Module CR by comparing both name and namespace
+		// For cluster-scoped resources, namespace will be empty for both
+		if item.GetName() != resource.GetName() || item.GetNamespace() != resource.GetNamespace() {
 			withoutDefaultCR = append(withoutDefaultCR, item)
 		}
 	}
