@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/scheme"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -129,6 +130,8 @@ func TestClient_GetAllModuleCRsExcludingDefaultCR_WithCreateAndDeletePolicy(t *t
 	scheme := machineryruntime.NewScheme()
 	err := v1beta2.AddToScheme(scheme)
 	require.NoError(t, err)
+	err = addSampleToScheme(scheme)
+	require.NoError(t, err)
 
 	kcpClient := fake.NewClientBuilder().WithScheme(scheme).Build()
 	skrClient := modulecr.NewClient(kcpClient)
@@ -175,6 +178,8 @@ func TestClient_GetAllModuleCRsExcludingDefaultCR_WithIgnorePolicy(t *testing.T)
 	scheme := machineryruntime.NewScheme()
 	err := v1beta2.AddToScheme(scheme)
 	require.NoError(t, err)
+	err = addSampleToScheme(scheme)
+	require.NoError(t, err)
 
 	kcpClient := fake.NewClientBuilder().WithScheme(scheme).Build()
 	skrClient := modulecr.NewClient(kcpClient)
@@ -217,4 +222,14 @@ func TestClient_GetAllModuleCRsExcludingDefaultCR_WithIgnorePolicy(t *testing.T)
 	assert.Equal(t, moduleCRs[0].GetNamespace(), moduleCR.GetNamespace())
 	assert.Equal(t, moduleCRs[1].GetName(), moduleCR2.GetName())
 	assert.Equal(t, moduleCRs[1].GetNamespace(), moduleCR2.GetNamespace())
+}
+
+func addSampleToScheme(sc *machineryruntime.Scheme) error {
+	gv := schema.GroupVersion{
+		Group:   shared.OperatorGroup,
+		Version: templatev1alpha1.GroupVersion.Version,
+	}
+	schemeBuilder := &scheme.Builder{GroupVersion: gv}
+	schemeBuilder.Register(&templatev1alpha1.Sample{}, &templatev1alpha1.SampleList{})
+	return schemeBuilder.AddToScheme(sc)
 }
