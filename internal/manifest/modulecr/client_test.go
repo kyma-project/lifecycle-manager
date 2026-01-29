@@ -140,8 +140,8 @@ func TestClient_GetAllModuleCRsExcludingDefaultCR_WithCreateAndDeletePolicy(t *t
 	moduleCR := unstructured.Unstructured{}
 	moduleCR.SetGroupVersionKind(
 		schema.GroupVersionKind{
-			Group:   templatev1alpha1.GroupVersion.Group,
-			Version: templatev1alpha1.GroupVersion.Version,
+			Group:   shared.OperatorGroup,
+			Version: string(templatev1alpha1.Version),
 			Kind:    string(templatev1alpha1.SampleKind),
 		},
 	)
@@ -189,8 +189,8 @@ func TestClient_GetAllModuleCRsExcludingDefaultCR_WithIgnorePolicy(t *testing.T)
 	moduleCR := unstructured.Unstructured{}
 	moduleCR.SetGroupVersionKind(
 		schema.GroupVersionKind{
-			Group:   templatev1alpha1.GroupVersion.Group,
-			Version: templatev1alpha1.GroupVersion.Version,
+			Group:   shared.OperatorGroup,
+			Version: string(templatev1alpha1.Version),
 			Kind:    string(templatev1alpha1.SampleKind),
 		},
 	)
@@ -227,9 +227,8 @@ func TestClient_GetAllModuleCRsExcludingDefaultCR_WithIgnorePolicy(t *testing.T)
 func addSampleToScheme(sc *machineryruntime.Scheme) error {
 	gv := schema.GroupVersion{
 		Group:   shared.OperatorGroup,
-		Version: templatev1alpha1.GroupVersion.Version,
+		Version: string(templatev1alpha1.Version),
 	}
 	schemeBuilder := &scheme.Builder{GroupVersion: gv}
-	schemeBuilder.Register(&templatev1alpha1.Sample{}, &templatev1alpha1.SampleList{})
 	return schemeBuilder.AddToScheme(sc)
 }
