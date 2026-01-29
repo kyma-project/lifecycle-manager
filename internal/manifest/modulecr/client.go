@@ -68,15 +68,27 @@ func (c *Client) CheckDefaultCRDeletion(ctx context.Context, manifestCR *v1beta2
 		return true, nil
 	}
 
-	resourceCR, err := c.GetDefaultCR(ctx, manifestCR)
+	defaultModuleCR := manifestCR.Spec.Resource
+	moduleCRGvk := manifestCR.Spec.Resource.GroupVersionKind()
+	allModuleCRs, err := c.listResourcesByGroupKindInNamespace(ctx, moduleCRGvk, defaultModuleCR.GetNamespace())
 	if err != nil {
-		if util.IsNotFound(err) {
-			return true, nil
-		}
-		return false, fmt.Errorf("%w: failed to fetch default resource CR", err)
+		return false, fmt.Errorf("failed to list Module CRs by group kind: %w", err)
 	}
 
-	return resourceCR == nil, nil
+	return noDefaultModuleCRExists(allModuleCRs, defaultModuleCR), nil
+}
+
+func noDefaultModuleCRExists(allResourcesWithModuleCRGroupKind []unstructured.Unstructured,
+	defaultModuleCR *unstructured.Unstructured,
+) bool {
+	moduleCRGvk := defaultModuleCR.GroupVersionKind()
+	for _, item := range allResourcesWithModuleCRGroupKind {
+		if item.GetName() == defaultModuleCR.GetName() && item.GetNamespace() == defaultModuleCR.GetNamespace() &&
+			item.GroupVersionKind().Group == moduleCRGvk.Group && item.GroupVersionKind().Kind == moduleCRGvk.Kind {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *Client) CheckModuleCRsDeletion(ctx context.Context, manifestCR *v1beta2.Manifest) error {
@@ -150,10 +162,27 @@ func (c *Client) GetAllModuleCRsExcludingDefaultCR(ctx context.Context,
 		return nil, nil
 	}
 
-	resource := manifest.Spec.Resource.DeepCopy()
-	gvk := resource.GroupVersionKind()
+	defaultModuleCR := manifest.Spec.Resource.DeepCopy()
+	moduleCRGvk := defaultModuleCR.GroupVersionKind()
 
-	// Use RESTMapper to find all resources of this GroupKind across all versions
+	allResourcesWithModuleCRGroupKind, err := c.listResourcesByGroupKindInNamespace(ctx, moduleCRGvk,
+		defaultModuleCR.GetNamespace())
+	if err != nil {
+		return nil, fmt.Errorf("failed to list Module CRs by group kind: %w", err)
+	}
+
+	// If the CustomResourcePolicy is Ignore, we return all module CRs including the default CR
+	if manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
+		return allResourcesWithModuleCRGroupKind, nil
+	}
+
+	return filterOutDefaultCRs(allResourcesWithModuleCRGroupKind, defaultModuleCR), nil
+}
+
+func (c *Client) listResourcesByGroupKindInNamespace(ctx context.Context,
+	gvk schema.GroupVersionKind,
+	namespace string,
+) ([]unstructured.Unstructured, error) {
 	mappings, err := c.RESTMapper().RESTMappings(schema.GroupKind{
 		Group: gvk.Group,
 		Kind:  gvk.Kind,
@@ -172,29 +201,28 @@ func (c *Client) GetAllModuleCRsExcludingDefaultCR(ctx context.Context,
 		})
 
 		if err := c.List(ctx, list, &client.ListOptions{
-			Namespace: resource.GetNamespace(),
+			Namespace: namespace,
 		}); err != nil && !util.IsNotFound(err) {
 			continue
 		}
 
 		allItems = append(allItems, list.Items...)
 	}
+	return allItems, nil
+}
 
-	// If the CustomResourcePolicy is Ignore, we return all module CRs including the default CR
-	if manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
-		return allItems, nil
-	}
-
+func filterOutDefaultCRs(allResourcesWithModuleCRGroupKind []unstructured.Unstructured,
+	resource *unstructured.Unstructured,
+) []unstructured.Unstructured {
+	gvk := resource.GroupVersionKind()
 	var withoutDefaultCR []unstructured.Unstructured
-	for _, item := range allItems {
+	for _, item := range allResourcesWithModuleCRGroupKind {
 		if item.GetName() != resource.GetName() || item.GetNamespace() != resource.GetNamespace() ||
-			item.GroupVersionKind().Group != gvk.Group || item.GroupVersionKind().Kind != gvk.Kind ||
-			item.GroupVersionKind().Version != gvk.Version {
+			item.GroupVersionKind().Group != gvk.Group || item.GroupVersionKind().Kind != gvk.Kind {
 			withoutDefaultCR = append(withoutDefaultCR, item)
 		}
 	}
-
-	return withoutDefaultCR, nil
+	return withoutDefaultCR
 }
 
 func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool, error) {
