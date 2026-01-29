@@ -127,13 +127,13 @@ func TestClient_SyncDefaultModuleCR(t *testing.T) {
 
 func TestClient_GetAllModuleCRsExcludingDefaultCR_WithCreateAndDeletePolicy(t *testing.T) {
 	// Given a manifest CR and two resource CRs deployed in the cluster
-	scheme := machineryruntime.NewScheme()
-	err := v1beta2.AddToScheme(scheme)
+	testScheme := machineryruntime.NewScheme()
+	err := v1beta2.AddToScheme(testScheme)
 	require.NoError(t, err)
-	err = addSampleToScheme(scheme)
+	err = addSampleToScheme(testScheme)
 	require.NoError(t, err)
 
-	kcpClient := fake.NewClientBuilder().WithScheme(scheme).Build()
+	kcpClient := fake.NewClientBuilder().WithScheme(testScheme).Build()
 	skrClient := modulecr.NewClient(kcpClient)
 
 	manifest := testutils.NewTestManifest("test-manifest")
@@ -175,13 +175,13 @@ func TestClient_GetAllModuleCRsExcludingDefaultCR_WithCreateAndDeletePolicy(t *t
 
 func TestClient_GetAllModuleCRsExcludingDefaultCR_WithIgnorePolicy(t *testing.T) {
 	// Given a manifest CR and two resource CRs deployed in the cluster
-	scheme := machineryruntime.NewScheme()
-	err := v1beta2.AddToScheme(scheme)
+	testScheme := machineryruntime.NewScheme()
+	err := v1beta2.AddToScheme(testScheme)
 	require.NoError(t, err)
-	err = addSampleToScheme(scheme)
+	err = addSampleToScheme(testScheme)
 	require.NoError(t, err)
 
-	kcpClient := fake.NewClientBuilder().WithScheme(scheme).Build()
+	kcpClient := fake.NewClientBuilder().WithScheme(testScheme).Build()
 	skrClient := modulecr.NewClient(kcpClient)
 
 	manifest := testutils.NewTestManifest("test-manifest")
@@ -224,11 +224,11 @@ func TestClient_GetAllModuleCRsExcludingDefaultCR_WithIgnorePolicy(t *testing.T)
 	assert.Equal(t, moduleCRs[1].GetNamespace(), moduleCR2.GetNamespace())
 }
 
-func addSampleToScheme(sc *machineryruntime.Scheme) error {
-	gv := schema.GroupVersion{
+func addSampleToScheme(testScheme *machineryruntime.Scheme) error {
+	groupVersion := schema.GroupVersion{
 		Group:   shared.OperatorGroup,
 		Version: string(templatev1alpha1.Version),
 	}
-	schemeBuilder := &scheme.Builder{GroupVersion: gv}
-	return schemeBuilder.AddToScheme(sc)
+	schemeBuilder := &scheme.Builder{GroupVersion: groupVersion}
+	return schemeBuilder.AddToScheme(testScheme)
 }
