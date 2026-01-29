@@ -28,3 +28,9 @@ rules:
       - create
       - patch
       - delete
+  - apiGroups:
+      - cert-manager.io
+    resources:
+      - certificates/status
+    verbs:
+      - update

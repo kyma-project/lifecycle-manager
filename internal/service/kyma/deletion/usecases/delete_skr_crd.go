@@ -7,7 +7,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 )
 
-type CrdRepo = ExistsDeleteRepo
+type CrdRepo = ExistsDeleteByKymaNameRepo
 
 type DeleteSkrCrd struct {
 	skrCrdRepo          CrdRepo

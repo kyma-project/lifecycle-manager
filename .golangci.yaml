@@ -45,6 +45,8 @@ linters:
           alias: gcertv1alpha1
         - pkg: github.com/gardener/cert-management/pkg/client/cert/clientset/versioned/typed/cert/v1alpha1
           alias: gcertclientv1alpha1
+        - pkg: github.com/cert-manager/cert-manager/pkg/api/util
+          alias: certmanagerapiutil
         - pkg: github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1
           alias: certmanagerv1
         - pkg: github.com/cert-manager/cert-manager/pkg/apis/meta/v1
@@ -157,8 +159,6 @@ linters:
           alias: descriptorcache
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources
           alias: skrwebhookresources
-        - pkg: github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager
-          alias: certmanagerrenewal
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion
           alias: kymadeletionsvc
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/kyma/lookup

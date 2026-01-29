@@ -197,6 +197,11 @@ var _ = Describe("RBAC Privileges", func() {
 					Resources: []string{"certificates"},
 					Verbs:     []string{"watch", "list", "get", "create", "patch", "delete"},
 				},
+				{
+					APIGroups: []string{"cert-manager.io"},
+					Resources: []string{"certificates/status"},
+					Verbs:     []string{"update"},
+				},
 			}
 			Expect(GetRoleBindingRolePolicyRules(ctx,
 				kcpClient,

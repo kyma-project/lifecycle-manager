@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apicorev1 "k8s.io/api/core/v1"
@@ -51,6 +52,18 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 			Should(Succeed())
 	})
 
+	It("mock cert-manager writing cert status", func() {
+		Eventually(AddValidityToCertificateStatus, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(ctx,
+				kcpClient,
+				client.ObjectKeyFromObject(tlsSecret), // cert and secret have the same name and namespace
+				time.Now(),
+				time.Now().Add(24*time.Hour),
+			).
+			Should(Succeed())
+	})
+
 	It("kyma reconciliation creates Certificate CR on KCP", func() {
 		Eventually(certificateExists, Timeout, Interval).
 			WithArguments(kcpClient, kyma.Name).
@@ -66,6 +79,18 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 		By("Certificate CR recreated on KCP")
 		Eventually(certificateExists, Timeout, Interval).
 			WithArguments(kcpClient, kyma.Name).
+			Should(Succeed())
+	})
+
+	It("mock cert-manager writing cert status", func() {
+		Eventually(AddValidityToCertificateStatus, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(ctx,
+				kcpClient,
+				client.ObjectKeyFromObject(tlsSecret), // cert and secret have the same name and namespace
+				time.Now(),
+				time.Now().Add(24*time.Hour),
+			).
 			Should(Succeed())
 	})
 
