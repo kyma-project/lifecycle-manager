@@ -72,7 +72,7 @@ runs:
         yq eval '.images[0].newTag = "${{ env.NewerVersion }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
-        
+
         if [[ "${{ matrix.e2e-test }}" == "module-api-upgrade-under-blocked-deletion" ]]; then
           ./deploy_moduletemplate_with_api_upgrade.sh ${{ env.ModuleName }} ${{ env.NewerVersion }} ${{ inputs.module_version }} $INCLUDE_DEFAULT_CR $MANDATORY $DEPLOY_MODULETEMPLATE $REQUIRE_DOWNTIME
         else
