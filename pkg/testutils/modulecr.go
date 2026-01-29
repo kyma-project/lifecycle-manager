@@ -23,7 +23,7 @@ const (
 	ModuleServiceAccountName           = "template-operator-controller-manager"
 	ModuleManagedCRName                = "template-operator-managed-resource"
 	ModuleDeploymentNameInNewerVersion = "template-operator-v2-controller-manager"
-	ModuleDeploymentNameInOlderVersion = "template-operator-controller-manager"
+	ModuleDeploymentNameInOlderVersion = "template-operator-v1-controller-manager"
 )
 
 var (
