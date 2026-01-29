@@ -24,11 +24,11 @@ import (
 
 func TestClient_RemoveDefaultModuleCR(t *testing.T) {
 	// Given a manifest CR with finalizer and a resource CR deployed in the cluster
-	scheme := machineryruntime.NewScheme()
-	err := v1beta2.AddToScheme(scheme)
+	testScheme := machineryruntime.NewScheme()
+	err := v1beta2.AddToScheme(testScheme)
 	require.NoError(t, err)
 
-	kcpClient := fake.NewClientBuilder().WithScheme(scheme).Build()
+	kcpClient := fake.NewClientBuilder().WithScheme(testScheme).Build()
 	skrClient := modulecr.NewClient(kcpClient)
 
 	manifest := testutils.NewTestManifest("test-manifest")
@@ -77,11 +77,11 @@ func TestClient_RemoveDefaultModuleCR(t *testing.T) {
 
 func TestClient_SyncDefaultModuleCR(t *testing.T) {
 	// Given a manifest CR with a resource CR
-	scheme := machineryruntime.NewScheme()
-	err := v1beta2.AddToScheme(scheme)
+	testScheme := machineryruntime.NewScheme()
+	err := v1beta2.AddToScheme(testScheme)
 	require.NoError(t, err)
 
-	kcpClient := fake.NewClientBuilder().WithScheme(scheme).Build()
+	kcpClient := fake.NewClientBuilder().WithScheme(testScheme).Build()
 	skrClient := modulecr.NewClient(kcpClient)
 	manifest := testutils.NewTestManifest("test-manifest")
 	manifest.SetFinalizers([]string{finalizer.CustomResourceManagerFinalizer, finalizer.DefaultFinalizer})
