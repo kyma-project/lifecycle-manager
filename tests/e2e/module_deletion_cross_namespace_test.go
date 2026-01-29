@@ -67,7 +67,6 @@ var _ = Describe("Blocking Module Deletion With Module CRs in Different Namespac
 				Should(Succeed())
 		})
 
-		//nolint:dupl // Intentional duplication for test clarity and independence
 		It("Then KCP Kyma CR is in \"Processing\" State", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
@@ -213,7 +212,6 @@ var _ = Describe(
 					Should(Succeed())
 			})
 
-			//nolint:dupl // Intentional duplication for test clarity and independence
 			It("Then KCP Kyma CR is in \"Processing\" State", func() {
 				Eventually(KymaIsInState).
 					WithContext(ctx).
@@ -232,9 +230,9 @@ var _ = Describe(
 					WithContext(ctx).
 					WithArguments(TestModuleCRName, RemoteNamespace, templatev1alpha1.GroupVersion.Group,
 						templatev1alpha1.GroupVersion.Version, string(templatev1alpha1.SampleKind),
-				skrClient).
-				WithTimeout(3 * time.Second).
-				Should(Succeed())
+						skrClient).
+					WithTimeout(3 * time.Second).
+					Should(Succeed())
 
 				By("And all Module Resources still exist on the SKR Cluster")
 				var err error
@@ -247,7 +245,7 @@ var _ = Describe(
 						Version: resource.Version,
 						Kind:    resource.Kind,
 					}
-					Consistently(CheckIfExists).
+					Eventually(CheckIfExists).
 						WithContext(ctx).
 						WithArguments(resource.Name, resource.Namespace, gvk.Group, gvk.Version, gvk.Kind,
 							skrClient).Should(Succeed())
