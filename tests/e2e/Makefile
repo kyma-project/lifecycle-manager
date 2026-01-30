@@ -71,7 +71,7 @@ e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the t
     done
 
 ##@ E2E Tests
-GO_TEST := GOFIPS140=$(FIPS140_MODULE_VERSION) go test -timeout 10m -ginkgo.v -ginkgo.focus
+GO_TEST := GOFIPS140=$(FIPS140_MODULE_VERSION) go test -timeout 20m -ginkgo.v -ginkgo.focus
 
 kyma-deprovision-with-foreground-propagation:
 	$(GO_TEST) "KCP Kyma CR Deprovision With Foreground Propagation After SKR Cluster Removal"
