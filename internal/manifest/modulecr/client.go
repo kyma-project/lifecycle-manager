@@ -81,10 +81,8 @@ func (c *Client) CheckDefaultCRDeletion(ctx context.Context, manifestCR *v1beta2
 func noDefaultModuleCRExists(allResourcesWithModuleCRGroupKind []unstructured.Unstructured,
 	defaultModuleCR *unstructured.Unstructured,
 ) bool {
-	moduleCRGvk := defaultModuleCR.GroupVersionKind()
 	for _, resource := range allResourcesWithModuleCRGroupKind {
-		if resource.GetName() == defaultModuleCR.GetName() && resource.GetNamespace() == defaultModuleCR.GetNamespace() &&
-			resource.GroupVersionKind().Group == moduleCRGvk.Group && resource.GroupVersionKind().Kind == moduleCRGvk.Kind {
+		if isResourceTheDefaultCR(&resource, defaultModuleCR) {
 			return false
 		}
 	}
@@ -214,15 +212,23 @@ func (c *Client) listResourcesByGroupKindInNamespace(ctx context.Context,
 func filterOutDefaultCRs(allResourcesWithModuleCRGroupKind []unstructured.Unstructured,
 	defaultModuleCR *unstructured.Unstructured,
 ) []unstructured.Unstructured {
-	moduleCRGvk := defaultModuleCR.GroupVersionKind()
 	var withoutDefaultCR []unstructured.Unstructured
 	for _, resource := range allResourcesWithModuleCRGroupKind {
-		if resource.GetName() != defaultModuleCR.GetName() || resource.GetNamespace() != defaultModuleCR.GetNamespace() ||
-			resource.GroupVersionKind().Group != moduleCRGvk.Group || resource.GroupVersionKind().Kind != moduleCRGvk.Kind {
+		if !isResourceTheDefaultCR(&resource, defaultModuleCR) {
 			withoutDefaultCR = append(withoutDefaultCR, resource)
 		}
 	}
 	return withoutDefaultCR
+}
+
+func isResourceTheDefaultCR(resource *unstructured.Unstructured,
+	defaultModuleCR *unstructured.Unstructured,
+) bool {
+	moduleCRGvk := defaultModuleCR.GroupVersionKind()
+	return resource.GetName() == defaultModuleCR.GetName() &&
+		resource.GetNamespace() == defaultModuleCR.GetNamespace() &&
+		resource.GroupVersionKind().Group == moduleCRGvk.Group &&
+		resource.GroupVersionKind().Kind == moduleCRGvk.Kind
 }
 
 func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool, error) {
@@ -230,14 +236,35 @@ func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool
 		return false, nil
 	}
 
-	resource := manifest.Spec.Resource.DeepCopy()
+	defaultModuleCR := manifest.Spec.Resource.DeepCopy()
+	moduleCRGvk := defaultModuleCR.GroupVersionKind()
+
+	allModuleCRs, err := c.listResourcesByGroupKindInNamespace(ctx, moduleCRGvk, defaultModuleCR.GetNamespace())
+	if err != nil {
+		return false, fmt.Errorf("failed to list Module CRs by group kind: %w", err)
+	}
+
+	var resourceToDelete *unstructured.Unstructured
+	for i := range allModuleCRs {
+		cr := &allModuleCRs[i]
+		if isResourceTheDefaultCR(cr, defaultModuleCR) {
+			resourceToDelete = cr
+			break
+		}
+	}
+
+	if resourceToDelete == nil {
+		return true, nil
+	}
+
 	propagation := apimetav1.DeletePropagationBackground
-	err := c.Delete(ctx, resource, &client.DeleteOptions{PropagationPolicy: &propagation})
+	err = c.Delete(ctx, resourceToDelete, &client.DeleteOptions{PropagationPolicy: &propagation})
 	if util.IsNotFound(err) {
 		return true, nil
 	}
 	if err != nil {
-		return false, fmt.Errorf("failed to fetch resource: %w", err)
+		return false, fmt.Errorf("failed to delete resource: %w", err)
 	}
+
 	return false, nil
 }
