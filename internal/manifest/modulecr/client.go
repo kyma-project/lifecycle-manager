@@ -71,7 +71,9 @@ func (c *Client) CheckDefaultCRDeletion(ctx context.Context, manifestCR *v1beta2
 	defaultModuleCR := manifestCR.Spec.Resource
 	moduleCRGvk := defaultModuleCR.GroupVersionKind()
 	allModuleCRs, err := c.listResourcesByGroupKindInNamespace(ctx, moduleCRGvk, defaultModuleCR.GetNamespace())
-	if err != nil {
+	if util.IsNotFound(err) {
+		return true, nil
+	} else if err != nil {
 		return false, fmt.Errorf("failed to list Module CRs by group kind: %w", err)
 	}
 
@@ -240,7 +242,9 @@ func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool
 	moduleCRGvk := defaultModuleCR.GroupVersionKind()
 
 	allModuleCRs, err := c.listResourcesByGroupKindInNamespace(ctx, moduleCRGvk, defaultModuleCR.GetNamespace())
-	if err != nil {
+	if util.IsNotFound(err) {
+		return true, nil
+	} else if err != nil {
 		return false, fmt.Errorf("failed to list Module CRs by group kind: %w", err)
 	}
 
