@@ -3,12 +3,6 @@ package modulecr_test
 import (
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/finalizer"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/modulecr"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -19,6 +13,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/finalizer"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/modulecr"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 )
 
 func TestClient_RemoveDefaultModuleCR(t *testing.T) {
@@ -27,7 +28,7 @@ func TestClient_RemoveDefaultModuleCR(t *testing.T) {
 	err := v1beta2.AddToScheme(testScheme)
 	require.NoError(t, err)
 
-	kcpClient := fake.NewClientBuilder().WithScheme(testScheme).Build()
+	kcpClient := fake.NewClientBuilder().WithScheme(testScheme).WithRESTMapper(getRestMapper()).Build()
 	skrClient := modulecr.NewClient(kcpClient)
 
 	manifest := testutils.NewTestManifest("test-manifest")

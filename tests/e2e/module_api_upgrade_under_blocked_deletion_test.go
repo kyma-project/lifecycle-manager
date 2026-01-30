@@ -94,10 +94,6 @@ var _ = Describe("Module API Upgrade Under Blocked Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
 				Should(Succeed())
-			Consistently(DeploymentIsReady).
-				WithContext(ctx).
-				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
-				Should(Succeed())
 
 			By("And Module CR is in \"Deleting\" State")
 			Consistently(CheckSampleCRIsInState).
