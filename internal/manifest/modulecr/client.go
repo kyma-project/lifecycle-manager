@@ -69,7 +69,7 @@ func (c *Client) CheckDefaultCRDeletion(ctx context.Context, manifestCR *v1beta2
 	}
 
 	defaultModuleCR := manifestCR.Spec.Resource
-	moduleCRGvk := manifestCR.Spec.Resource.GroupVersionKind()
+	moduleCRGvk := defaultModuleCR.GroupVersionKind()
 	allModuleCRs, err := c.listResourcesByGroupKindInNamespace(ctx, moduleCRGvk, defaultModuleCR.GetNamespace())
 	if err != nil {
 		return false, fmt.Errorf("failed to list Module CRs by group kind: %w", err)
@@ -82,13 +82,13 @@ func noDefaultModuleCRExists(allResourcesWithModuleCRGroupKind []unstructured.Un
 	defaultModuleCR *unstructured.Unstructured,
 ) bool {
 	moduleCRGvk := defaultModuleCR.GroupVersionKind()
-	for _, item := range allResourcesWithModuleCRGroupKind {
-		if item.GetName() == defaultModuleCR.GetName() && item.GetNamespace() == defaultModuleCR.GetNamespace() &&
-			item.GroupVersionKind().Group == moduleCRGvk.Group && item.GroupVersionKind().Kind == moduleCRGvk.Kind {
-			return true
+	for _, resource := range allResourcesWithModuleCRGroupKind {
+		if resource.GetName() == defaultModuleCR.GetName() && resource.GetNamespace() == defaultModuleCR.GetNamespace() &&
+			resource.GroupVersionKind().Group == moduleCRGvk.Group && resource.GroupVersionKind().Kind == moduleCRGvk.Kind {
+			return false
 		}
 	}
-	return false
+	return true
 }
 
 func (c *Client) CheckModuleCRsDeletion(ctx context.Context, manifestCR *v1beta2.Manifest) error {
@@ -212,14 +212,14 @@ func (c *Client) listResourcesByGroupKindInNamespace(ctx context.Context,
 }
 
 func filterOutDefaultCRs(allResourcesWithModuleCRGroupKind []unstructured.Unstructured,
-	resource *unstructured.Unstructured,
+	defaultModuleCR *unstructured.Unstructured,
 ) []unstructured.Unstructured {
-	gvk := resource.GroupVersionKind()
+	moduleCRGvk := defaultModuleCR.GroupVersionKind()
 	var withoutDefaultCR []unstructured.Unstructured
-	for _, item := range allResourcesWithModuleCRGroupKind {
-		if item.GetName() != resource.GetName() || item.GetNamespace() != resource.GetNamespace() ||
-			item.GroupVersionKind().Group != gvk.Group || item.GroupVersionKind().Kind != gvk.Kind {
-			withoutDefaultCR = append(withoutDefaultCR, item)
+	for _, resource := range allResourcesWithModuleCRGroupKind {
+		if resource.GetName() != defaultModuleCR.GetName() || resource.GetNamespace() != defaultModuleCR.GetNamespace() ||
+			resource.GroupVersionKind().Group != moduleCRGvk.Group || resource.GroupVersionKind().Kind != moduleCRGvk.Kind {
+			withoutDefaultCR = append(withoutDefaultCR, resource)
 		}
 	}
 	return withoutDefaultCR
