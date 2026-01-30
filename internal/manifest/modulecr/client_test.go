@@ -171,6 +171,51 @@ func TestClient_GetAllModuleCRsExcludingDefaultCR_WithCreateAndDeletePolicy(t *t
 	assert.Equal(t, moduleCRs[0].GetNamespace(), moduleCR2.GetNamespace())
 }
 
+func TestClient_GetAllModuleCRsExcludingDefaultCR_ReturnsEmpty_WhenModuleCRApiVersionUpgrade(t *testing.T) {
+	// Given a manifest CR and two resource CRs deployed in the cluster
+	testScheme := machineryruntime.NewScheme()
+	err := v1beta2.AddToScheme(testScheme)
+	require.NoError(t, err)
+
+	kcpClient := fake.NewClientBuilder().WithScheme(testScheme).WithRESTMapper(getRestMapper()).Build()
+	skrClient := modulecr.NewClient(kcpClient)
+
+	manifest := testutils.NewTestManifest("test-manifest")
+	newerModuleCR := unstructured.Unstructured{}
+	newerModuleCR.SetGroupVersionKind(
+		schema.GroupVersionKind{
+			Group:   shared.OperatorGroup,
+			Version: "v1beta1",
+			Kind:    string(templatev1alpha1.SampleKind),
+		},
+	)
+	const moduleName = "test-resource"
+	newerModuleCR.SetName(moduleName)
+	newerModuleCR.SetNamespace(shared.DefaultRemoteNamespace)
+	manifest.Spec.Resource = &newerModuleCR
+	err = kcpClient.Create(t.Context(), manifest.Spec.Resource)
+	require.NoError(t, err)
+
+	err = kcpClient.Create(t.Context(), manifest)
+	require.NoError(t, err)
+
+	existingModuleCRInSkr := unstructured.Unstructured{}
+	existingModuleCRInSkr.SetName(moduleName)
+	existingModuleCRInSkr.SetNamespace(shared.DefaultRemoteNamespace)
+	existingModuleCRInSkr.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   shared.OperatorGroup,
+		Version: "v1alpha1",
+		Kind:    string(templatev1alpha1.SampleKind),
+	})
+	err = skrClient.Create(t.Context(), &existingModuleCRInSkr)
+	require.NoError(t, err)
+
+	// When Getting all Module CRs excluding the default CR
+	moduleCRs, err := skrClient.GetAllModuleCRsExcludingDefaultCR(t.Context(), manifest)
+	require.NoError(t, err)
+	require.Empty(t, moduleCRs)
+}
+
 func TestClient_GetAllModuleCRsExcludingDefaultCR_WithIgnorePolicy(t *testing.T) {
 	// Given a manifest CR and two resource CRs deployed in the cluster
 	testScheme := machineryruntime.NewScheme()

@@ -78,15 +78,6 @@ runs:
           yq eval "${crd_selector} |= (.spec.versions += [{\"name\": \"v1beta1\", \"served\": true, \"storage\": true, \"schema\": .spec.versions[0].schema}])" -i template-operator.yaml
           yq eval "(${crd_selector} | .spec.versions[] | select(.name == \"v1alpha1\")).storage = false" -i template-operator.yaml
           yq eval '.apiVersion = "operator.kyma-project.io/v1beta1"' -i config/samples/default-sample-cr.yaml
-
-          echo "=== Manifest Before Deploy ===="
-          cat template-operator.yaml
-          echo "=== /Manifest Before Deploy ====
-
-          echo "=== Default CR Before Deploy ===="
-          cat config/samples/default-sample-cr.yaml
-          echo "=== /Default CR Before Deploy ====
-
         fi
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }} ${{ inputs.module_version }} $INCLUDE_DEFAULT_CR $MANDATORY $DEPLOY_MODULETEMPLATE $REQUIRE_DOWNTIME
 
