@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	apiappsv1 "k8s.io/api/apps/v1"
@@ -53,6 +54,18 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
 			return err
 		}, Timeout, Interval).Should(Succeed())
+	})
+
+	It("mock cert-manager writing cert status", func() {
+		Eventually(AddValidityToCertificateStatus, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(ctx,
+				kcpClient,
+				client.ObjectKeyFromObject(tlsSecret), // cert and secret have the same name and namespace
+				time.Now(),
+				time.Now().Add(24*time.Hour),
+			).
+			Should(Succeed())
 	})
 
 	It("kyma reconciliation installs watcher with correct webhook config", func() {

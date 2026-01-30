@@ -8,7 +8,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/name"
 )
 
@@ -19,18 +18,25 @@ var (
 	errFailedToDeleteWatcherSkrSecret               = errors.New("failed to delete SKR secret")
 )
 
+//nolint:iface // we accept the duplication for clarity
 type SecretRepository interface {
 	Exists(ctx context.Context, name string) (bool, error)
 	Delete(ctx context.Context, name string) error
 }
 
+//nolint:iface // we accept the duplication for clarity
+type CertificateRepository interface {
+	Exists(ctx context.Context, name string) (bool, error)
+	Delete(ctx context.Context, name string) error
+}
+
 type DeleteWatcherCertificateSetup struct {
-	certRepo   certificate.CertificateRepository
+	certRepo   CertificateRepository
 	secretRepo SecretRepository
 }
 
 func NewDeleteWatcherCertificateSetup(
-	certRepo certificate.CertificateRepository,
+	certRepo CertificateRepository,
 	secretRepo SecretRepository,
 ) *DeleteWatcherCertificateSetup {
 	return &DeleteWatcherCertificateSetup{

@@ -23,7 +23,8 @@ var (
 	ErrGCMRepoConfigKeySizeOutOfRange     = errors.New("KeySize is out of range for int32")
 	ErrInputStringNotContainValidDates    = errors.New("input string does not contain valid dates")
 	ErrCertificateStatusNotContainMessage = errors.New("certificate status does not contain message")
-	dateRegex                             = regexp.MustCompile(`valid from (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC) to (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC)`) //nolint:revive //keep regex readible
+
+	dateRegex = regexp.MustCompile(`valid from (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC) to (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC)`) //nolint:revive //keep regex readible
 )
 
 const regexMatchesCount = 3
@@ -121,12 +122,28 @@ func (r *Repository) Delete(ctx context.Context, name string) error {
 	return nil
 }
 
-func (r *Repository) Exists(ctx context.Context, name string) (bool, error) {
-	cert := &gcertv1alpha1.Certificate{}
-	cert.SetName(name)
-	cert.SetNamespace(r.certConfig.Namespace)
+func (r *Repository) Renew(ctx context.Context, name string) error {
+	var cert *gcertv1alpha1.Certificate
+	var err error
+	if cert, err = r.get(ctx, name); err != nil || cert == nil {
+		return fmt.Errorf("could not get certificate for renewal: %w", err)
+	}
 
-	err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)
+	if cert.Spec.EnsureRenewedAfter != nil {
+		cert.Spec.EnsureRenewedAfter = nil
+	}
+
+	cert.Spec.Renew = boolPtr(true)
+
+	if err := r.kcpClient.Update(ctx, cert); err != nil {
+		return fmt.Errorf("failed to update certificate for renewal %s-%s: %w", cert.Name, cert.Namespace, err)
+	}
+
+	return nil
+}
+
+func (r *Repository) Exists(ctx context.Context, name string) (bool, error) {
+	_, err := r.get(ctx, name)
 	if err != nil {
 		if util.IgnoreNotFound(err) != nil {
 			return false, fmt.Errorf("failed to check existence of certificate %s-%s: %w", name, r.certConfig.Namespace,
@@ -139,11 +156,8 @@ func (r *Repository) Exists(ctx context.Context, name string) (bool, error) {
 
 // GetRenewalTime returns the expiration date of the certificate minus the renewal time.
 func (r *Repository) GetRenewalTime(ctx context.Context, name string) (time.Time, error) {
-	cert := &gcertv1alpha1.Certificate{}
-	cert.SetName(name)
-	cert.SetNamespace(r.certConfig.Namespace)
-
-	if err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+	cert, err := r.get(ctx, name)
+	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, r.certConfig.Namespace, err)
 	}
 
@@ -161,11 +175,8 @@ func (r *Repository) GetRenewalTime(ctx context.Context, name string) (time.Time
 }
 
 func (r *Repository) GetValidity(ctx context.Context, name string) (time.Time, time.Time, error) {
-	cert := &gcertv1alpha1.Certificate{}
-	cert.SetName(name)
-	cert.SetNamespace(r.certConfig.Namespace)
-
-	if err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+	cert, err := r.get(ctx, name)
+	if err != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf(
 			"failed to get certificate %s-%s: %w",
 			name,
@@ -205,4 +216,20 @@ func parseValidity(input string) (time.Time, time.Time, error) {
 	}
 
 	return notBefore, notAfter, nil
+}
+
+func (r *Repository) get(ctx context.Context, name string) (*gcertv1alpha1.Certificate, error) {
+	cert := &gcertv1alpha1.Certificate{}
+	cert.SetName(name)
+	cert.SetNamespace(r.certConfig.Namespace)
+
+	if err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+		return nil, fmt.Errorf("failed to get GCM Certificate %s-%s: %w", name, r.certConfig.Namespace, err)
+	}
+
+	return cert, nil
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }

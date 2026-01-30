@@ -17,20 +17,17 @@ import (
 )
 
 var (
-	ErrDomainAnnotationEmpty   = errors.New("domain annotation is empty")
-	ErrDomainAnnotationMissing = errors.New("domain annotation is missing")
+	ErrDomainAnnotationEmpty              = errors.New("domain annotation is empty")
+	ErrDomainAnnotationMissing            = errors.New("domain annotation is missing")
+	ErrGatewaySecretMissingLastModifiedAt = errors.New("gateway secret is missing lastModifiedAt annotation")
 )
-
-type RenewalService interface {
-	Renew(ctx context.Context, name string) error
-	SkrSecretNeedsRenewal(gatewaySecret, skrSecret *apicorev1.Secret) bool
-}
 
 type CertificateRepository interface {
 	Create(ctx context.Context, name, commonName string, dnsNames []string) error
 	Delete(ctx context.Context, name string) error
-	Exists(ctx context.Context, name string) (bool, error)
 	GetRenewalTime(ctx context.Context, name string) (time.Time, error)
+	Renew(ctx context.Context, name string) error
+	GetValidity(ctx context.Context, name string) (time.Time, time.Time, error)
 }
 
 type SecretRepository interface {
@@ -47,23 +44,20 @@ type Config struct {
 }
 
 type Service struct {
-	renewalService RenewalService
-	certRepo       CertificateRepository
-	secretRepo     SecretRepository
-	config         Config
+	certRepo   CertificateRepository
+	secretRepo SecretRepository
+	config     Config
 }
 
 func NewService(
-	renewalService RenewalService,
 	certRepo CertificateRepository,
 	secretRepo SecretRepository,
 	config Config,
 ) *Service {
 	return &Service{
-		renewalService: renewalService,
-		certRepo:       certRepo,
-		secretRepo:     secretRepo,
-		config:         config,
+		certRepo:   certRepo,
+		secretRepo: secretRepo,
+		config:     config,
 	}
 }
 
@@ -99,28 +93,28 @@ func (c *Service) DeleteSkrCertificate(ctx context.Context, kymaName string) err
 	return nil
 }
 
-// RenewSkrCertificate checks if the gateway certificate secret has been rotated. If so, it renews the SKR certificate.
+// RenewSkrCertificate checks if the SKR certificate needs to be renwed and triggers renewal if so.
 func (c *Service) RenewSkrCertificate(ctx context.Context, kymaName string) error {
-	gatewaySecret, err := c.secretRepo.Get(ctx, c.config.GatewaySecretName)
+	renewalNeeded, err := c.skrCertificateNeedsRenewal(ctx, name.SkrCertificate(kymaName))
 	if err != nil {
-		return fmt.Errorf("failed to get gateway certificate secret: %w", err)
+		return fmt.Errorf("failed to determine if SKR certificate needs renewal: %w", err)
 	}
 
-	skrCertificateSecret, err := c.secretRepo.Get(ctx, name.SkrCertificate(kymaName))
-	if err != nil {
-		return fmt.Errorf("failed to get SKR certificate secret: %w", err)
-	}
-
-	if !c.renewalService.SkrSecretNeedsRenewal(gatewaySecret, skrCertificateSecret) {
+	if !renewalNeeded {
 		return nil
 	}
 
-	logf.FromContext(ctx).V(log.DebugLevel).Info("CA Certificate was rotated, removing certificate",
-		"kyma", kymaName)
+	logf.FromContext(ctx).
+		V(log.InfoLevel).
+		Info("SKR certificate needs renewal", "certificate", name.SkrCertificate(kymaName))
 
-	if err = c.renewalService.Renew(ctx, name.SkrCertificate(kymaName)); err != nil {
-		return fmt.Errorf("failed to delete SKR certificate secret: %w", err)
+	if err = c.certRepo.Renew(ctx, name.SkrCertificate(kymaName)); err != nil {
+		return fmt.Errorf("failed to renew SKR certificate: %w", err)
 	}
+
+	logf.FromContext(ctx).
+		V(log.InfoLevel).
+		Info("SKR certificate renewed", "certificate", name.SkrCertificate(kymaName))
 
 	return nil
 }
@@ -157,20 +151,10 @@ func (c *Service) GetSkrCertificateSecretData(ctx context.Context,
 	return data.NewCertificateSecretData(skrCertSecret)
 }
 
-// GetGatewayCertificateSecret returns the gateway certificate secret.
-func (c *Service) GetGatewayCertificateSecret(ctx context.Context) (*apicorev1.Secret, error) {
+func (c *Service) GetGatewayCertificateSecretData(ctx context.Context) (*data.GatewaySecretData, error) {
 	gatewayCertSecret, err := c.secretRepo.Get(ctx, c.config.GatewaySecretName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get gateway certificate secret: %w", err)
-	}
-
-	return gatewayCertSecret, nil
-}
-
-func (c *Service) GetGatewayCertificateSecretData(ctx context.Context) (*data.GatewaySecretData, error) {
-	gatewayCertSecret, err := c.GetGatewayCertificateSecret(ctx)
-	if err != nil {
-		return nil, err
 	}
 
 	return data.NewGatewaySecretData(gatewayCertSecret)
@@ -204,4 +188,37 @@ func (c *Service) constructDNSNames(kyma *v1beta2.Kyma) ([]string, error) {
 	}
 
 	return dnsNames, nil
+}
+
+func (s *Service) skrCertificateNeedsRenewal(ctx context.Context, certName string) (bool, error) {
+	certNotBefore, _, err := s.certRepo.GetValidity(ctx, certName)
+	if err != nil {
+		return false, fmt.Errorf("failed to determine SKR client certificate validity: %w", err)
+	}
+
+	gatewaySecretLastModifiedAt, err := s.getGatewaySecretLastModifiedAt(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to determine gateway secret lastModifiedAt: %w", err)
+	}
+
+	return certNotBefore.Before(gatewaySecretLastModifiedAt), nil
+}
+
+func (s *Service) getGatewaySecretLastModifiedAt(ctx context.Context) (time.Time, error) {
+	gatewaySecret, err := s.secretRepo.Get(ctx, s.config.GatewaySecretName)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to get gateway secret: %w", err)
+	}
+
+	lastModifiedAtValue, ok := gatewaySecret.Annotations[shared.LastModifiedAtAnnotation]
+	if !ok {
+		return time.Time{}, ErrGatewaySecretMissingLastModifiedAt
+	}
+
+	lastModifiedAt, err := time.Parse(time.RFC3339, lastModifiedAtValue)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to parse gateway secret lastModifiedAt annotation: %w", err)
+	}
+
+	return lastModifiedAt, nil
 }
