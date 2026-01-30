@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	certmanagerapiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,6 +16,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
 	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/errors"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
+)
+
+const (
+	renewalReason  = "ManuallyTriggered"
+	renewalMessage = "Certificate re-issuance manually triggered"
 )
 
 // GetCacheObjects returns a list of objects that need to be cached for this client.
@@ -117,11 +123,7 @@ func (r *Repository) Delete(ctx context.Context, name string) error {
 }
 
 func (r *Repository) Exists(ctx context.Context, name string) (bool, error) {
-	cert := &certmanagerv1.Certificate{}
-	cert.SetName(name)
-	cert.SetNamespace(r.certConfig.Namespace)
-
-	err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)
+	_, err := r.getCertificate(ctx, name)
 	if err != nil {
 		if util.IgnoreNotFound(err) != nil {
 			return false, fmt.Errorf("failed to check existence of certificate %s-%s: %w", name, r.certConfig.Namespace,
@@ -130,6 +132,26 @@ func (r *Repository) Exists(ctx context.Context, name string) (bool, error) {
 		return false, nil
 	}
 	return true, nil
+}
+
+func (r *Repository) Renew(ctx context.Context, name string) error {
+	cert, err := r.getCertificate(ctx, name)
+	if err != nil {
+		return fmt.Errorf("failed to get certificate %s-%s: %w", name, r.certConfig.Namespace, err)
+	}
+
+	certmanagerapiutil.SetCertificateCondition(cert,
+		cert.Generation,
+		certmanagerv1.CertificateConditionIssuing,
+		certmanagermetav1.ConditionTrue,
+		renewalReason,
+		renewalMessage)
+
+	if err := r.kcpClient.Status().Update(ctx, cert); err != nil {
+		return fmt.Errorf("failed to update certificate %s-%s status: %w", name, r.certConfig.Namespace, err)
+	}
+
+	return nil
 }
 
 func (r *Repository) GetRenewalTime(ctx context.Context, name string) (time.Time, error) {
