@@ -39,7 +39,6 @@ packages:
   internal/service/kyma/lookup: 100
   internal/service/manifest/orphan: 100
   internal/service/watcher/certificate: 100
-  internal/service/watcher/certificate/renewal: 95
   internal/service/watcher/certificate/secret/data: 100
   internal/service/watcher/chartreader: 100
   internal/service/watcher/gateway: 94

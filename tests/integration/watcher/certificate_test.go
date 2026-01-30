@@ -87,8 +87,10 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 			)
 			Expect(err).ShouldNot(HaveOccurred())
 
-			certificateService := certificate.NewService(nil, certificateRepo,
-				secretrepo.NewRepository(kcpClient, test.namespace.Name), certificateManagerConfig)
+			certificateService := certificate.NewService(certificateRepo,
+				secretrepo.NewRepository(kcpClient, test.namespace.Name),
+				certificateManagerConfig,
+			)
 
 			err = certificateService.CreateSkrCertificate(ctx, test.kyma)
 			if test.wantCreateErr {

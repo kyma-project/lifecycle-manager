@@ -21,7 +21,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
 	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/chartreader"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/gateway"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
@@ -153,13 +152,7 @@ func setupSKRCertService(kcpClient client.Client,
 
 	secretRepository := secretrepo.NewRepository(kcpClient, flagVar.IstioNamespace)
 
-	renewalService := renewal.NewService(certificateRepository,
-		secretRepository,
-		shared.GatewaySecretName,
-	)
-
-	return certificate.NewService(renewalService,
-		certificateRepository,
+	return certificate.NewService(certificateRepository,
 		secretRepository,
 		certServiceConfig,
 	)
