@@ -74,10 +74,8 @@ runs:
 
         if [[ "${{ matrix.e2e-test }}" == "module-api-upgrade-under-blocked-deletion" ]]; then
           # Introduce v1beta1 in the CRD to simulate the API upgrade scenario
-          sel='(.items[] | select(.kind == "CustomResourceDefinition" and .metadata.name == "samples.operator.kyma-project.io")'
-          yq eval "$sel"' | .spec.versions) += [{"name": "v1beta1", "served": true, "storage": true, "schema": (.spec.versions[0].schema)}]' \
-          yq eval "$sel"' | .spec.versions[] | select(.name == "v1alpha1") | .storage) = false' \
-             -i template-operator.yaml
+          yq eval '(.items[] | select(.kind == "CustomResourceDefinition" and .metadata.name == "samples.operator.kyma-project.io") | .spec.versions) += [{"name": "v1beta1", "served": true, "storage": true, "schema": (.spec.versions[0].schema)}]' -i template-operator.yaml
+          yq eval '(.items[] | select(.kind == "CustomResourceDefinition" and .metadata.name == "samples.operator.kyma-project.io") | .spec.versions[] | select(.name == "v1alpha1") | .storage) = false' -i template-operator.yaml
           yq eval '.apiVersion = "operator.kyma-project.io/v1beta1"' -i config/samples/default-sample-cr.yaml
         fi
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }} ${{ inputs.module_version }} $INCLUDE_DEFAULT_CR $MANDATORY $DEPLOY_MODULETEMPLATE $REQUIRE_DOWNTIME
