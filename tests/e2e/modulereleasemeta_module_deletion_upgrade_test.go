@@ -13,7 +13,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 )
 
-var _ = Describe("Module API Upgrade Under Blocked Deletion", Ordered, func() {
+var _ = Describe("Kyma Module with ModuleReleaseMeta Upgrade Under Deletion", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 
@@ -89,11 +89,21 @@ var _ = Describe("Module API Upgrade Under Blocked Deletion", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("Then Module Deployment is updated on SKR Cluster", func() {
+		It("Then Kyma Module is updated on SKR Cluster", func() {
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
 				Should(Succeed())
+
+			By("And old Module Operator Deployment is removed")
+			Eventually(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
+				Should(Equal(ErrNotFound))
+			Consistently(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
+				Should(Equal(ErrNotFound))
 
 			By("And Module CR is in \"Deleting\" State")
 			Consistently(CheckSampleCRIsInState).
