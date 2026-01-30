@@ -135,8 +135,8 @@ func (r *Repository) Renew(ctx context.Context, name string) error {
 
 	cert.Spec.Renew = boolPtr(true)
 
-	if err = r.update(ctx, cert); err != nil {
-		return fmt.Errorf("failed to update certificate for renewal: %w", err)
+	if err := r.kcpClient.Update(ctx, cert); err != nil {
+		return fmt.Errorf("failed to update certificate for renewal %s-%s: %w", cert.Name, cert.Namespace, err)
 	}
 
 	return nil
@@ -228,14 +228,6 @@ func (r *Repository) get(ctx context.Context, name string) (*gcertv1alpha1.Certi
 	}
 
 	return cert, nil
-}
-
-func (r *Repository) update(ctx context.Context, cert *gcertv1alpha1.Certificate) error {
-	if err := r.kcpClient.Update(ctx, cert); err != nil {
-		return fmt.Errorf("failed to update GCM Certificate %s-%s: %w", cert.Name, cert.Namespace, err)
-	}
-
-	return nil
 }
 
 func boolPtr(b bool) *bool {
