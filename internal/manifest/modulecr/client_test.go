@@ -3,6 +3,7 @@ package modulecr_test
 import (
 	"testing"
 
+	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -19,7 +20,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/finalizer"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/modulecr"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 )
 
 func TestClient_RemoveDefaultModuleCR(t *testing.T) {
