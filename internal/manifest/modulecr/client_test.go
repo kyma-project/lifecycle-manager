@@ -3,23 +3,22 @@ package modulecr_test
 import (
 	"testing"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/finalizer"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/modulecr"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/scheme"
-
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/finalizer"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/modulecr"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 func TestClient_RemoveDefaultModuleCR(t *testing.T) {
@@ -130,10 +129,8 @@ func TestClient_GetAllModuleCRsExcludingDefaultCR_WithCreateAndDeletePolicy(t *t
 	testScheme := machineryruntime.NewScheme()
 	err := v1beta2.AddToScheme(testScheme)
 	require.NoError(t, err)
-	err = addSampleToScheme(testScheme)
-	require.NoError(t, err)
 
-	kcpClient := fake.NewClientBuilder().WithScheme(testScheme).Build()
+	kcpClient := fake.NewClientBuilder().WithScheme(testScheme).WithRESTMapper(getRestMapper()).Build()
 	skrClient := modulecr.NewClient(kcpClient)
 
 	manifest := testutils.NewTestManifest("test-manifest")
@@ -178,10 +175,8 @@ func TestClient_GetAllModuleCRsExcludingDefaultCR_WithIgnorePolicy(t *testing.T)
 	testScheme := machineryruntime.NewScheme()
 	err := v1beta2.AddToScheme(testScheme)
 	require.NoError(t, err)
-	err = addSampleToScheme(testScheme)
-	require.NoError(t, err)
 
-	kcpClient := fake.NewClientBuilder().WithScheme(testScheme).Build()
+	kcpClient := fake.NewClientBuilder().WithScheme(testScheme).WithRESTMapper(getRestMapper()).Build()
 	skrClient := modulecr.NewClient(kcpClient)
 
 	manifest := testutils.NewTestManifest("test-manifest")
@@ -224,11 +219,15 @@ func TestClient_GetAllModuleCRsExcludingDefaultCR_WithIgnorePolicy(t *testing.T)
 	assert.Equal(t, moduleCRs[1].GetNamespace(), moduleCR2.GetNamespace())
 }
 
-func addSampleToScheme(testScheme *machineryruntime.Scheme) error {
-	groupVersion := schema.GroupVersion{
+func getRestMapper() *meta.DefaultRESTMapper {
+	sampleGVK := schema.GroupVersionKind{
 		Group:   shared.OperatorGroup,
 		Version: string(templatev1alpha1.Version),
+		Kind:    string(templatev1alpha1.SampleKind),
 	}
-	schemeBuilder := &scheme.Builder{GroupVersion: groupVersion}
-	return schemeBuilder.AddToScheme(testScheme)
+
+	mapper := meta.NewDefaultRESTMapper([]schema.GroupVersion{sampleGVK.GroupVersion()})
+	mapper.Add(sampleGVK, meta.RESTScopeNamespace)
+
+	return mapper
 }
