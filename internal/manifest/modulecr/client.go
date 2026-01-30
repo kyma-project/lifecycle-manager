@@ -188,7 +188,7 @@ func (c *Client) listResourcesByGroupKindInNamespace(ctx context.Context,
 		Kind:  gvk.Kind,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get REST mappings: %w", err)
+		return nil, fmt.Errorf("failed to get REST mappings for %s.%s: %w", gvk.Group, gvk.Kind, err)
 	}
 
 	var allItems []unstructured.Unstructured
@@ -249,10 +249,9 @@ func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool
 	}
 
 	var resourceToDelete *unstructured.Unstructured
-	for i := range allModuleCRs {
-		cr := &allModuleCRs[i]
-		if isResourceTheDefaultCR(cr, defaultModuleCR) {
-			resourceToDelete = cr
+	for _, cr := range allModuleCRs {
+		if isResourceTheDefaultCR(&cr, defaultModuleCR) {
+			resourceToDelete = &cr
 			break
 		}
 	}

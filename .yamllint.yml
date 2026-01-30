@@ -9,7 +9,7 @@ ignore: |
 #Rules config: https://yamllint.readthedocs.io/en/stable/rules.html
 rules:
   line-length:
-    max: 225
+    max: 275
   indentation:
     spaces: 2
   braces:
