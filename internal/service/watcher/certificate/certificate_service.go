@@ -158,22 +158,12 @@ func (c *Service) GetSkrCertificateSecretData(ctx context.Context,
 }
 
 func (c *Service) GetGatewayCertificateSecretData(ctx context.Context) (*data.GatewaySecretData, error) {
-	gatewayCertSecret, err := c.getGatewayCertificateSecret(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return data.NewGatewaySecretData(gatewayCertSecret)
-}
-
-// GetGatewayCertificateSecret returns the gateway certificate secret.
-func (c *Service) getGatewayCertificateSecret(ctx context.Context) (*apicorev1.Secret, error) {
 	gatewayCertSecret, err := c.secretRepo.Get(ctx, c.config.GatewaySecretName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get gateway certificate secret: %w", err)
 	}
 
-	return gatewayCertSecret, nil
+	return data.NewGatewaySecretData(gatewayCertSecret)
 }
 
 // DNS names are
