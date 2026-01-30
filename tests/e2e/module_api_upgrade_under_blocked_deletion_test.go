@@ -90,20 +90,6 @@ var _ = Describe("Module API Upgrade Under Blocked Deletion", Ordered, func() {
 		})
 
 		It("Then Module Deployment is updated on SKR Cluster", func() {
-			By("DEBUG: Old Module Operator Deployment is on SKR Cluster")
-			Eventually(CheckIfExists).
-				WithContext(ctx).
-				WithArguments(ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace,
-					"apps", "v1", "Deployment", skrClient).
-				Should(Succeed())
-
-			By("DEBUG: New Module Operator Deployment is on SKR Cluster")
-			Eventually(CheckIfExists).
-				WithContext(ctx).
-				WithArguments(ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace,
-					"apps", "v1", "Deployment", skrClient).
-				Should(Succeed())
-
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
