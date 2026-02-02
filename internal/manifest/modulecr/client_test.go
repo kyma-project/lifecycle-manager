@@ -177,7 +177,6 @@ func TestClient_GetAllModuleCRsExcludingDefaultCR_ReturnsEmpty_WhenModuleCRApiVe
 	err := v1beta2.AddToScheme(testScheme)
 	require.NoError(t, err)
 
-<<<<<<< HEAD
 	kcpClient := fake.NewClientBuilder().WithScheme(testScheme).WithRESTMapper(getRestMapper()).Build()
 	skrClient := modulecr.NewClient(kcpClient)
 
@@ -367,4 +366,3 @@ func TestClient_GetAllModuleCRsExcludingDefaultCR_WithCRsInDifferentNamespaces(t
 	assert.True(t, foundInCustom, "Module CR in custom namespace should be found")
 	assert.True(t, foundSameNameDiffNs, "Module CR with same name but different namespace should be found")
 }
-

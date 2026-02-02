@@ -13,9 +13,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// This test validates the fix for https://github.com/kyma-project/lifecycle-manager/issues/3006
-// It ensures that lifecycle-manager checks ALL Module CRs across all namespaces before
-// proceeding with module deletion, as required by ADR https://github.com/kyma-project/community/issues/972
+// This test ensures that lifecycle-manager checks ALL Module CRs across all namespaces
+// before proceeding with module deletion.
 var _ = Describe("Blocking Module Deletion With Module CRs in Different Namespaces", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
