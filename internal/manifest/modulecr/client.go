@@ -165,10 +165,6 @@ func (c *Client) GetAllModuleCRsExcludingDefaultCR(ctx context.Context,
 	defaultModuleCR := manifest.Spec.Resource.DeepCopy()
 	moduleCRGvk := defaultModuleCR.GroupVersionKind()
 
-	// List all Module CRs across all namespaces using REST mapper
-	// This is required by ADR https://github.com/kyma-project/community/issues/972
-	// which states: "lifecycle-manager uses ALL CRs of the Module CRD as the 'gate'
-	// before proceeding with the deletion of the module"
 	allResourcesWithModuleCRGroupKind, err := c.listResourcesByGroupKindInAllNamespaces(ctx, moduleCRGvk)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list Module CRs by group kind: %w", err)
