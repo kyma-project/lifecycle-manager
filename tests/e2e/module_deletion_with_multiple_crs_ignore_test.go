@@ -58,7 +58,6 @@ var _ = Describe("Blocking Module Deletion With Multiple Module CRs with Ignore 
 				Should(Succeed())
 		})
 
-		//nolint:dupl // Intentional duplication for test clarity and independence
 		It("Then KCP Kyma CR is in \"Processing\" State", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
