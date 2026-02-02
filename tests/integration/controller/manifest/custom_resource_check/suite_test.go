@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/google/go-containerregistry/pkg/registry"
 	"go.uber.org/zap/zapcore"
 	apicorev1 "k8s.io/api/core/v1"
@@ -117,6 +118,7 @@ var _ = BeforeSuite(func() {
 
 	Expect(api.AddToScheme(k8sclientscheme.Scheme)).To(Succeed())
 	Expect(apicorev1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(certmanagerv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 	metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
 	if !found {

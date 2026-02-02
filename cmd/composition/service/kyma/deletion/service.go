@@ -7,6 +7,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
@@ -21,13 +22,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 	kymadeletionsvc "github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion/usecases"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
 //nolint:funlen // composition function
 func ComposeKymaDeletionService(kcpClient client.Client,
-	certificateRepository certificate.CertificateRepository,
+	certificateRepository skrwebhook.CertificateRepository,
 	kymaMetrics *metrics.KymaMetrics,
 	kymaRepo *kymarepo.Repository,
 	accessSecretRepository *secretrepo.Repository,

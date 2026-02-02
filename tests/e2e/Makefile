@@ -192,3 +192,6 @@ simulate-skr-secret-rotation-evict-client-cache:
 
 skr-image-pull-secret-sync:
 	$(GO_TEST) "SKR Image Pull Secret Sync"
+
+module-api-upgrade-under-blocked-deletion:
+	$(GO_TEST) "Module API Upgrade Under Blocked Deletion"

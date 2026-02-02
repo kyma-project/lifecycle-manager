@@ -3,12 +3,18 @@ package usecases
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/types"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 )
 
-type SkrKymaRepo = ExistsDeleteRepo
+//nolint:iface // we accept the duplication for clarity
+type SkrKymaRepo interface {
+	Exists(ctx context.Context, kymaName types.NamespacedName) (bool, error)
+	Delete(ctx context.Context, kymaName types.NamespacedName) error
+}
 
 type DeleteSkrKyma struct {
 	skrKymaRepo         SkrKymaRepo

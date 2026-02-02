@@ -55,6 +55,7 @@ jobs:
           - module-consistency
           - non-blocking-deletion
           - modulereleasemeta-upgrade-under-deletion
+          - module-api-upgrade-under-blocked-deletion
           - purge-controller
           - purge-metrics
           - module-upgrade-channel-switch
