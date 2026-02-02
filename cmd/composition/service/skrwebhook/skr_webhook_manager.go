@@ -1,10 +1,12 @@
 package skrwebhook
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -18,10 +20,7 @@ import (
 	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate" //nolint:revive // not for import
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
 	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/renewal"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
-	certmanagerrenewal "github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager" //nolint:revive // not for import
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/gcm"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/chartreader"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/gateway"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
@@ -41,10 +40,19 @@ var (
 
 const DefaultResourcesPath = "./skr-webhook"
 
+type CertificateRepository interface {
+	Create(ctx context.Context, name, commonName string, dnsNames []string) error
+	Delete(ctx context.Context, name string) error
+	Exists(ctx context.Context, certName string) (bool, error)
+	Renew(ctx context.Context, name string) error
+	GetRenewalTime(ctx context.Context, name string) (time.Time, error)
+	GetValidity(ctx context.Context, name string) (time.Time, time.Time, error)
+}
+
 func ComposeSkrWebhookManager(kcpClient client.Client,
 	skrContextProvider remote.SkrContextProvider,
 	repository gateway.IstioGatewayRepository,
-	certificateRepository certificate.CertificateRepository,
+	certificateRepository CertificateRepository,
 	flagVar *flags.FlagVar,
 	watcherResourcesPath string,
 ) (*watcher.SkrWebhookManifestManager, error) {
@@ -56,10 +64,7 @@ func ComposeSkrWebhookManager(kcpClient client.Client,
 		return nil, ErrWatcherDirNotExist
 	}
 
-	skrCertService, err := setupSKRCertService(kcpClient, certificateRepository, flagVar)
-	if err != nil {
-		return nil, err
-	}
+	skrCertService := setupSKRCertService(kcpClient, certificateRepository, flagVar)
 
 	gatewayService := gateway.NewService(flagVar.IstioGatewayName,
 		flagVar.IstioGatewayNamespace,
@@ -103,7 +108,7 @@ func ComposeSkrWebhookManager(kcpClient client.Client,
 //nolint:ireturn // chosen implementation shall be abstracted
 func ComposeCertificateRepository(kcpClient client.Client,
 	flagVar *flags.FlagVar,
-) (certificate.CertificateRepository, error) {
+) (CertificateRepository, error) {
 	certificateConfig := config.CertificateValues{
 		Duration:    flagVar.SelfSignedCertDuration,
 		RenewBefore: flagVar.SelfSignedCertRenewBefore,
@@ -111,7 +116,7 @@ func ComposeCertificateRepository(kcpClient client.Client,
 		Namespace:   flagVar.IstioNamespace,
 	}
 
-	var certRepoImpl certificate.CertificateRepository
+	var certRepoImpl CertificateRepository
 	var err error
 	switch flagVar.CertificateManagement {
 	case certmanagerv1.SchemeGroupVersion.String():
@@ -134,9 +139,9 @@ func ComposeCertificateRepository(kcpClient client.Client,
 }
 
 func setupSKRCertService(kcpClient client.Client,
-	certificateRepository certificate.CertificateRepository,
+	certificateRepository CertificateRepository,
 	flagVar *flags.FlagVar,
-) (*certificate.Service, error) {
+) *certificate.Service {
 	certServiceConfig := certificate.Config{
 		SkrServiceName:     skrwebhookresources.SkrResourceName,
 		SkrNamespace:       flagVar.RemoteSyncNamespace,
@@ -147,16 +152,8 @@ func setupSKRCertService(kcpClient client.Client,
 
 	secretRepository := secretrepo.NewRepository(kcpClient, flagVar.IstioNamespace)
 
-	var renewalService certificate.RenewalService
-	switch flagVar.CertificateManagement {
-	case certmanagerv1.SchemeGroupVersion.String():
-		renewalService = certmanagerrenewal.NewService(secretRepository)
-	case gcertv1alpha1.SchemeGroupVersion.String():
-		renewalCertRepo := renewal.NewRepository(kcpClient, flagVar.IstioNamespace)
-		renewalService = gcm.NewService(renewalCertRepo)
-	default:
-		return nil, errCertificateManagementNotSupported
-	}
-
-	return certificate.NewService(renewalService, certificateRepository, secretRepository, certServiceConfig), nil
+	return certificate.NewService(certificateRepository,
+		secretRepository,
+		certServiceConfig,
+	)
 }

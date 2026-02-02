@@ -9,7 +9,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
@@ -24,7 +23,7 @@ func ComposeSkrWebhookManager(
 	kcpClient client.Client,
 	testSkrContextFactory *testskrcontext.DualClusterFactory,
 	gatewayRepository *istiogateway.Repository,
-	certificateRepository certificate.CertificateRepository,
+	certificateRepository skrwebhook.CertificateRepository,
 	flagVar *flags.FlagVar,
 ) *watcher.SkrWebhookManifestManager {
 	flagVar.SelfSignedCertDuration = selfSignedCertDuration

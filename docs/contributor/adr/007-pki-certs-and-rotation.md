@@ -38,19 +38,19 @@ KLM watches the *klm-watcher* secret (2a). When it changes, KLM adds the new CA 
 
 In the [figure for step 2](../assets/adr-007/watcher-certificates-2.png), the new blue CA certificate is pushed into the CA bundle.
 
-### 3. Delete Client Certificate Secrets
+### 3. Trigger Reissuance of Client Certificates
 
-As part of the Kyma CR reconciliation, KLM gets the *klm-istio-gateway* to determine the last time the CA bundle was updated, indicated by the `lastModifiedAt` annotation (3a). If the CA bundle is newer than the *\*-webhook-tls* secret, KLM deletes this secret (3b).
+As part of the Kyma CR reconciliation, KLM gets the *klm-istio-gateway* to determine the last time the CA bundle was updated, indicated by the `lastModifiedAt` annotation (3a). If the `lastModifiedAt` of the CA bundle is more recent than the issued client certificate, KLM triggers reissuance of the client certificate. (3b).
 
-> In restricted markets where *Gardener certificate-management* is used instead of *cert-manager*, the secret is not deleted. Instead, the `renew: true` spec field is set on the related certificate resource.
+> The trigger for reissuance is actually performed on the Certificate CRs and not on the related secret. For landscapes where *cert-manager* is used, this is done by setting the `Issuing` condition in the Certificate CR. For landscapes where *Gardener certificate-management* is used, the `renew: true` spec field is set on the Certificate CR. In the figure, the secret is shown for simplicity.
 
 In the [figure for step 3](../assets/adr-007/watcher-certificates-3.png), the outdated yellow client certificate is deleted.
 
-### 4. Re-issue Client Certificates
+### 4. Reissue Client Certificates
 
-The deleted *\*-webhook-tls* secret forces *cert-manager* to re-issue the client certificate (4). Since the CA certificate has been rotated, the new client certificate is signed by the new CA certificate.
+The change in the Certificate CR triggers *cert-manager* to reissue the client certificate (4). Since the CA certificate has been rotated, the new client certificate is signed by the new CA certificate.
 
-In the [figure for step 4](../assets/adr-007/watcher-certificates-4.png), cert-manager re-issues a purple client certificate signed by the blue CA certificate.
+In the [figure for step 4](../assets/adr-007/watcher-certificates-4.png), cert-manager reissues a purple client certificate signed by the blue CA certificate.
 
 ### 5. Sync Reissued Client Certificates to SKR
 
