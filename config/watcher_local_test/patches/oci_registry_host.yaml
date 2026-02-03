@@ -1,0 +1,3 @@
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: --oci-registry-host=http://k3d-kcp-registry.localhost:5000
