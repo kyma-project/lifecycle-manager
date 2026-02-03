@@ -175,14 +175,8 @@ maintenance-windows-skip:
 watcher-zero-downtime:
 	$(GO_TEST) "Watcher Zero Downtime"
 
-module-deletion-with-multiple-crs-create-and-delete-policy:
-	$(GO_TEST) "Blocking Module Deletion With Multiple Module CRs with CreateAndDelete Policy"
-
-module-deletion-with-multiple-crs-ignore-policy:
-	$(GO_TEST) "Blocking Module Deletion With Multiple Module CRs with Ignore Policy"
-
-module-deletion-cross-namespace:
-	$(GO_TEST) "Blocking Module Deletion With Module CRs in Different Namespaces"
+module-deletion-blocking:
+	$(GO_TEST) "Module Deletion Blocking"
 
 module-transferred-to-another-oci-registry:
 	$(GO_TEST) "Module Transferred to Another OCI Registry"

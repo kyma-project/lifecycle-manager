@@ -130,9 +130,7 @@ runs:
         matrix.e2e-test == 'modulereleasemeta-watch-trigger' ||
         matrix.e2e-test == 'modulereleasemeta-with-obsolete-moduletemplate' ||
         matrix.e2e-test == 'labelling' ||
-        matrix.e2e-test == 'module-deletion-with-multiple-crs-ignore-policy' ||
-        matrix.e2e-test == 'module-deletion-with-multiple-crs-create-and-delete-policy' ||
-        matrix.e2e-test == 'module-deletion-cross-namespace' ||
+        matrix.e2e-test == 'module-deletion-blocking' ||
         matrix.e2e-test == 'oci-reg-cred-secret' ||
         matrix.e2e-test == 'module-transferred-to-another-oci-registry'
         }}

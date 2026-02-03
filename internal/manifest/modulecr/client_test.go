@@ -300,7 +300,9 @@ func TestClient_GetAllModuleCRsExcludingDefaultCR_WithCRsInDifferentNamespaces(t
 	moduleCR.SetName(defaultModuleName)
 	moduleCR.SetNamespace(shared.DefaultRemoteNamespace)
 	manifest.Spec.Resource = &moduleCR
-	err = kcpClient.Create(t.Context(), manifest.Spec.Resource)
+
+	// Create the default Module CR in the SKR client to test that it gets filtered out
+	err = skrClient.Create(t.Context(), manifest.Spec.Resource)
 	require.NoError(t, err)
 
 	err = kcpClient.Create(t.Context(), manifest)
