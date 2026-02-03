@@ -163,9 +163,9 @@ func (c *Client) GetAllModuleCRsExcludingDefaultCR(ctx context.Context,
 	}
 
 	defaultModuleCR := manifest.Spec.Resource.DeepCopy()
-	moduleCRGvk := defaultModuleCR.GroupVersionKind()
 
-	allResourcesWithModuleCRGroupKind, err := c.listResourcesByGroupKindInAllNamespaces(ctx, moduleCRGvk)
+	allResourcesWithModuleCRGroupKind, err := c.listResourcesByGroupKindInAllNamespaces(ctx,
+		defaultModuleCR.GroupVersionKind().GroupKind())
 	if err != nil {
 		return nil, fmt.Errorf("failed to list Module CRs by group kind: %w", err)
 	}
@@ -210,17 +210,14 @@ func (c *Client) listResourcesByGroupKindInNamespace(ctx context.Context,
 	return allItems, nil
 }
 
-// listResourcesByGroupKindInAllNamespaces lists all resources matching the given GroupVersionKind
+// listResourcesByGroupKindInAllNamespaces lists all resources matching the given GroupKind
 // across ALL namespaces. This is required by ADR #972 to check all Module CRs before deletion.
 func (c *Client) listResourcesByGroupKindInAllNamespaces(ctx context.Context,
-	gvk schema.GroupVersionKind,
+	gk schema.GroupKind,
 ) ([]unstructured.Unstructured, error) {
-	mappings, err := c.RESTMapper().RESTMappings(schema.GroupKind{
-		Group: gvk.Group,
-		Kind:  gvk.Kind,
-	})
+	mappings, err := c.RESTMapper().RESTMappings(gk)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get REST mappings for %s.%s: %w", gvk.Group, gvk.Kind, err)
+		return nil, fmt.Errorf("failed to get REST mappings for %s.%s: %w", gk.Group, gk.Kind, err)
 	}
 
 	var allItems []unstructured.Unstructured
