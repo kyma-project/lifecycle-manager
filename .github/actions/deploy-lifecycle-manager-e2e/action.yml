@@ -141,7 +141,7 @@ runs:
           value: --kyma-requeue-success-interval=10s
         - op: add
           path: /spec/template/spec/containers/0/args/-
-          value: --istio-gateway-cert-switch-before-expiration-time=58m30s
+          value: --istio-gateway-server-cert-switch-grace-period=30s
         - op: add
           path: /spec/template/spec/containers/0/args/-
           value: --istio-gateway-secret-requeue-success-interval=6s" >> requeue-interval-patch.yaml

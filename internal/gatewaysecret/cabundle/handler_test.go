@@ -24,7 +24,7 @@ var (
 )
 
 // With the above notBefore and notAfter, the "new" CA cert is valid from 1 hour ago till the next two hours.
-// That means in the good path, we will bundle the CA cert immediately, since the "new" CA cert is already valid since 1 hour.
+// In the good path, we bundle the CA cert immediately, since the "new" CA cert is already valid since 1 hour.
 // And we will switch the TLS cert and key 30 minutes from now, since the grace period is 90 minutes from the notBefore.
 
 func TestManageGatewaySecret_WhenGetWatcherServingCertValidityReturnsError_ReturnsError(t *testing.T) {

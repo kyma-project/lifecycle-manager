@@ -242,7 +242,8 @@ func DefineFlagVar() *FlagVar {
 		DefaultSelfSignedCertificateIssuerName, "Issuer name for the self-signed certificate.")
 	flag.DurationVar(&flagVar.IstioGatewayCertSwitchBeforeExpirationTime,
 		"istio-gateway-cert-switch-before-expiration-time", time.Duration(0),
-		"Deprecated: Duration before the expiration of the current CA certificate when the Gateway certificate should be switched.")
+		"Deprecated: Duration before the expiration of the current CA certificate "+
+			"when the Gateway certificate should be switched.")
 	flag.DurationVar(&flagVar.IstioGatewayServerCertSwitchGracePeriod,
 		"istio-gateway-server-cert-switch-grace-period", DefaultIstioGatewayServerCertSwitchGracePeriod,
 		"Duration after the rotation of the CA certificate when the Gateway certificate will be switched.")
