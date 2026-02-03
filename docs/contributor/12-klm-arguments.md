@@ -68,7 +68,7 @@ This document provides a list of flags that can be set to control some specific 
 
 | Flag                                               | Type     | Default Value | Description                                                                                                              |
 |----------------------------------------------------|----------|---------------|--------------------------------------------------------------------------------------------------------------------------|
-| `istio-gateway-cert-switch-before-expiration-time` | duration | 24h           | Deprecated: Duration before the expiration of the current CA certificate when the Gateway certificate should be switched |
+| `istio-gateway-cert-switch-before-expiration-time` | duration | -             | Deprecated: Duration before the expiration of the current CA certificate when the Gateway certificate should be switched |
 | `istio-gateway-server-cert-switch-grace-period` | duration | 4d            | Duration after the rotation of the CA certificate when the Gateway certificate will be switched |
 | `istio-namespace`                                  | string   | istio-system  | Namespace for Istio resources in a cluster                                                                               |
 | `istio-gateway-name`                               | string   | klm-watcher   | Name of the Istio Gateway resource in a cluster                                                                          |
