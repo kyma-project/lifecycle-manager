@@ -69,8 +69,7 @@ func (c *Client) CheckDefaultCRDeletion(ctx context.Context, manifestCR *v1beta2
 	}
 
 	defaultModuleCR := manifestCR.Spec.Resource
-	moduleCRGvk := defaultModuleCR.GroupVersionKind()
-	allModuleCRs, err := c.listResourcesByGroupKindInNamespace(ctx, moduleCRGvk, defaultModuleCR.GetNamespace())
+	allModuleCRs, err := c.listResourcesByGroupKindInAllNamespaces(ctx, defaultModuleCR.GroupVersionKind().GroupKind())
 	if util.IsNotFound(err) {
 		return true, nil
 	} else if err != nil {
@@ -178,38 +177,6 @@ func (c *Client) GetAllModuleCRsExcludingDefaultCR(ctx context.Context,
 	return filterOutDefaultCRs(allResourcesWithModuleCRGroupKind, defaultModuleCR), nil
 }
 
-func (c *Client) listResourcesByGroupKindInNamespace(ctx context.Context,
-	gvk schema.GroupVersionKind,
-	namespace string,
-) ([]unstructured.Unstructured, error) {
-	mappings, err := c.RESTMapper().RESTMappings(schema.GroupKind{
-		Group: gvk.Group,
-		Kind:  gvk.Kind,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get REST mappings for %s.%s: %w", gvk.Group, gvk.Kind, err)
-	}
-
-	var allItems []unstructured.Unstructured
-	for _, mapping := range mappings {
-		list := &unstructured.UnstructuredList{}
-		list.SetGroupVersionKind(schema.GroupVersionKind{
-			Group:   mapping.GroupVersionKind.Group,
-			Version: mapping.GroupVersionKind.Version,
-			Kind:    mapping.GroupVersionKind.Kind,
-		})
-
-		if err := c.List(ctx, list, &client.ListOptions{
-			Namespace: namespace,
-		}); err != nil && !util.IsNotFound(err) {
-			continue
-		}
-
-		allItems = append(allItems, list.Items...)
-	}
-	return allItems, nil
-}
-
 // listResourcesByGroupKindInAllNamespaces lists all resources matching the given GroupKind
 // across ALL namespaces. This is required by ADR #972 to check all Module CRs before deletion.
 func (c *Client) listResourcesByGroupKindInAllNamespaces(ctx context.Context,
@@ -267,9 +234,8 @@ func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool
 	}
 
 	defaultModuleCR := manifest.Spec.Resource.DeepCopy()
-	moduleCRGvk := defaultModuleCR.GroupVersionKind()
 
-	allModuleCRs, err := c.listResourcesByGroupKindInNamespace(ctx, moduleCRGvk, defaultModuleCR.GetNamespace())
+	allModuleCRs, err := c.listResourcesByGroupKindInAllNamespaces(ctx, defaultModuleCR.GroupVersionKind().GroupKind())
 	if util.IsNotFound(err) {
 		return true, nil
 	} else if err != nil {
