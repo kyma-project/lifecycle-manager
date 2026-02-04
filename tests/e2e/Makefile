@@ -176,7 +176,7 @@ watcher-zero-downtime:
 	$(GO_TEST) "Watcher Zero Downtime"
 
 module-deletion-blocking:
-	$(GO_TEST) "Module Deletion Blocking"
+	$(GO_TEST) "Blocking Module Deletion"
 
 module-transferred-to-another-oci-registry:
 	$(GO_TEST) "Module Transferred to Another OCI Registry"
