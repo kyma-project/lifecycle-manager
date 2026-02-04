@@ -137,7 +137,7 @@ runs:
         pushd ${E2E_KUSTOMIZE_DIR}
         echo \
         "- op: replace
-          path: /spec/template/spec/containers/0/args/16
+          path: /spec/template/spec/containers/0/args/11
           value: --kyma-requeue-success-interval=10s
         - op: add
           path: /spec/template/spec/containers/0/args/-
