@@ -175,23 +175,23 @@ maintenance-windows-skip:
 watcher-zero-downtime:
 	$(GO_TEST) "Watcher Zero Downtime"
 
-module-deletion-blocking-multiple-crs-ignore:
-	$(GO_TEST) "Blocking Module Deletion With Multiple Module CRs - Ignore Policy"
+module-deletion-blocking-with-multiple-crs-ignore-policy:
+	$(GO_TEST) "Blocking Module Deletion With Multiple Module CRs with Ignore Policy"
 
-module-deletion-blocking-multiple-crs-create-and-delete:
-	$(GO_TEST) "Blocking Module Deletion With Multiple Module CRs - CreateAndDelete Policy"
+module-deletion-blocking-with-multiple-crs-create-and-delete-policy:
+	$(GO_TEST) "Blocking Module Deletion With Multiple Module CRs with CreateAndDelete Policy"
 
-module-deletion-blocking-default-cr-only:
-	$(GO_TEST) "Module Deletion With Only Default CR - CreateAndDelete Policy"
+module-deletion-blocking-with-default-cr-only:
+	$(GO_TEST) "Module Deletion With Only Default CR with CreateAndDelete Policy"
 
-module-deletion-blocking-with-finalizer:
-	$(GO_TEST) "Blocking Module Deletion With Default CR With Finalizer - CreateAndDelete Policy"
+module-deletion-blocking-with-default-cr-with-finalizer:
+	$(GO_TEST) "Blocking Module Deletion With Default CR With Finalizer with CreateAndDelete Policy"
 
-module-deletion-blocking-cross-namespace-ignore:
-	$(GO_TEST) "Blocking Module Deletion With Module CRs in Different Namespaces - Ignore Policy"
+module-deletion-blocking-with-cross-namespace-ignore-policy:
+	$(GO_TEST) "Blocking Module Deletion With Module CRs in Different Namespaces with Ignore Policy"
 
-module-deletion-blocking-cross-namespace-create-and-delete:
-	$(GO_TEST) "Blocking Module Deletion With Module CRs in Different Namespaces - CreateAndDelete Policy"
+module-deletion-blocking-with-cross-namespace-create-and-delete-policy:
+	$(GO_TEST) "Blocking Module Deletion With Module CRs in Different Namespaces with CreateAndDelete Policy"
 
 module-transferred-to-another-oci-registry:
 	$(GO_TEST) "Module Transferred to Another OCI Registry"

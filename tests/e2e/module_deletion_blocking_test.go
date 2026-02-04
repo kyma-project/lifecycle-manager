@@ -221,7 +221,7 @@ func testModuleDeletionBlocking(
 	})
 }
 
-var _ = Describe("Blocking Module Deletion With Multiple Module CRs - Ignore Policy", Ordered, func() {
+var _ = Describe("Blocking Module Deletion With Multiple Module CRs with Ignore Policy", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	module.CustomResourcePolicy = v1beta2.CustomResourcePolicyIgnore
@@ -242,7 +242,7 @@ var _ = Describe("Blocking Module Deletion With Multiple Module CRs - Ignore Pol
 	})
 })
 
-var _ = Describe("Blocking Module Deletion With Multiple Module CRs - CreateAndDelete Policy", Ordered, func() {
+var _ = Describe("Blocking Module Deletion With Multiple Module CRs with CreateAndDelete Policy", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	module.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
@@ -263,7 +263,7 @@ var _ = Describe("Blocking Module Deletion With Multiple Module CRs - CreateAndD
 	})
 })
 
-var _ = Describe("Module Deletion With Only Default CR - CreateAndDelete Policy", Ordered, func() {
+var _ = Describe("Module Deletion With Only Default CR with CreateAndDelete Policy", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	module.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
@@ -281,47 +281,53 @@ var _ = Describe("Module Deletion With Only Default CR - CreateAndDelete Policy"
 	})
 })
 
-var _ = Describe("Blocking Module Deletion With Default CR With Finalizer - CreateAndDelete Policy", Ordered, func() {
-	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
-	module := NewTemplateOperator(v1beta2.DefaultChannel)
-	module.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
+var _ = Describe(
+	"Blocking Module Deletion With Default CR With Finalizer with CreateAndDelete Policy",
+	Ordered,
+	func() {
+		kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
+		module := NewTemplateOperator(v1beta2.DefaultChannel)
+		module.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
 
-	InitEmptyKymaBeforeAll(kyma)
-	CleanupKymaAfterAll(kyma)
+		InitEmptyKymaBeforeAll(kyma)
+		CleanupKymaAfterAll(kyma)
 
-	Context("Given SKR Cluster with default CR having finalizer", func() {
-		testModuleDeletionBlocking(
-			kyma,
-			&module,
-			[]types.NamespacedName{},
-			true, // Add finalizer to default CR
-		)
+		Context("Given SKR Cluster with default CR having finalizer", func() {
+			testModuleDeletionBlocking(
+				kyma,
+				&module,
+				[]types.NamespacedName{},
+				true, // Add finalizer to default CR
+			)
+		})
 	})
-})
-
-var _ = Describe("Blocking Module Deletion With Module CRs in Different Namespaces - Ignore Policy", Ordered, func() {
-	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
-	module := NewTemplateOperator(v1beta2.DefaultChannel)
-	module.CustomResourcePolicy = v1beta2.CustomResourcePolicyIgnore
-
-	InitEmptyKymaBeforeAll(kyma)
-	CleanupKymaAfterAll(kyma)
-
-	Context("Given SKR Cluster with module enabled", func() {
-		testModuleDeletionBlocking(
-			kyma,
-			&module,
-			[]types.NamespacedName{
-				{Name: "sample-cr-in-kyma-system", Namespace: RemoteNamespace},
-				{Name: "sample-cr-in-default-ns", Namespace: "default"},
-			},
-			false,
-		)
-	})
-})
 
 var _ = Describe(
-	"Blocking Module Deletion With Module CRs in Different Namespaces - CreateAndDelete Policy",
+	"Blocking Module Deletion With Module CRs in Different Namespaces with Ignore Policy",
+	Ordered,
+	func() {
+		kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
+		module := NewTemplateOperator(v1beta2.DefaultChannel)
+		module.CustomResourcePolicy = v1beta2.CustomResourcePolicyIgnore
+
+		InitEmptyKymaBeforeAll(kyma)
+		CleanupKymaAfterAll(kyma)
+
+		Context("Given SKR Cluster with module enabled", func() {
+			testModuleDeletionBlocking(
+				kyma,
+				&module,
+				[]types.NamespacedName{
+					{Name: "sample-cr-in-kyma-system", Namespace: RemoteNamespace},
+					{Name: "sample-cr-in-default-ns", Namespace: "default"},
+				},
+				false,
+			)
+		})
+	})
+
+var _ = Describe(
+	"Blocking Module Deletion With Module CRs in Different Namespaces with CreateAndDelete Policy",
 	Ordered,
 	func() {
 		kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
