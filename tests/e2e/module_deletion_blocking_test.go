@@ -6,6 +6,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -21,6 +22,7 @@ func testModuleDeletionBlocking(
 	kyma *v1beta2.Kyma,
 	module *v1beta2.Module,
 	userCreatedCRs []types.NamespacedName,
+	addFinalizerToDefaultCR bool,
 ) {
 	var manifest *v1beta2.Manifest
 	expectDefaultCR := module.CustomResourcePolicy == v1beta2.CustomResourcePolicyCreateAndDelete
@@ -55,7 +57,23 @@ func testModuleDeletionBlocking(
 		}
 	})
 
-	if len(userCreatedCRs) > 0 {
+	if addFinalizerToDefaultCR {
+		It("When finalizer is added to default Module CR", func() {
+			By("Adding finalizer to default Module CR")
+			defaultCRNamespacedName := types.NamespacedName{
+				Name:      TestModuleCRName,
+				Namespace: RemoteNamespace,
+			}
+			moduleCR := &unstructured.Unstructured{}
+			moduleCR.SetGroupVersionKind(schema.GroupVersionKind{
+				Group:   templatev1alpha1.GroupVersion.Group,
+				Version: templatev1alpha1.GroupVersion.Version,
+				Kind:    string(templatev1alpha1.SampleKind),
+			})
+			Expect(skrClient.Get(ctx, defaultCRNamespacedName, moduleCR)).To(Succeed())
+			Expect(AddFinalizerToModuleCR(ctx, skrClient, moduleCR, "test-finalizer")).To(Succeed())
+		})
+	} else if len(userCreatedCRs) > 0 {
 		It("When user-created Module CRs are created", func() {
 			for _, cr := range userCreatedCRs {
 				By("Creating Module CR: " + cr.Name + " in namespace: " + cr.Namespace)
@@ -87,17 +105,6 @@ func testModuleDeletionBlocking(
 				shared.StateDeleting).
 			Should(Succeed())
 
-		if expectDefaultCR {
-			By("And Default Module CR still exists (CreateAndDelete policy)")
-			Consistently(CheckIfExists).
-				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace, templatev1alpha1.GroupVersion.Group,
-					templatev1alpha1.GroupVersion.Version, string(templatev1alpha1.SampleKind),
-					skrClient).
-				WithTimeout(3 * time.Second).
-				Should(Succeed())
-		}
-
 		By("And all Module Resources still exist on the SKR Cluster")
 		var err error
 		manifest, err = GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
@@ -115,7 +122,8 @@ func testModuleDeletionBlocking(
 		}
 	})
 
-	if len(userCreatedCRs) > 1 {
+	switch {
+	case len(userCreatedCRs) > 1:
 		It("When one user-created CR is deleted", func() {
 			Eventually(DeleteModuleCR).
 				WithContext(ctx).
@@ -154,15 +162,31 @@ func testModuleDeletionBlocking(
 					Should(Succeed())
 			}
 		})
-	} else if len(userCreatedCRs) == 1 {
+	case len(userCreatedCRs) == 1:
 		It("When the user-created CR is deleted", func() {
 			Eventually(DeleteModuleCR).
 				WithContext(ctx).
 				WithArguments(userCreatedCRs[0].Name, userCreatedCRs[0].Namespace, skrClient).
 				Should(Succeed())
 		})
+	case addFinalizerToDefaultCR:
+		It("When finalizer is removed from default Module CR", func() {
+			By("Removing finalizer from default Module CR")
+			defaultCRNamespacedName := types.NamespacedName{
+				Name:      TestModuleCRName,
+				Namespace: RemoteNamespace,
+			}
+			moduleCR := &unstructured.Unstructured{}
+			moduleCR.SetGroupVersionKind(schema.GroupVersionKind{
+				Group:   templatev1alpha1.GroupVersion.Group,
+				Version: templatev1alpha1.GroupVersion.Version,
+				Kind:    string(templatev1alpha1.SampleKind),
+			})
+			Expect(skrClient.Get(ctx, defaultCRNamespacedName, moduleCR)).To(Succeed())
+			moduleCR.SetFinalizers([]string{})
+			Expect(skrClient.Update(ctx, moduleCR)).To(Succeed())
+		})
 	}
-	// else: len(userCreatedCRs) == 0, testing default CR only (CreateAndDelete policy)
 
 	It("Then module deletion is unblocked", func() {
 		if expectDefaultCR {
@@ -213,6 +237,7 @@ var _ = Describe("Blocking Module Deletion With Multiple Module CRs - Ignore Pol
 				{Name: "sample-cr-1", Namespace: RemoteNamespace},
 				{Name: "sample-cr-2", Namespace: RemoteNamespace},
 			},
+			false,
 		)
 	})
 })
@@ -233,6 +258,7 @@ var _ = Describe("Blocking Module Deletion With Multiple Module CRs - CreateAndD
 				{Name: "sample-cr-1", Namespace: RemoteNamespace},
 				{Name: "sample-cr-2", Namespace: RemoteNamespace},
 			},
+			false,
 		)
 	})
 })
@@ -250,6 +276,25 @@ var _ = Describe("Module Deletion With Only Default CR - CreateAndDelete Policy"
 			kyma,
 			&module,
 			[]types.NamespacedName{}, // No user-created CRs, only default CR
+			false,
+		)
+	})
+})
+
+var _ = Describe("Blocking Module Deletion With Default CR With Finalizer - CreateAndDelete Policy", Ordered, func() {
+	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
+	module := NewTemplateOperator(v1beta2.DefaultChannel)
+	module.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
+
+	InitEmptyKymaBeforeAll(kyma)
+	CleanupKymaAfterAll(kyma)
+
+	Context("Given SKR Cluster with default CR having finalizer", func() {
+		testModuleDeletionBlocking(
+			kyma,
+			&module,
+			[]types.NamespacedName{},
+			true, // Add finalizer to default CR
 		)
 	})
 })
@@ -270,6 +315,7 @@ var _ = Describe("Blocking Module Deletion With Module CRs in Different Namespac
 				{Name: "sample-cr-in-kyma-system", Namespace: RemoteNamespace},
 				{Name: "sample-cr-in-default-ns", Namespace: "default"},
 			},
+			false,
 		)
 	})
 })
@@ -292,6 +338,7 @@ var _ = Describe(
 				[]types.NamespacedName{
 					{Name: "sample-cr-in-default-ns", Namespace: "default"},
 				},
+				false,
 			)
 		})
 	})
