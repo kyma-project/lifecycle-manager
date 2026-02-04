@@ -181,9 +181,6 @@ module-deletion-blocking-with-multiple-crs-ignore-policy:
 module-deletion-blocking-with-multiple-crs-create-and-delete-policy:
 	$(GO_TEST) "Blocking Module Deletion With Multiple Module CRs with CreateAndDelete Policy"
 
-module-deletion-blocking-with-default-cr-only:
-	$(GO_TEST) "Module Deletion With Only Default CR with CreateAndDelete Policy"
-
 module-deletion-blocking-with-default-cr-with-finalizer:
 	$(GO_TEST) "Blocking Module Deletion With Default CR With Finalizer with CreateAndDelete Policy"
 

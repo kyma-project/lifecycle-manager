@@ -290,3 +290,78 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 		})
 	})
 })
+
+var _ = Describe("Module Deletion With Only Default CR", Ordered, func() {
+	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
+	module := NewTemplateOperator(v1beta2.DefaultChannel)
+	module.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
+
+	InitEmptyKymaBeforeAll(kyma)
+	CleanupKymaAfterAll(kyma)
+
+	Context("Given SKR Cluster with CreateAndDelete policy", func() {
+		It("When Kyma Module is enabled on SKR Kyma CR", func() {
+			Eventually(EnableModule).
+				WithContext(ctx).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module).
+				Should(Succeed())
+		})
+
+		It("Then Module Operator is deployed on SKR cluster", func() {
+			Eventually(CheckIfExists).
+				WithContext(ctx).
+				WithArguments(ModuleResourceName, TestModuleResourceNamespace, "apps", "v1",
+					"Deployment", skrClient).
+				Should(Succeed())
+
+			By("And KCP Kyma CR is in \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+
+			By("And Default Module CR exists")
+			Eventually(CheckIfExists).
+				WithContext(ctx).
+				WithArguments(TestModuleCRName, RemoteNamespace, templatev1alpha1.GroupVersion.Group,
+					templatev1alpha1.GroupVersion.Version, string(templatev1alpha1.SampleKind),
+					skrClient).Should(Succeed())
+		})
+
+		It("When Kyma Module is disabled", func() {
+			Eventually(DisableModule).
+				WithContext(ctx).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
+				Should(Succeed())
+		})
+
+		It("Then module deletion completes successfully", func() {
+			By("And Default Module CR is automatically deleted")
+			Eventually(CheckIfExists).
+				WithContext(ctx).
+				WithArguments(TestModuleCRName, RemoteNamespace,
+					templatev1alpha1.GroupVersion.Group, templatev1alpha1.GroupVersion.Version,
+					string(templatev1alpha1.SampleKind),
+					skrClient).
+				Should(Equal(ErrNotFound))
+
+			By("And Module Operator Deployment is deleted")
+			Eventually(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments(skrClient, ModuleResourceName, TestModuleResourceNamespace).
+				Should(Equal(ErrNotFound))
+
+			By("And Manifest CR is removed")
+			Eventually(NoManifestExist).
+				WithContext(ctx).
+				WithArguments(kcpClient).
+				Should(Succeed())
+
+			By("And KCP Kyma CR is in \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+		})
+	})
+})

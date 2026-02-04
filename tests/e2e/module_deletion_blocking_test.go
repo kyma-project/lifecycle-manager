@@ -263,24 +263,6 @@ var _ = Describe("Blocking Module Deletion With Multiple Module CRs with CreateA
 	})
 })
 
-var _ = Describe("Module Deletion With Only Default CR with CreateAndDelete Policy", Ordered, func() {
-	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
-	module := NewTemplateOperator(v1beta2.DefaultChannel)
-	module.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
-
-	InitEmptyKymaBeforeAll(kyma)
-	CleanupKymaAfterAll(kyma)
-
-	Context("Given SKR Cluster with no user-created CRs", func() {
-		testModuleDeletionBlocking(
-			kyma,
-			&module,
-			[]types.NamespacedName{}, // No user-created CRs, only default CR
-			false,
-		)
-	})
-})
-
 var _ = Describe(
 	"Blocking Module Deletion With Default CR With Finalizer with CreateAndDelete Policy",
 	Ordered,

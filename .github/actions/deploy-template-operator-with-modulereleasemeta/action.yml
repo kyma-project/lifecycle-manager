@@ -132,7 +132,6 @@ runs:
         matrix.e2e-test == 'labelling' ||
         matrix.e2e-test == 'module-deletion-blocking-with-multiple-crs-ignore-policy' ||
         matrix.e2e-test == 'module-deletion-blocking-with-multiple-crs-create-and-delete-policy' ||
-        matrix.e2e-test == 'module-deletion-blocking-with-default-cr-only' ||
         matrix.e2e-test == 'module-deletion-blocking-with-default-cr-with-finalizer' ||
         matrix.e2e-test == 'module-deletion-blocking-with-cross-namespace-ignore-policy' ||
         matrix.e2e-test == 'module-deletion-blocking-with-cross-namespace-create-and-delete-policy' ||
