@@ -78,7 +78,12 @@ jobs:
           - maintenance-windows-initial-installation
           - maintenance-windows-skip
           - watcher-zero-downtime
-          - module-deletion-blocking
+          - module-deletion-blocking-multiple-crs-ignore
+          - module-deletion-blocking-multiple-crs-create-and-delete
+          - module-deletion-blocking-default-cr-only
+          - module-deletion-blocking-with-finalizer
+          - module-deletion-blocking-cross-namespace-ignore
+          - module-deletion-blocking-cross-namespace-create-and-delete
           - oci-reg-cred-secret
           - module-transferred-to-another-oci-registry
           - simulate-skr-secret-rotation-evict-client-cache
