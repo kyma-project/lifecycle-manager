@@ -7,23 +7,27 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
+type userManagedCR struct {
+	name      string
+	namespace string
+}
+
 // testModuleDeletionBlocking is a shared helper function that parametrizes module deletion blocking tests.
-// It verifies that lifecycle-manager properly blocks module deletion when user-created Module CRs exist,
+// It verifies that lifecycle-manager properly blocks module deletion when user-managed Module CRs exist,
 // regardless of the CustomResourcePolicy or the namespace where CRs are located.
 func testModuleDeletionBlocking(
 	kyma *v1beta2.Kyma,
 	module *v1beta2.Module,
-	userCreatedCRs []types.NamespacedName,
+	userCRs []userManagedCR,
+	expectDefaultCR bool,
 ) {
 	var manifest *v1beta2.Manifest
-	expectDefaultCR := module.CustomResourcePolicy == v1beta2.CustomResourcePolicyCreateAndDelete
 
 	It("When Kyma Module is enabled on SKR Kyma CR", func() {
 		Eventually(EnableModule).
@@ -55,19 +59,16 @@ func testModuleDeletionBlocking(
 		}
 	})
 
-	if len(userCreatedCRs) > 0 {
-		It("When user-created Module CRs are created", func() {
-			for _, cr := range userCreatedCRs {
-				By("Creating Module CR: " + cr.Name + " in namespace: " + cr.Namespace)
-				Eventually(CreateModuleCR).
-					WithContext(ctx).
-					WithArguments(cr.Name, cr.Namespace, skrClient).
-					Should(Succeed())
-			}
-		})
-	}
+	It("When user-managed Module CRs are created", func() {
+		for _, cr := range userCRs {
+			By("Creating Module CR: " + cr.name + " in namespace: " + cr.namespace)
+			Eventually(CreateModuleCR).
+				WithContext(ctx).
+				WithArguments(cr.name, cr.namespace, skrClient).
+				Should(Succeed())
+		}
 
-	It("When Kyma Module is disabled", func() {
+		By("And Kyma Module is disabled")
 		Eventually(DisableModule).
 			WithContext(ctx).
 			WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
@@ -115,11 +116,11 @@ func testModuleDeletionBlocking(
 		}
 	})
 
-	if len(userCreatedCRs) > 1 {
-		It("When one user-created CR is deleted", func() {
+	if len(userCRs) > 1 {
+		It("When one user-managed CR is deleted", func() {
 			Eventually(DeleteModuleCR).
 				WithContext(ctx).
-				WithArguments(userCreatedCRs[0].Name, userCreatedCRs[0].Namespace, skrClient).
+				WithArguments(userCRs[0].name, userCRs[0].namespace, skrClient).
 				Should(Succeed())
 		})
 
@@ -146,23 +147,22 @@ func testModuleDeletionBlocking(
 			}
 		})
 
-		It("When remaining user-created CRs are deleted", func() {
-			for _, cr := range userCreatedCRs[1:] {
+		It("When remaining user-managed CRs are deleted", func() {
+			for _, cr := range userCRs[1:] {
 				Eventually(DeleteModuleCR).
 					WithContext(ctx).
-					WithArguments(cr.Name, cr.Namespace, skrClient).
+					WithArguments(cr.name, cr.namespace, skrClient).
 					Should(Succeed())
 			}
 		})
-	} else if len(userCreatedCRs) == 1 {
-		It("When the user-created CR is deleted", func() {
+	} else {
+		It("When the user-managed CR is deleted", func() {
 			Eventually(DeleteModuleCR).
 				WithContext(ctx).
-				WithArguments(userCreatedCRs[0].Name, userCreatedCRs[0].Namespace, skrClient).
+				WithArguments(userCRs[0].name, userCRs[0].namespace, skrClient).
 				Should(Succeed())
 		})
 	}
-	// else: len(userCreatedCRs) == 0, testing default CR only (CreateAndDelete policy)
 
 	It("Then module deletion is unblocked", func() {
 		if expectDefaultCR {
@@ -209,10 +209,11 @@ var _ = Describe("Blocking Module Deletion With Multiple Module CRs - Ignore Pol
 		testModuleDeletionBlocking(
 			kyma,
 			&module,
-			[]types.NamespacedName{
-				{Name: "sample-cr-1", Namespace: RemoteNamespace},
-				{Name: "sample-cr-2", Namespace: RemoteNamespace},
+			[]userManagedCR{
+				{name: "sample-cr-1", namespace: RemoteNamespace},
+				{name: "sample-cr-2", namespace: RemoteNamespace},
 			},
+			false, // expectDefaultCR
 		)
 	})
 })
@@ -229,27 +230,11 @@ var _ = Describe("Blocking Module Deletion With Multiple Module CRs - CreateAndD
 		testModuleDeletionBlocking(
 			kyma,
 			&module,
-			[]types.NamespacedName{
-				{Name: "sample-cr-1", Namespace: RemoteNamespace},
-				{Name: "sample-cr-2", Namespace: RemoteNamespace},
+			[]userManagedCR{
+				{name: "sample-cr-1", namespace: RemoteNamespace},
+				{name: "sample-cr-2", namespace: RemoteNamespace},
 			},
-		)
-	})
-})
-
-var _ = Describe("Module Deletion With Only Default CR - CreateAndDelete Policy", Ordered, func() {
-	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
-	module := NewTemplateOperator(v1beta2.DefaultChannel)
-	module.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
-
-	InitEmptyKymaBeforeAll(kyma)
-	CleanupKymaAfterAll(kyma)
-
-	Context("Given SKR Cluster with no user-created CRs", func() {
-		testModuleDeletionBlocking(
-			kyma,
-			&module,
-			[]types.NamespacedName{}, // No user-created CRs, only default CR
+			true, // expectDefaultCR
 		)
 	})
 })
@@ -266,10 +251,11 @@ var _ = Describe("Blocking Module Deletion With Module CRs in Different Namespac
 		testModuleDeletionBlocking(
 			kyma,
 			&module,
-			[]types.NamespacedName{
-				{Name: "sample-cr-in-kyma-system", Namespace: RemoteNamespace},
-				{Name: "sample-cr-in-default-ns", Namespace: "default"},
+			[]userManagedCR{
+				{name: "sample-cr-in-kyma-system", namespace: RemoteNamespace},
+				{name: "sample-cr-in-default-ns", namespace: "default"},
 			},
+			false, // expectDefaultCR
 		)
 	})
 })
@@ -289,9 +275,10 @@ var _ = Describe(
 			testModuleDeletionBlocking(
 				kyma,
 				&module,
-				[]types.NamespacedName{
-					{Name: "sample-cr-in-default-ns", Namespace: "default"},
+				[]userManagedCR{
+					{name: "sample-cr-in-default-ns", namespace: "default"},
 				},
+				true, // expectDefaultCR
 			)
 		})
 	})
