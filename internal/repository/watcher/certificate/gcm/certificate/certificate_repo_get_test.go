@@ -2,7 +2,6 @@ package certificate_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -157,20 +156,16 @@ func Test_CertificateClient_GetRenewalTime_Error_InvalidExpirationDate(t *testin
 func Test_CertificateClient_GetValidity_Success(t *testing.T) {
 	expectedNotBefore := time.Now().UTC()
 	expectedNotAfter := time.Now().Add(certDuration).UTC()
-	certificateStateMessage := fmt.Sprintf(
-		"certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from %v to %v",
-		expectedNotBefore,
-		expectedNotAfter,
-	)
 
-	certificateRepository, err := newCertRepoWithGetClientStubWithStatusMessage(certificateStateMessage)
+	certificateRepository, err := newCertRepoWithGetClientStubWithValidity(expectedNotBefore.Format(time.RFC3339),
+		expectedNotAfter.Format(time.RFC3339))
 	require.NoError(t, err)
 
 	notBefore, notAfter, err := certificateRepository.GetValidity(t.Context(), certName)
 
 	require.NoError(t, err)
-	assert.Equal(t, expectedNotBefore, notBefore)
-	assert.Equal(t, expectedNotAfter, notAfter)
+	assert.Equal(t, expectedNotBefore.Format(time.RFC3339), notBefore.Format(time.RFC3339))
+	assert.Equal(t, expectedNotAfter.Format(time.RFC3339), notAfter.Format(time.RFC3339))
 }
 
 func Test_CertificateClient_GetValidity_GetCertificateError(t *testing.T) {
@@ -211,7 +206,8 @@ func Test_CertificateClient_GetValidity_NilMessageError(t *testing.T) {
 				Namespace: certNamespace,
 			},
 			Status: gcertv1alpha1.CertificateStatus{
-				Message: nil,
+				IssuanceDate:   nil,
+				ExpirationDate: nil,
 			},
 		},
 	}
@@ -231,35 +227,33 @@ func Test_CertificateClient_GetValidity_NilMessageError(t *testing.T) {
 	notBefore, notAfter, err := certificateRepository.GetValidity(t.Context(), certName)
 
 	require.Error(t, err)
-	require.ErrorIs(t, err, gcmcertificate.ErrCertificateStatusNotContainMessage)
+	require.ErrorIs(t, err, gcmcertificate.ErrCertificateStatusNotContainValidity)
 	assert.Zero(t, notBefore)
 	assert.Zero(t, notAfter)
 	assert.True(t, clientStub.called)
 }
 
 func Test_CertificateClient_GetValidity_NoValidDatesError(t *testing.T) {
-	certificateStateMessage := "certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid"
+	invalidNotBefore := ""
+	invalidNotAfter := ""
 
-	certificateRepository, err := newCertRepoWithGetClientStubWithStatusMessage(certificateStateMessage)
+	certificateRepository, err := newCertRepoWithGetClientStubWithValidity(invalidNotBefore, invalidNotAfter)
 	require.NoError(t, err)
 
 	notBefore, notAfter, err := certificateRepository.GetValidity(t.Context(), certName)
 
 	require.Error(t, err)
-	require.ErrorIs(t, err, gcmcertificate.ErrInputStringNotContainValidDates)
+	require.ErrorIs(t, err, gcmcertificate.ErrCertificateStatusNotContainValidity)
 	assert.Zero(t, notBefore)
 	assert.Zero(t, notAfter)
 }
 
 func Test_CertificateClient_GetValidity_InvalidNotBeforeDateError(t *testing.T) {
+	invalidNotBefore := "2025-04-24 13:60:60.148938 +0000 UTC"
 	expectedNotAfter := time.Now().Add(certDuration).UTC()
-	certificateStateMessage := fmt.Sprintf(
-		"certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from "+
-			"2025-04-24 13:60:60.148938 +0000 UTC to %v",
-		expectedNotAfter,
-	)
 
-	certificateRepository, err := newCertRepoWithGetClientStubWithStatusMessage(certificateStateMessage)
+	certificateRepository, err := newCertRepoWithGetClientStubWithValidity(invalidNotBefore,
+		expectedNotAfter.Format(time.RFC3339))
 	require.NoError(t, err)
 
 	notBefore, notAfter, err := certificateRepository.GetValidity(t.Context(), certName)
@@ -272,13 +266,10 @@ func Test_CertificateClient_GetValidity_InvalidNotBeforeDateError(t *testing.T) 
 
 func Test_CertificateClient_GetValidity_InvalidNotAfterDateError(t *testing.T) {
 	expectedNotBefore := time.Now().Add(certDuration).UTC()
-	certificateStateMessage := fmt.Sprintf(
-		"certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from %v to "+
-			"2025-04-24 13:60:60.148938 +0000 UTC",
-		expectedNotBefore,
-	)
+	invalidNotAfter := "2025-04-24 13:60:60.148938 +0000 UTC"
 
-	certificateRepository, err := newCertRepoWithGetClientStubWithStatusMessage(certificateStateMessage)
+	certificateRepository, err := newCertRepoWithGetClientStubWithValidity(expectedNotBefore.Format(time.RFC3339),
+		invalidNotAfter)
 	require.NoError(t, err)
 
 	notBefore, notAfter, err := certificateRepository.GetValidity(t.Context(), certName)
@@ -305,7 +296,7 @@ func (c *getClientStub) Get(_ context.Context, _ client.ObjectKey, obj client.Ob
 	return c.err
 }
 
-func newCertRepoWithGetClientStubWithStatusMessage(message string) (*gcmcertificate.Repository, error) {
+func newCertRepoWithGetClientStubWithValidity(notBefore, notAfter string) (*gcmcertificate.Repository, error) {
 	clientStub := &getClientStub{
 		object: &gcertv1alpha1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
@@ -317,7 +308,8 @@ func newCertRepoWithGetClientStubWithStatusMessage(message string) (*gcmcertific
 				Namespace: certNamespace,
 			},
 			Status: gcertv1alpha1.CertificateStatus{
-				Message: &message,
+				IssuanceDate:   &notBefore,
+				ExpirationDate: &notAfter,
 			},
 		},
 	}

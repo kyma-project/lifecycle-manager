@@ -20,9 +20,9 @@ import (
 )
 
 var (
-	ErrGCMRepoConfigKeySizeOutOfRange     = errors.New("KeySize is out of range for int32")
-	ErrInputStringNotContainValidDates    = errors.New("input string does not contain valid dates")
-	ErrCertificateStatusNotContainMessage = errors.New("certificate status does not contain message")
+	ErrGCMRepoConfigKeySizeOutOfRange      = errors.New("KeySize is out of range for int32")
+	ErrCertificateStatusNotContainValidity = errors.New(
+		"certificate status does not contain issuanceDate or expirationDate")
 
 	dateRegex = regexp.MustCompile(`valid from (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC) to (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC)`) //nolint:revive //keep regex readible
 )
@@ -178,18 +178,19 @@ func (r *Repository) GetValidity(ctx context.Context, name string) (time.Time, t
 	cert, err := r.get(ctx, name)
 	if err != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf(
-			"failed to get certificate %s-%s: %w",
-			name,
+			"failed to get certificate %s/%s: %w",
 			r.certConfig.Namespace,
+			name,
 			err,
 		)
 	}
 
-	if cert.Status.Message == nil {
-		return time.Time{}, time.Time{}, ErrCertificateStatusNotContainMessage
+	if cert.Status.IssuanceDate == nil || cert.Status.ExpirationDate == nil ||
+		*cert.Status.IssuanceDate == "" || *cert.Status.ExpirationDate == "" {
+		return time.Time{}, time.Time{}, ErrCertificateStatusNotContainValidity
 	}
 
-	notBefore, notAfter, err := parseValidity(*cert.Status.Message)
+	notBefore, notAfter, err := parseValidityStrings(*cert.Status.IssuanceDate, *cert.Status.ExpirationDate)
 	if err != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf("failed to extract validity: %w", err)
 	}
@@ -197,20 +198,13 @@ func (r *Repository) GetValidity(ctx context.Context, name string) (time.Time, t
 	return notBefore, notAfter, nil
 }
 
-func parseValidity(input string) (time.Time, time.Time, error) {
-	matches := dateRegex.FindStringSubmatch(input)
-	if len(matches) != regexMatchesCount {
-		return time.Time{}, time.Time{}, ErrInputStringNotContainValidDates
-	}
-
-	layout := "2006-01-02 15:04:05 -0700 MST"
-
-	notBefore, err := time.Parse(layout, matches[1])
+func parseValidityStrings(notBeforeRaw, notAfterRaw string) (time.Time, time.Time, error) {
+	notBefore, err := time.Parse(time.RFC3339, notBeforeRaw)
 	if err != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf("failed to parse notBefore date: %w", err)
 	}
 
-	notAfter, err := time.Parse(layout, matches[2])
+	notAfter, err := time.Parse(time.RFC3339, notAfterRaw)
 	if err != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf("failed to parse notAfter date: %w", err)
 	}
