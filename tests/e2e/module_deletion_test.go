@@ -291,7 +291,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 	})
 })
 
-var _ = Describe("Module Deletion With Only Default CR", Ordered, func() {
+var _ = Describe("Non Blocking Module Deletion With Only Default CR", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	module.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete

@@ -106,6 +106,9 @@ mandatory-module:
 non-blocking-deletion:
 	$(GO_TEST) "Non Blocking Kyma Module Deletion"
 
+module-deletion-with-only-default-cr:
+	$(GO_TEST) "Non Blocking Module Deletion With Only Default CR"
+
 skip-manifest-reconciliation:
 	$(GO_TEST) "Manifest Skip Reconciliation Label"
 

@@ -54,6 +54,7 @@ jobs:
           - module-without-default-cr
           - module-consistency
           - non-blocking-deletion
+          - module-deletion-with-only-default-cr
           - modulereleasemeta-upgrade-under-deletion
           - module-api-upgrade-under-blocked-deletion
           - purge-controller
