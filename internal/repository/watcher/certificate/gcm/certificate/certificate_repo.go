@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"regexp"
 	"time"
 
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -23,11 +22,7 @@ var (
 	ErrGCMRepoConfigKeySizeOutOfRange      = errors.New("KeySize is out of range for int32")
 	ErrCertificateStatusNotContainValidity = errors.New(
 		"certificate status does not contain issuanceDate or expirationDate")
-
-	dateRegex = regexp.MustCompile(`valid from (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC) to (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC)`) //nolint:revive //keep regex readible
 )
-
-const regexMatchesCount = 3
 
 // GetCacheObjects returns a list of objects that need to be cached for this client.
 func GetCacheObjects() []client.Object {
