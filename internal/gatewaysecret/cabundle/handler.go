@@ -154,12 +154,12 @@ func (h *Handler) bundleCACerts(gatewaySecret *apicorev1.Secret, rootSecret *api
 		return false, fmt.Errorf("failed to bundle root secret's tls.crt into gateway secret's ca.crt: %w", err)
 	}
 
-	if bundled {
-		gatewaySecret.Data[gatewaysecret.CACrt] = caBundle
-		return true, nil
+	if !bundled {
+		return false, nil
 	}
 
-	return false, nil
+	gatewaySecret.Data[gatewaysecret.CACrt] = caBundle
+	return true, nil
 }
 
 func (h *Handler) dropExpiredCertsFromBundle(gatewaySecret *apicorev1.Secret) error {
