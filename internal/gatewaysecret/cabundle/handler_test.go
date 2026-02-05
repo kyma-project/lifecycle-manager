@@ -14,6 +14,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/cabundle"
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/testutils"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/bundler"
 )
 
 const gatewaySwitchCertBeforeExpirationTime = 1 * time.Hour
@@ -29,7 +30,11 @@ func TestManageGatewaySecret_WhenGetWatcherServingCertValidityReturnsError_Retur
 	someError := errors.New("some-error")
 	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(time.Time{}, time.Time{}, someError)
 
-	handler := cabundle.NewGatewaySecretHandler(mockClient, nil, gatewaySwitchCertBeforeExpirationTime)
+	handler := cabundle.NewGatewaySecretHandler(mockClient,
+		nil,
+		gatewaySwitchCertBeforeExpirationTime,
+		bundler.NewBundler(),
+	)
 
 	// ACT
 	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
@@ -45,7 +50,11 @@ func TestManageGatewaySecret_WhenGetWatcherServingCertValidityReturnsInvalidNotB
 	mockClient := &testutils.ClientMock{}
 	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(time.Time{}, time.Now(), nil)
 
-	handler := cabundle.NewGatewaySecretHandler(mockClient, nil, gatewaySwitchCertBeforeExpirationTime)
+	handler := cabundle.NewGatewaySecretHandler(mockClient,
+		nil,
+		gatewaySwitchCertBeforeExpirationTime,
+		bundler.NewBundler(),
+	)
 
 	// ACT
 	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
@@ -61,7 +70,11 @@ func TestManageGatewaySecret_WhenGetWatcherServingCertValidityReturnsInvalidNotA
 	mockClient := &testutils.ClientMock{}
 	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(time.Now(), time.Time{}, nil)
 
-	handler := cabundle.NewGatewaySecretHandler(mockClient, nil, gatewaySwitchCertBeforeExpirationTime)
+	handler := cabundle.NewGatewaySecretHandler(mockClient,
+		nil,
+		gatewaySwitchCertBeforeExpirationTime,
+		bundler.NewBundler(),
+	)
 
 	// ACT
 	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
@@ -79,7 +92,11 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsError_ReturnsError(t *te
 	someError := errors.New("some-error")
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(nil, someError)
 
-	handler := cabundle.NewGatewaySecretHandler(mockClient, nil, gatewaySwitchCertBeforeExpirationTime)
+	handler := cabundle.NewGatewaySecretHandler(mockClient,
+		nil,
+		gatewaySwitchCertBeforeExpirationTime,
+		bundler.NewBundler(),
+	)
 
 	// ACT
 	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
@@ -104,7 +121,11 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGat
 			"ca.crt":  []byte("value3"),
 		},
 	}
-	handler := cabundle.NewGatewaySecretHandler(mockClient, nil, gatewaySwitchCertBeforeExpirationTime)
+	handler := cabundle.NewGatewaySecretHandler(mockClient,
+		nil,
+		gatewaySwitchCertBeforeExpirationTime,
+		bundler.NewBundler(),
+	)
 
 	// ACT
 	err := handler.ManageGatewaySecret(t.Context(), rootSecret)
@@ -137,7 +158,11 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundErrorAndCreation
 	expectedError := errors.New("some-error")
 	mockClient.On("CreateGatewaySecret", mock.Anything, mock.Anything).Return(expectedError)
 
-	handler := cabundle.NewGatewaySecretHandler(mockClient, nil, gatewaySwitchCertBeforeExpirationTime)
+	handler := cabundle.NewGatewaySecretHandler(mockClient,
+		nil,
+		gatewaySwitchCertBeforeExpirationTime,
+		bundler.NewBundler(),
+	)
 
 	// ACT
 	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
@@ -162,7 +187,11 @@ func TestManageGatewaySecret_WhenLegacySecret_BootstrapsLegacyGatewaySecret(t *t
 	}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	timeParserFunction := getTimeParserFunction(false, false)
-	handler := cabundle.NewGatewaySecretHandler(mockClient, timeParserFunction, gatewaySwitchCertBeforeExpirationTime)
+	handler := cabundle.NewGatewaySecretHandler(mockClient,
+		timeParserFunction,
+		gatewaySwitchCertBeforeExpirationTime,
+		bundler.NewBundler(),
+	)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
 			"tls.crt": []byte("value1"),
@@ -199,7 +228,11 @@ func TestManageGatewaySecret_WhenRequiresBundling_BundlesGatewaySecretWithRootSe
 	}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	timeParserFunction := getTimeParserFunction(true, false)
-	handler := cabundle.NewGatewaySecretHandler(mockClient, timeParserFunction, gatewaySwitchCertBeforeExpirationTime)
+	handler := cabundle.NewGatewaySecretHandler(mockClient,
+		timeParserFunction,
+		gatewaySwitchCertBeforeExpirationTime,
+		bundler.NewBundler(),
+	)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
 			"tls.crt": []byte("new-value1"),
@@ -238,7 +271,11 @@ func TestManageGatewaySecret_WhenUpdateSecretFails_ReturnsError(t *testing.T) {
 	expectedError := errors.New("some-error")
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(expectedError)
 	timeParserFunction := getTimeParserFunction(true, false)
-	handler := cabundle.NewGatewaySecretHandler(mockClient, timeParserFunction, gatewaySwitchCertBeforeExpirationTime)
+	handler := cabundle.NewGatewaySecretHandler(mockClient,
+		timeParserFunction,
+		gatewaySwitchCertBeforeExpirationTime,
+		bundler.NewBundler(),
+	)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
 			"tls.crt": []byte("new-value1"),
@@ -272,7 +309,11 @@ func TestManageGatewaySecret_WhenRequiresCertSwitching_SwitchesTLSCertAndKeyWith
 	}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	timeParserFunction := getTimeParserFunction(false, true)
-	handler := cabundle.NewGatewaySecretHandler(mockClient, timeParserFunction, gatewaySwitchCertBeforeExpirationTime)
+	handler := cabundle.NewGatewaySecretHandler(mockClient,
+		timeParserFunction,
+		gatewaySwitchCertBeforeExpirationTime,
+		bundler.NewBundler(),
+	)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
 			"tls.crt": []byte("new-value1"),

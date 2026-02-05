@@ -20,6 +20,7 @@ import (
 	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/legacy"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/bundler"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
 
@@ -53,8 +54,11 @@ func SetupReconciler(mgr ctrl.Manager,
 	if flagVar.UseLegacyStrategyForIstioGatewaySecret {
 		handler = legacy.NewGatewaySecretHandler(clnt, parseLastModifiedFunc)
 	} else {
-		handler = cabundle.NewGatewaySecretHandler(clnt, parseLastModifiedFunc,
-			flagVar.IstioGatewayCertSwitchBeforeExpirationTime)
+		handler = cabundle.NewGatewaySecretHandler(clnt,
+			parseLastModifiedFunc,
+			flagVar.IstioGatewayCertSwitchBeforeExpirationTime,
+			bundler.NewBundler(),
+		)
 	}
 
 	var getSecretFunc GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
