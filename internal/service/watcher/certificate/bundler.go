@@ -1,4 +1,4 @@
-package bundler
+package certificate
 
 import (
 	"crypto/x509"

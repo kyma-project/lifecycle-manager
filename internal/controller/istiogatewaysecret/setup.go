@@ -20,7 +20,7 @@ import (
 	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/legacy"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/bundler"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
 
@@ -57,7 +57,7 @@ func SetupReconciler(mgr ctrl.Manager,
 		handler = cabundle.NewGatewaySecretHandler(clnt,
 			parseLastModifiedFunc,
 			flagVar.IstioGatewayCertSwitchBeforeExpirationTime,
-			bundler.NewBundler(),
+			certificate.NewBundler(),
 		)
 	}
 

@@ -16,7 +16,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/cabundle"
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/testutils"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/bundler"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/tests/fixtures/certificates"
 )
 
@@ -36,7 +36,7 @@ func TestManageGatewaySecret_WhenGetWatcherServingCertValidityReturnsError_Retur
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
 		nil,
 		gatewaySwitchCertBeforeExpirationTime,
-		bundler.NewBundler(),
+		certificate.NewBundler(),
 	)
 
 	// ACT
@@ -56,7 +56,7 @@ func TestManageGatewaySecret_WhenGetWatcherServingCertValidityReturnsInvalidNotB
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
 		nil,
 		gatewaySwitchCertBeforeExpirationTime,
-		bundler.NewBundler(),
+		certificate.NewBundler(),
 	)
 
 	// ACT
@@ -76,7 +76,7 @@ func TestManageGatewaySecret_WhenGetWatcherServingCertValidityReturnsInvalidNotA
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
 		nil,
 		gatewaySwitchCertBeforeExpirationTime,
-		bundler.NewBundler(),
+		certificate.NewBundler(),
 	)
 
 	// ACT
@@ -98,7 +98,7 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsError_ReturnsError(t *te
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
 		nil,
 		gatewaySwitchCertBeforeExpirationTime,
-		bundler.NewBundler(),
+		certificate.NewBundler(),
 	)
 
 	// ACT
@@ -127,7 +127,7 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGat
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
 		nil,
 		gatewaySwitchCertBeforeExpirationTime,
-		bundler.NewBundler(),
+		certificate.NewBundler(),
 	)
 
 	// ACT
@@ -164,7 +164,7 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundErrorAndCreation
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
 		nil,
 		gatewaySwitchCertBeforeExpirationTime,
-		bundler.NewBundler(),
+		certificate.NewBundler(),
 	)
 
 	// ACT
@@ -193,7 +193,7 @@ func TestManageGatewaySecret_WhenLegacySecret_BootstrapsLegacyGatewaySecret(t *t
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
 		timeParserFunction,
 		gatewaySwitchCertBeforeExpirationTime,
-		bundler.NewBundler(),
+		certificate.NewBundler(),
 	)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
@@ -232,7 +232,7 @@ func TestManageGatewaySecret_BundlesAndDropsCerts(t *testing.T) {
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
 		timeParserFunction,
 		gatewaySwitchCertBeforeExpirationTime,
-		bundler.NewBundler(),
+		certificate.NewBundler(),
 	)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
@@ -274,7 +274,7 @@ func TestManageGatewaySecret_WhenUpdateSecretFails_ReturnsError(t *testing.T) {
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
 		timeParserFunction,
 		gatewaySwitchCertBeforeExpirationTime,
-		bundler.NewBundler(),
+		certificate.NewBundler(),
 	)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
@@ -311,7 +311,7 @@ func TestManageGatewaySecret_WhenRequiresCertSwitching_SwitchesTLSCertAndKeyWith
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
 		timeParserFunction,
 		gatewaySwitchCertBeforeExpirationTime,
-		bundler.NewBundler(),
+		certificate.NewBundler(),
 	)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
@@ -351,7 +351,7 @@ func TestManageGatewaySecret_WhenBundlingFails_ReturnsError(t *testing.T) {
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
 		getTimeParserFunction(false, true),
 		gatewaySwitchCertBeforeExpirationTime,
-		bundler.NewBundler(),
+		certificate.NewBundler(),
 	)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
@@ -365,7 +365,7 @@ func TestManageGatewaySecret_WhenBundlingFails_ReturnsError(t *testing.T) {
 	err := handler.ManageGatewaySecret(t.Context(), rootSecret)
 
 	// ASSERT
-	require.ErrorIs(t, err, bundler.ErrInvalidPEM)
+	require.ErrorIs(t, err, certificate.ErrInvalidPEM)
 	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 0)
 }
 
@@ -385,7 +385,7 @@ func TestManageGatewaySecret_WhenDroppingExpiredCertsFails_ReturnsError(t *testi
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
 		getTimeParserFunction(false, true),
 		gatewaySwitchCertBeforeExpirationTime,
-		bundler.NewBundler(bundler.WithParseX509Function(
+		certificate.NewBundler(certificate.WithParseX509Function(
 			func(_ []byte) (*x509.Certificate, error) {
 				return &x509.Certificate{
 					NotAfter: time.Time{},
@@ -405,7 +405,7 @@ func TestManageGatewaySecret_WhenDroppingExpiredCertsFails_ReturnsError(t *testi
 	err := handler.ManageGatewaySecret(t.Context(), rootSecret)
 
 	// ASSERT
-	require.ErrorIs(t, err, bundler.ErrX509NotAfterIsZero)
+	require.ErrorIs(t, err, certificate.ErrX509NotAfterIsZero)
 	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 0)
 }
 
