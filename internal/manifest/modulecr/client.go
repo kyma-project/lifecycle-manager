@@ -69,8 +69,7 @@ func (c *Client) CheckDefaultCRDeletion(ctx context.Context, manifestCR *v1beta2
 	}
 
 	defaultModuleCR := manifestCR.Spec.Resource
-	moduleCRGvk := defaultModuleCR.GroupVersionKind()
-	allModuleCRs, err := c.listResourcesByGroupKindInNamespace(ctx, moduleCRGvk, defaultModuleCR.GetNamespace())
+	allModuleCRs, err := c.listResourcesByGroupKindInAllNamespaces(ctx, defaultModuleCR.GroupVersionKind().GroupKind())
 	if util.IsNotFound(err) {
 		return true, nil
 	} else if err != nil {
@@ -163,10 +162,9 @@ func (c *Client) GetAllModuleCRsExcludingDefaultCR(ctx context.Context,
 	}
 
 	defaultModuleCR := manifest.Spec.Resource.DeepCopy()
-	moduleCRGvk := defaultModuleCR.GroupVersionKind()
 
-	allResourcesWithModuleCRGroupKind, err := c.listResourcesByGroupKindInNamespace(ctx, moduleCRGvk,
-		defaultModuleCR.GetNamespace())
+	allResourcesWithModuleCRGroupKind, err := c.listResourcesByGroupKindInAllNamespaces(ctx,
+		defaultModuleCR.GroupVersionKind().GroupKind())
 	if err != nil {
 		return nil, fmt.Errorf("failed to list Module CRs by group kind: %w", err)
 	}
@@ -179,16 +177,14 @@ func (c *Client) GetAllModuleCRsExcludingDefaultCR(ctx context.Context,
 	return filterOutDefaultCRs(allResourcesWithModuleCRGroupKind, defaultModuleCR), nil
 }
 
-func (c *Client) listResourcesByGroupKindInNamespace(ctx context.Context,
-	gvk schema.GroupVersionKind,
-	namespace string,
+// listResourcesByGroupKindInAllNamespaces lists all resources matching the given GroupKind
+// across ALL namespaces. This is required by ADR #972 to check all Module CRs before deletion.
+func (c *Client) listResourcesByGroupKindInAllNamespaces(ctx context.Context,
+	gk schema.GroupKind,
 ) ([]unstructured.Unstructured, error) {
-	mappings, err := c.RESTMapper().RESTMappings(schema.GroupKind{
-		Group: gvk.Group,
-		Kind:  gvk.Kind,
-	})
+	mappings, err := c.RESTMapper().RESTMappings(gk)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get REST mappings for %s.%s: %w", gvk.Group, gvk.Kind, err)
+		return nil, fmt.Errorf("failed to get REST mappings for %s.%s: %w", gk.Group, gk.Kind, err)
 	}
 
 	var allItems []unstructured.Unstructured
@@ -200,9 +196,8 @@ func (c *Client) listResourcesByGroupKindInNamespace(ctx context.Context,
 			Kind:    mapping.GroupVersionKind.Kind,
 		})
 
-		if err := c.List(ctx, list, &client.ListOptions{
-			Namespace: namespace,
-		}); err != nil && !util.IsNotFound(err) {
+		// Empty ListOptions means search across ALL namespaces
+		if err := c.List(ctx, list, &client.ListOptions{}); err != nil && !util.IsNotFound(err) {
 			continue
 		}
 
@@ -239,9 +234,8 @@ func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool
 	}
 
 	defaultModuleCR := manifest.Spec.Resource.DeepCopy()
-	moduleCRGvk := defaultModuleCR.GroupVersionKind()
 
-	allModuleCRs, err := c.listResourcesByGroupKindInNamespace(ctx, moduleCRGvk, defaultModuleCR.GetNamespace())
+	allModuleCRs, err := c.listResourcesByGroupKindInAllNamespaces(ctx, defaultModuleCR.GroupVersionKind().GroupKind())
 	if util.IsNotFound(err) {
 		return true, nil
 	} else if err != nil {
