@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set +e
+
 kubectl config use-context k3d-kcp
 
 k3d cluster list
@@ -25,8 +27,6 @@ echo "### KLM POD ###"
 kubectl describe pod -n kcp-system --selector=app.kubernetes.io/name=kcp-lifecycle-manager
 echo "### KLM LOGS ###"
 kubectl logs deploy/klm-controller-manager -n kcp-system --container manager
-
-set -e
 
 kubectl config use-context k3d-skr
 
