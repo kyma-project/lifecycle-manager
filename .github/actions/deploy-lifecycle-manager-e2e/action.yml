@@ -137,14 +137,14 @@ runs:
         pushd ${E2E_KUSTOMIZE_DIR}
         echo \
         "- op: replace
-          path: /spec/template/spec/containers/0/args/16
-          value: --kyma-requeue-success-interval=10s
+          path: /spec/template/spec/containers/0/args/11
+          value: --kyma-requeue-success-interval=1s
         - op: add
           path: /spec/template/spec/containers/0/args/-
-          value: --istio-gateway-cert-switch-before-expiration-time=58m30s
+          value: --istio-gateway-server-cert-switch-grace-period=30s
         - op: add
           path: /spec/template/spec/containers/0/args/-
-          value: --istio-gateway-secret-requeue-success-interval=6s" >> requeue-interval-patch.yaml
+          value: --istio-gateway-secret-requeue-success-interval=1s" >> requeue-interval-patch.yaml
         cat requeue-interval-patch.yaml
         kustomize edit add patch --path requeue-interval-patch.yaml --kind Deployment
         popd

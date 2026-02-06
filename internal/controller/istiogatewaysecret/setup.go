@@ -56,7 +56,7 @@ func SetupReconciler(mgr ctrl.Manager,
 	} else {
 		handler = cabundle.NewGatewaySecretHandler(clnt,
 			parseLastModifiedFunc,
-			flagVar.IstioGatewayCertSwitchBeforeExpirationTime,
+			flagVar.IstioGatewayServerCertSwitchGracePeriod,
 			certificate.NewBundler(),
 		)
 	}

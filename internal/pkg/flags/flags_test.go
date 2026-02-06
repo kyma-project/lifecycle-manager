@@ -219,9 +219,9 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: "klm-watcher-selfsigned",
 		},
 		{
-			constName:     "DefaultIstioGatewayCertSwitchBeforeExpirationTime",
-			constValue:    DefaultIstioGatewayCertSwitchBeforeExpirationTime.String(),
-			expectedValue: (33 * 24 * time.Hour).String(),
+			constName:     "DefaultIstioGatewayServerCertSwitchGracePeriod",
+			constValue:    DefaultIstioGatewayServerCertSwitchGracePeriod.String(),
+			expectedValue: (4 * 24 * time.Hour).String(),
 		},
 		{
 			constName:     "DefaultIstioGatewaySecretRequeueSuccessInterval",

@@ -54,7 +54,7 @@ const (
 	DefaultSelfSignedCertificateRenewBuffer                             = 24 * time.Hour
 	DefaultSelfSignedCertKeySize                                        = 4096
 	DefaultSelfSignedCertificateIssuerName                              = "klm-watcher-selfsigned"
-	DefaultIstioGatewayCertSwitchBeforeExpirationTime                   = 33 * 24 * time.Hour
+	DefaultIstioGatewayServerCertSwitchGracePeriod                      = 4 * 24 * time.Hour
 	DefaultIstioGatewaySecretRequeueSuccessInterval                     = 5 * time.Minute
 	DefaultIstioGatewaySecretRequeueErrInterval                         = 2 * time.Second
 	DefaultRemoteSyncNamespace                                          = shared.DefaultRemoteNamespace
@@ -241,8 +241,12 @@ func DefineFlagVar() *FlagVar {
 	flag.StringVar(&flagVar.SelfSignedCertificateIssuerName, "self-signed-cert-issuer-name",
 		DefaultSelfSignedCertificateIssuerName, "Issuer name for the self-signed certificate.")
 	flag.DurationVar(&flagVar.IstioGatewayCertSwitchBeforeExpirationTime,
-		"istio-gateway-cert-switch-before-expiration-time", DefaultIstioGatewayCertSwitchBeforeExpirationTime,
-		"Duration before the expiration of the current CA certificate when the Gateway certificate should be switched.")
+		"istio-gateway-cert-switch-before-expiration-time", time.Duration(0),
+		"Deprecated: Duration before the expiration of the current CA certificate "+
+			"when the Gateway certificate should be switched.")
+	flag.DurationVar(&flagVar.IstioGatewayServerCertSwitchGracePeriod,
+		"istio-gateway-server-cert-switch-grace-period", DefaultIstioGatewayServerCertSwitchGracePeriod,
+		"Duration after the rotation of the CA certificate when the Gateway certificate will be switched.")
 	flag.StringVar(&flagVar.SelfSignedCertIssuerNamespace, "self-signed-cert-issuer-namespace",
 		DefaultSelfSignedCertIssuerNamespace,
 		"Namespace of the Issuer for self-signed certificates.")
@@ -348,7 +352,8 @@ type FlagVar struct {
 	MetricsCleanupIntervalInMinutes            int
 	ManifestRequeueJitterProbability           float64
 	ManifestRequeueJitterPercentage            float64
-	IstioGatewayCertSwitchBeforeExpirationTime time.Duration
+	IstioGatewayCertSwitchBeforeExpirationTime time.Duration // Deprecated: not considered by KLM anymore
+	IstioGatewayServerCertSwitchGracePeriod    time.Duration
 	IstioGatewaySecretRequeueSuccessInterval   time.Duration
 	IstioGatewaySecretRequeueErrInterval       time.Duration
 	MinMaintenanceWindowSize                   time.Duration
