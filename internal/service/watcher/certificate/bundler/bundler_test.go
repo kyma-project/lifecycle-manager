@@ -11,8 +11,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/bundler"
 	"github.com/kyma-project/lifecycle-manager/tests/fixtures/certificates"
-
-	_ "embed"
 )
 
 var (
