@@ -20,6 +20,9 @@ LOCALBIN ?= $(shell pwd)/../../bin
 $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
 
+## MAKEFILE_DIR is the directory of the current Makefile.
+MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
@@ -83,7 +86,7 @@ kyma-metrics:
 	$(GO_TEST) "Manage Module Metrics"
 
 mandatory-module-metrics:
-	$(GO_TEST) "Mandatory Module Metrics"
+	$(MAKE) -f $(MAKEFILE_DIR)/mandatory_modules_metrics_test.mk
 
 watcher-enqueue:
 	$(GO_TEST) "Enqueue Event from Watcher"
@@ -101,7 +104,7 @@ module-consistency:
 	$(GO_TEST) "Module Keep Consistent After Deploy"
 
 mandatory-module:
-	$(GO_TEST) "Mandatory Module Installation and Deletion"
+	$(MAKE) -f $(MAKEFILE_DIR)/mandatory_module_test.mk test
 
 non-blocking-deletion:
 	$(GO_TEST) "Non Blocking Kyma Module Deletion"

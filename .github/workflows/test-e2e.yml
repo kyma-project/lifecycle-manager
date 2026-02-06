@@ -117,6 +117,8 @@ jobs:
           go-version-file: lifecycle-manager/go.mod
           cache-dependency-path: lifecycle-manager/go.sum
       - name: Setup test clusters
+        if: ${{ matrix.e2e-test != 'mandatory-module' &&
+                matrix.e2e-test != 'mandatory-module-metrics' }}
         uses: ./lifecycle-manager/.github/actions/setup-test-clusters
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
@@ -127,11 +129,15 @@ jobs:
         uses: ./lifecycle-manager/.github/actions/setup-private-registry
 
       - name: Deploy lifecycle-manager
+        if: ${{ matrix.e2e-test != 'mandatory-module' &&
+                matrix.e2e-test != 'mandatory-module-metrics' }}
         uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
         with:
           klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
           klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
       - name: Deploy template-operator
+        if: ${{ matrix.e2e-test != 'mandatory-module' &&
+                matrix.e2e-test != 'mandatory-module-metrics' }}
         uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
         with:
           module_version: ${{ steps.configuration.outputs.template_operator_version }}
@@ -141,8 +147,6 @@ jobs:
           ModuleDeploymentNameInOlderVersion: template-operator-v1-controller-manager
           NewerVersion: 2.4.2-e2e-test
           OlderVersion: 1.1.1-e2e-test
-          OlderVersionForMandatoryModule: 1.1.0-smoke-test
-          NewerVersionForMandatoryModule: 2.4.1-smoke-test
           VersionForStatefulSetInWarning: 1.0.0-warning-statefulset
           VersionForDeploymentInWarning: 1.0.0-warning-deployment
           VersionForMisconfiguredDeploymentImage: 1.0.0-misconfigured-deployment
@@ -154,6 +158,8 @@ jobs:
         working-directory: lifecycle-manager
         env:
           MODULE_VERSION: ${{ steps.configuration.outputs.template_operator_version }}
+          KLM_VERSION_TAG: ${{ steps.configuration.outputs.klm_version_tag }}
+          KLM_IMAGE_REPO: ${{ steps.configuration.outputs.klm_image_repo }}
         run: |
           make -C tests/e2e ${{ matrix.e2e-test }}
       - name: Post debug
