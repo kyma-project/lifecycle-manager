@@ -1,10 +1,12 @@
 package cabundle_test
 
 import (
+	"crypto/x509"
 	"errors"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	apicorev1 "k8s.io/api/core/v1"
@@ -213,8 +215,7 @@ func TestManageGatewaySecret_WhenLegacySecret_BootstrapsLegacyGatewaySecret(t *t
 		}))
 }
 
-//nolint:dupl // the tests may contain similar code but they test different scenarios
-func TestManageGatewaySecret_WhenRequiresBundling_BundlesGatewaySecretWithRootSecretCA(t *testing.T) {
+func TestManageGatewaySecret_BundlesAndDropsCerts(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
 	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
@@ -222,7 +223,7 @@ func TestManageGatewaySecret_WhenRequiresBundling_BundlesGatewaySecretWithRootSe
 		Data: map[string][]byte{
 			"tls.crt":     certificates.Cert1,
 			"tls.key":     []byte("value2"),
-			"ca.crt":      certificates.Cert1,
+			"ca.crt":      append(certificates.Cert1, certificates.CertExpired...),
 			"temp.ca.crt": []byte("value3"),
 		},
 	}, nil)
@@ -293,7 +294,6 @@ func TestManageGatewaySecret_WhenUpdateSecretFails_ReturnsError(t *testing.T) {
 	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 1)
 }
 
-//nolint:dupl // the tests may contain similar code but they test different scenarios
 func TestManageGatewaySecret_WhenRequiresCertSwitching_SwitchesTLSCertAndKeyWithRootSecret(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
@@ -333,6 +333,80 @@ func TestManageGatewaySecret_WhenRequiresCertSwitching_SwitchesTLSCertAndKeyWith
 				string(secret.Data["tls.key"]) == "new-value2" &&
 				string(secret.Data["ca.crt"]) == string(certificates.Cert2)
 		}))
+}
+
+func TestManageGatewaySecret_WhenBundlingFails_ReturnsError(t *testing.T) {
+	// ARRANGE
+	mockClient := &testutils.ClientMock{}
+	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
+	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
+		Data: map[string][]byte{
+			"tls.crt":     certificates.Cert1,
+			"tls.key":     []byte("value2"),
+			"ca.crt":      []byte("invalid bundle"),
+			"temp.ca.crt": []byte("value3"),
+		},
+	}, nil)
+	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(assert.AnError)
+	handler := cabundle.NewGatewaySecretHandler(mockClient,
+		getTimeParserFunction(false, true),
+		gatewaySwitchCertBeforeExpirationTime,
+		bundler.NewBundler(),
+	)
+	rootSecret := &apicorev1.Secret{
+		Data: map[string][]byte{
+			"tls.crt": certificates.Cert2,
+			"tls.key": []byte("new-value2"),
+			"ca.crt":  certificates.Cert2,
+		},
+	}
+
+	// ACT
+	err := handler.ManageGatewaySecret(t.Context(), rootSecret)
+
+	// ASSERT
+	require.ErrorIs(t, err, bundler.ErrInvalidPEM)
+	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 0)
+}
+
+func TestManageGatewaySecret_WhenDroppingExpiredCertsFails_ReturnsError(t *testing.T) {
+	// ARRANGE
+	mockClient := &testutils.ClientMock{}
+	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
+	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
+		Data: map[string][]byte{
+			"tls.crt":     certificates.Cert1,
+			"tls.key":     []byte("value2"),
+			"ca.crt":      certificates.Cert1,
+			"temp.ca.crt": []byte("value3"),
+		},
+	}, nil)
+	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(assert.AnError)
+	handler := cabundle.NewGatewaySecretHandler(mockClient,
+		getTimeParserFunction(false, true),
+		gatewaySwitchCertBeforeExpirationTime,
+		bundler.NewBundler(bundler.WithParseX509Function(
+			func(_ []byte) (*x509.Certificate, error) {
+				return &x509.Certificate{
+					NotAfter: time.Time{},
+				}, nil
+			},
+		)),
+	)
+	rootSecret := &apicorev1.Secret{
+		Data: map[string][]byte{
+			"tls.crt": certificates.Cert2,
+			"tls.key": []byte("new-value2"),
+			"ca.crt":  certificates.Cert2,
+		},
+	}
+
+	// ACT
+	err := handler.ManageGatewaySecret(t.Context(), rootSecret)
+
+	// ASSERT
+	require.ErrorIs(t, err, bundler.ErrX509NotAfterIsZero)
+	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 0)
 }
 
 func getTimeParserFunction(bundlingRequired, certSwitchRequired bool) gatewaysecret.TimeParserFunc {
