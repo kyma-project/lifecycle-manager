@@ -167,7 +167,7 @@ func dropExpiredCerts(certs []*x509.Certificate) ([]*x509.Certificate, error) {
 }
 
 func expired(cert *x509.Certificate) (bool, error) {
-	if cert.NotBefore.IsZero() {
+	if cert.NotAfter.IsZero() {
 		return false, ErrX509NotAfterIsZero
 	}
 
