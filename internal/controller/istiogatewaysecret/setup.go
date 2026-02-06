@@ -54,7 +54,7 @@ func SetupReconciler(mgr ctrl.Manager,
 		handler = legacy.NewGatewaySecretHandler(clnt, parseLastModifiedFunc)
 	} else {
 		handler = cabundle.NewGatewaySecretHandler(clnt, parseLastModifiedFunc,
-			flagVar.IstioGatewayCertSwitchBeforeExpirationTime)
+			flagVar.IstioGatewayServerCertSwitchGracePeriod)
 	}
 
 	var getSecretFunc GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
