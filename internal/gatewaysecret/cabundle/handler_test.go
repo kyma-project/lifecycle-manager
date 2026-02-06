@@ -17,7 +17,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/cabundle"
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/testutils"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/bundler"
-	"github.com/kyma-project/lifecycle-manager/tests/assets/certificates"
+	"github.com/kyma-project/lifecycle-manager/tests/fixtures/certificates"
 )
 
 const gatewaySwitchCertBeforeExpirationTime = 1 * time.Hour

@@ -88,9 +88,9 @@ bin
 **/go.work
 **/go.work.sum
 
-# ignore .pem key files except those in tests/assets
+# ignore .pem key files except those in tests/fixtures
 **/*.pem
-!tests/assets/certificates/*.pem
+!tests/fixtures/certificates/*.pem
 
 # rendered manifest
 **/manifest.yaml
