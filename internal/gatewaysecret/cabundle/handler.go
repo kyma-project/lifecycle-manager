@@ -3,7 +3,7 @@ package cabundle
 import (
 	"context"
 	"errors"
-	"slices"
+	"fmt"
 	"time"
 
 	apicorev1 "k8s.io/api/core/v1"
@@ -20,19 +20,28 @@ const (
 	caBundleTempCertKey = "temp.ca.crt"
 )
 
+type Bundler interface {
+	Bundle(bundle *[]byte, cert []byte) (bool, error)
+	DropExpiredCerts(bundle *[]byte) (bool, error)
+}
+
 type Handler struct {
 	client                      gatewaysecret.Client
 	parseTimeFromAnnotationFunc gatewaysecret.TimeParserFunc
 	serverCertSwitchGracePeriod time.Duration
+	bundler                     Bundler
 }
 
-func NewGatewaySecretHandler(client gatewaysecret.Client, timeParserFunc gatewaysecret.TimeParserFunc,
+func NewGatewaySecretHandler(client gatewaysecret.Client,
+	timeParserFunc gatewaysecret.TimeParserFunc,
 	serverCertSwitchGracePeriod time.Duration,
+	bundler Bundler,
 ) *Handler {
 	return &Handler{
 		client:                      client,
 		parseTimeFromAnnotationFunc: timeParserFunc,
 		serverCertSwitchGracePeriod: serverCertSwitchGracePeriod,
+		bundler:                     bundler,
 	}
 }
 
@@ -55,10 +64,20 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 	// this is for the case when we switch existing secret from legacy to new rotation mechanism
 	bootstrapLegacyGatewaySecret(gwSecret, rootSecret)
 
-	if h.requiresBundling(gwSecret, notBefore) {
-		bundleCACrt(gwSecret, rootSecret)
+	bundled, err := h.bundleCACerts(gwSecret, rootSecret)
+	if err != nil {
+		return err
+	}
+
+	if bundled {
 		setLastModifiedToNow(gwSecret)
 	}
+
+	err = h.dropExpiredCertsFromBundle(gwSecret)
+	if err != nil {
+		return err
+	}
+
 	if h.requiresCertSwitching(notBefore) {
 		switchCertificate(gwSecret, rootSecret)
 	}
@@ -90,17 +109,6 @@ func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context,
 	return h.client.CreateGatewaySecret(ctx, newSecret)
 }
 
-func (h *Handler) requiresBundling(gwSecret *apicorev1.Secret, notBefore time.Time) bool {
-	// If the last modified time of the gateway secret is after the notBefore time of the CA certificate,
-	// then we don't need to update the gateway secret
-	if lastModified, err := h.parseTimeFromAnnotationFunc(gwSecret, shared.LastModifiedAtAnnotation); err == nil {
-		if lastModified.After(notBefore) {
-			return false
-		}
-	}
-	return true
-}
-
 func (h *Handler) requiresCertSwitching(caCertNotBefore time.Time) bool {
 	// If the grace period after CA rotation has expired, then we need to switch the certificate and private key
 	return time.Now().After(caCertNotBefore.Add(h.serverCertSwitchGracePeriod))
@@ -121,12 +129,35 @@ func setLastModifiedToNow(secret *apicorev1.Secret) {
 	secret.Annotations[shared.LastModifiedAtAnnotation] = apimetav1.Now().Format(time.RFC3339)
 }
 
-func bundleCACrt(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
-	gatewaySecret.Data[gatewaysecret.CACrt] = slices.Clone(rootSecret.Data[gatewaysecret.CACrt])
-	gatewaySecret.Data[gatewaysecret.CACrt] = append(gatewaySecret.Data[gatewaysecret.CACrt],
-		gatewaySecret.Data[caBundleTempCertKey]...)
+func (h *Handler) bundleCACerts(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) (bool, error) {
+	caBundle := gatewaySecret.Data[gatewaysecret.CACrt]
+	cert := rootSecret.Data[gatewaysecret.TLSCrt] // tls.crt and ca.crt are the same in the root secret
 
-	gatewaySecret.Data[caBundleTempCertKey] = rootSecret.Data[gatewaysecret.CACrt]
+	bundled, err := h.bundler.Bundle(&caBundle, cert)
+	if err != nil {
+		return false, fmt.Errorf("failed to bundle root secret's tls.crt into gateway secret's ca.crt: %w", err)
+	}
+
+	if !bundled {
+		return false, nil
+	}
+
+	gatewaySecret.Data[gatewaysecret.CACrt] = caBundle
+	return true, nil
+}
+
+func (h *Handler) dropExpiredCertsFromBundle(gatewaySecret *apicorev1.Secret) error {
+	caBundle := gatewaySecret.Data[gatewaysecret.CACrt]
+	certsDropped, err := h.bundler.DropExpiredCerts(&caBundle)
+	if err != nil {
+		return fmt.Errorf("failed to drop expired certs from gateway secret's ca.crt: %w", err)
+	}
+
+	if certsDropped {
+		gatewaySecret.Data[gatewaysecret.CACrt] = caBundle
+	}
+
+	return nil
 }
 
 func switchCertificate(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
