@@ -65,6 +65,7 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGat
 			return secret.Name == expectedName &&
 				secret.Namespace == expectedNamespace &&
 				string(secret.Data[apicorev1.TLSCertKey]) == string(rootSecret.Data[apicorev1.TLSCertKey]) &&
+				//nolint:revive // false positive
 				string(secret.Data[apicorev1.TLSPrivateKeyKey]) == string(rootSecret.Data[apicorev1.TLSPrivateKeyKey]) &&
 				string(secret.Data["ca.crt"]) == string(rootSecret.Data["ca.crt"])
 		}))
@@ -160,6 +161,7 @@ func TestManageGatewaySecret_WhenRequiresUpdate_UpdatesGatewaySecretWithRootSecr
 	mockClient.AssertCalled(t, "UpdateGatewaySecret", mock.Anything, mock.MatchedBy(
 		func(secret *apicorev1.Secret) bool {
 			return string(secret.Data[apicorev1.TLSCertKey]) == string(rootSecret.Data[apicorev1.TLSCertKey]) &&
+				//nolint:revive // false positive
 				string(secret.Data[apicorev1.TLSPrivateKeyKey]) == string(rootSecret.Data[apicorev1.TLSPrivateKeyKey]) &&
 				string(secret.Data["ca.crt"]) == string(rootSecret.Data["ca.crt"])
 		}))

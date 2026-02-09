@@ -129,6 +129,7 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGat
 			return secret.Name == expectedName &&
 				secret.Namespace == expectedNamespace &&
 				string(secret.Data[apicorev1.TLSCertKey]) == string(rootSecret.Data[apicorev1.TLSCertKey]) &&
+				//nolint:revive // false positive
 				string(secret.Data[apicorev1.TLSPrivateKeyKey]) == string(rootSecret.Data[apicorev1.TLSPrivateKeyKey]) &&
 				string(secret.Data["ca.crt"]) == string(rootSecret.Data["ca.crt"]) &&
 				string(secret.Data["temp.ca.crt"]) == string(rootSecret.Data["ca.crt"]) &&
