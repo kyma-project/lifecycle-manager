@@ -27,10 +27,9 @@ func BuildSKRSecret(caCert, tlsCert, tlsKey []byte, remoteNs string) *apicorev1.
 		},
 		Immutable: nil,
 		Data: map[string][]byte{
-			data.CaCertKey:        caCert,
-			data.TlsCertKey:       tlsCert,
-			data.TlsPrivateKeyKey: tlsKey,
+			data.CaCertKey:             caCert,
+			apicorev1.TLSCertKey:       tlsCert,
+			apicorev1.TLSPrivateKeyKey: tlsKey,
 		},
-		Type: apicorev1.SecretTypeOpaque,
 	}
 }

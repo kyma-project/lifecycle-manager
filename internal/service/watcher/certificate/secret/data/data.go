@@ -8,9 +8,7 @@ import (
 )
 
 const (
-	CaCertKey        = "ca.crt"
-	TlsCertKey       = "tls.crt"
-	TlsPrivateKeyKey = "tls.key"
+	CaCertKey = "ca.crt"
 )
 
 var ErrSecretDataMissing = errors.New("secret data is missing")
@@ -33,12 +31,12 @@ func NewGatewaySecretData(secret *apicorev1.Secret) (*GatewaySecretData, error) 
 }
 
 func NewCertificateSecretData(secret *apicorev1.Secret) (*CertificateSecretData, error) {
-	if secret == nil || secret.Data == nil || secret.Data[TlsCertKey] == nil || secret.Data[TlsPrivateKeyKey] == nil {
+	if secret == nil || secret.Data == nil || secret.Data[apicorev1.TLSCertKey] == nil || secret.Data[apicorev1.TLSPrivateKeyKey] == nil {
 		return nil, fmt.Errorf("error in certificate secret %w", ErrSecretDataMissing)
 	}
 
 	return &CertificateSecretData{
-		TlsCert: secret.Data[TlsCertKey],
-		TlsKey:  secret.Data[TlsPrivateKeyKey],
+		TlsCert: secret.Data[apicorev1.TLSCertKey],
+		TlsKey:  secret.Data[apicorev1.TLSPrivateKeyKey],
 	}, nil
 }

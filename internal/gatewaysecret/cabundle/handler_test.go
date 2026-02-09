@@ -103,9 +103,9 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGat
 	mockClient.On("CreateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt": []byte("value1"),
-			"tls.key": []byte("value2"),
-			"ca.crt":  []byte("value3"),
+			apicorev1.TLSCertKey:       []byte("value1"),
+			apicorev1.TLSPrivateKeyKey: []byte("value2"),
+			"ca.crt":                   []byte("value3"),
 		},
 	}
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
@@ -128,8 +128,8 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGat
 		func(secret *apicorev1.Secret) bool {
 			return secret.Name == expectedName &&
 				secret.Namespace == expectedNamespace &&
-				string(secret.Data["tls.crt"]) == string(rootSecret.Data["tls.crt"]) &&
-				string(secret.Data["tls.key"]) == string(rootSecret.Data["tls.key"]) &&
+				string(secret.Data[apicorev1.TLSCertKey]) == string(rootSecret.Data[apicorev1.TLSCertKey]) &&
+				string(secret.Data[apicorev1.TLSPrivateKeyKey]) == string(rootSecret.Data[apicorev1.TLSPrivateKeyKey]) &&
 				string(secret.Data["ca.crt"]) == string(rootSecret.Data["ca.crt"]) &&
 				string(secret.Data["temp.ca.crt"]) == string(rootSecret.Data["ca.crt"]) &&
 				secret.Annotations[shared.LastModifiedAtAnnotation] != ""
@@ -166,9 +166,9 @@ func TestManageGatewaySecret_WhenLegacySecret_BootstrapsLegacyGatewaySecret(t *t
 	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt": certificates.Cert1,
-			"tls.key": []byte("value2"),
-			"ca.crt":  certificates.Cert1,
+			apicorev1.TLSCertKey:       certificates.Cert1,
+			apicorev1.TLSPrivateKeyKey: []byte("value2"),
+			"ca.crt":                   certificates.Cert1,
 		},
 	}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
@@ -180,9 +180,9 @@ func TestManageGatewaySecret_WhenLegacySecret_BootstrapsLegacyGatewaySecret(t *t
 	)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt": certificates.Cert2,
-			"tls.key": []byte("value2"),
-			"ca.crt":  certificates.Cert2,
+			apicorev1.TLSCertKey:       certificates.Cert2,
+			apicorev1.TLSPrivateKeyKey: []byte("value2"),
+			"ca.crt":                   certificates.Cert2,
 		},
 	}
 
@@ -200,10 +200,10 @@ func TestManageGatewaySecret_BundlesAndDropsCerts(t *testing.T) {
 	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt":     certificates.Cert1,
-			"tls.key":     []byte("value2"),
-			"ca.crt":      append(certificates.Cert1, certificates.CertExpired...),
-			"temp.ca.crt": []byte("value3"),
+			apicorev1.TLSCertKey:       certificates.Cert1,
+			apicorev1.TLSPrivateKeyKey: []byte("value2"),
+			"ca.crt":                   append(certificates.Cert1, certificates.CertExpired...),
+			"temp.ca.crt":              []byte("value3"),
 		},
 	}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
@@ -215,9 +215,9 @@ func TestManageGatewaySecret_BundlesAndDropsCerts(t *testing.T) {
 	)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt": certificates.Cert2,
-			"tls.key": []byte("new-value2"),
-			"ca.crt":  certificates.Cert2,
+			apicorev1.TLSCertKey:       certificates.Cert2,
+			apicorev1.TLSPrivateKeyKey: []byte("new-value2"),
+			"ca.crt":                   certificates.Cert2,
 		},
 	}
 
@@ -229,8 +229,8 @@ func TestManageGatewaySecret_BundlesAndDropsCerts(t *testing.T) {
 	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 1)
 	mockClient.AssertCalled(t, "UpdateGatewaySecret", mock.Anything, mock.MatchedBy(
 		func(secret *apicorev1.Secret) bool {
-			return string(secret.Data["tls.crt"]) == string(certificates.Cert1) &&
-				string(secret.Data["tls.key"]) == "value2" &&
+			return string(secret.Data[apicorev1.TLSCertKey]) == string(certificates.Cert1) &&
+				string(secret.Data[apicorev1.TLSPrivateKeyKey]) == "value2" &&
 				string(secret.Data["ca.crt"]) == string(append(certificates.Cert2, certificates.Cert1...))
 		}))
 }
@@ -241,10 +241,10 @@ func TestManageGatewaySecret_WhenUpdateSecretFails_ReturnsError(t *testing.T) {
 	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt":     certificates.Cert1,
-			"tls.key":     []byte("value2"),
-			"ca.crt":      certificates.Cert1,
-			"temp.ca.crt": []byte("value3"),
+			apicorev1.TLSCertKey:       certificates.Cert1,
+			apicorev1.TLSPrivateKeyKey: []byte("value2"),
+			"ca.crt":                   certificates.Cert1,
+			"temp.ca.crt":              []byte("value3"),
 		},
 	}, nil)
 	expectedError := errors.New("some-error")
@@ -257,9 +257,9 @@ func TestManageGatewaySecret_WhenUpdateSecretFails_ReturnsError(t *testing.T) {
 	)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt": certificates.Cert2,
-			"tls.key": []byte("new-value2"),
-			"ca.crt":  certificates.Cert2,
+			apicorev1.TLSCertKey:       certificates.Cert2,
+			apicorev1.TLSPrivateKeyKey: []byte("new-value2"),
+			"ca.crt":                   certificates.Cert2,
 		},
 	}
 
@@ -279,10 +279,10 @@ func TestManageGatewaySecret_WhenRequiresCertSwitching_SwitchesTLSCertAndKeyWith
 	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt":     certificates.Cert1,
-			"tls.key":     []byte("value2"),
-			"ca.crt":      certificates.Cert2,
-			"temp.ca.crt": []byte("new-value3"),
+			apicorev1.TLSCertKey:       certificates.Cert1,
+			apicorev1.TLSPrivateKeyKey: []byte("value2"),
+			"ca.crt":                   certificates.Cert2,
+			"temp.ca.crt":              []byte("new-value3"),
 		},
 	}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
@@ -295,9 +295,9 @@ func TestManageGatewaySecret_WhenRequiresCertSwitching_SwitchesTLSCertAndKeyWith
 	)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt": certificates.Cert2,
-			"tls.key": []byte("new-value2"),
-			"ca.crt":  certificates.Cert2,
+			apicorev1.TLSCertKey:       certificates.Cert2,
+			apicorev1.TLSPrivateKeyKey: []byte("new-value2"),
+			"ca.crt":                   certificates.Cert2,
 		},
 	}
 
@@ -309,8 +309,8 @@ func TestManageGatewaySecret_WhenRequiresCertSwitching_SwitchesTLSCertAndKeyWith
 	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 1)
 	mockClient.AssertCalled(t, "UpdateGatewaySecret", mock.Anything, mock.MatchedBy(
 		func(secret *apicorev1.Secret) bool {
-			return string(secret.Data["tls.crt"]) == string(certificates.Cert2) &&
-				string(secret.Data["tls.key"]) == "new-value2" &&
+			return string(secret.Data[apicorev1.TLSCertKey]) == string(certificates.Cert2) &&
+				string(secret.Data[apicorev1.TLSPrivateKeyKey]) == "new-value2" &&
 				string(secret.Data["ca.crt"]) == string(certificates.Cert2)
 		}))
 }
@@ -321,10 +321,10 @@ func TestManageGatewaySecret_WhenBundlingFails_ReturnsError(t *testing.T) {
 	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt":     certificates.Cert1,
-			"tls.key":     []byte("value2"),
-			"ca.crt":      []byte("invalid bundle"),
-			"temp.ca.crt": []byte("value3"),
+			apicorev1.TLSCertKey:       certificates.Cert1,
+			apicorev1.TLSPrivateKeyKey: []byte("value2"),
+			"ca.crt":                   []byte("invalid bundle"),
+			"temp.ca.crt":              []byte("value3"),
 		},
 	}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(assert.AnError)
@@ -335,9 +335,9 @@ func TestManageGatewaySecret_WhenBundlingFails_ReturnsError(t *testing.T) {
 	)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt": certificates.Cert2,
-			"tls.key": []byte("new-value2"),
-			"ca.crt":  certificates.Cert2,
+			apicorev1.TLSCertKey:       certificates.Cert2,
+			apicorev1.TLSPrivateKeyKey: []byte("new-value2"),
+			"ca.crt":                   certificates.Cert2,
 		},
 	}
 
@@ -355,10 +355,10 @@ func TestManageGatewaySecret_WhenDroppingExpiredCertsFails_ReturnsError(t *testi
 	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt":     certificates.Cert1,
-			"tls.key":     []byte("value2"),
-			"ca.crt":      certificates.Cert1,
-			"temp.ca.crt": []byte("value3"),
+			apicorev1.TLSCertKey:       certificates.Cert1,
+			apicorev1.TLSPrivateKeyKey: []byte("value2"),
+			"ca.crt":                   certificates.Cert1,
+			"temp.ca.crt":              []byte("value3"),
 		},
 	}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(assert.AnError)
@@ -375,9 +375,9 @@ func TestManageGatewaySecret_WhenDroppingExpiredCertsFails_ReturnsError(t *testi
 	)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt": certificates.Cert2,
-			"tls.key": []byte("new-value2"),
-			"ca.crt":  certificates.Cert2,
+			apicorev1.TLSCertKey:       certificates.Cert2,
+			apicorev1.TLSPrivateKeyKey: []byte("new-value2"),
+			"ca.crt":                   certificates.Cert2,
 		},
 	}
 

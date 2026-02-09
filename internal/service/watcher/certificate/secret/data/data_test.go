@@ -80,13 +80,13 @@ func TestNewCertificateSecretData(t *testing.T) {
 		},
 		{
 			name:    "missing tls.crt key",
-			secret:  &apicorev1.Secret{Data: map[string][]byte{data.TlsPrivateKeyKey: tlsKey}},
+			secret:  &apicorev1.Secret{Data: map[string][]byte{apicorev1.TLSPrivateKeyKey: tlsKey}},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "missing tls.key key",
-			secret:  &apicorev1.Secret{Data: map[string][]byte{data.TlsCertKey: tlsCert}},
+			secret:  &apicorev1.Secret{Data: map[string][]byte{apicorev1.TLSCertKey: tlsCert}},
 			want:    nil,
 			wantErr: true,
 		},
@@ -94,8 +94,8 @@ func TestNewCertificateSecretData(t *testing.T) {
 			name: "both keys present",
 			secret: &apicorev1.Secret{
 				Data: map[string][]byte{
-					data.TlsCertKey:       tlsCert,
-					data.TlsPrivateKeyKey: tlsKey,
+					apicorev1.TLSCertKey:       tlsCert,
+					apicorev1.TLSPrivateKeyKey: tlsKey,
 				},
 			},
 			want:    &data.CertificateSecretData{TlsCert: tlsCert, TlsKey: tlsKey},

@@ -8,8 +8,6 @@ import (
 )
 
 const (
-	TLSCrt     = "tls.crt"
-	TLSKey     = "tls.key"
 	CACrt      = "ca.crt"
 	SecretKind = "Secret"
 )
