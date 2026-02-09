@@ -2,7 +2,7 @@
   <configuration default="false" name="Launch KLM locally" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="lifecycle-manager" />
     <working_directory value="$PROJECT_DIR$" />
-    <parameters value="--skr-watcher-image-tag=2.1.2 --oci-registry-host=http://k3d-kcp-registry.localhost:5000 --leader-elect=false" />
+    <parameters value="--skr-watcher-image-tag=2.1.3 --oci-registry-host=http://k3d-kcp-registry.localhost:5000 --leader-elect=false" />
     <envs>
       <env name="KUBECONFIG" value="$USER_HOME$/.k3d/kcp-local.yaml" />
     </envs>
