@@ -99,8 +99,8 @@ func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context,
 	}
 
 	newSecret.Data = make(map[string][]byte)
-	newSecret.Data[gatewaysecret.TLSCrt] = rootSecret.Data[gatewaysecret.TLSCrt]
-	newSecret.Data[gatewaysecret.TLSKey] = rootSecret.Data[gatewaysecret.TLSKey]
+	newSecret.Data[apicorev1.TLSCertKey] = rootSecret.Data[apicorev1.TLSCertKey]
+	newSecret.Data[apicorev1.TLSPrivateKeyKey] = rootSecret.Data[apicorev1.TLSPrivateKeyKey]
 	newSecret.Data[gatewaysecret.CACrt] = rootSecret.Data[gatewaysecret.CACrt]
 
 	newSecret.Data[caBundleTempCertKey] = rootSecret.Data[gatewaysecret.CACrt]
@@ -131,7 +131,7 @@ func setLastModifiedToNow(secret *apicorev1.Secret) {
 
 func (h *Handler) bundleCACerts(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) (bool, error) {
 	caBundle := gatewaySecret.Data[gatewaysecret.CACrt]
-	cert := rootSecret.Data[gatewaysecret.TLSCrt] // tls.crt and ca.crt are the same in the root secret
+	cert := rootSecret.Data[apicorev1.TLSCertKey] // tls.crt and ca.crt are the same in the root secret
 
 	bundled, err := h.bundler.Bundle(&caBundle, cert)
 	if err != nil {
@@ -161,6 +161,6 @@ func (h *Handler) dropExpiredCertsFromBundle(gatewaySecret *apicorev1.Secret) er
 }
 
 func switchCertificate(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
-	gatewaySecret.Data[gatewaysecret.TLSCrt] = rootSecret.Data[gatewaysecret.TLSCrt]
-	gatewaySecret.Data[gatewaysecret.TLSKey] = rootSecret.Data[gatewaysecret.TLSKey]
+	gatewaySecret.Data[apicorev1.TLSCertKey] = rootSecret.Data[apicorev1.TLSCertKey]
+	gatewaySecret.Data[apicorev1.TLSPrivateKeyKey] = rootSecret.Data[apicorev1.TLSPrivateKeyKey]
 }

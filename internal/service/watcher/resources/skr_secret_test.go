@@ -46,11 +46,10 @@ func TestBuildSKRSecret(t *testing.T) {
 				},
 				Immutable: nil,
 				Data: map[string][]byte{
-					data.CaCertKey:        []byte("ca"),
-					data.TlsCertKey:       []byte("cert"),
-					data.TlsPrivateKeyKey: []byte("key"),
+					data.CaCertKey:             []byte("ca"),
+					apicorev1.TLSCertKey:       []byte("cert"),
+					apicorev1.TLSPrivateKeyKey: []byte("key"),
 				},
-				Type: apicorev1.SecretTypeOpaque,
 			},
 		},
 	}

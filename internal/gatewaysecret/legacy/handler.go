@@ -87,7 +87,7 @@ func copyDataFromRootSecret(secret *apicorev1.Secret, rootSecret *apicorev1.Secr
 	if secret.Data == nil {
 		secret.Data = make(map[string][]byte)
 	}
-	secret.Data[gatewaysecret.TLSCrt] = rootSecret.Data[gatewaysecret.TLSCrt]
-	secret.Data[gatewaysecret.TLSKey] = rootSecret.Data[gatewaysecret.TLSKey]
+	secret.Data[apicorev1.TLSCertKey] = rootSecret.Data[apicorev1.TLSCertKey]
+	secret.Data[apicorev1.TLSPrivateKeyKey] = rootSecret.Data[apicorev1.TLSPrivateKeyKey]
 	secret.Data[gatewaysecret.CACrt] = rootSecret.Data[gatewaysecret.CACrt]
 }

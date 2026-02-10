@@ -43,9 +43,9 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGat
 	mockClient.On("CreateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt": []byte("value1"),
-			"tls.key": []byte("value2"),
-			"ca.crt":  []byte("value3"),
+			apicorev1.TLSCertKey:       []byte("value1"),
+			apicorev1.TLSPrivateKeyKey: []byte("value2"),
+			"ca.crt":                   []byte("value3"),
 		},
 	}
 	handler := legacy.NewGatewaySecretHandler(mockClient, nil)
@@ -64,8 +64,9 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGat
 		func(secret *apicorev1.Secret) bool {
 			return secret.Name == expectedName &&
 				secret.Namespace == expectedNamespace &&
-				string(secret.Data["tls.crt"]) == string(rootSecret.Data["tls.crt"]) &&
-				string(secret.Data["tls.key"]) == string(rootSecret.Data["tls.key"]) &&
+				string(secret.Data[apicorev1.TLSCertKey]) == string(rootSecret.Data[apicorev1.TLSCertKey]) &&
+				//nolint:revive // false positive
+				string(secret.Data[apicorev1.TLSPrivateKeyKey]) == string(rootSecret.Data[apicorev1.TLSPrivateKeyKey]) &&
 				string(secret.Data["ca.crt"]) == string(rootSecret.Data["ca.crt"])
 		}))
 }
@@ -145,9 +146,9 @@ func TestManageGatewaySecret_WhenRequiresUpdate_UpdatesGatewaySecretWithRootSecr
 	handler := legacy.NewGatewaySecretHandler(mockClient, mockFunc)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt": []byte("value1"),
-			"tls.key": []byte("value2"),
-			"ca.crt":  []byte("value3"),
+			apicorev1.TLSCertKey:       []byte("value1"),
+			apicorev1.TLSPrivateKeyKey: []byte("value2"),
+			"ca.crt":                   []byte("value3"),
 		},
 	}
 
@@ -159,8 +160,9 @@ func TestManageGatewaySecret_WhenRequiresUpdate_UpdatesGatewaySecretWithRootSecr
 	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 1)
 	mockClient.AssertCalled(t, "UpdateGatewaySecret", mock.Anything, mock.MatchedBy(
 		func(secret *apicorev1.Secret) bool {
-			return string(secret.Data["tls.crt"]) == string(rootSecret.Data["tls.crt"]) &&
-				string(secret.Data["tls.key"]) == string(rootSecret.Data["tls.key"]) &&
+			return string(secret.Data[apicorev1.TLSCertKey]) == string(rootSecret.Data[apicorev1.TLSCertKey]) &&
+				//nolint:revive // false positive
+				string(secret.Data[apicorev1.TLSPrivateKeyKey]) == string(rootSecret.Data[apicorev1.TLSPrivateKeyKey]) &&
 				string(secret.Data["ca.crt"]) == string(rootSecret.Data["ca.crt"])
 		}))
 }

@@ -352,8 +352,8 @@ func TestCertificateManager_GetSkrCertificateSecretData(t *testing.T) {
 	keyData := []byte("key-data")
 	secretWithCert := &apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt": tlsData,
-			"tls.key": keyData,
+			apicorev1.TLSCertKey:       tlsData,
+			apicorev1.TLSPrivateKeyKey: keyData,
 		},
 	}
 	type fields struct {

@@ -142,9 +142,9 @@ func createWatcherSecret(kymaObjKey client.ObjectKey) *apicorev1.Secret {
 			},
 		},
 		Data: map[string][]byte{
-			"ca.crt":  []byte("jelly"),
-			"tls.crt": []byte("jellyfish"),
-			"tls.key": []byte("jellyfishes"),
+			"ca.crt":                   []byte("jelly"),
+			apicorev1.TLSCertKey:       []byte("jellyfish"),
+			apicorev1.TLSPrivateKeyKey: []byte("jellyfishes"),
 		},
 		Type: apicorev1.SecretTypeOpaque,
 	}
@@ -160,9 +160,9 @@ func createGatewaySecret() *apicorev1.Secret {
 			},
 		},
 		Data: map[string][]byte{
-			"ca.crt":  []byte("jelly"),
-			"tls.crt": []byte("jellyfish"),
-			"tls.key": []byte("jellyfishes"),
+			"ca.crt":                   []byte("jelly"),
+			apicorev1.TLSCertKey:       []byte("jellyfish"),
+			apicorev1.TLSPrivateKeyKey: []byte("jellyfishes"),
 		},
 		Type: apicorev1.SecretTypeOpaque,
 	}
