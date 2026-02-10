@@ -103,7 +103,6 @@ func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context,
 	newSecret.Data[apicorev1.TLSPrivateKeyKey] = rootSecret.Data[apicorev1.TLSPrivateKeyKey]
 	newSecret.Data[gatewaysecret.CACrt] = rootSecret.Data[gatewaysecret.CACrt]
 
-	newSecret.Data[caBundleTempCertKey] = rootSecret.Data[gatewaysecret.CACrt]
 	setLastModifiedToNow(newSecret)
 
 	return h.client.CreateGatewaySecret(ctx, newSecret)

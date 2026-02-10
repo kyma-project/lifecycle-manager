@@ -132,7 +132,6 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGat
 				//nolint:revive // false positive
 				string(secret.Data[apicorev1.TLSPrivateKeyKey]) == string(rootSecret.Data[apicorev1.TLSPrivateKeyKey]) &&
 				string(secret.Data["ca.crt"]) == string(rootSecret.Data["ca.crt"]) &&
-				string(secret.Data["temp.ca.crt"]) == string(rootSecret.Data["ca.crt"]) &&
 				secret.Annotations[shared.LastModifiedAtAnnotation] != ""
 		}))
 }
@@ -204,7 +203,6 @@ func TestManageGatewaySecret_BundlesAndDropsCerts(t *testing.T) {
 			apicorev1.TLSCertKey:       certificates.Cert1,
 			apicorev1.TLSPrivateKeyKey: []byte("value2"),
 			"ca.crt":                   append(certificates.Cert1, certificates.CertExpired...),
-			"temp.ca.crt":              []byte("value3"),
 		},
 	}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
@@ -245,7 +243,6 @@ func TestManageGatewaySecret_WhenUpdateSecretFails_ReturnsError(t *testing.T) {
 			apicorev1.TLSCertKey:       certificates.Cert1,
 			apicorev1.TLSPrivateKeyKey: []byte("value2"),
 			"ca.crt":                   certificates.Cert1,
-			"temp.ca.crt":              []byte("value3"),
 		},
 	}, nil)
 	expectedError := errors.New("some-error")
@@ -283,7 +280,6 @@ func TestManageGatewaySecret_WhenRequiresCertSwitching_SwitchesTLSCertAndKeyWith
 			apicorev1.TLSCertKey:       certificates.Cert1,
 			apicorev1.TLSPrivateKeyKey: []byte("value2"),
 			"ca.crt":                   certificates.Cert2,
-			"temp.ca.crt":              []byte("new-value3"),
 		},
 	}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
@@ -325,7 +321,6 @@ func TestManageGatewaySecret_WhenBundlingFails_ReturnsError(t *testing.T) {
 			apicorev1.TLSCertKey:       certificates.Cert1,
 			apicorev1.TLSPrivateKeyKey: []byte("value2"),
 			"ca.crt":                   []byte("invalid bundle"),
-			"temp.ca.crt":              []byte("value3"),
 		},
 	}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(assert.AnError)
@@ -359,7 +354,6 @@ func TestManageGatewaySecret_WhenDroppingExpiredCertsFails_ReturnsError(t *testi
 			apicorev1.TLSCertKey:       certificates.Cert1,
 			apicorev1.TLSPrivateKeyKey: []byte("value2"),
 			"ca.crt":                   certificates.Cert1,
-			"temp.ca.crt":              []byte("value3"),
 		},
 	}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(assert.AnError)
