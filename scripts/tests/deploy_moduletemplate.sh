@@ -37,7 +37,7 @@ cat <<EOF > module-config-for-e2e.yaml
 name: kyma-project.io/module/${MODULE_NAME}
 version: ${RELEASE_VERSION}
 security: sec-scanners-config.yaml
-manifest: https://localhost:8080/template-operator.yaml
+manifest: template-operator.yaml
 repository: https://github.com/kyma-project/template-operator
 documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
 requiresDowntime: ${REQUIRES_DOWNTIME}
@@ -48,7 +48,7 @@ EOF
 
 if [ "${INCLUDE_DEFAULT_CR}" == "true" ]; then
   cat <<EOF >> module-config-for-e2e.yaml
-defaultCR: https://localhost:8080/config/samples/default-sample-cr.yaml
+defaultCR: config/samples/default-sample-cr.yaml
 EOF
 fi
 
@@ -61,8 +61,17 @@ fi
 # Add moduleversion to `bdba` list in sec-scanners-config.yaml
 yq eval '.bdba += ["europe-docker.pkg.dev/kyma-project/prod/template-operator:'"${RELEASE_VERSION}"'"]' -i sec-scanners-config.yaml
 
+# Helper function to handle sed -i differences between GNU and BSD (macOS)
+sedi() {
+    if sed --version >/dev/null 2>&1; then
+        sed -i "$@"
+    else
+        sed -i '' "$@"
+    fi
+}
+
 # Replace test version with deployable version in the manifest YAML
-sed -i 's|europe-docker.pkg.dev/kyma-project/prod/template-operator:'"${RELEASE_VERSION}"'|europe-docker.pkg.dev/kyma-project/prod/template-operator:'"${DEPLOYABLE_IMAGE_VERSION}"'|g' template-operator.yaml
+sedi 's|europe-docker.pkg.dev/kyma-project/prod/template-operator:'"${RELEASE_VERSION}"'|europe-docker.pkg.dev/kyma-project/prod/template-operator:'"${DEPLOYABLE_IMAGE_VERSION}"'|g' template-operator.yaml
 
 MODULE_CONFIG="module-config-for-e2e.yaml"
 REGISTRY_URL="localhost:5111"
