@@ -155,9 +155,21 @@ deploy-klm: ## Deploy KLM in the KCP test cluster.
 	@echo "::endgroup::"
 
 
+clean-test-artifacts: ## Clean up test-specific resources.
+	@echo "::group::Cleaning up test-specific resources"
+	@export PATH=$(LOCALBIN):$$PATH # Add LOCALBIN to PATH
+	rm -f $(LIFECYCLE_MANAGER_DIR)/tests/e2e/mandatory_template_v2.yaml
+	@echo "::endgroup::"
+
+
 test-setup: ## Set up test-specific resources.
 	@echo "::group::Setting up test-specific resources"
 	@export PATH=$(LOCALBIN):$$PATH # Add LOCALBIN to PATH
+	# Exit early with an error if the file $(LIFECYCLE_MANAGER_DIR)/tests/e2e/mandatory_template_v2.yaml already exists
+	if [ -f $(LIFECYCLE_MANAGER_DIR)/tests/e2e/mandatory_template_v2.yaml ]; then
+		echo "File $(LIFECYCLE_MANAGER_DIR)/tests/e2e/mandatory_template_v2.yaml already exists. Please remove it before running the tests."
+		exit 1
+	fi
 	@pushd $(TEMPLATE_OPERATOR_DIR) > /dev/null
 	#
 	yq eval '.images[0].newTag = "$(OLDER_VERSION_FOR_MANDATORY_MODULE)"' -i config/manager/deployment/kustomization.yaml
@@ -203,11 +215,11 @@ test-run: ginkgo-install ## Run E2E test for mandatory module installation and d
 	exit $${status}
 
 
-test: create-clusters deploy-klm test-setup test-run ## Run all E2E tests for mandatory module installation and deletion.
+test: clean-test-artifacts teardown create-clusters deploy-klm test-setup test-run ## Run all E2E tests for mandatory module installation and deletion.
 
 
 teardown:
-	@echo "::group::Cleaning up..."
+	@echo "::group::Shutting down local clusters..."
 	@export PATH=$(LOCALBIN):$$PATH # Add LOCALBIN to PATH
 	@$(SCRIPTS_DIR)/clusters_cleanup.sh
 	@echo "::endgroup::"

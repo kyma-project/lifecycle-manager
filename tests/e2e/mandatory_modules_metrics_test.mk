@@ -166,12 +166,6 @@ test-setup: ## Set up test-specific resources.
 	#
 	$(SCRIPTS_DIR)/deploy_mandatory_modulereleasemeta.sh "$(MODULE_NAME)" "$(OLDER_VERSION_FOR_MANDATORY_MODULE)"
 	#
-	#yq eval '.images[0].newTag = "$(NEWER_VERSION_FOR_MANDATORY_MODULE)"' -i config/manager/deployment/kustomization.yaml
-	#make build-manifests
-	#yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "$(MODULE_DEPLOYMENT_NAME_IN_NEWER_VERSION)"' -i template-operator.yaml
-	#$(SCRIPTS_DIR)/deploy_moduletemplate.sh "$(MODULE_NAME)" "$(NEWER_VERSION_FOR_MANDATORY_MODULE)" "$(DEPLOYABLE_MODULE_VERSION)" true true false false
-	#cp template.yaml $(LIFECYCLE_MANAGER_DIR)/tests/e2e/mandatory_template_v2.yaml
-	#
 	@popd > /dev/null
 	@echo "::endgroup::"
 
@@ -204,7 +198,7 @@ test: create-clusters deploy-klm test-setup test-run ## Run all E2E tests for ma
 
 
 teardown:
-	@echo "::group::Cleaning up..."
+	@echo "::group::Shutting down local clusters..."
 	@export PATH=$(LOCALBIN):$$PATH # Add LOCALBIN to PATH
 	@$(SCRIPTS_DIR)/clusters_cleanup.sh
 	@echo "::endgroup::"
