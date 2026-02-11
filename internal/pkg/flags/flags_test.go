@@ -417,6 +417,24 @@ func Test_Flags_Validate(t *testing.T) {
 			flags: newFlagVarBuilder().withOciRegistryHost("test").withOciRegistryCredSecretName("test").build(),
 			err:   common.ErrBothOCIRegistryHostAndCredSecretProvided,
 		},
+		{
+			name: "SelfSignedCertRenewBuffer >= SwitchGracePeriod",
+			flags: newFlagVarBuilder().withSelfSignedCertRenewBuffer(48 * time.Hour).
+				withIstioGatewayServerCertSwitchGracePeriod(24 * time.Hour).build(),
+			err: ErrSelfSignedCertRenewBufferExceedsGracePeriod,
+		},
+		{
+			name: "SelfSignedCertRenewBuffer == SwitchGracePeriod",
+			flags: newFlagVarBuilder().withSelfSignedCertRenewBuffer(24 * time.Hour).
+				withIstioGatewayServerCertSwitchGracePeriod(24 * time.Hour).build(),
+			err: ErrSelfSignedCertRenewBufferExceedsGracePeriod,
+		},
+		{
+			name: "SelfSignedCertRenewBuffer < SwitchGracePeriod",
+			flags: newFlagVarBuilder().withSelfSignedCertRenewBuffer(12 * time.Hour).
+				withIstioGatewayServerCertSwitchGracePeriod(24 * time.Hour).build(),
+			err: nil,
+		},
 	}
 
 	for _, tt := range tests {
@@ -511,5 +529,15 @@ func (b *flagVarBuilder) withOciRegistryHost(host string) *flagVarBuilder {
 
 func (b *flagVarBuilder) withOciRegistryCredSecretName(secretName string) *flagVarBuilder {
 	b.flags.OciRegistryCredSecretName = secretName
+	return b
+}
+
+func (b *flagVarBuilder) withSelfSignedCertRenewBuffer(d time.Duration) *flagVarBuilder {
+	b.flags.SelfSignedCertRenewBuffer = d
+	return b
+}
+
+func (b *flagVarBuilder) withIstioGatewayServerCertSwitchGracePeriod(d time.Duration) *flagVarBuilder {
+	b.flags.IstioGatewayServerCertSwitchGracePeriod = d
 	return b
 }

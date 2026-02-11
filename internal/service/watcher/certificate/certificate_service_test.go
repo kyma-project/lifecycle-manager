@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apicorev1 "k8s.io/api/core/v1"
@@ -58,15 +59,15 @@ func TestCreateSkrCertificate_Success(t *testing.T) {
 	err := certService.CreateSkrCertificate(t.Context(), kyma)
 
 	require.NoError(t, err)
-	assert.True(t, certRepo.createCalled)
-	assert.Equal(t, runtimeID, certRepo.createCommonName)
-	assert.Equal(t, kymaName+expectedCertNameSuffix, certRepo.createName)
-	assert.Contains(t, certRepo.createDNSNames, skrDomainName)
-	assert.Contains(t, certRepo.createDNSNames, additionalDNSNames[0])
-	assert.Contains(t, certRepo.createDNSNames, additionalDNSNames[1])
-	assert.Contains(t, certRepo.createDNSNames,
+	require.True(t, certRepo.createCalled)
+	require.Equal(t, runtimeID, certRepo.createCommonName)
+	require.Equal(t, kymaName+expectedCertNameSuffix, certRepo.createName)
+	require.Contains(t, certRepo.createDNSNames, skrDomainName)
+	require.Contains(t, certRepo.createDNSNames, additionalDNSNames[0])
+	require.Contains(t, certRepo.createDNSNames, additionalDNSNames[1])
+	require.Contains(t, certRepo.createDNSNames,
 		fmt.Sprintf("%s.%s.svc.cluster.local", skrServiceName, skrNamespace))
-	assert.Contains(t, certRepo.createDNSNames, fmt.Sprintf("%s.%s.svc", skrServiceName, skrNamespace))
+	require.Contains(t, certRepo.createDNSNames, fmt.Sprintf("%s.%s.svc", skrServiceName, skrNamespace))
 }
 
 func TestCreateSkrCertificate_CertificateRepositoryReturnsError_ReturnsError(t *testing.T) {
@@ -89,7 +90,7 @@ func TestCreateSkrCertificate_CertificateRepositoryReturnsError_ReturnsError(t *
 
 	require.Error(t, err)
 	require.ErrorContains(t, err, "failed to create SKR certificate")
-	assert.True(t, certRepo.createCalled)
+	require.True(t, certRepo.createCalled)
 }
 
 func TestCreateSkrCertificate_ErrDomainAnnotationMissing_ReturnsError(t *testing.T) {
@@ -108,7 +109,7 @@ func TestCreateSkrCertificate_ErrDomainAnnotationMissing_ReturnsError(t *testing
 	require.Error(t, err)
 	require.ErrorIs(t, err, certificate.ErrDomainAnnotationMissing)
 	require.ErrorContains(t, err, "failed to construct DNS names")
-	assert.False(t, certRepo.createCalled)
+	require.False(t, certRepo.createCalled)
 }
 
 func TestCreateSkrCertificate_ErrDomainAnnotationEmpty_ReturnsError(t *testing.T) {
@@ -130,7 +131,7 @@ func TestCreateSkrCertificate_ErrDomainAnnotationEmpty_ReturnsError(t *testing.T
 	require.Error(t, err)
 	require.ErrorIs(t, err, certificate.ErrDomainAnnotationEmpty)
 	require.ErrorContains(t, err, "failed to construct DNS names")
-	assert.False(t, certRepo.createCalled)
+	require.False(t, certRepo.createCalled)
 }
 
 func TestDeleteSkrCertificate_Success(t *testing.T) {
@@ -141,10 +142,10 @@ func TestDeleteSkrCertificate_Success(t *testing.T) {
 	err := certService.DeleteSkrCertificate(t.Context(), kymaName)
 
 	require.NoError(t, err)
-	assert.True(t, certRepo.deleteCalled)
-	assert.Equal(t, kymaName+expectedCertNameSuffix, certRepo.deleteName)
-	assert.True(t, secretRepo.deleteCalled)
-	assert.Equal(t, kymaName+expectedCertNameSuffix, secretRepo.deleteName)
+	require.True(t, certRepo.deleteCalled)
+	require.Equal(t, kymaName+expectedCertNameSuffix, certRepo.deleteName)
+	require.True(t, secretRepo.deleteCalled)
+	require.Equal(t, kymaName+expectedCertNameSuffix, secretRepo.deleteName)
 }
 
 func TestDeleteSkrCertificate_CertificateRepositoryReturnsError_ReturnsError(t *testing.T) {
@@ -158,8 +159,8 @@ func TestDeleteSkrCertificate_CertificateRepositoryReturnsError_ReturnsError(t *
 
 	require.Error(t, err)
 	require.ErrorContains(t, err, "failed to delete SKR certificate")
-	assert.True(t, certRepo.deleteCalled)
-	assert.False(t, secretRepo.deleteCalled)
+	require.True(t, certRepo.deleteCalled)
+	require.False(t, secretRepo.deleteCalled)
 }
 
 func TestDeleteSkrCertificate_SecretRepositoryReturnsError_ReturnsError(t *testing.T) {
@@ -173,45 +174,67 @@ func TestDeleteSkrCertificate_SecretRepositoryReturnsError_ReturnsError(t *testi
 
 	require.Error(t, err)
 	require.ErrorContains(t, err, "failed to delete SKR certificate secret")
-	assert.True(t, certRepo.deleteCalled)
-	assert.True(t, secretRepo.deleteCalled)
+	require.True(t, certRepo.deleteCalled)
+	require.True(t, secretRepo.deleteCalled)
 }
 
 func TestIsSkrCertificateRenewalOverdue_WhenRenewalTimeMatches_ReturnsTrue(t *testing.T) {
 	certRepo := &certRepoStub{
-		// renewal time is one second out of buffer
-		renewalTime: time.Now().Add(-renewBuffer - time.Second),
+		getValidityStart: time.Now().Add(-time.Hour),
+		getValidityEnd:   time.Now().Add(time.Hour),
 	}
-	certService := certificate.NewService(certRepo, &secretRepoStub{}, certificate.Config{
+	gatewaySecret := getGatewaySecretWithLastModifiedAnnotation(time.Now().Format(time.RFC3339))
+	secretRepo := &secretRepoStub{
+		getSecrets: []*apicorev1.Secret{gatewaySecret, gatewaySecret},
+	}
+	certService := certificate.NewService(certRepo, secretRepo, certificate.Config{
 		RenewBuffer: renewBuffer,
 	})
 
 	overdue, err := certService.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
 
 	require.NoError(t, err)
-	assert.True(t, overdue)
-	assert.True(t, certRepo.getRenewalTimeCalled)
+	require.True(t, overdue)
+	require.True(t, certRepo.getValidityCalled)
+	require.True(t, secretRepo.getCalled)
+}
+
+func getGatewaySecretWithLastModifiedAnnotation(lastModifiedAnnotation string) *apicorev1.Secret {
+	return &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      gatewaySecretName,
+			Namespace: testutils.IstioNamespace,
+			Annotations: map[string]string{
+				shared.LastModifiedAtAnnotation: lastModifiedAnnotation,
+			},
+		},
+	}
 }
 
 func TestIsSkrCertificateRenewalOverdue_ReturnsFalse(t *testing.T) {
 	certRepo := &certRepoStub{
-		// renewal time is one second within buffer
-		renewalTime: time.Now().Add(-renewBuffer + time.Second),
+		getValidityStart: time.Now().Add(time.Second),
+		getValidityEnd:   time.Now().Add(time.Hour),
 	}
-	certService := certificate.NewService(certRepo, &secretRepoStub{}, certificate.Config{
+	gatewaySecret := getGatewaySecretWithLastModifiedAnnotation(time.Now().Format(time.RFC3339))
+	secretRepo := &secretRepoStub{
+		getSecrets: []*apicorev1.Secret{gatewaySecret},
+	}
+	certService := certificate.NewService(certRepo, secretRepo, certificate.Config{
 		RenewBuffer: renewBuffer,
 	})
 
 	overdue, err := certService.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
 
 	require.NoError(t, err)
-	assert.False(t, overdue)
-	assert.True(t, certRepo.getRenewalTimeCalled)
+	require.False(t, overdue)
+	require.True(t, certRepo.getValidityCalled)
+	require.True(t, secretRepo.getCalled)
 }
 
 func TestIsSkrCertificateRenewalOverdue_CertRepositoryReturnsError_ReturnsError(t *testing.T) {
 	certRepo := &certRepoStub{
-		getRenewalTimeErr: assert.AnError,
+		getValidityErr: assert.AnError,
 	}
 	certService := certificate.NewService(certRepo, &secretRepoStub{}, certificate.Config{
 		RenewBuffer: renewBuffer,
@@ -220,9 +243,30 @@ func TestIsSkrCertificateRenewalOverdue_CertRepositoryReturnsError_ReturnsError(
 	overdue, err := certService.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
 
 	require.Error(t, err)
-	require.ErrorContains(t, err, "failed to get SKR certificate renewal time")
-	assert.False(t, overdue)
-	assert.True(t, certRepo.getRenewalTimeCalled)
+	require.ErrorContains(t, err, "failed to determine if SKR certificate needs renewal")
+	require.True(t, overdue)
+	require.True(t, certRepo.getValidityCalled)
+}
+
+func TestIsSkrCertificateRenewalOverdue_SecretRepositoryReturnsError_ReturnsError(t *testing.T) {
+	certRepo := &certRepoStub{
+		getValidityStart: time.Now().Add(-time.Hour),
+		getValidityEnd:   time.Now().Add(time.Hour),
+	}
+	secretRepo := &secretRepoStub{
+		getErrors: []error{assert.AnError},
+	}
+	certService := certificate.NewService(certRepo, secretRepo, certificate.Config{
+		RenewBuffer: renewBuffer,
+	})
+
+	overdue, err := certService.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
+
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to determine gateway secret lastModifiedAt")
+	require.True(t, overdue)
+	require.True(t, certRepo.getValidityCalled)
+	require.True(t, secretRepo.getCalled)
 }
 
 func TestGetSkrCertificateSecret_SecretRepositoryReturns_Success(t *testing.T) {
