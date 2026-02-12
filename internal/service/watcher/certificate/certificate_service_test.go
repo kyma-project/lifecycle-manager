@@ -178,14 +178,17 @@ func TestDeleteSkrCertificate_SecretRepositoryReturnsError_ReturnsError(t *testi
 	require.True(t, secretRepo.deleteCalled)
 }
 
-func TestIsSkrCertificateRenewalOverdue_WhenRenewalTimeMatches_ReturnsTrue(t *testing.T) {
-	certRepo := &certRepoStub{
-		getValidityStart: time.Now().Add(-time.Hour),
-		getValidityEnd:   time.Now().Add(time.Hour),
-	}
-	gatewaySecret := getGatewaySecretWithLastModifiedAnnotation(time.Now().Format(time.RFC3339))
+func TestIsSkrCertificateRenewalOverdue_WhenRenewalOverdue_ReturnsTrue(t *testing.T) {
+	caRotationTime := time.Now().Add(-30 * time.Minute)
+	clientCertRotationTime := time.Now().Add(-time.Hour)
+
+	gatewaySecret := getGatewaySecretWithLastModifiedAnnotation(caRotationTime.Format(time.RFC3339))
 	secretRepo := &secretRepoStub{
 		getSecrets: []*apicorev1.Secret{gatewaySecret, gatewaySecret},
+	}
+	certRepo := &certRepoStub{
+		getValidityStart: clientCertRotationTime,
+		getValidityEnd:   clientCertRotationTime.Add(time.Hour),
 	}
 	certService := certificate.NewService(certRepo, secretRepo, certificate.Config{
 		RenewBuffer: renewBuffer,
@@ -211,14 +214,41 @@ func getGatewaySecretWithLastModifiedAnnotation(lastModifiedAnnotation string) *
 	}
 }
 
-func TestIsSkrCertificateRenewalOverdue_ReturnsFalse(t *testing.T) {
-	certRepo := &certRepoStub{
-		getValidityStart: time.Now().Add(time.Second),
-		getValidityEnd:   time.Now().Add(time.Hour),
-	}
-	gatewaySecret := getGatewaySecretWithLastModifiedAnnotation(time.Now().Format(time.RFC3339))
+func TestIsSkrCertificateRenewalOverdue_WhenClientCertificateMoreRecentThanCA_ReturnsFalse(t *testing.T) {
+	caRotationTime := time.Now().Add(-time.Second)
+	clientCertRotationTime := time.Now()
+
+	gatewaySecret := getGatewaySecretWithLastModifiedAnnotation(caRotationTime.Format(time.RFC3339))
 	secretRepo := &secretRepoStub{
-		getSecrets: []*apicorev1.Secret{gatewaySecret},
+		getSecrets: []*apicorev1.Secret{gatewaySecret, gatewaySecret},
+	}
+	certRepo := &certRepoStub{
+		getValidityStart: clientCertRotationTime,
+		getValidityEnd:   clientCertRotationTime.Add(time.Hour),
+	}
+	certService := certificate.NewService(certRepo, secretRepo, certificate.Config{
+		RenewBuffer: renewBuffer,
+	})
+
+	overdue, err := certService.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
+
+	require.NoError(t, err)
+	require.False(t, overdue)
+	require.True(t, certRepo.getValidityCalled)
+	require.True(t, secretRepo.getCalled)
+}
+
+func TestIsSkrCertificateRenewalOverdue_WhenClientCertificateOlderThanCA_ButWithinBuffer_ReturnsFalse(t *testing.T) {
+	caRotationTime := time.Now().Add(-5 * time.Minute)
+	clientCertRotationTime := time.Now().Add(-30 * time.Minute)
+
+	gatewaySecret := getGatewaySecretWithLastModifiedAnnotation(caRotationTime.Format(time.RFC3339))
+	secretRepo := &secretRepoStub{
+		getSecrets: []*apicorev1.Secret{gatewaySecret, gatewaySecret},
+	}
+	certRepo := &certRepoStub{
+		getValidityStart: clientCertRotationTime,
+		getValidityEnd:   clientCertRotationTime.Add(time.Hour),
 	}
 	certService := certificate.NewService(certRepo, secretRepo, certificate.Config{
 		RenewBuffer: renewBuffer,
