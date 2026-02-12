@@ -470,7 +470,9 @@ func newFlagVarBuilder() *flagVarBuilder {
 		withSelfSignedCertKeySize(4096).
 		withManifestRequeueJitterProbability(0.01).
 		withManifestRequeueJitterPercentage(0.1).
-		withOciRegistryHost("europe-docker.pkg.dev")
+		withOciRegistryHost("europe-docker.pkg.dev").
+		withSelfSignedCertRenewBuffer(DefaultSelfSignedCertificateRenewBuffer).
+		withIstioGatewayServerCertSwitchGracePeriod(DefaultIstioGatewayServerCertSwitchGracePeriod)
 }
 
 func (b *flagVarBuilder) build() FlagVar {
