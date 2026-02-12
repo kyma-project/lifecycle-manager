@@ -84,6 +84,8 @@ jobs:
           - module-deletion-blocking-with-default-cr-with-finalizer
           - module-deletion-blocking-with-cross-namespace-ignore-policy
           - module-deletion-blocking-with-cross-namespace-create-and-delete-policy
+          - module-deletion-blocking-with-cluster-scoped-crs-ignore-policy
+          - module-deletion-blocking-with-cluster-scoped-crs-create-and-delete-policy
           - oci-reg-cred-secret
           - module-transferred-to-another-oci-registry
           - simulate-skr-secret-rotation-evict-client-cache

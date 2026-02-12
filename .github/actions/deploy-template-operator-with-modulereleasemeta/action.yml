@@ -34,6 +34,14 @@ runs:
       run: |
         yq eval '.images[0].newTag = "${{ inputs.module_version }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
+
+        if [[ "${{ matrix.e2e-test }}" == "module-deletion-blocking-with-cluster-scoped-crs-ignore-policy" ]] || \
+           [[ "${{ matrix.e2e-test }}" == "module-deletion-blocking-with-cluster-scoped-crs-create-and-delete-policy" ]]; then
+          # Make Sample CRD cluster-scoped for cluster-scoped CR tests
+          crd_selector='select(.kind == "CustomResourceDefinition" and .metadata.name == "samples.operator.kyma-project.io")'
+          yq eval "(${crd_selector} | .spec.scope) = \"Cluster\"" -i template-operator.yaml
+        fi
+
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ inputs.module_version }} ${{ inputs.module_version }} true false true false
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInOlderVersion
       working-directory: template-operator
@@ -47,6 +55,14 @@ runs:
         yq eval '.images[0].newTag = "${{ env.OlderVersion }}"' -i config/manager/deployment/kustomization.yaml
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInOlderVersion }}"' -i template-operator.yaml
+
+        if [[ "${{ matrix.e2e-test }}" == "module-deletion-blocking-with-cluster-scoped-crs-ignore-policy" ]] || \
+           [[ "${{ matrix.e2e-test }}" == "module-deletion-blocking-with-cluster-scoped-crs-create-and-delete-policy" ]]; then
+          # Make Sample CRD cluster-scoped for cluster-scoped CR tests
+          crd_selector='select(.kind == "CustomResourceDefinition" and .metadata.name == "samples.operator.kyma-project.io")'
+          yq eval "(${crd_selector} | .spec.scope) = \"Cluster\"" -i template-operator.yaml
+        fi
+
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersion }} ${{ inputs.module_version }} true false true false
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInNewerVersion
       working-directory: template-operator
@@ -79,6 +95,14 @@ runs:
           yq eval "(${crd_selector} | .spec.versions[] | select(.name == \"v1alpha1\")).storage = false" -i template-operator.yaml
           yq eval '.apiVersion = "operator.kyma-project.io/v1beta1"' -i config/samples/default-sample-cr.yaml
         fi
+
+        if [[ "${{ matrix.e2e-test }}" == "module-deletion-blocking-with-cluster-scoped-crs-ignore-policy" ]] || \
+           [[ "${{ matrix.e2e-test }}" == "module-deletion-blocking-with-cluster-scoped-crs-create-and-delete-policy" ]]; then
+          # Make Sample CRD cluster-scoped for cluster-scoped CR tests
+          crd_selector='select(.kind == "CustomResourceDefinition" and .metadata.name == "samples.operator.kyma-project.io")'
+          yq eval "(${crd_selector} | .spec.scope) = \"Cluster\"" -i template-operator.yaml
+        fi
+
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }} ${{ inputs.module_version }} $INCLUDE_DEFAULT_CR $MANDATORY $DEPLOY_MODULETEMPLATE $REQUIRE_DOWNTIME
 
 
@@ -136,6 +160,8 @@ runs:
         matrix.e2e-test == 'module-deletion-blocking-with-default-cr-with-finalizer' ||
         matrix.e2e-test == 'module-deletion-blocking-with-cross-namespace-ignore-policy' ||
         matrix.e2e-test == 'module-deletion-blocking-with-cross-namespace-create-and-delete-policy' ||
+        matrix.e2e-test == 'module-deletion-blocking-with-cluster-scoped-crs-ignore-policy' ||
+        matrix.e2e-test == 'module-deletion-blocking-with-cluster-scoped-crs-create-and-delete-policy' ||
         matrix.e2e-test == 'oci-reg-cred-secret' ||
         matrix.e2e-test == 'module-transferred-to-another-oci-registry'
         }}
