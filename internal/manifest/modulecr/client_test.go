@@ -368,3 +368,65 @@ func TestClient_GetAllModuleCRsExcludingDefaultCR_WithCRsInDifferentNamespaces(t
 	assert.True(t, foundInCustom, "Module CR in custom namespace should be found")
 	assert.True(t, foundSameNameDiffNs, "Module CR with same name but different namespace should be found")
 }
+
+func TestClient_GetAllModuleCRsExcludingDefaultCR_WithClusterScopedCR(t *testing.T) {
+	// Given a scheme with cluster-scoped CRs
+	testScheme := machineryruntime.NewScheme()
+	err := v1beta2.AddToScheme(testScheme)
+	require.NoError(t, err)
+
+	kcpClient := fake.NewClientBuilder().WithScheme(testScheme).WithRESTMapper(getRestMapper()).Build()
+	skrClient := modulecr.NewClient(kcpClient)
+
+	// Create a manifest with a cluster-scoped default CR
+	manifest := testutils.NewTestManifest("test-manifest")
+	manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
+
+	const defaultModuleName = "default-cluster-scoped-resource"
+	moduleCR := unstructured.Unstructured{}
+	moduleCR.SetGroupVersionKind(
+		schema.GroupVersionKind{
+			Group:   templatev1alpha1.GroupVersion.Group,
+			Version: templatev1alpha1.GroupVersion.Version,
+			Kind:    string(templatev1alpha1.SampleKind),
+		},
+	)
+	moduleCR.SetName(defaultModuleName)
+	// Manifest spec may have namespace set (as defined in module template)
+	moduleCR.SetNamespace(shared.DefaultRemoteNamespace)
+	manifest.Spec.Resource = &moduleCR
+
+	// Create the actual cluster-scoped CR in the cluster
+	// For cluster-scoped resources, namespace is always ""
+	clusterScopedDefaultCR := unstructured.Unstructured{}
+	clusterScopedDefaultCR.SetGroupVersionKind(moduleCR.GroupVersionKind())
+	clusterScopedDefaultCR.SetName(defaultModuleName)
+	clusterScopedDefaultCR.SetNamespace("") // Cluster-scoped CR has no namespace
+	err = skrClient.Create(t.Context(), &clusterScopedDefaultCR)
+	require.NoError(t, err)
+
+	// Create another cluster-scoped CR (user-created)
+	const userModuleName = "user-cluster-scoped-resource"
+	userClusterScopedCR := unstructured.Unstructured{}
+	userClusterScopedCR.SetGroupVersionKind(moduleCR.GroupVersionKind())
+	userClusterScopedCR.SetName(userModuleName)
+	userClusterScopedCR.SetNamespace("") // Cluster-scoped CR has no namespace
+	err = skrClient.Create(t.Context(), &userClusterScopedCR)
+	require.NoError(t, err)
+
+	// When Getting all Module CRs excluding the default CR
+	moduleCRs, err := skrClient.GetAllModuleCRsExcludingDefaultCR(t.Context(), manifest)
+	require.NoError(t, err)
+
+	// Then only the user-created cluster-scoped CR should be returned
+	require.Len(t, moduleCRs, 1)
+	assert.Equal(t, userModuleName, moduleCRs[0].GetName())
+	assert.Empty(t, moduleCRs[0].GetNamespace())
+
+	// Verify default CR is excluded despite namespace mismatch
+	// (manifest.Spec.Resource has namespace="kyma-system", actual CR has namespace="")
+	for _, cr := range moduleCRs {
+		isDefaultCR := cr.GetName() == defaultModuleName
+		assert.False(t, isDefaultCR, "Default cluster-scoped CR should be excluded even with namespace mismatch")
+	}
+}
