@@ -299,6 +299,32 @@ func TestIsSkrCertificateRenewalOverdue_SecretRepositoryReturnsError_ReturnsErro
 	require.True(t, secretRepo.getCalled)
 }
 
+func TestIsSkrCertificateRenewalOverdue_SecretRepositoryReturnsError2_ReturnsError(t *testing.T) {
+	caRotationTime := time.Now().Add(-30 * time.Minute)
+	clientCertRotationTime := time.Now().Add(-time.Hour)
+
+	gatewaySecret := getGatewaySecretWithLastModifiedAnnotation(caRotationTime.Format(time.RFC3339))
+	invalidGatewaySecret := getGatewaySecretWithLastModifiedAnnotation("")
+	secretRepo := &secretRepoStub{
+		getSecrets: []*apicorev1.Secret{gatewaySecret, invalidGatewaySecret},
+	}
+	certRepo := &certRepoStub{
+		getValidityStart: clientCertRotationTime,
+		getValidityEnd:   clientCertRotationTime.Add(time.Hour),
+	}
+	certService := certificate.NewService(certRepo, secretRepo, certificate.Config{
+		RenewBuffer: renewBuffer,
+	})
+
+	overdue, err := certService.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
+
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to determine gateway secret lastModifiedAt")
+	require.True(t, overdue)
+	require.True(t, certRepo.getValidityCalled)
+	require.True(t, secretRepo.getCalled)
+}
+
 func TestGetSkrCertificateSecret_SecretRepositoryReturns_Success(t *testing.T) {
 	secretRepo := &secretRepoStub{
 		getSecrets: []*apicorev1.Secret{
