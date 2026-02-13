@@ -5,6 +5,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -148,7 +149,7 @@ func moduleTemplate(name, namespace string) v1beta2.ModuleTemplate {
 			Namespace: namespace,
 			ManagedFields: []apimetav1.ManagedFieldsEntry{
 				{
-					Manager:    moduleCatalogSyncFieldManager,
+					Manager:    string(fieldowners.LifecycleManager),
 					Operation:  apimetav1.ManagedFieldsOperationApply,
 					APIVersion: v1beta2.GroupVersion.String(),
 					FieldsType: "FieldsV1",
@@ -162,7 +163,7 @@ func getSettings() *Settings {
 	force := true
 	return &Settings{
 		Namespace:       "kyma-system",
-		SSAPatchOptions: &client.PatchOptions{FieldManager: moduleCatalogSyncFieldManager, Force: &force},
+		SSAPatchOptions: &client.PatchOptions{FieldManager: string(fieldowners.LifecycleManager), Force: &force},
 	}
 }
 

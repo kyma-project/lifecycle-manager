@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -102,7 +103,7 @@ func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 		return err
 	}
 
-	if err := r.doUpdateWithStrategy(ctx, kyma.Labels[shared.ManagedBy], module,
+	if err := r.doUpdateWithStrategy(ctx, string(fieldowners.LifecycleManager), module,
 		manifestInCluster, newManifest, moduleStatus); err != nil {
 		return err
 	}

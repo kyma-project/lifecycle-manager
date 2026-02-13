@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -66,7 +67,7 @@ func EnsureCRFinalizer(ctx context.Context, kcp client.Client, manifest *v1beta2
 	if added := controllerutil.AddFinalizer(oMeta, CustomResourceManagerFinalizer); added {
 		if err := kcp.Patch(
 			ctx, oMeta, client.Apply, client.ForceOwnership,
-			client.FieldOwner(CustomResourceManagerFinalizer),
+			fieldowners.LifecycleManager,
 		); err != nil {
 			return fmt.Errorf("failed to patch resource: %w", err)
 		}
@@ -91,7 +92,7 @@ func RemoveCRFinalizer(ctx context.Context, kcp client.Client, manifest *v1beta2
 
 	if removed := controllerutil.RemoveFinalizer(onCluster, CustomResourceManagerFinalizer); removed {
 		if err := kcp.Update(
-			ctx, onCluster, client.FieldOwner(CustomResourceManagerFinalizer),
+			ctx, onCluster, fieldowners.LifecycleManager,
 		); err != nil {
 			return fmt.Errorf("failed to update resource: %w", err)
 		}

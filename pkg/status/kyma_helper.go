@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -52,9 +53,8 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 		LastUpdateTime: apimetav1.NewTime(time.Now()),
 	}
 
-	fieldOwner := shared.OperatorName
 	if err := k.Patch(ctx, kyma, client.Apply, SubResourceOpts(client.ForceOwnership),
-		client.FieldOwner(fieldOwner)); err != nil {
+		fieldowners.LifecycleManager); err != nil {
 		return fmt.Errorf("status could not be updated: %w", err)
 	}
 

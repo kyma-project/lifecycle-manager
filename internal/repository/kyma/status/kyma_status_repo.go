@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -45,7 +46,7 @@ func (r *Repository) updateKymaStatus(ctx context.Context,
 
 	if err := r.statusWriter.Patch(ctx, kyma, client.Apply, &client.SubResourcePatchOptions{
 		PatchOptions: *(&client.PatchOptions{}).ApplyOptions([]client.PatchOption{client.ForceOwnership}),
-	}, client.FieldOwner(shared.OperatorName)); err != nil {
+	}, fieldowners.LifecycleManager); err != nil {
 		return fmt.Errorf("status could not be updated: %w", err)
 	}
 

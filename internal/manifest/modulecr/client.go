@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -133,7 +134,7 @@ func (c *Client) SyncDefaultModuleCR(ctx context.Context, manifest *v1beta2.Mani
 			return nil
 		}
 		if err := c.Create(ctx, resource,
-			client.FieldOwner(finalizer.CustomResourceManagerFinalizer)); err != nil &&
+			fieldowners.LifecycleManager); err != nil &&
 			!apierrors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create resource: %w", err)
 		}

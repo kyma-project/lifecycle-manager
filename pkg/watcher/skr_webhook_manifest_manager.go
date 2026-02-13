@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	apiappsv1 "k8s.io/api/apps/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -32,7 +33,6 @@ var (
 )
 
 const (
-	skrChartFieldOwner       = client.FieldOwner(shared.OperatorName)
 	skrWebhookDeploymentName = "skr-webhook"
 )
 
@@ -117,7 +117,7 @@ func (m *SkrWebhookManifestManager) Reconcile(ctx context.Context, kyma *v1beta2
 	err = m.chartReaderService.RunResourceOperationWithGroupedErrors(ctx, skrContext.Client, resources,
 		func(ctx context.Context, clt client.Client, resource client.Object) error {
 			resource.SetNamespace(m.remoteSyncNamespace)
-			err := clt.Patch(ctx, resource, client.Apply, client.ForceOwnership, skrChartFieldOwner)
+			err := clt.Patch(ctx, resource, client.Apply, client.ForceOwnership, fieldowners.LifecycleManager)
 			if err != nil {
 				return fmt.Errorf("failed to patch resource %s: %w", resource.GetName(), err)
 			}

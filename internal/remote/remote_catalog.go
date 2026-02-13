@@ -5,13 +5,12 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
-
-const moduleCatalogSyncFieldManager = "catalog-sync"
 
 type Settings struct {
 	// this namespace flag can be used to override the namespace in which all ModuleTemplates should be applied.
@@ -43,7 +42,8 @@ type moduleTemplateSyncAPIFactory func(kcpClient, skrClient client.Client, setti
 
 // moduleReleaseMetaSyncAPIFactory is a function that creates moduleReleaseMetaSyncAPI instances.
 type moduleReleaseMetaSyncAPIFactory func(kcpClient, skrClient client.Client,
-	settings *Settings) moduleReleaseMetaSyncAPI
+	settings *Settings,
+) moduleReleaseMetaSyncAPI
 
 func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrContextProvider,
 	remoteSyncNamespace string,
@@ -51,7 +51,7 @@ func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrCont
 	force := true
 	return newRemoteCatalog(kcpClient, skrContextFactory,
 		Settings{
-			SSAPatchOptions: &client.PatchOptions{FieldManager: moduleCatalogSyncFieldManager, Force: &force},
+			SSAPatchOptions: &client.PatchOptions{FieldManager: string(fieldowners.LifecycleManager), Force: &force},
 			Namespace:       remoteSyncNamespace,
 		},
 	)

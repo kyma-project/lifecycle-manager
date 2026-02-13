@@ -3,6 +3,7 @@ package skrresources_test
 import (
 	"testing"
 
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
@@ -28,7 +29,7 @@ func TestConcurrentSSA(t *testing.T) {
 	fakeClientBuilder := fake.NewClientBuilder().WithRuntimeObjects(pod).Build()
 	_ = fakeClientBuilder.Create(t.Context(), pod)
 
-	inactiveCollector := skrresources.NewManifestLogCollector(nil, client.FieldOwner("test"))
+	inactiveCollector := skrresources.NewManifestLogCollector(nil, fieldowners.LifecycleManager)
 
 	type args struct {
 		clnt  client.Client
@@ -44,7 +45,7 @@ func TestConcurrentSSA(t *testing.T) {
 			"simple apply nothing",
 			args{
 				clnt:  fakeClientBuilder,
-				owner: client.FieldOwner("test"),
+				owner: fieldowners.LifecycleManager,
 			},
 			[]*resource.Info{},
 			nil,

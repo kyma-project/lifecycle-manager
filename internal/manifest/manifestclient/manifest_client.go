@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 )
-
-const DefaultFieldOwner client.FieldOwner = "declarative.kyma-project.io/applier"
 
 type ManifestClient struct {
 	client.Client
@@ -38,7 +37,8 @@ func (m *ManifestClient) PatchStatusIfDiffExist(ctx context.Context, manifest *v
 ) error {
 	if HasStatusDiff(manifest.GetStatus(), previousStatus) {
 		resetNonPatchableField(manifest)
-		if err := m.Status().Patch(ctx, manifest, client.Apply, client.ForceOwnership, DefaultFieldOwner); err != nil {
+		if err := m.Status().Patch(ctx, manifest, client.Apply, client.ForceOwnership,
+			fieldowners.LifecycleManager); err != nil {
 			m.Warning(manifest, "PatchStatus", err)
 			return fmt.Errorf("failed to patch status: %w", err)
 		}
@@ -49,7 +49,7 @@ func (m *ManifestClient) PatchStatusIfDiffExist(ctx context.Context, manifest *v
 
 func (m *ManifestClient) SsaSpec(ctx context.Context, obj client.Object) error {
 	resetNonPatchableField(obj)
-	if err := m.Patch(ctx, obj, client.Apply, client.ForceOwnership, DefaultFieldOwner); err != nil {
+	if err := m.Patch(ctx, obj, client.Apply, client.ForceOwnership, fieldowners.LifecycleManager); err != nil {
 		m.Warning(obj, "PatchObject", err)
 		return fmt.Errorf("failed to patch object: %w", err)
 	}

@@ -16,17 +16,14 @@ import (
 	"time"
 
 	"github.com/jellydator/ttlcache/v3"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 )
 
 const (
-	knownManagersDefault = string(manifestclient.DefaultFieldOwner) + ";" +
-		shared.OperatorName + ";" +
+	knownManagersDefault = string(fieldowners.LifecycleManager) + ";" +
 		"k3s" // Applied in k3s environments.
 	knownManagersEnvVar = "KLM_EXPERIMENTAL_KNOWN_MANAGERS"
 	knownManagersRegexp = `^[a-zA-Z][a-zA-Z0-9.:_/-]{1,127}$`

@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -94,7 +95,7 @@ func PatchCRD(ctx context.Context, clnt client.Client, crd *apiextensionsv1.Cust
 	err := clnt.Patch(ctx, crdToApply,
 		client.Apply,
 		client.ForceOwnership,
-		client.FieldOwner(shared.OperatorName))
+		fieldowners.LifecycleManager)
 	if err != nil {
 		return fmt.Errorf("failed to patch CRD: %w", err)
 	}

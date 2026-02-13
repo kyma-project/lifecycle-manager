@@ -11,6 +11,7 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -145,7 +146,7 @@ func ApplyYAML(ctx context.Context, clnt client.Client, yamlFilePath string) err
 	}
 
 	for _, object := range resources {
-		err := clnt.Patch(ctx, object, client.Apply, client.ForceOwnership, client.FieldOwner(shared.OperatorName))
+		err := clnt.Patch(ctx, object, client.Apply, client.ForceOwnership, fieldowners.LifecycleManager)
 		if err != nil {
 			return fmt.Errorf("error applying patch to resource %s/%s: %w",
 				object.GetNamespace(), object.GetName(), err)

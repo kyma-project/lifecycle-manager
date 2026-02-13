@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 )
 
 var ErrWarningResourceSyncStateDiff = errors.New("resource syncTarget state diff detected")
@@ -19,10 +19,10 @@ func SyncResources(ctx context.Context, skrClient client.Client, manifest *v1bet
 ) error {
 	manifestStatus := manifest.GetStatus()
 
-	managedFieldsCollector := NewManifestLogCollector(manifest, manifestclient.DefaultFieldOwner)
+	managedFieldsCollector := NewManifestLogCollector(manifest, fieldowners.LifecycleManager)
 
 	if err := ConcurrentSSA(skrClient,
-		manifestclient.DefaultFieldOwner,
+		fieldowners.LifecycleManager,
 		managedFieldsCollector,
 	).Run(ctx, target); err != nil {
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))

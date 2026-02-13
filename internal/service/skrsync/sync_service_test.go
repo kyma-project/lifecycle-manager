@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/stretchr/testify/require"
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -131,7 +132,7 @@ func TestSyncImagePullSecret_WhenSuccessful_SyncsSecretToSkr(t *testing.T) {
 	// Verify patch options were correctly set
 	require.Len(t, mockClient.patchOptions, 2)
 	require.Contains(t, mockClient.patchOptions, client.ForceOwnership)
-	require.Contains(t, mockClient.patchOptions, client.FieldOwner(shared.OperatorName))
+	require.Contains(t, mockClient.patchOptions, fieldowners.LifecycleManager)
 }
 
 func TestSyncCrds_WhenCalled_ShouldInvokeUseCase(t *testing.T) {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -319,7 +320,7 @@ func SetKymaState(ctx context.Context, kyma *v1beta2.Kyma, clnt client.Client, s
 
 	return clnt.Status().Patch(ctx, kyma, client.Apply,
 		status.SubResourceOpts(client.ForceOwnership),
-		client.FieldOwner(shared.OperatorName))
+		fieldowners.LifecycleManager)
 }
 
 func ContainsKymaManagerField(
