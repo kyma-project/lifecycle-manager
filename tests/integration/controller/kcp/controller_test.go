@@ -15,10 +15,11 @@ var _ = Describe("Kyma with managed fields in kcp mode", Ordered, func() {
 
 	registerControlPlaneLifecycleForKyma(kyma)
 
-	It(fmt.Sprintf("Should result in a managed field with manager named '%s'", fieldowners.LifecycleManager),
+	managerName := string(fieldowners.LifecycleManager)
+	It(fmt.Sprintf("Should result in a managed field with manager named '%s'", managerName),
 		func() {
 			Eventually(ContainsKymaManagerField, Timeout, Interval).
-				WithArguments(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), fieldowners.LifecycleManager).
+				WithArguments(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), managerName).
 				Should(BeTrue())
 		})
 })
