@@ -404,10 +404,6 @@ func (f FlagVar) Validate() error {
 		return err
 	}
 
-	if f.SelfSignedCertRenewBuffer >= f.IstioGatewayServerCertSwitchGracePeriod {
-		return ErrSelfSignedCertRenewBufferExceedsGracePeriod
-	}
-
 	return nil
 }
 
