@@ -87,9 +87,6 @@ var (
 	ErrInvalidManifestRequeueJitterProbability = errors.New(
 		"invalid manifest requeue jitter probability: must be between 0 and 1",
 	)
-	ErrSelfSignedCertRenewBufferExceedsGracePeriod = errors.New(
-		"self-signed-cert-renew-buffer must be less than istio-gateway-server-cert-switch-grace-period",
-	)
 )
 
 //nolint:funlen // defines all program flags
