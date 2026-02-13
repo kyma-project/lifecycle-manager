@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 
-	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 )
 
 var ErrWarningResourceSyncStateDiff = errors.New("resource syncTarget state diff detected")

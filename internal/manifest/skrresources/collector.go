@@ -16,10 +16,11 @@ import (
 	"time"
 
 	"github.com/jellydator/ttlcache/v3"
-	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 )
 
 const (
