@@ -110,14 +110,14 @@ func DeleteCertificateSecret(ctx context.Context, secret types.NamespacedName, k
 	return nil
 }
 
-func GetCACertificate(ctx context.Context, namespacedCertName types.NamespacedName, k8sClient client.Client,
+func GetCertificate(ctx context.Context, namespacedCertName types.NamespacedName, k8sClient client.Client,
 ) (*certmanagerv1.Certificate, error) {
-	caCert := &certmanagerv1.Certificate{}
-	if err := k8sClient.Get(ctx, namespacedCertName, caCert); err != nil {
+	cert := &certmanagerv1.Certificate{}
+	if err := k8sClient.Get(ctx, namespacedCertName, cert); err != nil {
 		return nil, fmt.Errorf("failed to get secret %w", err)
 	}
 
-	return caCert, nil
+	return cert, nil
 }
 
 func GatewaySecretCreationTimeIsUpdated(ctx context.Context, oldTime time.Time, kcpClient client.Client) error {

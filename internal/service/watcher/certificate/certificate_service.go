@@ -121,12 +121,21 @@ func (c *Service) RenewSkrCertificate(ctx context.Context, kymaName string) erro
 
 // IsSkrCertificateRenewalOverdue checks if the SKR certificate renewal is overdue.
 func (c *Service) IsSkrCertificateRenewalOverdue(ctx context.Context, kymaName string) (bool, error) {
-	renewalTime, err := c.certRepo.GetRenewalTime(ctx, name.SkrCertificate(kymaName))
+	renewalNeeded, err := c.skrCertificateNeedsRenewal(ctx, name.SkrCertificate(kymaName))
 	if err != nil {
-		return false, fmt.Errorf("failed to get SKR certificate renewal time: %w", err)
+		return true, fmt.Errorf("failed to determine if SKR certificate needs renewal: %w", err)
 	}
 
-	return time.Now().After(renewalTime.Add(c.config.RenewBuffer)), nil
+	if !renewalNeeded {
+		return false, nil
+	}
+
+	gatewaySecretLastModifiedAt, err := c.getGatewaySecretLastModifiedAt(ctx)
+	if err != nil {
+		return true, fmt.Errorf("failed to determine gateway secret lastModifiedAt: %w", err)
+	}
+
+	return time.Now().After(gatewaySecretLastModifiedAt.Add(c.config.RenewBuffer)), nil
 }
 
 // GetSkrCertificateSecret returns the SKR certificate secret.
