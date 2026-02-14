@@ -8,6 +8,8 @@ import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 )
 
 func AddValidityToCertificateStatus(ctx context.Context,
@@ -39,7 +41,7 @@ func AddValidityToCertificateStatus(ctx context.Context,
 		ctx,
 		certificate,
 		client.Apply,
-		client.FieldOwner("test-utils"),
+		fieldowners.LifecycleManager,
 	); err != nil {
 		return fmt.Errorf("failed to add NotBefore to certificate status: %w", err)
 	}

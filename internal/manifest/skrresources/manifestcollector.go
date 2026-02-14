@@ -6,7 +6,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 )
 
 // ManifestLogCollector is a collector for remote Manifest objects.
@@ -24,7 +23,7 @@ func NewManifestLogCollector(manifest *v1beta2.Manifest, owner client.FieldOwner
 		enabled = isManifestCollectionEnabled(manifest)
 	}
 	return &ManifestLogCollector{
-		collector: NewLogCollector(key, manifestclient.DefaultFieldOwner),
+		collector: NewLogCollector(key, owner),
 		enabled:   enabled,
 	}
 }
