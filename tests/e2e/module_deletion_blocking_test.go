@@ -75,11 +75,17 @@ func testModuleDeletionBlocking(
 		})
 	} else if len(userCreatedCRs) > 0 {
 		It("When user-created Module CRs are created", func() {
-			for _, cr := range userCreatedCRs {
-				By("Creating Module CR: " + cr.Name + " in namespace: " + cr.Namespace)
+			for _, moduleCR := range userCreatedCRs {
+				crDescription := "Creating Module CR: " + moduleCR.Name
+				if moduleCR.Namespace == "" {
+					crDescription += " (cluster-scoped)"
+				} else {
+					crDescription += " in namespace: " + moduleCR.Namespace
+				}
+				By(crDescription)
 				Eventually(CreateModuleCR).
 					WithContext(ctx).
-					WithArguments(cr.Name, cr.Namespace, skrClient).
+					WithArguments(moduleCR.Name, moduleCR.Namespace, skrClient).
 					Should(Succeed())
 			}
 		})
@@ -325,6 +331,53 @@ var _ = Describe(
 				&module,
 				[]types.NamespacedName{
 					{Name: "sample-cr-in-default-ns", Namespace: "default"},
+				},
+				false,
+			)
+		})
+	})
+
+var _ = Describe(
+	"Blocking Module Deletion With Cluster-Scoped CRs with Ignore Policy",
+	Ordered,
+	func() {
+		kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
+		module := NewTemplateOperator(v1beta2.DefaultChannel)
+		module.CustomResourcePolicy = v1beta2.CustomResourcePolicyIgnore
+
+		InitEmptyKymaBeforeAll(kyma)
+		CleanupKymaAfterAll(kyma)
+
+		Context("Given SKR Cluster with cluster-scoped module enabled", func() {
+			testModuleDeletionBlocking(
+				kyma,
+				&module,
+				[]types.NamespacedName{
+					{Name: "cluster-scoped-sample-cr-1", Namespace: ""},
+					{Name: "cluster-scoped-sample-cr-2", Namespace: ""},
+				},
+				false,
+			)
+		})
+	})
+
+var _ = Describe(
+	"Blocking Module Deletion With Cluster-Scoped CRs with CreateAndDelete Policy",
+	Ordered,
+	func() {
+		kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
+		module := NewTemplateOperator(v1beta2.DefaultChannel)
+		module.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
+
+		InitEmptyKymaBeforeAll(kyma)
+		CleanupKymaAfterAll(kyma)
+
+		Context("Given SKR Cluster with cluster-scoped module enabled", func() {
+			testModuleDeletionBlocking(
+				kyma,
+				&module,
+				[]types.NamespacedName{
+					{Name: "cluster-scoped-user-cr", Namespace: ""},
 				},
 				false,
 			)

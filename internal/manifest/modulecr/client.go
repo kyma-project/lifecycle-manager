@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -76,18 +77,7 @@ func (c *Client) CheckDefaultCRDeletion(ctx context.Context, manifestCR *v1beta2
 		return false, fmt.Errorf("failed to list Module CRs by group kind: %w", err)
 	}
 
-	return noDefaultModuleCRExists(allModuleCRs, defaultModuleCR), nil
-}
-
-func noDefaultModuleCRExists(allResourcesWithModuleCRGroupKind []unstructured.Unstructured,
-	defaultModuleCR *unstructured.Unstructured,
-) bool {
-	for _, resource := range allResourcesWithModuleCRGroupKind {
-		if isResourceTheDefaultCR(&resource, defaultModuleCR) {
-			return false
-		}
-	}
-	return true
+	return c.noDefaultModuleCRExists(allModuleCRs, defaultModuleCR), nil
 }
 
 func (c *Client) CheckModuleCRsDeletion(ctx context.Context, manifestCR *v1beta2.Manifest) error {
@@ -174,7 +164,18 @@ func (c *Client) GetAllModuleCRsExcludingDefaultCR(ctx context.Context,
 		return allResourcesWithModuleCRGroupKind, nil
 	}
 
-	return filterOutDefaultCRs(allResourcesWithModuleCRGroupKind, defaultModuleCR), nil
+	return c.filterOutDefaultCRs(allResourcesWithModuleCRGroupKind, defaultModuleCR), nil
+}
+
+func (c *Client) noDefaultModuleCRExists(allResourcesWithModuleCRGroupKind []unstructured.Unstructured,
+	defaultModuleCR *unstructured.Unstructured,
+) bool {
+	for _, resource := range allResourcesWithModuleCRGroupKind {
+		if c.isResourceTheDefaultCR(&resource, defaultModuleCR) {
+			return false
+		}
+	}
+	return true
 }
 
 // listResourcesByGroupKindInAllNamespaces lists all resources matching the given GroupKind
@@ -206,26 +207,55 @@ func (c *Client) listResourcesByGroupKindInAllNamespaces(ctx context.Context,
 	return allItems, nil
 }
 
-func filterOutDefaultCRs(allResourcesWithModuleCRGroupKind []unstructured.Unstructured,
+func (c *Client) filterOutDefaultCRs(allResourcesWithModuleCRGroupKind []unstructured.Unstructured,
 	defaultModuleCR *unstructured.Unstructured,
 ) []unstructured.Unstructured {
 	var withoutDefaultCR []unstructured.Unstructured
 	for _, resource := range allResourcesWithModuleCRGroupKind {
-		if !isResourceTheDefaultCR(&resource, defaultModuleCR) {
+		if !c.isResourceTheDefaultCR(&resource, defaultModuleCR) {
 			withoutDefaultCR = append(withoutDefaultCR, resource)
 		}
 	}
 	return withoutDefaultCR
 }
 
-func isResourceTheDefaultCR(resource *unstructured.Unstructured,
+func (c *Client) isResourceTheDefaultCR(resource *unstructured.Unstructured,
 	defaultModuleCR *unstructured.Unstructured,
 ) bool {
 	moduleCRGvk := defaultModuleCR.GroupVersionKind()
+
+	// For cluster-scoped resources:
+	// - The actual CR in the cluster has namespace=""
+	// We use a defensive approach: check both the resource namespace AND query the CRD scope.
+	namespacesMatch := resource.GetNamespace() == defaultModuleCR.GetNamespace()
+	if resource.GetNamespace() == "" || c.isClusterScoped(resource.GroupVersionKind().GroupKind()) {
+		// Resource is cluster-scoped: either has empty namespace OR CRD defines scope: Cluster
+		// In this case, ignore the namespace from defaultModuleCR spec
+		namespacesMatch = true
+	}
+
 	return resource.GetName() == defaultModuleCR.GetName() &&
-		resource.GetNamespace() == defaultModuleCR.GetNamespace() &&
+		namespacesMatch &&
 		resource.GroupVersionKind().Group == moduleCRGvk.Group &&
 		resource.GroupVersionKind().Kind == moduleCRGvk.Kind
+}
+
+// isClusterScoped checks if a resource is cluster-scoped by querying the CRD scope via RESTMapper.
+// Returns true if the CRD defines scope: Cluster, false if scope: Namespaced or unable to determine.
+func (c *Client) isClusterScoped(gk schema.GroupKind) bool {
+	mappings, err := c.RESTMapper().RESTMappings(gk)
+	if err != nil {
+		return false
+	}
+
+	// Check if any mapping indicates cluster scope (meta.RESTScopeNameRoot)
+	for _, mapping := range mappings {
+		if mapping.Scope.Name() == meta.RESTScopeNameRoot {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool, error) {
@@ -244,7 +274,7 @@ func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool
 
 	var resourceToDelete *unstructured.Unstructured
 	for _, cr := range allModuleCRs {
-		if isResourceTheDefaultCR(&cr, defaultModuleCR) {
+		if c.isResourceTheDefaultCR(&cr, defaultModuleCR) {
 			resourceToDelete = &cr
 			break
 		}
