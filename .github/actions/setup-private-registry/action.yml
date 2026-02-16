@@ -14,7 +14,7 @@ runs:
       run: |
         docker run -d \
         --restart=always \
-        -p [::]:5001:5000 \
+        -p 5001:5000 \
         --name private-oci-reg.localhost \
         -v ~/registry-auth:/auth \
         -e "REGISTRY_AUTH=htpasswd" \
