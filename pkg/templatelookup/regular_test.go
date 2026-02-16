@@ -787,7 +787,11 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 				assert.Equal(t, wantModule.DesiredChannel, module.DesiredChannel)
 				require.ErrorIs(t, module.Err, wantModule.Err)
 				if !testCase.mrmExist {
-					assert.Equal(t, wantModule.Spec.Channel, module.Spec.Channel)
+					assert.Equal(
+						t,
+						wantModule.Spec.Channel, //nolint:staticcheck    // legacy Channel field
+						module.Spec.Channel,     //nolint:staticcheck    // legacy Channel field
+					)
 				}
 			}
 		})

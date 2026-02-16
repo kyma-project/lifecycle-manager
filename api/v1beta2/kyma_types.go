@@ -17,7 +17,8 @@ limitations under the License.
 package v1beta2
 
 import (
-	"golang.org/x/exp/slices"
+	"slices"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
