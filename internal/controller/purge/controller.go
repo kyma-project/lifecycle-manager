@@ -45,6 +45,10 @@ import (
 const (
 	setFinalizerFailure    event.Reason = "SettingPurgeFinalizerFailed"
 	removeFinalizerFailure event.Reason = "RemovingPurgeFinalizerFailed"
+
+	// purgeFinalizerRemovedRequeueDelay is the delay used when requeuing after successfully
+	// dropping the purge finalizer. Uses a fixed delay instead of the deprecated Requeue: true.
+	purgeFinalizerRemovedRequeueDelay = 5 * time.Second
 )
 
 type Reconciler struct {
@@ -143,7 +147,7 @@ func (r *Reconciler) handleSkrNotFoundError(ctx context.Context, kyma *v1beta2.K
 			logf.FromContext(ctx).Info("Removed purge finalizer for Kyma " + kyma.GetName())
 		}
 		r.Metrics.DeletePurgeError(ctx, kyma, metrics.ErrPurgeFinalizerRemoval)
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: purgeFinalizerRemovedRequeueDelay}, nil
 	}
 
 	return ctrl.Result{}, fmt.Errorf("failed getting remote client for Kyma %s: %w", kyma.GetName(), err)
