@@ -318,7 +318,7 @@ func Test_IsActive_Returns_False_And_Error_WhenNoPolicyConfigured(t *testing.T) 
 type maintenanceWindowInactiveStub struct{}
 
 func (s maintenanceWindowInactiveStub) Resolve(runtime *resolver.Runtime,
-	opts ...interface{},
+	opts ...any,
 ) (*resolver.ResolvedWindow, error) {
 	return &resolver.ResolvedWindow{
 		Begin: time.Now().Add(1 * time.Hour),
@@ -328,7 +328,8 @@ func (s maintenanceWindowInactiveStub) Resolve(runtime *resolver.Runtime,
 
 type maintenanceWindowActiveStub struct{}
 
-func (s maintenanceWindowActiveStub) Resolve(runtime *resolver.Runtime, opts ...interface{}) (*resolver.ResolvedWindow,
+func (s maintenanceWindowActiveStub) Resolve(runtime *resolver.Runtime, opts ...any) (
+	*resolver.ResolvedWindow,
 	error,
 ) {
 	return &resolver.ResolvedWindow{
@@ -339,7 +340,8 @@ func (s maintenanceWindowActiveStub) Resolve(runtime *resolver.Runtime, opts ...
 
 type maintenanceWindowErrorStub struct{}
 
-func (s maintenanceWindowErrorStub) Resolve(runtime *resolver.Runtime, opts ...interface{}) (*resolver.ResolvedWindow,
+func (s maintenanceWindowErrorStub) Resolve(runtime *resolver.Runtime, opts ...any) (
+	*resolver.ResolvedWindow,
 	error,
 ) {
 	return &resolver.ResolvedWindow{}, errors.New("test error")
@@ -350,7 +352,7 @@ type maintenanceWindowRuntimeArgStub struct {
 }
 
 func (s maintenanceWindowRuntimeArgStub) Resolve(runtime *resolver.Runtime,
-	opts ...interface{},
+	opts ...any,
 ) (*resolver.ResolvedWindow, error) {
 	*s.receivedRuntime = *runtime
 

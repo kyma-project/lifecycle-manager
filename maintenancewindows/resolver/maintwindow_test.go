@@ -58,7 +58,7 @@ func at(timestamp string) resolver.TimeStamp {
 type testCase struct {
 	name     string
 	runtime  resolver.Runtime
-	options  []interface{}
+	options  []any
 	errors   bool
 	expected resolver.ResolvedWindow
 }
@@ -113,14 +113,14 @@ func (suite *MaintWindowSuite) SetupSuite() {
 		{
 			name:     "freetrials next",
 			runtime:  createRuntime("", "trial", "", ""),
-			options:  []interface{}{at("2024-10-03T05:05:00Z")},
+			options:  []any{at("2024-10-03T05:05:00Z")},
 			errors:   false,
 			expected: resWin("2024-10-04T01:00:00Z", "2024-10-05T01:00:00Z"),
 		},
 		{
 			name:    "ongoing",
 			runtime: createRuntime("", "", "uksouth-vikings", ""),
-			options: []interface{}{
+			options: []any{
 				at("2024-10-10T22:05:00Z"),
 				resolver.OngoingWindow(true),
 			},
@@ -130,7 +130,7 @@ func (suite *MaintWindowSuite) SetupSuite() {
 		{
 			name:    "ongoing+minsize",
 			runtime: createRuntime("", "", "uksouth-vikings", ""),
-			options: []interface{}{
+			options: []any{
 				at("2024-10-10T22:05:00Z"),
 				resolver.OngoingWindow(true),
 				resolver.MinWindowSize(5 * time.Hour),
@@ -141,7 +141,7 @@ func (suite *MaintWindowSuite) SetupSuite() {
 		{
 			name:    "not just first match",
 			runtime: createRuntime("", "", "uksouth-vikings", ""),
-			options: []interface{}{
+			options: []any{
 				at("2024-12-10T22:05:00Z"),
 				resolver.FirstMatchOnly(false),
 			},
@@ -151,7 +151,7 @@ func (suite *MaintWindowSuite) SetupSuite() {
 		{
 			name:    "first match fail -> default",
 			runtime: createRuntime("", "", "uksouth-vikings", ""),
-			options: []interface{}{
+			options: []any{
 				at("2024-12-10T22:05:00Z"),
 				resolver.FirstMatchOnly(true),
 			},
@@ -161,7 +161,7 @@ func (suite *MaintWindowSuite) SetupSuite() {
 		{
 			name:    "first match fail -> nodefault",
 			runtime: createRuntime("", "", "uksouth-vikings", ""),
-			options: []interface{}{
+			options: []any{
 				at("2024-12-10T22:05:00Z"),
 				resolver.FirstMatchOnly(true), resolver.FallbackDefault(false),
 			},
@@ -171,7 +171,7 @@ func (suite *MaintWindowSuite) SetupSuite() {
 		{
 			name:    "wrong arg",
 			runtime: createRuntime("", "", "uksouth-vikings", ""),
-			options: []interface{}{
+			options: []any{
 				at("2024-12-10T22:05:00Z"),
 				resolver.FirstMatchOnly(true), resolver.FallbackDefault(false),
 				"lol",

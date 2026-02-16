@@ -271,14 +271,14 @@ func createDestinationRuleFor(kyma *v1beta2.Kyma, nameSuffix string) *unstructur
 	res.SetNamespace(kyma.Namespace)
 	res.SetFinalizers([]string{testFinalizer})
 
-	if err := unstructured.SetNestedMap(res.Object, map[string]interface{}{}, "spec"); err != nil {
+	if err := unstructured.SetNestedMap(res.Object, map[string]any{}, "spec"); err != nil {
 		return nil
 	}
-	if err := unstructured.SetNestedMap(res.Object, map[string]interface{}{}, "spec", "trafficPolicy"); err != nil {
+	if err := unstructured.SetNestedMap(res.Object, map[string]any{}, "spec", "trafficPolicy"); err != nil {
 		return nil
 	}
 	if err := unstructured.SetNestedMap(res.Object,
-		map[string]interface{}{}, "spec", "trafficPolicy", "loadBalancer"); err != nil {
+		map[string]any{}, "spec", "trafficPolicy", "loadBalancer"); err != nil {
 		return nil
 	}
 	if err := unstructured.SetNestedField(res.Object,
@@ -298,10 +298,10 @@ func createIssuerFor(kyma *v1beta2.Kyma, nameSuffix string) *unstructured.Unstru
 	res.SetNamespace(kyma.Namespace)
 	res.SetFinalizers([]string{testFinalizer})
 
-	if err := unstructured.SetNestedMap(res.Object, map[string]interface{}{}, "spec"); err != nil {
+	if err := unstructured.SetNestedMap(res.Object, map[string]any{}, "spec"); err != nil {
 		return nil
 	}
-	if err := unstructured.SetNestedMap(res.Object, map[string]interface{}{}, "spec", "ca"); err != nil {
+	if err := unstructured.SetNestedMap(res.Object, map[string]any{}, "spec", "ca"); err != nil {
 		return nil
 	}
 	if err := unstructured.SetNestedField(res.Object, "foobar", "spec", "ca", "secretName"); err != nil {
@@ -324,7 +324,8 @@ func getDestinationRuleFinalizers(ctx context.Context, key client.ObjectKey, cl 
 }
 
 func updateKymaStatus(ctx context.Context, client client.Client, updateStatus func(context.Context, *v1beta2.Kyma,
-	shared.State, string) error, key client.ObjectKey, state shared.State,
+	shared.State, string,
+) error, key client.ObjectKey, state shared.State,
 ) func() error {
 	return func() error {
 		kyma := v1beta2.Kyma{}

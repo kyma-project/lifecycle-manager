@@ -50,7 +50,7 @@ type ClientMock_CreateGatewaySecret_Call struct {
 // CreateGatewaySecret is a helper method to define mock.On call
 //   - ctx context.Context
 //   - secret *v1.Secret
-func (_e *ClientMock_Expecter) CreateGatewaySecret(ctx interface{}, secret interface{}) *ClientMock_CreateGatewaySecret_Call {
+func (_e *ClientMock_Expecter) CreateGatewaySecret(ctx any, secret any) *ClientMock_CreateGatewaySecret_Call {
 	return &ClientMock_CreateGatewaySecret_Call{Call: _e.mock.On("CreateGatewaySecret", ctx, secret)}
 }
 
@@ -108,7 +108,7 @@ type ClientMock_GetGatewaySecret_Call struct {
 
 // GetGatewaySecret is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *ClientMock_Expecter) GetGatewaySecret(ctx interface{}) *ClientMock_GetGatewaySecret_Call {
+func (_e *ClientMock_Expecter) GetGatewaySecret(ctx any) *ClientMock_GetGatewaySecret_Call {
 	return &ClientMock_GetGatewaySecret_Call{Call: _e.mock.On("GetGatewaySecret", ctx)}
 }
 
@@ -171,7 +171,7 @@ type ClientMock_GetWatcherServingCertValidity_Call struct {
 
 // GetWatcherServingCertValidity is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *ClientMock_Expecter) GetWatcherServingCertValidity(ctx interface{}) *ClientMock_GetWatcherServingCertValidity_Call {
+func (_e *ClientMock_Expecter) GetWatcherServingCertValidity(ctx any) *ClientMock_GetWatcherServingCertValidity_Call {
 	return &ClientMock_GetWatcherServingCertValidity_Call{Call: _e.mock.On("GetWatcherServingCertValidity", ctx)}
 }
 
@@ -218,7 +218,7 @@ type ClientMock_UpdateGatewaySecret_Call struct {
 // UpdateGatewaySecret is a helper method to define mock.On call
 //   - ctx context.Context
 //   - secret *v1.Secret
-func (_e *ClientMock_Expecter) UpdateGatewaySecret(ctx interface{}, secret interface{}) *ClientMock_UpdateGatewaySecret_Call {
+func (_e *ClientMock_Expecter) UpdateGatewaySecret(ctx any, secret any) *ClientMock_UpdateGatewaySecret_Call {
 	return &ClientMock_UpdateGatewaySecret_Call{Call: _e.mock.On("UpdateGatewaySecret", ctx, secret)}
 }
 

@@ -125,7 +125,7 @@ func NewMaintenanceWindowPolicyFromJSON(raw []byte) (MaintenanceWindowPolicy, er
  * Otherwise an error is returned and the ResolvedWindow pointer is expected to be
  * nil.
  */
-func (mwp *MaintenanceWindowPolicy) Resolve(runtime *Runtime, opts ...interface{}) (*ResolvedWindow, error) {
+func (mwp *MaintenanceWindowPolicy) Resolve(runtime *Runtime, opts ...any) (*ResolvedWindow, error) {
 	// first set up the internal logic parameters
 	// defaults here
 	options := resolveOptions{

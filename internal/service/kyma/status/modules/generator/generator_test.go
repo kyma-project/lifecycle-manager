@@ -214,10 +214,10 @@ func createManifest() *v1beta2.Manifest {
 func createManifestWithResource() *v1beta2.Manifest {
 	manifest := createManifest()
 	resource := &unstructured.Unstructured{
-		Object: map[string]interface{}{
+		Object: map[string]any{
 			"apiVersion": "test-version",
 			"kind":       "test-kind",
-			"metadata": map[string]interface{}{
+			"metadata": map[string]any{
 				"name":       "test-manifest-resource",
 				"namespace":  "test-namespace",
 				"generation": "123",

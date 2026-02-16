@@ -53,14 +53,14 @@ func Test_RemoveManagedByLabel_WhenManifestResourcesHaveLabels(t *testing.T) {
 
 	objs := []client.Object{
 		&unstructured.Unstructured{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"apiVersion": gvk.GroupVersion().String(),
 				"kind":       gvk.Kind,
 				"version":    gvk.Version,
 			},
 		},
 		&unstructured.Unstructured{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"apiVersion": gvk.GroupVersion().String(),
 				"kind":       gvk.Kind,
 				"version":    gvk.Version,
@@ -231,7 +231,7 @@ func Test_RemoveManagedByLabel_WhenObjCannotBeUpdated(t *testing.T) {
 
 	objs := []client.Object{
 		&unstructured.Unstructured{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"apiVersion": gvk.GroupVersion().String(),
 				"kind":       gvk.Kind,
 				"version":    gvk.Version,
@@ -306,7 +306,7 @@ func Test_RemoveManagedByLabel_WhenFinalizerIsRemoved(t *testing.T) {
 
 	objs := []client.Object{
 		&unstructured.Unstructured{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"apiVersion": gvk.GroupVersion().String(),
 				"kind":       gvk.Kind,
 				"version":    gvk.Version,

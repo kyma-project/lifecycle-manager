@@ -70,8 +70,8 @@ func TestOCIRegistry_ResolveHost_WithCredSecret_Success(t *testing.T) {
 }
 
 func getValidDockerConfigJson(hostName string) ([]byte, error) {
-	dockerConfig := map[string]interface{}{
-		"auths": map[string]interface{}{
+	dockerConfig := map[string]any{
+		"auths": map[string]any{
 			hostName: map[string]string{"auth": "dXNlcjpwYXNz"},
 		},
 	}
@@ -128,6 +128,6 @@ func TestOCIRegistry_ResolveHost_ReturnsError_WhenCredSecretHasNotHosts(t *testi
 }
 
 func getEmptyDockerConfigJson() ([]byte, error) {
-	dockerConfig := map[string]interface{}{"auths": map[string]interface{}{}}
+	dockerConfig := map[string]any{"auths": map[string]any{}}
 	return json.Marshal(dockerConfig)
 }
