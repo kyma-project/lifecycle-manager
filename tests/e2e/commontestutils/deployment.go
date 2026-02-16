@@ -42,7 +42,7 @@ func StopDeployment(ctx context.Context, clnt client.Client,
 	if deploy.Status.AvailableReplicas == 0 {
 		return nil
 	}
-	deploy.Spec.Replicas = int32Ptr(0)
+	deploy.Spec.Replicas = new(int32)
 	if err := clnt.Update(ctx, deploy); err != nil {
 		return fmt.Errorf("could not update deployment: %w", err)
 	}
@@ -59,7 +59,9 @@ func EnableDeployment(ctx context.Context, clnt client.Client,
 	if deploy.Status.AvailableReplicas != 0 {
 		return nil
 	}
-	deploy.Spec.Replicas = int32Ptr(1)
+	one := new(int32)
+	*one = 1
+	deploy.Spec.Replicas = one
 	if err := clnt.Update(ctx, deploy); err != nil {
 		return fmt.Errorf("could not update deployment: %w", err)
 	}
@@ -75,5 +77,3 @@ func GetDeployment(ctx context.Context, clnt client.Client,
 	}
 	return deploy, nil
 }
-
-func int32Ptr(i int32) *int32 { return &i }

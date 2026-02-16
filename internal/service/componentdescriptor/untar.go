@@ -37,8 +37,7 @@ func NewTarExtractor(opts ...func(*TarExtractor) *TarExtractor) *TarExtractor {
 	return tarExtractor
 }
 
-// NOTE: LOW LEVEL PRIMITIVE!
-// Use only if intended to exchange the default tar.Reader.Next function.
+// WithNextFunction is a low level primitive that replaces the default tar.Reader.Next function.
 func WithNextFunction(f nextFunc) func(*TarExtractor) *TarExtractor {
 	return func(tarex *TarExtractor) *TarExtractor {
 		tarex.next = f
@@ -46,8 +45,7 @@ func WithNextFunction(f nextFunc) func(*TarExtractor) *TarExtractor {
 	}
 }
 
-// NOTE: LOW LEVEL PRIMITIVE!
-// Use only if intended to exchange the default io.CopyN function.
+// WithCopyNFunction is a low level primitive that replaces the default io.CopyN function.
 func WithCopyNFunction(f copyNFunc) func(*TarExtractor) *TarExtractor {
 	return func(tarex *TarExtractor) *TarExtractor {
 		tarex.copyN = f
@@ -55,7 +53,7 @@ func WithCopyNFunction(f copyNFunc) func(*TarExtractor) *TarExtractor {
 	}
 }
 
-// unTar extracts the file with provided name and returns its content.
+// UnTar extracts the file with provided name and returns its content.
 func (tarex *TarExtractor) UnTar(tarInput []byte, name string) ([]byte, error) {
 	tarReader := tar.NewReader(bytes.NewReader(tarInput))
 	for {

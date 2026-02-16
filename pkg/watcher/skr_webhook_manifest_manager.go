@@ -34,6 +34,7 @@ var (
 const (
 	skrChartFieldOwner       = client.FieldOwner(shared.OperatorName)
 	skrWebhookDeploymentName = "skr-webhook"
+	generatedSKRObjectsCount = 2
 )
 
 type WatcherMetrics interface {
@@ -200,11 +201,12 @@ func (m *SkrWebhookManifestManager) getSKRClientObjectsForInstall(ctx context.Co
 	kymaName string,
 	logger logr.Logger,
 ) ([]client.Object, error) {
-	var skrClientObjects []client.Object
 	resources, err := m.getRawManifestClientObjects(ctx, kymaName)
 	if err != nil {
 		return nil, err
 	}
+
+	skrClientObjects := make([]client.Object, 0, len(resources)+generatedSKRObjectsCount)
 	skrClientObjects = append(skrClientObjects, resources...)
 	watchers, err := getWatchers(ctx, m.kcpClient)
 	if err != nil {
@@ -223,7 +225,7 @@ func (m *SkrWebhookManifestManager) getGeneratedClientObjects(skrCertificateSecr
 	gatewaySecretData data.GatewaySecretData,
 	watchers []v1beta2.Watcher,
 ) []client.Object {
-	var genClientObjects []client.Object
+	genClientObjects := make([]client.Object, 0, generatedSKRObjectsCount)
 
 	webhookConfig := skrwebhookresources.BuildValidatingWebhookConfigFromWatchers(gatewaySecretData.CaCert, watchers,
 		m.remoteSyncNamespace)

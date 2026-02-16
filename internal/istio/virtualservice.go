@@ -76,7 +76,7 @@ func (vss *VirtualServiceService) NewVirtualService(
 }
 
 func getGatewayNames(gateways []*istioclientapiv1beta1.Gateway) []string {
-	gatewayNames := make([]string, 0)
+	gatewayNames := make([]string, 0, len(gateways))
 	for _, gateway := range gateways {
 		gatewayNames = append(gatewayNames, client.ObjectKeyFromObject(gateway).String())
 	}

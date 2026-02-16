@@ -48,8 +48,7 @@ func NewRepository(kcl spec.KeyChainLookup,
 	return repo, nil
 }
 
-// NOTE: LOW LEVEL PRIMITIVE!
-// Use only if intended to exchange the default crane function.
+// WithConfigFunction is a low level primitive that replaces the default crane.Config function.
 func WithConfigFunction(f configFunc) func(*RepositoryReader) *RepositoryReader {
 	return func(c *RepositoryReader) *RepositoryReader {
 		c.config = f
@@ -57,8 +56,7 @@ func WithConfigFunction(f configFunc) func(*RepositoryReader) *RepositoryReader 
 	}
 }
 
-// NOTE: LOW LEVEL PRIMITIVE!
-// Use only if intended to exchange the default crane function.
+// WithPullLayerFunction is a low level primitive that replaces the default crane.PullLayer function.
 func WithPullLayerFunction(f pullLayerFunc) func(*RepositoryReader) *RepositoryReader {
 	return func(c *RepositoryReader) *RepositoryReader {
 		c.pullLayer = f

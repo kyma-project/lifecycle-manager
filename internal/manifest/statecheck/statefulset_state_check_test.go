@@ -6,13 +6,15 @@ import (
 	"github.com/stretchr/testify/require"
 	apiappsv1 "k8s.io/api/apps/v1"
 	apicorev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 )
 
 func Test_IsStatefulSetReady(t *testing.T) {
+	one := new(int32)
+	*one = 1
+
 	tests := []struct {
 		name        string
 		statefulSet *apiappsv1.StatefulSet
@@ -25,7 +27,7 @@ func Test_IsStatefulSetReady(t *testing.T) {
 					ReadyReplicas: 1,
 				},
 				Spec: apiappsv1.StatefulSetSpec{
-					Replicas: ptr.To(int32(1)),
+					Replicas: one,
 				},
 			},
 			expected: true,
@@ -37,7 +39,7 @@ func Test_IsStatefulSetReady(t *testing.T) {
 					ReadyReplicas: 0,
 				},
 				Spec: apiappsv1.StatefulSetSpec{
-					Replicas: ptr.To(int32(1)),
+					Replicas: one,
 				},
 			},
 			expected: false,
@@ -52,6 +54,11 @@ func Test_IsStatefulSetReady(t *testing.T) {
 }
 
 func Test_GetPodsState(t *testing.T) {
+	startedTrue := new(bool)
+	*startedTrue = true
+	startedFalse := new(bool)
+	*startedFalse = false
+
 	tests := []struct {
 		name    string
 		podList *apicorev1.PodList
@@ -66,7 +73,7 @@ func Test_GetPodsState(t *testing.T) {
 							ContainerStatuses: []apicorev1.ContainerStatus{
 								{
 									Ready:   true,
-									Started: ptr.To(true),
+									Started: startedTrue,
 								},
 							},
 						},
@@ -84,7 +91,7 @@ func Test_GetPodsState(t *testing.T) {
 							ContainerStatuses: []apicorev1.ContainerStatus{
 								{
 									Ready:   false,
-									Started: ptr.To(true),
+									Started: startedTrue,
 								},
 							},
 						},
@@ -102,7 +109,7 @@ func Test_GetPodsState(t *testing.T) {
 							ContainerStatuses: []apicorev1.ContainerStatus{
 								{
 									Ready:   false,
-									Started: ptr.To(false),
+									Started: startedFalse,
 								},
 							},
 						},
