@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+// Resource identifies a Kubernetes object by GroupVersionKind, name and namespace.
 // +k8s:deepcopy-gen=true
 type Resource struct {
 	apimetav1.GroupVersionKind `json:",inline"`
