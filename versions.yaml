@@ -3,7 +3,7 @@ certManager: "1.19.3"
 gardenerCertManager: "0.18.0"
 controllerTools: "0.18.0"
 docker: "27.5.1"
-go: "1.25.7"
+go: "1.26.0"
 golangciLint: "2.4.0"
 istio: "1.26.4" # https://github.com/kyma-project/lifecycle-manager/issues/2797
 k3d: "5.8.3"
