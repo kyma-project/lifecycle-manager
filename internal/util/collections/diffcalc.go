@@ -10,7 +10,7 @@ type DiffCalc[E any] struct {
 	Identity func(E) string
 }
 
-// notExistingIn returns a slice of object that are present in the first slice but not in the second.
+// NotExistingIn returns objects that are present in the first slice but not in the second.
 // The returned list is a slice of pointers to the objects in the first slice, to avoid copying the objects.
 func (d *DiffCalc[E]) NotExistingIn(second []E) []*E {
 	onlyInFirst := make([]*E, 0, len(d.First))

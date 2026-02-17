@@ -139,7 +139,7 @@ func TestDeleteNoLongerExistingModuleStatus(t *testing.T) {
 			configureModuleInKyma(kyma, testCase.ModulesInKymaSpec, testCase.ModulesInKymaStatus)
 			modules.DeleteNoLongerExistingModuleStatus(t.Context(), kyma, testCase.getModule,
 				kymaMetrics.RemoveModuleStateMetrics)
-			var modulesInFinalModuleStatus []string
+			modulesInFinalModuleStatus := make([]string, 0, len(kyma.Status.Modules))
 			for _, moduleStatus := range kyma.Status.Modules {
 				modulesInFinalModuleStatus = append(modulesInFinalModuleStatus, moduleStatus.Name)
 			}
@@ -237,6 +237,6 @@ type KymaMockMetrics struct {
 	callCount int
 }
 
-func (m *KymaMockMetrics) RemoveModuleStateMetrics(kymaName, moduleName string) {
+func (m *KymaMockMetrics) RemoveModuleStateMetrics(_, _ string) {
 	m.callCount++
 }

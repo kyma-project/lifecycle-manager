@@ -128,7 +128,9 @@ func (r *Repository) Renew(ctx context.Context, name string) error {
 		cert.Spec.EnsureRenewedAfter = nil
 	}
 
-	cert.Spec.Renew = boolPtr(true)
+	renew := new(bool)
+	*renew = true
+	cert.Spec.Renew = renew
 
 	if err := r.kcpClient.Update(ctx, cert); err != nil {
 		return fmt.Errorf("failed to update certificate for renewal %s-%s: %w", cert.Name, cert.Namespace, err)
@@ -217,8 +219,4 @@ func (r *Repository) get(ctx context.Context, name string) (*gcertv1alpha1.Certi
 	}
 
 	return cert, nil
-}
-
-func boolPtr(b bool) *bool {
-	return &b
 }

@@ -48,7 +48,7 @@ func NewRepository(hostWithPort string,
 	return reader, nil
 }
 
-// GetConfigFile retrieves the config file as a byte slice for the OCM artifact.
+// GetConfig retrieves the config file as a byte slice for the OCM artifact.
 // We're not using image-oriented types here because OCM artifacts "config file" is not a standard image config.
 func (s *RepositoryReader) GetConfig(ctx context.Context, name, tag string) ([]byte, error) {
 	ref := s.toImageRef(name, tag)

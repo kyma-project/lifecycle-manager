@@ -17,7 +17,7 @@ import (
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
 )
 
-func toUnstructured(obj interface{}) *unstructured.Unstructured {
+func toUnstructured(obj any) *unstructured.Unstructured {
 	m, _ := machineryruntime.DefaultUnstructuredConverter.ToUnstructured(obj)
 	return &unstructured.Unstructured{Object: m}
 }

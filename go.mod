@@ -1,6 +1,6 @@
 module github.com/kyma-project/lifecycle-manager
 
-go 1.25.7
+go 1.26.0
 
 replace (
 	//required as of OCM v0.34.3

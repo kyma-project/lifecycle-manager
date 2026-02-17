@@ -56,7 +56,7 @@ func getKymaList(ctx context.Context, clnt client.Reader) (*v1beta2.KymaList, er
 }
 
 func getRequestItems(items []v1beta2.Kyma) []reconcile.Request {
-	requests := make([]reconcile.Request, 0)
+	requests := make([]reconcile.Request, 0, len(items))
 	for _, kyma := range items {
 		requests = append(requests, reconcile.Request{NamespacedName: kyma.GetNamespacedName()})
 	}

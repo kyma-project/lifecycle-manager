@@ -30,7 +30,7 @@ func Test_defaultTransforms(t *testing.T) {
 			declarativev2.DisclaimerTransform,
 			"empty DisclaimerTransform",
 			[]*unstructured.Unstructured{},
-			func(testingT assert.TestingT, err error, i ...interface{}) bool {
+			func(testingT assert.TestingT, err error, i ...any) bool {
 				require.NoError(t, err)
 				return true
 			},
@@ -39,7 +39,7 @@ func Test_defaultTransforms(t *testing.T) {
 			declarativev2.KymaComponentTransform,
 			"empty KymaComponentTransform",
 			[]*unstructured.Unstructured{},
-			func(testingT assert.TestingT, err error, i ...interface{}) bool {
+			func(testingT assert.TestingT, err error, i ...any) bool {
 				require.NoError(t, err)
 				return true
 			},
@@ -48,7 +48,7 @@ func Test_defaultTransforms(t *testing.T) {
 			declarativev2.ManagedByOwnedBy,
 			"empty WatchedByManagedByOwnedBy",
 			[]*unstructured.Unstructured{},
-			func(testingT assert.TestingT, err error, i ...interface{}) bool {
+			func(testingT assert.TestingT, err error, i ...any) bool {
 				require.NoError(t, err)
 				return true
 			},
@@ -57,7 +57,7 @@ func Test_defaultTransforms(t *testing.T) {
 			declarativev2.DisclaimerTransform,
 			"simple DisclaimerTransform",
 			[]*unstructured.Unstructured{{Object: map[string]any{}}},
-			func(testingT assert.TestingT, err error, i ...interface{}) bool {
+			func(testingT assert.TestingT, err error, i ...any) bool {
 				require.NoError(t, err)
 				unstructs, ok := i[0].([]*unstructured.Unstructured)
 				assert.True(testingT, ok)
@@ -74,7 +74,7 @@ func Test_defaultTransforms(t *testing.T) {
 			declarativev2.KymaComponentTransform,
 			"simple KymaComponentTransform",
 			[]*unstructured.Unstructured{{Object: map[string]any{}}},
-			func(testingT assert.TestingT, err error, i ...interface{}) bool {
+			func(testingT assert.TestingT, err error, i ...any) bool {
 				require.NoError(t, err)
 				unstructs, ok := i[0].([]*unstructured.Unstructured)
 				assert.True(testingT, ok)
@@ -91,7 +91,7 @@ func Test_defaultTransforms(t *testing.T) {
 			declarativev2.ManagedByOwnedBy,
 			"simple WatchedByManagedByOwnedBy",
 			[]*unstructured.Unstructured{{Object: map[string]any{}}},
-			func(testingT assert.TestingT, err error, i ...interface{}) bool {
+			func(testingT assert.TestingT, err error, i ...any) bool {
 				require.NoError(t, err)
 				unstructs, ok := i[0].([]*unstructured.Unstructured)
 				assert.True(testingT, ok)
