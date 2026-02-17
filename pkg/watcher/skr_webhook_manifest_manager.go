@@ -27,6 +27,7 @@ import (
 
 var (
 	ErrSkrCertificateNotReady        = errors.New("SKR certificate not ready")
+	ErrSkrCertificateRenewOverdue    = errors.New("SKR certificate renewal is overdue")
 	ErrSkrWebhookDeploymentNotReady  = errors.New("SKR webhook deployment not ready")
 	ErrSkrWebhookDeploymentInBackoff = errors.New("SKR webhook deployment in backoff state")
 )
@@ -182,10 +183,14 @@ func (m *SkrWebhookManifestManager) writeCertificateRenewalMetrics(ctx context.C
 	logger logr.Logger,
 ) {
 	overdue, err := m.skrCertificateService.IsSkrCertificateRenewalOverdue(ctx, kymaName)
-	if err != nil || overdue {
+	if err != nil {
 		m.watcherMetrics.SetCertNotRenew(kymaName)
 		logger.Error(err, "failed to check if certificate renewal is overdue for kyma "+kymaName)
 		return
+	}
+	if overdue {
+		m.watcherMetrics.SetCertNotRenew(kymaName)
+		logger.Error(ErrSkrCertificateRenewOverdue, "certificate renewal is overdue for kyma "+kymaName)
 	}
 
 	m.watcherMetrics.CleanupMetrics(kymaName)
