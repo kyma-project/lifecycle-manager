@@ -146,7 +146,7 @@ func ApplyYAML(ctx context.Context, clnt client.Client, yamlFilePath string) err
 	}
 
 	for _, object := range resources {
-		err := clnt.Patch(ctx, object, client.Apply, client.ForceOwnership, fieldowners.LifecycleManager)
+		err := clnt.Patch(ctx, object, client.Apply, client.ForceOwnership, fieldowners.LegacyLifecycleManager)
 		if err != nil {
 			return fmt.Errorf("error applying patch to resource %s/%s: %w",
 				object.GetNamespace(), object.GetName(), err)

@@ -225,7 +225,7 @@ func updateCRDPropertyDescription(clnt client.Client, crdKind shared.Kind,
 	if err := clnt.Patch(ctx, crd,
 		client.Apply,
 		client.ForceOwnership,
-		fieldowners.LifecycleManager); err != nil {
+		fieldowners.LegacyLifecycleManager); err != nil {
 		return nil, err
 	}
 	crd, err = fetchCrd(clnt, crdKind)

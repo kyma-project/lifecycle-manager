@@ -19,10 +19,10 @@ func SyncResources(ctx context.Context, skrClient client.Client, manifest *v1bet
 ) error {
 	manifestStatus := manifest.GetStatus()
 
-	managedFieldsCollector := NewManifestLogCollector(manifest, fieldowners.LifecycleManager)
+	managedFieldsCollector := NewManifestLogCollector(manifest, fieldowners.DeclarativeApplier)
 
 	if err := ConcurrentSSA(skrClient,
-		fieldowners.LifecycleManager,
+		fieldowners.DeclarativeApplier,
 		managedFieldsCollector,
 	).Run(ctx, target); err != nil {
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))

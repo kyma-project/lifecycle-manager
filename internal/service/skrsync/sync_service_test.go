@@ -132,7 +132,7 @@ func TestSyncImagePullSecret_WhenSuccessful_SyncsSecretToSkr(t *testing.T) {
 	// Verify patch options were correctly set
 	require.Len(t, mockClient.patchOptions, 2)
 	require.Contains(t, mockClient.patchOptions, client.ForceOwnership)
-	require.Contains(t, mockClient.patchOptions, fieldowners.LifecycleManager)
+	require.Contains(t, mockClient.patchOptions, fieldowners.LegacyLifecycleManager)
 }
 
 func TestSyncCrds_WhenCalled_ShouldInvokeUseCase(t *testing.T) {

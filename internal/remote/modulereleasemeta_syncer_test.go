@@ -152,7 +152,7 @@ func moduleReleaseMeta(name, namespace string) v1beta2.ModuleReleaseMeta {
 			Namespace: namespace,
 			ManagedFields: []apimetav1.ManagedFieldsEntry{
 				{
-					Manager:    string(fieldowners.LifecycleManager),
+					Manager:    string(fieldowners.ModuleCatalogSync),
 					Operation:  apimetav1.ManagedFieldsOperationApply,
 					APIVersion: v1beta2.GroupVersion.String(),
 					FieldsType: "FieldsV1",

@@ -46,7 +46,7 @@ func (r *Repository) updateKymaStatus(ctx context.Context,
 
 	if err := r.statusWriter.Patch(ctx, kyma, client.Apply, &client.SubResourcePatchOptions{
 		PatchOptions: *(&client.PatchOptions{}).ApplyOptions([]client.PatchOption{client.ForceOwnership}),
-	}, fieldowners.LifecycleManager); err != nil {
+	}, fieldowners.LegacyLifecycleManager); err != nil {
 		return fmt.Errorf("status could not be updated: %w", err)
 	}
 

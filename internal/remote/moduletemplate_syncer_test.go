@@ -149,7 +149,7 @@ func moduleTemplate(name, namespace string) v1beta2.ModuleTemplate {
 			Namespace: namespace,
 			ManagedFields: []apimetav1.ManagedFieldsEntry{
 				{
-					Manager:    string(fieldowners.LifecycleManager),
+					Manager:    string(fieldowners.ModuleCatalogSync),
 					Operation:  apimetav1.ManagedFieldsOperationApply,
 					APIVersion: v1beta2.GroupVersion.String(),
 					FieldsType: "FieldsV1",
@@ -163,7 +163,7 @@ func getSettings() *Settings {
 	force := true
 	return &Settings{
 		Namespace:       "kyma-system",
-		SSAPatchOptions: &client.PatchOptions{FieldManager: string(fieldowners.LifecycleManager), Force: &force},
+		SSAPatchOptions: &client.PatchOptions{FieldManager: string(fieldowners.ModuleCatalogSync), Force: &force},
 	}
 }
 

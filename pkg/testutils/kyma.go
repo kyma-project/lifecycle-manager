@@ -320,7 +320,7 @@ func SetKymaState(ctx context.Context, kyma *v1beta2.Kyma, clnt client.Client, s
 
 	return clnt.Status().Patch(ctx, kyma, client.Apply,
 		status.SubResourceOpts(client.ForceOwnership),
-		fieldowners.LifecycleManager)
+		fieldowners.LegacyLifecycleManager)
 }
 
 func ContainsKymaManagerField(

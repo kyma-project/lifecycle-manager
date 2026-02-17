@@ -1,8 +1,6 @@
 package kcp_test
 
 import (
-	"fmt"
-
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -15,11 +13,9 @@ var _ = Describe("Kyma with managed fields in kcp mode", Ordered, func() {
 
 	registerControlPlaneLifecycleForKyma(kyma)
 
-	managerName := string(fieldowners.LifecycleManager)
-	It(fmt.Sprintf("Should result in a managed field with manager named '%s'", managerName),
-		func() {
-			Eventually(ContainsKymaManagerField, Timeout, Interval).
-				WithArguments(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), managerName).
-				Should(BeTrue())
-		})
+	It("Should result in a managed field with manager named 'lifecycle-manager'", func() {
+		Eventually(ContainsKymaManagerField, Timeout, Interval).
+			WithArguments(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), fieldowners.LegacyLifecycleManager).
+			Should(BeTrue())
+	})
 })

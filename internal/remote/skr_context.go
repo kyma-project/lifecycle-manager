@@ -96,7 +96,7 @@ func (s *SkrContext) CreateKymaNamespace(ctx context.Context) error {
 
 	patch := client.RawPatch(types.ApplyPatchType, buf.Bytes())
 	force := true
-	patchOpts := &client.PatchOptions{Force: &force, FieldManager: string(fieldowners.LifecycleManager)}
+	patchOpts := &client.PatchOptions{Force: &force, FieldManager: string(fieldowners.KymaSyncContextProvider)}
 	if err := s.Patch(ctx, namespace, patch, patchOpts); err != nil {
 		return fmt.Errorf("failed to ensure remote namespace exists: %w", err)
 	}
@@ -158,7 +158,7 @@ func (s *SkrContext) SynchronizeKymaMetadata(ctx context.Context, kcpKyma, skrKy
 	err := s.Patch(ctx,
 		metadataToSync,
 		client.Apply,
-		&client.PatchOptions{FieldManager: string(fieldowners.LifecycleManager), Force: &forceOwnership})
+		&client.PatchOptions{FieldManager: string(fieldowners.KymaSyncContextProvider), Force: &forceOwnership})
 	if err != nil {
 		err = fmt.Errorf("failed to synchronise Kyma metadata to SKR: %w", err)
 		s.event.Warning(kcpKyma, metadataSyncFailure, err)

@@ -95,7 +95,7 @@ func PatchCRD(ctx context.Context, clnt client.Client, crd *apiextensionsv1.Cust
 	err := clnt.Patch(ctx, crdToApply,
 		client.Apply,
 		client.ForceOwnership,
-		fieldowners.LifecycleManager)
+		fieldowners.LegacyLifecycleManager)
 	if err != nil {
 		return fmt.Errorf("failed to patch CRD: %w", err)
 	}

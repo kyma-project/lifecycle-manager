@@ -157,7 +157,7 @@ func (r *Runner) getManifest(ctx context.Context, name, namespace string) (*v1be
 func (r *Runner) patchManifest(ctx context.Context, newManifest *v1beta2.Manifest) error {
 	if err := r.Patch(ctx, newManifest,
 		client.Apply,
-		fieldowners.LifecycleManager,
+		fieldowners.LegacyLifecycleManager,
 		client.ForceOwnership,
 	); err != nil {
 		return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(newManifest), err)

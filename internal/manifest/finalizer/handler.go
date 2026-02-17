@@ -67,7 +67,7 @@ func EnsureCRFinalizer(ctx context.Context, kcp client.Client, manifest *v1beta2
 	if added := controllerutil.AddFinalizer(oMeta, CustomResourceManagerFinalizer); added {
 		if err := kcp.Patch(
 			ctx, oMeta, client.Apply, client.ForceOwnership,
-			fieldowners.LifecycleManager,
+			fieldowners.CustomResourceFinalizer,
 		); err != nil {
 			return fmt.Errorf("failed to patch resource: %w", err)
 		}
@@ -92,7 +92,7 @@ func RemoveCRFinalizer(ctx context.Context, kcp client.Client, manifest *v1beta2
 
 	if removed := controllerutil.RemoveFinalizer(onCluster, CustomResourceManagerFinalizer); removed {
 		if err := kcp.Update(
-			ctx, onCluster, fieldowners.LifecycleManager,
+			ctx, onCluster, fieldowners.CustomResourceFinalizer,
 		); err != nil {
 			return fmt.Errorf("failed to update resource: %w", err)
 		}

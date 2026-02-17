@@ -54,7 +54,7 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 	}
 
 	if err := k.Patch(ctx, kyma, client.Apply, SubResourceOpts(client.ForceOwnership),
-		fieldowners.LifecycleManager); err != nil {
+		fieldowners.LegacyLifecycleManager); err != nil {
 		return fmt.Errorf("status could not be updated: %w", err)
 	}
 

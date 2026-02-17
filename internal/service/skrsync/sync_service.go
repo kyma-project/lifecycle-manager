@@ -74,7 +74,7 @@ func (s *Service) SyncImagePullSecret(ctx context.Context, kyma types.Namespaced
 	err = skrContext.Patch(ctx, remoteSecret,
 		client.Apply,
 		client.ForceOwnership,
-		fieldowners.LifecycleManager)
+		fieldowners.LegacyLifecycleManager)
 	if err != nil {
 		return errors.Join(ErrFailedToSyncImagePullSecret, err)
 	}

@@ -24,7 +24,8 @@ import (
 )
 
 const (
-	knownManagersDefault = string(fieldowners.LifecycleManager) + ";" +
+	knownManagersDefault = string(fieldowners.DeclarativeApplier) + ";" +
+		string(fieldowners.LegacyLifecycleManager) + ";" +
 		"k3s" // Applied in k3s environments.
 	knownManagersEnvVar = "KLM_EXPERIMENTAL_KNOWN_MANAGERS"
 	knownManagersRegexp = `^[a-zA-Z][a-zA-Z0-9.:_/-]{1,127}$`

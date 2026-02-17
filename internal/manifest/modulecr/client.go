@@ -134,7 +134,7 @@ func (c *Client) SyncDefaultModuleCR(ctx context.Context, manifest *v1beta2.Mani
 			return nil
 		}
 		if err := c.Create(ctx, resource,
-			fieldowners.LifecycleManager); err != nil &&
+			fieldowners.CustomResourceFinalizer); err != nil &&
 			!apierrors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create resource: %w", err)
 		}

@@ -15,7 +15,7 @@ func TestGetAllowedManagers(t *testing.T) {
 		{
 			name:     "default managers",
 			envValue: "",
-			want:     []string{"operator.kyma-project.io/lifecycle-manager", "k3s"},
+			want:     []string{"declarative.kyma-project.io/applier", "lifecycle-manager", "k3s"},
 		},
 		{
 			name:     "single manager in env",

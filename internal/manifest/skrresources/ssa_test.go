@@ -29,7 +29,7 @@ func TestConcurrentSSA(t *testing.T) {
 	fakeClientBuilder := fake.NewClientBuilder().WithRuntimeObjects(pod).Build()
 	_ = fakeClientBuilder.Create(t.Context(), pod)
 
-	inactiveCollector := skrresources.NewManifestLogCollector(nil, fieldowners.LifecycleManager)
+	inactiveCollector := skrresources.NewManifestLogCollector(nil, fieldowners.DeclarativeApplier)
 
 	type args struct {
 		clnt  client.Client

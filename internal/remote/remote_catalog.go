@@ -51,7 +51,7 @@ func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrCont
 	force := true
 	return newRemoteCatalog(kcpClient, skrContextFactory,
 		Settings{
-			SSAPatchOptions: &client.PatchOptions{FieldManager: string(fieldowners.LifecycleManager), Force: &force},
+			SSAPatchOptions: &client.PatchOptions{FieldManager: string(fieldowners.ModuleCatalogSync), Force: &force},
 			Namespace:       remoteSyncNamespace,
 		},
 	)
