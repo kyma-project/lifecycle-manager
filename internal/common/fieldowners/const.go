@@ -1,8 +1,9 @@
 package fieldowners
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
 const (
