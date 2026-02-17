@@ -55,7 +55,7 @@ func NewResourceRepository(
 	resources = append(resources,
 		v1beta1.PartialObjectMetadata{
 			TypeMeta: apimetav1.TypeMeta{
-				Kind:       reflect.TypeOf(admissionregistrationv1.ValidatingWebhookConfiguration{}).Name(),
+				Kind:       reflect.TypeFor[admissionregistrationv1.ValidatingWebhookConfiguration]().Name(),
 				APIVersion: admissionregistrationv1.SchemeGroupVersion.String(),
 			},
 			ObjectMeta: apimetav1.ObjectMeta{
@@ -65,7 +65,7 @@ func NewResourceRepository(
 		},
 		v1beta1.PartialObjectMetadata{
 			TypeMeta: apimetav1.TypeMeta{
-				Kind:       reflect.TypeOf(apicorev1.Secret{}).Name(),
+				Kind:       reflect.TypeFor[apicorev1.Secret]().Name(),
 				APIVersion: apicorev1.SchemeGroupVersion.String(),
 			},
 			ObjectMeta: apimetav1.ObjectMeta{

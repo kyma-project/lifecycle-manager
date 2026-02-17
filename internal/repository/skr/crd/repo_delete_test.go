@@ -62,7 +62,7 @@ func TestDelete_ClientIgnoresNotFoundError(t *testing.T) {
 	clientStub := &deleteClientStub{
 		err: apierrors.NewNotFound(schema.GroupResource{
 			Group:    apiextensionsv1.SchemeGroupVersion.Group,
-			Resource: reflect.TypeOf(apiextensionsv1.CustomResourceDefinition{}).Name(),
+			Resource: reflect.TypeFor[apiextensionsv1.CustomResourceDefinition]().Name(),
 		}, random.Name()),
 	}
 	clientRetrieverStub := &skrClientRetrieverStub{

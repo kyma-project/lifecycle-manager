@@ -49,7 +49,7 @@ type LogCollectorEntry struct {
 	ManagedFields   []apimetav1.ManagedFieldsEntry `json:"managedFields"`
 }
 
-// Implements skrresources.ManagedFieldsCollector interface, emits the collected data to the log stream.
+// LogCollector implements skrresources.ManagedFieldsCollector interface and emits collected data to log stream.
 // The collector is thread-safe.
 // The collector is frequency-limited to prevent emitting entries for the same objectKey multiple times in a short time.
 type LogCollector struct {
@@ -69,7 +69,7 @@ func NewLogCollector(key string, owner client.FieldOwner) *LogCollector {
 	}
 }
 
-func (c *LogCollector) Collect(ctx context.Context, remoteObj client.Object) {
+func (c *LogCollector) Collect(_ context.Context, remoteObj client.Object) {
 	managedFields := remoteObj.GetManagedFields()
 	for _, mf := range managedFields {
 		if isUnknownManager(mf.Manager) {

@@ -66,6 +66,7 @@ type WatchableGVR struct {
 	Resource string `json:"resource"`
 }
 
+// FieldName indicates which subresource of the watched object should be observed.
 // +kubebuilder:validation:Enum=spec;status;
 type FieldName string
 

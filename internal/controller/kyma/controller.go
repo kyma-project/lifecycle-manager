@@ -128,7 +128,9 @@ type Reconciler struct {
 	LookupService   LookupService
 }
 
-// https://github.com/kyma-project/lifecycle-manager/issues/2943
+// Reconcile reconciles Kyma resources.
+//
+// See https://github.com/kyma-project/lifecycle-manager/issues/2943.
 //
 //nolint:funlen // disable for kyma controller until we remove legacy deletion with above issue
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {

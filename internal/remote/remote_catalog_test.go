@@ -579,7 +579,7 @@ func (b *moduleTemplateBuilder) withModuleName(module string) *moduleTemplateBui
 }
 
 func (b *moduleTemplateBuilder) withChannel(channel string) *moduleTemplateBuilder {
-	b.moduleTemplate.Spec.Channel = channel
+	b.moduleTemplate.Spec.Channel = channel //nolint:staticcheck // deprecated field tested for backward compatibility
 	return b
 }
 

@@ -47,27 +47,27 @@ type resolveOptions struct {
 	fallbackDefault bool
 }
 
-// Specify the time to calculate with.
+// TimeStamp specifies the time to calculate with.
 type TimeStamp time.Time
 
-// Take ongoing windows into account.
+// OngoingWindow indicates whether ongoing windows should be taken into account.
 type OngoingWindow bool
 
-// If taking ongoing windows into account, minimum duration.
+// MinWindowSize specifies the minimum duration when taking ongoing windows into account.
 type MinWindowSize time.Duration
 
-// Whether stop at first matched policy's windows.
+// FirstMatchOnly indicates whether to stop at the first matched policy's windows.
 type FirstMatchOnly bool
 
-// If matched policies had no available windows whether to fall back
-// to the default, or bail out with an error.
+// FallbackDefault indicates whether to fall back to the default window
+// if matched policies had no available windows.
 type FallbackDefault bool
 
-/* GetMaintenancePolicy gets the maintenance window policy based on the policy name we specify
- * non-nil error returned if meeting one of below conditions:
- * - the speficied maintenance policy doesn't exist.
- * - error during unmarshal the policy data.
- */
+// GetMaintenancePolicy gets the maintenance window policy based on the specified policy name.
+//
+// A non-nil error is returned if:
+//   - the specified maintenance policy doesn't exist.
+//   - unmarshalling the policy data fails.
 func GetMaintenancePolicy(pool map[string]*[]byte, name string) (*MaintenanceWindowPolicy, error) {
 	if name == "" {
 		return nil, nil //nolint:nilnil //changing that now would break the API
@@ -87,15 +87,11 @@ func GetMaintenancePolicy(pool map[string]*[]byte, name string) (*MaintenanceWin
 	return &policy, nil
 }
 
-/*
- * This function parse a JSON document from a byte array into a
- * MaintenanceWindowPolicy structure, and returns it. If any errors
- * are encountered, the error is returned, and the structured return data
- * is undefined.
- *
- * Once a MaintenanceWindowPolicy is returned its Resolve method can be used to find
- * A suitable maintenance window.
- */
+// NewMaintenanceWindowPolicyFromJSON parses a JSON document from a byte array into a
+// MaintenanceWindowPolicy structure.
+//
+// Once a MaintenanceWindowPolicy is returned, its Resolve method can be used to find a
+// suitable maintenance window.
 func NewMaintenanceWindowPolicyFromJSON(raw []byte) (MaintenanceWindowPolicy, error) {
 	var ruleset MaintenanceWindowPolicy
 
@@ -106,26 +102,18 @@ func NewMaintenanceWindowPolicyFromJSON(raw []byte) (MaintenanceWindowPolicy, er
 	return ruleset, nil
 }
 
-/*
- * Finds the next applicatable maintenance window for a given runtime on the plan.
- *
- * The algorithm can be parameterized using the following typed varargs:
- *  - TimeStamp: A time.Time, to specify the resolving's time instead of now
- *  - OngoingWindow: A boolean, if true then already started windows are returned
- *    if long enough. Defaults to false.
- *  - MinWindowSize: A time.Duration, when OngoingWindow is true, this holds the
- *    minimum size for the windows. Defaults to 1h.
- *  - FirstMatchOnly: A boolean indicating wether or not to stop at the first
- *    matching rule in the ruleset before proceeding to the defaults.
- *    Defaults to true.
- *  - FallbackDefault: A boolean indicating whether or not fall back to the default
- *    rules if no specific matching rules are found. Defaults to true.
- *
- * If a match is found then a ResolvedWindow pointer is returned with a nil error.
- * Otherwise an error is returned and the ResolvedWindow pointer is expected to be
- * nil.
- */
-func (mwp *MaintenanceWindowPolicy) Resolve(runtime *Runtime, opts ...interface{}) (*ResolvedWindow, error) {
+// Resolve finds the next applicable maintenance window for a given runtime on the policy.
+//
+// The algorithm can be parameterized using the following typed varargs:
+//   - TimeStamp: a time.Time to specify the resolving time instead of now.
+//   - OngoingWindow: if true then already started windows are returned if long enough. Defaults to false.
+//   - MinWindowSize: when OngoingWindow is true, this holds the minimum size for the windows. Defaults to 1h.
+//   - FirstMatchOnly: whether to stop at the first matching rule before proceeding to defaults. Defaults to true.
+//   - FallbackDefault: whether to fall back to the default rules if matches provided no window. Defaults to true.
+//
+// If a match is found then a ResolvedWindow pointer is returned with a nil error. Otherwise an
+// error is returned and the ResolvedWindow pointer is nil.
+func (mwp *MaintenanceWindowPolicy) Resolve(runtime *Runtime, opts ...any) (*ResolvedWindow, error) {
 	// first set up the internal logic parameters
 	// defaults here
 	options := resolveOptions{
@@ -205,36 +193,36 @@ func (mws *MaintenanceWindows) LookupAvailable(opts *resolveOptions) *ResolvedWi
 }
 
 type MaintenancePolicyMatch struct {
-	GlobalAccountID Regexp `json:"globalAccountID,omitempty"` //nolint:tagliatelle,revive //changing that now would break the API
-	Plan            Regexp `json:"plan,omitempty"`
-	Region          Regexp `json:"region,omitempty"`
-	PlatformRegion  Regexp `json:"platformRegion,omitempty"`
+	GlobalAccountID *Regexp `json:"globalAccountID,omitempty"` //nolint:tagliatelle,revive //changing that now would break the API
+	Plan            *Regexp `json:"plan,omitempty"`
+	Region          *Regexp `json:"region,omitempty"`
+	PlatformRegion  *Regexp `json:"platformRegion,omitempty"`
 }
 
 func (mpm MaintenancePolicyMatch) String() string {
 	ret := "<MaintenancePolicyMatch"
-	if mpm.GlobalAccountID.IsValid() {
+	if mpm.GlobalAccountID != nil && mpm.GlobalAccountID.IsValid() {
 		ret += fmt.Sprintf(" GlobalAccountID:'%s'", mpm.GlobalAccountID)
 	}
-	if mpm.Plan.IsValid() {
+	if mpm.Plan != nil && mpm.Plan.IsValid() {
 		ret += fmt.Sprintf(" Plan:'%s'", mpm.Plan)
 	}
-	if mpm.Region.IsValid() {
+	if mpm.Region != nil && mpm.Region.IsValid() {
 		ret += fmt.Sprintf(" Region:'%s'", mpm.Region)
 	}
-	if mpm.PlatformRegion.IsValid() {
+	if mpm.PlatformRegion != nil && mpm.PlatformRegion.IsValid() {
 		ret += fmt.Sprintf(" PlatformRegion:'%s'", mpm.PlatformRegion)
 	}
 	return ret + ">"
 }
 
 func (mpm MaintenancePolicyMatch) Match(runtime *Runtime) bool {
-	// programmer is running with -fno-unroll-loops
-	for _, field := range []string{
-		"GlobalAccountID", "Plan",
-		"Region", "PlatformRegion",
-	} {
-		rexp := reflect.Indirect(reflect.ValueOf(mpm)).FieldByName(field).Interface().(Regexp) //nolint:forcetypeassert,revive //we know it's a Regexp
+	for _, field := range []string{"GlobalAccountID", "Plan", "Region", "PlatformRegion"} {
+		v := reflect.Indirect(reflect.ValueOf(mpm)).FieldByName(field)
+		if v.IsNil() {
+			continue
+		}
+		rexp := v.Elem().Interface().(Regexp) //nolint:forcetypeassert // we know it's a Regexp
 		if !rexp.IsValid() {
 			continue
 		}
@@ -284,17 +272,17 @@ func (r Regexp) String() string {
 	return r.Str
 }
 
-/*
-If days is empty, then begin and end are ISO8601 strings with
-exact times, otherwise if days is specified it's a time-only (with timezone).
-*/
+// MaintenanceWindow defines a maintenance window.
+//
+// If Days is empty, then Begin and End are ISO8601 timestamps with exact times.
+// Otherwise, if Days is specified, Begin and End are time-only values (with timezone).
 type MaintenanceWindow struct {
 	Days  []string   `json:"days"`
 	Begin WindowTime `json:"begin"`
 	End   WindowTime `json:"end"`
 }
 
-// this has two main modes: whether we have days or not.
+// NextWindow returns the next suitable maintenance window based on the provided options.
 func (mw *MaintenanceWindow) NextWindow(opts *resolveOptions) *ResolvedWindow {
 	if len(mw.Days) == 0 {
 		// in this case begin and end are absolute units
@@ -341,7 +329,7 @@ func (mw *MaintenanceWindow) NextWindow(opts *resolveOptions) *ResolvedWindow {
 	return nil
 }
 
-// type alias for (un)marshalling.
+// WindowTime is a time.Time alias used for (un)marshalling.
 type WindowTime time.Time
 
 func (wt *WindowTime) UnmarshalJSON(data []byte) error {

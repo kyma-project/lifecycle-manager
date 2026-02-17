@@ -20,7 +20,7 @@ func TestConcurrentSSA(t *testing.T) {
 		Object: map[string]any{
 			"kind":       "Pod",
 			"apiVersion": "v1",
-			"metadata": map[string]interface{}{
+			"metadata": map[string]any{
 				"name":      "valid",
 				"namespace": "some-namespace",
 			},

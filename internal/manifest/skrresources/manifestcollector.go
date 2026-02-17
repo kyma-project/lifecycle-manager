@@ -28,14 +28,14 @@ func NewManifestLogCollector(manifest *v1beta2.Manifest, owner client.FieldOwner
 	}
 }
 
-// Implements the skrresources.ManagedFieldsCollector interface.
+// Collect implements the skrresources.ManagedFieldsCollector interface.
 func (c *ManifestLogCollector) Collect(ctx context.Context, obj client.Object) {
 	if c.enabled {
 		c.collector.Collect(ctx, obj)
 	}
 }
 
-// Implements the skrresources.ManagedFieldsCollector interface.
+// Emit implements the skrresources.ManagedFieldsCollector interface.
 func (c *ManifestLogCollector) Emit(ctx context.Context) error {
 	if c.enabled {
 		return c.collector.Emit(ctx)

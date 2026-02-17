@@ -37,8 +37,7 @@ func NewFileExtractor(tExt tarExtractor,
 	return fileExtractor
 }
 
-// NOTE: LOW LEVEL PRIMITIVE!
-// Use only if intended to exchange the default io.ReadAll function.
+// WithReadAllFunction is a low level primitive that replaces the default io.ReadAll function.
 func WithReadAllFunction(f readAllFunc) func(*FileExtractor) *FileExtractor {
 	return func(fExt *FileExtractor) *FileExtractor {
 		fExt.readAll = f
@@ -60,7 +59,9 @@ func (fExt *FileExtractor) ExtractFileFromLayer(layer containerregistryv1.Layer,
 	if err != nil {
 		return nil, wrap(err)
 	}
-	defer layerReader.Close()
+	defer func() {
+		_ = layerReader.Close()
+	}()
 
 	layerBytes, err := fExt.readAll(layerReader)
 	if err != nil {

@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 
@@ -27,7 +29,7 @@ var _ = Describe("Self Signed Certificate Rotation", Ordered, func() {
 				Namespace: "istio-system",
 			}
 			Eventually(func() error {
-				_, err := GetCACertificate(ctx, certName, kcpClient)
+				_, err := GetCertificate(ctx, certName, kcpClient)
 				return err
 			}).Should(Succeed())
 		})
@@ -35,6 +37,23 @@ var _ = Describe("Self Signed Certificate Rotation", Ordered, func() {
 			Eventually(StopDeployment).
 				WithContext(ctx).
 				WithArguments(kcpClient, "cert-manager", "cert-manager").
+				Should(Succeed())
+		})
+		It("Then simulate CA rotation by updating gateway secret", func() {
+			Eventually(func() error {
+				secret := &apicorev1.Secret{}
+				if err := kcpClient.Get(ctx, types.NamespacedName{
+					Name:      shared.GatewaySecretName,
+					Namespace: IstioNamespace,
+				}, secret); err != nil {
+					return err
+				}
+				if secret.Annotations == nil {
+					secret.Annotations = make(map[string]string)
+				}
+				secret.Annotations[shared.LastModifiedAtAnnotation] = time.Now().Format(time.RFC3339)
+				return kcpClient.Update(ctx, secret)
+			}).WithContext(ctx).
 				Should(Succeed())
 		})
 		It(fmt.Sprintf("Then %s metric increased to 1", metrics.MetricSelfSignedCertNotRenew), func() {
