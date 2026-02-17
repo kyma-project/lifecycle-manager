@@ -41,7 +41,7 @@ func (r *Repository) Exists(ctx context.Context, kymaName types.NamespacedName) 
 		},
 		&v1beta1.PartialObjectMetadata{
 			TypeMeta: apimetav1.TypeMeta{
-				Kind:       reflect.TypeOf(apiextensionsv1.CustomResourceDefinition{}).Name(),
+				Kind:       reflect.TypeFor[apiextensionsv1.CustomResourceDefinition]().Name(),
 				APIVersion: apiextensionsv1.SchemeGroupVersion.String(),
 			},
 		},

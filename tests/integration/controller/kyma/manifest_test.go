@@ -71,7 +71,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 			Version: v1beta2.GroupVersion.Version,
 			Kind:    "Sample",
 		})
-		data.Object["spec"] = map[string]interface{}{
+		data.Object["spec"] = map[string]any{
 			"initKey": "valueUpdated",
 		}
 

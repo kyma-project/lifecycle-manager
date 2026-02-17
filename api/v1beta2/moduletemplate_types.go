@@ -48,6 +48,7 @@ type ModuleTemplate struct {
 type ModuleTemplateSpec struct {
 	// Channel is the targeted channel of the ModuleTemplate. It will be used to directly assign a Template
 	// to a target channel. It has to be provided at any given time.
+	//
 	// Deprecated: This field is deprecated and will be removed in a future release.
 	// +optional
 	// +kubebuilder:deprecatedversion

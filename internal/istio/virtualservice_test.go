@@ -37,10 +37,10 @@ func Test_NewVirtualServiceService_ReturnsVirtualServiceService(t *testing.T) {
 
 func Test_NewVirtualService_ReturnsError_WhenWatcherIsNil(t *testing.T) {
 	vss := createVirtualServiceService(t)
-	var watcher *v1beta2.Watcher = nil
 	gateways := createGateways()
 
-	vs, err := vss.NewVirtualService(watcher, gateways)
+	// nil watcher is intentional: testing argument validation.
+	vs, err := vss.NewVirtualService(nil, gateways)
 
 	assert.Nil(t, vs)
 	require.ErrorIs(t, err, istio.ErrInvalidArgument)
@@ -96,9 +96,9 @@ func Test_NewVirtualService_SetsCorrectNamespace(t *testing.T) {
 func Test_NewVirtualService_ReturnsError_WhenGatewaysIsNil(t *testing.T) {
 	vss := createVirtualServiceService(t)
 	watcher := builder.NewWatcherBuilder().Build()
-	var gateways *istioclientapiv1beta1.GatewayList = nil
 
-	vs, err := vss.NewVirtualService(watcher, gateways)
+	// nil gateways is intentional: testing argument validation.
+	vs, err := vss.NewVirtualService(watcher, nil)
 
 	assert.Nil(t, vs)
 	require.ErrorIs(t, err, istio.ErrInvalidArgument)
@@ -257,11 +257,11 @@ func createGateways() *istioclientapiv1beta1.GatewayList {
 		gateway.SetName(fmt.Sprintf("gateway-name-%v", gatewayIndex))
 		gateway.SetNamespace(random.Name())
 
-		var servers []*istioapiv1beta1.Server
+		servers := make([]*istioapiv1beta1.Server, 0, serverCount)
 		for serverIndex := range serverCount {
 			server := istioapiv1beta1.Server{}
 
-			var hosts []string
+			hosts := make([]string, 0, serverCount)
 			for hostIndex := range serverCount {
 				hosts = append(hosts, fmt.Sprintf("%v-%v-%v.localhost", gatewayIndex, serverIndex, hostIndex))
 			}

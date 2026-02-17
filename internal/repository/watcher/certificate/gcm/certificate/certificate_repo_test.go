@@ -80,7 +80,3 @@ func TestNew_Namespace_Error(t *testing.T) {
 	require.ErrorIs(t, err, certerror.ErrCertRepoConfigNamespace)
 	assert.Nil(t, certClient)
 }
-
-func stringPtr(s string) *string {
-	return &s
-}

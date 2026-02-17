@@ -185,7 +185,7 @@ func Test_SplitResources(t *testing.T) {
 }
 
 func convertToResourceInfo(objects []machineryruntime.Object) []*resource.Info {
-	items := make([]*resource.Info, 0)
+	items := make([]*resource.Info, 0, len(objects))
 	for _, object := range objects {
 		kind := getKindName(object)
 		v := reflect.ValueOf(object).Elem()

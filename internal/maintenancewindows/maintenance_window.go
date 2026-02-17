@@ -18,7 +18,7 @@ var (
 )
 
 type MaintenanceWindowPolicy interface {
-	Resolve(runtime *resolver.Runtime, opts ...interface{}) (*resolver.ResolvedWindow, error)
+	Resolve(runtime *resolver.Runtime, opts ...any) (*resolver.ResolvedWindow, error)
 }
 
 type MaintenanceWindow struct {

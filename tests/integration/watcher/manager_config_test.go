@@ -32,7 +32,7 @@ var _ = Describe("Watcher Manager Configuration", func() {
 			var watcherFound bool
 
 			for {
-				var doc map[string]interface{}
+				var doc map[string]any
 				err := decoder.Decode(&doc)
 				if err != nil {
 					break // End of documents

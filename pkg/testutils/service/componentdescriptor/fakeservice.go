@@ -8,7 +8,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 )
 
-// Fake Service implementation for tests requiring component descriptors.
+// FakeService is a fake DescriptorService implementation for tests requiring component descriptors.
 // It supports registering descriptors with name and version overrides - useful for scenarios
 // where a single descriptor is used for multiple test cases with slightly different module names.
 // Defining this fake here has the advantage of using the same internal
@@ -23,7 +23,7 @@ func NewFakeService(descBytes []byte) *FakeService {
 	return (&FakeService{}).Register(descBytes)
 }
 
-func (s *FakeService) GetComponentDescriptor(ctx context.Context, ocmId ocmidentity.ComponentId) (
+func (s *FakeService) GetComponentDescriptor(_ context.Context, ocmId ocmidentity.ComponentId) (
 	*types.Descriptor, error,
 ) {
 	if s.stopped {

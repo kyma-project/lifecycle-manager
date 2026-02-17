@@ -2,13 +2,13 @@ package skrcontextimpl_test
 
 import (
 	"errors"
-	"sync"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sync/errgroup"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -104,22 +104,15 @@ func Test_ConcurrentStopCalls(t *testing.T) {
 	fakeEnv := &fakeEnvTest{name: "test-env"}
 	dualFactory.SkrEnvs.Store("test-env", fakeEnv)
 
-	var waitGroup sync.WaitGroup
-	errors := make(chan error, 5)
-
+	var grp errgroup.Group
 	for range 5 {
-		waitGroup.Add(1)
-		go func() {
-			defer waitGroup.Done()
-			errors <- dualFactory.Stop()
-		}()
+		grp.Go(func() error {
+			return dualFactory.Stop()
+		})
 	}
-	waitGroup.Wait()
-	close(errors)
 
-	for err := range errors {
-		assert.NoError(t, err)
-	}
+	err := grp.Wait()
+	assert.NoError(t, err)
 }
 
 func Test_StopperInterfaceHandling(t *testing.T) {

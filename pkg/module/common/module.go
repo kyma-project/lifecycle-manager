@@ -29,7 +29,7 @@ func (m *Module) Logger(base logr.Logger) logr.Logger {
 	return base.WithValues(
 		"fqdn", m.FQDN,
 		"module", m.Manifest.GetName(),
-		"channel", m.TemplateInfo.Spec.Channel,
+		"channel", m.TemplateInfo.Spec.Channel, //nolint:staticcheck // legacy Channel field
 		"templateGeneration", m.TemplateInfo.GetGeneration(),
 	)
 }
