@@ -63,12 +63,11 @@ type FirstMatchOnly bool
 // if matched policies had no available windows.
 type FallbackDefault bool
 
-/* GetMaintenancePolicy gets the maintenance window policy based on the specified policy name
- *
- * A non-nil error is returned if:
- *   - the specified maintenance policy doesn't exist
- *   - unmarshalling the policy data fails
- */
+// GetMaintenancePolicy gets the maintenance window policy based on the specified policy name.
+//
+// A non-nil error is returned if:
+//   - the specified maintenance policy doesn't exist.
+//   - unmarshalling the policy data fails.
 func GetMaintenancePolicy(pool map[string]*[]byte, name string) (*MaintenanceWindowPolicy, error) {
 	if name == "" {
 		return nil, nil //nolint:nilnil //changing that now would break the API
@@ -88,15 +87,11 @@ func GetMaintenancePolicy(pool map[string]*[]byte, name string) (*MaintenanceWin
 	return &policy, nil
 }
 
-/*
- * This function parse a JSON document from a byte array into a
- * MaintenanceWindowPolicy structure, and returns it. If any errors
- * are encountered, the error is returned, and the structured return data
- * is undefined.
- *
- * Once a MaintenanceWindowPolicy is returned its Resolve method can be used to find
- * A suitable maintenance window.
- */
+// NewMaintenanceWindowPolicyFromJSON parses a JSON document from a byte array into a
+// MaintenanceWindowPolicy structure.
+//
+// Once a MaintenanceWindowPolicy is returned, its Resolve method can be used to find a
+// suitable maintenance window.
 func NewMaintenanceWindowPolicyFromJSON(raw []byte) (MaintenanceWindowPolicy, error) {
 	var ruleset MaintenanceWindowPolicy
 
@@ -107,25 +102,17 @@ func NewMaintenanceWindowPolicyFromJSON(raw []byte) (MaintenanceWindowPolicy, er
 	return ruleset, nil
 }
 
-/*
- * Finds the next applicatable maintenance window for a given runtime on the plan.
- *
- * The algorithm can be parameterized using the following typed varargs:
- *  - TimeStamp: A time.Time, to specify the resolving's time instead of now
- *  - OngoingWindow: A boolean, if true then already started windows are returned
- *    if long enough. Defaults to false.
- *  - MinWindowSize: A time.Duration, when OngoingWindow is true, this holds the
- *    minimum size for the windows. Defaults to 1h.
- *  - FirstMatchOnly: A boolean indicating wether or not to stop at the first
- *    matching rule in the ruleset before proceeding to the defaults.
- *    Defaults to true.
- *  - FallbackDefault: A boolean indicating whether or not fall back to the default
- *    rules if no specific matching rules are found. Defaults to true.
- *
- * If a match is found then a ResolvedWindow pointer is returned with a nil error.
- * Otherwise an error is returned and the ResolvedWindow pointer is expected to be
- * nil.
- */
+// Resolve finds the next applicable maintenance window for a given runtime on the policy.
+//
+// The algorithm can be parameterized using the following typed varargs:
+//   - TimeStamp: a time.Time to specify the resolving time instead of now.
+//   - OngoingWindow: if true then already started windows are returned if long enough. Defaults to false.
+//   - MinWindowSize: when OngoingWindow is true, this holds the minimum size for the windows. Defaults to 1h.
+//   - FirstMatchOnly: whether to stop at the first matching rule before proceeding to defaults. Defaults to true.
+//   - FallbackDefault: whether to fall back to the default rules if matches provided no window. Defaults to true.
+//
+// If a match is found then a ResolvedWindow pointer is returned with a nil error. Otherwise an
+// error is returned and the ResolvedWindow pointer is nil.
 func (mwp *MaintenanceWindowPolicy) Resolve(runtime *Runtime, opts ...any) (*ResolvedWindow, error) {
 	// first set up the internal logic parameters
 	// defaults here
@@ -235,7 +222,7 @@ func (mpm MaintenancePolicyMatch) Match(runtime *Runtime) bool {
 		if v.IsNil() {
 			continue
 		}
-		rexp := v.Elem().Interface().(Regexp) //nolint:forcetypeassert,revive // we know it's a Regexp
+		rexp := v.Elem().Interface().(Regexp) //nolint:forcetypeassert // we know it's a Regexp
 		if !rexp.IsValid() {
 			continue
 		}
