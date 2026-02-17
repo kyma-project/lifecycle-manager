@@ -15,7 +15,8 @@ var _ = Describe("Kyma with managed fields in kcp mode", Ordered, func() {
 
 	It("Should result in a managed field with manager named 'lifecycle-manager'", func() {
 		Eventually(ContainsKymaManagerField, Timeout, Interval).
-			WithArguments(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), fieldowners.LegacyLifecycleManager).
+			WithArguments(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(),
+				string(fieldowners.LegacyLifecycleManager)).
 			Should(BeTrue())
 	})
 })
