@@ -33,7 +33,7 @@ type ModuleTemplateInfo struct {
 	//                                          represented by this ModuleTemplateInfo.
 }
 
-// Implements provider.OCMIProvider interface.
+// GetOCMIdentity implements provider.OCMIProvider.
 func (m ModuleTemplateInfo) GetOCMIdentity() (*ocmidentity.ComponentId, error) {
 	if m.ComponentId == nil {
 		return nil, fmt.Errorf("%w for module template %s", ErrNoIdentity, m.Name)

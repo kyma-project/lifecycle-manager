@@ -38,7 +38,7 @@ func NewCachedDescriptorProvider(service DescriptorService, descCache Descriptor
 	}
 }
 
-// Convenience interface to get the OCM identity of a component from objects
+// OCMIProvider is a convenience interface to get the OCM identity of a component from objects
 // that already have all required data.
 // Then we don't have to create intermediate variables of type ocmidentity.Component.
 type OCMIProvider interface {

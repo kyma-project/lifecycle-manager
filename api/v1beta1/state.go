@@ -1,5 +1,6 @@
 package v1beta1
 
+// State represents the lifecycle state reported by Kyma and module resources.
 // +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error;"";Warning;Unmanaged
 type State string
 

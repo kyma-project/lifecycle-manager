@@ -19,6 +19,8 @@ import (
 func TestGetRenewalTime_ClientCallSucceedsAndRenewalTimeParsing_Success(t *testing.T) {
 	now := time.Now()
 	expected := now.Add(certDuration - certRenewBefore)
+	exp := new(string)
+	*exp = now.Add(certDuration).Format(time.RFC3339)
 
 	clientStub := &getClientStub{
 		object: &gcertv1alpha1.Certificate{
@@ -31,7 +33,7 @@ func TestGetRenewalTime_ClientCallSucceedsAndRenewalTimeParsing_Success(t *testi
 				Namespace: certNamespace,
 			},
 			Status: gcertv1alpha1.CertificateStatus{
-				ExpirationDate: stringPtr(now.Add(certDuration).Format(time.RFC3339)),
+				ExpirationDate: exp,
 			},
 		},
 	}

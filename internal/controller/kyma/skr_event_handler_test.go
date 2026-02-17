@@ -17,7 +17,7 @@ import (
 
 func TestExtractRuntimeIDFromMap_Valid(t *testing.T) {
 	unstructuredEvent := &unstructured.Unstructured{}
-	unstructuredEvent.Object = map[string]interface{}{"runtime-id": "rid-123"}
+	unstructuredEvent.Object = map[string]any{"runtime-id": "rid-123"}
 	rid, ok := kyma.ExtractRuntimeIDFromMap(unstructuredEvent)
 	if !ok {
 		t.Fatalf("expected ok=true")
@@ -29,7 +29,7 @@ func TestExtractRuntimeIDFromMap_Valid(t *testing.T) {
 
 func TestExtractRuntimeIDFromMap_Missing(t *testing.T) {
 	unstructuredEvent := &unstructured.Unstructured{}
-	unstructuredEvent.Object = map[string]interface{}{"other": "x"}
+	unstructuredEvent.Object = map[string]any{"other": "x"}
 	_, ok := kyma.ExtractRuntimeIDFromMap(unstructuredEvent)
 	if ok {
 		t.Fatalf("expected ok=false when runtime-id missing")
@@ -38,7 +38,7 @@ func TestExtractRuntimeIDFromMap_Missing(t *testing.T) {
 
 func TestExtractRuntimeIDFromMap_WrongType(t *testing.T) {
 	unstructuredEvent := &unstructured.Unstructured{}
-	unstructuredEvent.Object = map[string]interface{}{"runtime-id": 123}
+	unstructuredEvent.Object = map[string]any{"runtime-id": 123}
 	_, ok := kyma.ExtractRuntimeIDFromMap(unstructuredEvent)
 	if ok {
 		t.Fatalf("expected ok=false when runtime-id not string")
@@ -47,7 +47,7 @@ func TestExtractRuntimeIDFromMap_WrongType(t *testing.T) {
 
 func TestGetRuntimeIDFromEvent_Valid(t *testing.T) {
 	unstructuredEvent := &unstructured.Unstructured{}
-	unstructuredEvent.Object = map[string]interface{}{"runtime-id": "rid-456"}
+	unstructuredEvent.Object = map[string]any{"runtime-id": "rid-456"}
 	runtimeID, err := kyma.GetRuntimeIDFromEvent(event.GenericEvent{Object: unstructuredEvent})
 	if err != nil {
 		t.Fatalf("expected no error for a valid event")
@@ -67,7 +67,7 @@ func TestGetRuntimeIDFromEvent_NotUnstructured(t *testing.T) {
 
 func TestGetRuntimeIDFromEvent_MissingRuntimeID(t *testing.T) {
 	unstructuredEvent := &unstructured.Unstructured{}
-	unstructuredEvent.Object = map[string]interface{}{"other": "x"}
+	unstructuredEvent.Object = map[string]any{"other": "x"}
 	_, err := kyma.GetRuntimeIDFromEvent(event.GenericEvent{Object: unstructuredEvent})
 	if !errors.Is(err, kyma.ErrExtractingRuntimeID) {
 		t.Fatalf("expected error when runtime-id missing")
@@ -76,7 +76,7 @@ func TestGetRuntimeIDFromEvent_MissingRuntimeID(t *testing.T) {
 
 func TestGetRuntimeIDFromEvent_RuntimeIDWrongType(t *testing.T) {
 	unstructuredEvent := &unstructured.Unstructured{}
-	unstructuredEvent.Object = map[string]interface{}{"runtime-id": 123}
+	unstructuredEvent.Object = map[string]any{"runtime-id": 123}
 	_, err := kyma.GetRuntimeIDFromEvent(event.GenericEvent{Object: unstructuredEvent})
 	if !errors.Is(err, kyma.ErrExtractingRuntimeID) {
 		t.Fatalf("expected error when runtime-id has a wrong type")
@@ -90,7 +90,7 @@ func TestSkrEventHandler_GenericFunc_AddsToQueue(t *testing.T) {
 	defer queue.ShutDown()
 
 	unstructuredEvent := &unstructured.Unstructured{}
-	unstructuredEvent.Object = map[string]interface{}{"runtime-id": "rid-789"}
+	unstructuredEvent.Object = map[string]any{"runtime-id": "rid-789"}
 	ev := event.GenericEvent{Object: unstructuredEvent}
 
 	// Call GenericFunc
@@ -121,7 +121,7 @@ func TestSkrEventHandler_GenericFunc_ResolverError_NoAdd(t *testing.T) {
 	defer queue.ShutDown()
 
 	unstructuredEvent := &unstructured.Unstructured{}
-	unstructuredEvent.Object = map[string]interface{}{"runtime-id": "rid-789"}
+	unstructuredEvent.Object = map[string]any{"runtime-id": "rid-789"}
 	ev := event.GenericEvent{Object: unstructuredEvent}
 
 	// Call GenericFunc
@@ -148,7 +148,7 @@ func TestSkrEventHandler_GenericFunc_InvalidEvent_NoAdd(t *testing.T) {
 
 	// invalid: unstructured without runtime-id
 	unstructuredEvent := &unstructured.Unstructured{}
-	unstructuredEvent.Object = map[string]interface{}{"other": "x"}
+	unstructuredEvent.Object = map[string]any{"other": "x"}
 	ev2 := event.GenericEvent{Object: unstructuredEvent}
 	handler.GenericFunc(context.Background(), ev2, queue)
 

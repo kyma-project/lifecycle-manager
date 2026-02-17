@@ -20,7 +20,8 @@ type (
 )
 
 type ModuleStatusGenerator interface {
-	GenerateModuleStatus(module *modulecommon.Module, currentStatus *v1beta2.ModuleStatus) (*v1beta2.ModuleStatus,
+	GenerateModuleStatus(module *modulecommon.Module, currentStatus *v1beta2.ModuleStatus) (
+		*v1beta2.ModuleStatus,
 		error)
 }
 
@@ -123,7 +124,7 @@ func (m *StatusHandler) getModule(ctx context.Context, module client.Object) err
 }
 
 func convertToNewModuleStatus(moduleStatusMap map[string]*v1beta2.ModuleStatus) []v1beta2.ModuleStatus {
-	newModuleStatus := make([]v1beta2.ModuleStatus, 0)
+	newModuleStatus := make([]v1beta2.ModuleStatus, 0, len(moduleStatusMap))
 	for _, moduleStatus := range moduleStatusMap {
 		newModuleStatus = append(newModuleStatus, *moduleStatus)
 	}

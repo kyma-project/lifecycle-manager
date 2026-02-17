@@ -50,7 +50,7 @@ func DropStoredVersion(ctx context.Context, kcpClient client.Client, versionsToB
 
 func ParseStorageVersionsMap(versions string) map[string]string {
 	versionsToBeDroppedMap := map[string]string{}
-	for _, pair := range strings.Split(versions, ",") {
+	for pair := range strings.SplitSeq(versions, ",") {
 		if kv := strings.Split(pair, ":"); len(kv) == resourceVersionPairCount {
 			versionsToBeDroppedMap[kv[0]] = kv[1]
 		}

@@ -3,6 +3,7 @@ package withwatcher_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -185,7 +186,7 @@ func isVirtualServiceHostsConfigured(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	if !contains(virtualService.Spec.GetHosts(), gateway.Spec.GetServers()[0].GetHosts()[0]) {
+	if !slices.Contains(virtualService.Spec.GetHosts(), gateway.Spec.GetServers()[0].GetHosts()[0]) {
 		return errVirtualServiceHostsNotMatchGateway
 	}
 	return nil
@@ -215,15 +216,6 @@ func verifyWatcherConfiguredAsVirtualServiceOwner(ctx context.Context,
 	}
 
 	return nil
-}
-
-func contains(source []string, target string) bool {
-	for _, item := range source {
-		if item == target {
-			return true
-		}
-	}
-	return false
 }
 
 func isListenerHTTPRouteConfigured(ctx context.Context, clt *istio.Client, namespace string, watcher *v1beta2.Watcher,

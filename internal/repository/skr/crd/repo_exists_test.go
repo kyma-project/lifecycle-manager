@@ -49,7 +49,7 @@ func TestExists_ClientCallFailsWithNotFound_ReturnsFalse(t *testing.T) {
 	clientStub := &getClientStub{
 		err: apierrors.NewNotFound(schema.GroupResource{
 			Group:    apiextensionsv1.SchemeGroupVersion.Group,
-			Resource: reflect.TypeOf(apiextensionsv1.CustomResourceDefinition{}).Name(),
+			Resource: reflect.TypeFor[apiextensionsv1.CustomResourceDefinition]().Name(),
 		}, crdName),
 	}
 

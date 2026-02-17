@@ -69,7 +69,7 @@ func (oci *OCIRegistryHostProvider) getHostFromCredSecret(ctx context.Context) (
 	}
 
 	var dockerConfig struct {
-		Auths map[string]interface{} `json:"auths"`
+		Auths map[string]any `json:"auths"`
 	}
 	if err := json.Unmarshal(data, &dockerConfig); err != nil {
 		return "", fmt.Errorf("failed to unmarshal docker config json: %w", err)

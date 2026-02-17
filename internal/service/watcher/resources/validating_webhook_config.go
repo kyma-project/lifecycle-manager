@@ -25,7 +25,7 @@ func ResolveWebhookRuleResources(resource string, fieldName v1beta2.FieldName) [
 
 func BuildValidatingWebhookConfigFromWatchers(caCert []byte, watchers []v1beta2.Watcher, remoteNs string,
 ) *admissionregistrationv1.ValidatingWebhookConfiguration {
-	webhooks := make([]admissionregistrationv1.ValidatingWebhook, 0)
+	webhooks := make([]admissionregistrationv1.ValidatingWebhook, 0, len(watchers))
 	for _, watcher := range watchers {
 		managerName := watcher.GetManagerName()
 		webhookName := fmt.Sprintf("%s.%s.%s", watcher.Namespace, watcher.Name, shared.OperatorGroup)
