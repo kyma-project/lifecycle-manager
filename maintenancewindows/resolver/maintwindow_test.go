@@ -316,10 +316,10 @@ func Test_MPMString(t *testing.T) {
 	reg := "blah3"
 	preg := "blah4"
 	data := resolver.MaintenancePolicyMatch{
-		GlobalAccountID: resolver.NewRegexp(gaid),
-		Plan:            resolver.NewRegexp(plan),
-		Region:          resolver.NewRegexp(reg),
-		PlatformRegion:  resolver.NewRegexp(preg),
+		GlobalAccountID: func() *resolver.Regexp { r := resolver.NewRegexp(gaid); return &r }(),
+		Plan:            func() *resolver.Regexp { r := resolver.NewRegexp(plan); return &r }(),
+		Region:          func() *resolver.Regexp { r := resolver.NewRegexp(reg); return &r }(),
+		PlatformRegion:  func() *resolver.Regexp { r := resolver.NewRegexp(preg); return &r }(),
 	}
 	expected := fmt.Sprintf(
 		"<MaintenancePolicyMatch GlobalAccountID:'%s' Plan:'%s' Region:'%s' PlatformRegion:'%s'>",
