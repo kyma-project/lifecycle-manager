@@ -89,7 +89,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if err := r.updateFinalizer(ctx, watcher); err != nil {
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
+		return ctrl.Result{RequeueAfter: r.Busy}, nil
 	}
 
 	watcher.InitializeConditions()
@@ -138,7 +138,7 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, watcher *v1beta2.W
 	if err := r.updateFinalizer(ctx, watcher); err != nil {
 		return ctrl.Result{}, err
 	}
-	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
+	return ctrl.Result{RequeueAfter: r.Busy}, nil
 }
 
 func (r *Reconciler) handleProcessingState(ctx context.Context, watcherCR *v1beta2.Watcher) (ctrl.Result, error) {
