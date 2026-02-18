@@ -43,12 +43,9 @@ import (
 )
 
 const (
-	setFinalizerFailure    event.Reason = "SettingPurgeFinalizerFailed"
-	removeFinalizerFailure event.Reason = "RemovingPurgeFinalizerFailed"
-
-	// purgeFinalizerRemovedRequeueDelay is the delay used when requeuing after successfully
-	// dropping the purge finalizer. Uses a fixed delay instead of the deprecated Requeue: true.
-	purgeFinalizerRemovedRequeueDelay = 5 * time.Second
+	setFinalizerFailure               event.Reason = "SettingPurgeFinalizerFailed"
+	removeFinalizerFailure            event.Reason = "RemovingPurgeFinalizerFailed"
+	purgeFinalizerRemovedRequeueDelay              = 5 * time.Second
 )
 
 type Reconciler struct {
