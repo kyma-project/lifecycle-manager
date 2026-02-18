@@ -643,10 +643,10 @@ func InstallManifest(ctx context.Context, clnt client.Client, manifest *v1beta2.
 	if enableResource {
 		// related CRD definition is in pkg/test_samples/oci/rendered.yaml
 		manifest.Spec.Resource = &unstructured.Unstructured{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"apiVersion": shared.OperatorGroup + shared.Separator + "v1alpha1",
 				"kind":       string(templatev1alpha1.SampleKind),
-				"metadata": map[string]interface{}{
+				"metadata": map[string]any{
 					"name":      "sample-cr-" + manifest.GetName(),
 					"namespace": apimetav1.NamespaceDefault,
 				},

@@ -4,7 +4,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 )
 
-// ComposeComponentDescriptorService manges creation of a new instance of the Cached ComponentDescriptor Provider.
+// ComposeCachedDescriptorProvider manages creation of a new instance of the cached ComponentDescriptor provider.
 func ComposeCachedDescriptorProvider(
 	service provider.DescriptorService,
 	cache provider.DescriptorCache,

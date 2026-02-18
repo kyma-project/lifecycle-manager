@@ -247,7 +247,11 @@ func Test_DropExpiredCerts_NoOpOnEmptyNotBefore(t *testing.T) {
 }
 
 func appendCerts(certs ...[]byte) []byte {
-	var appended []byte
+	capHint := 0
+	for _, cert := range certs {
+		capHint += len(cert)
+	}
+	appended := make([]byte, 0, capHint)
 	for _, cert := range certs {
 		appended = append(appended, cert...)
 	}

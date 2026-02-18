@@ -137,7 +137,7 @@ func GetAffectedKymas(kymas *v1beta2.KymaList, moduleName string,
 
 func handleEvent(
 	ctx context.Context,
-	evt interface{},
+	evt any,
 	rli workqueue.TypedRateLimitingInterface[reconcile.Request],
 	reader client.Reader,
 ) {

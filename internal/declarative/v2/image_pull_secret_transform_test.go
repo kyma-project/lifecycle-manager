@@ -22,17 +22,17 @@ func TestImagePullSecretTransform_WhenNoImagePullSecretsExists_CreatesNew(t *tes
 	}
 	resources := []*unstructured.Unstructured{
 		{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"kind": "Service",
-				"spec": map[string]interface{}{},
+				"spec": map[string]any{},
 			},
 		},
 		{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"kind": "Deployment",
-				"spec": map[string]interface{}{
-					"template": map[string]interface{}{
-						"spec": map[string]interface{}{},
+				"spec": map[string]any{
+					"template": map[string]any{
+						"spec": map[string]any{},
 					},
 				},
 			},
@@ -53,7 +53,7 @@ func TestImagePullSecretTransform_WhenNoImagePullSecretsExists_CreatesNew(t *tes
 			require.True(t, found)
 			require.Len(t, imagePullSecrets, 1)
 
-			secretRef := imagePullSecrets[0].(map[string]interface{})
+			secretRef := imagePullSecrets[0].(map[string]any)
 			require.Equal(t, secretName, secretRef["name"])
 		}
 	}
@@ -69,19 +69,19 @@ func TestImagePullSecretTransform_WhenImagePullSecretsExists_Appends(t *testing.
 	}
 	resources := []*unstructured.Unstructured{
 		{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"kind": "Service",
-				"spec": map[string]interface{}{},
+				"spec": map[string]any{},
 			},
 		},
 		{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"kind": "Deployment",
-				"spec": map[string]interface{}{
-					"template": map[string]interface{}{
-						"spec": map[string]interface{}{
-							"imagePullSecrets": []interface{}{
-								map[string]interface{}{
+				"spec": map[string]any{
+					"template": map[string]any{
+						"spec": map[string]any{
+							"imagePullSecrets": []any{
+								map[string]any{
 									"name": "existing-secret",
 								},
 							},
@@ -106,9 +106,9 @@ func TestImagePullSecretTransform_WhenImagePullSecretsExists_Appends(t *testing.
 			require.True(t, found)
 			require.Len(t, imagePullSecrets, 2)
 
-			existingSecret := imagePullSecrets[0].(map[string]interface{})
+			existingSecret := imagePullSecrets[0].(map[string]any)
 			require.Equal(t, "existing-secret", existingSecret["name"])
-			secretRef := imagePullSecrets[1].(map[string]interface{})
+			secretRef := imagePullSecrets[1].(map[string]any)
 			require.Equal(t, secretName, secretRef["name"])
 		}
 	}
@@ -134,32 +134,32 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvDoesntExist_AddsEnv(t *testing
 	}
 	resources := []*unstructured.Unstructured{
 		{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"kind": "Service",
-				"spec": map[string]interface{}{},
+				"spec": map[string]any{},
 			},
 		},
 		{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"apiVersion": "apps/v1",
 				"kind":       "Deployment",
-				"metadata": map[string]interface{}{
+				"metadata": map[string]any{
 					"name":      "manager-deployment",
 					"namespace": "default",
 				},
-				"spec": map[string]interface{}{
-					"template": map[string]interface{}{
-						"spec": map[string]interface{}{
-							"containers": []interface{}{
-								map[string]interface{}{
+				"spec": map[string]any{
+					"template": map[string]any{
+						"spec": map[string]any{
+							"containers": []any{
+								map[string]any{
 									"name":  "manager",
 									"image": "controller:latest",
 								},
-								map[string]interface{}{
+								map[string]any{
 									"name":  "sidecar",
 									"image": "sidecar:latest",
-									"env": []interface{}{
-										map[string]interface{}{
+									"env": []any{
+										map[string]any{
 											"name":  "SOME_ENV",
 											"value": "some_value",
 										},
@@ -185,14 +185,14 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvDoesntExist_AddsEnv(t *testing
 			require.Len(t, containers, 2)
 
 			for _, c := range containers {
-				containerMap := c.(map[string]interface{})
+				containerMap := c.(map[string]any)
 				envSlice, found, err := unstructured.NestedSlice(containerMap, "env")
 				require.NoError(t, err)
 				require.True(t, found)
 
 				var skrEnvFound bool
 				for _, envVar := range envSlice {
-					envVarMap := envVar.(map[string]interface{})
+					envVarMap := envVar.(map[string]any)
 					if envVarMap["name"] == declarativev2.SkrImagePullSecretEnvName {
 						skrEnvFound = true
 						require.Equal(t, secretName, envVarMap["value"])
@@ -214,18 +214,18 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvDoesntExist_AndManagerNotSpeci
 	}
 	resources := []*unstructured.Unstructured{
 		{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"apiVersion": "apps/v1",
 				"kind":       "Deployment",
-				"metadata": map[string]interface{}{
+				"metadata": map[string]any{
 					"name":      "some-deployment",
 					"namespace": "default",
 				},
-				"spec": map[string]interface{}{
-					"template": map[string]interface{}{
-						"spec": map[string]interface{}{
-							"containers": []interface{}{
-								map[string]interface{}{
+				"spec": map[string]any{
+					"template": map[string]any{
+						"spec": map[string]any{
+							"containers": []any{
+								map[string]any{
 									"name":  "some-container",
 									"image": "controller:latest",
 								},
@@ -248,14 +248,14 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvDoesntExist_AndManagerNotSpeci
 			require.True(t, found)
 			require.Len(t, containers, 1)
 
-			containerMap := containers[0].(map[string]interface{})
+			containerMap := containers[0].(map[string]any)
 			envSlice, found, err := unstructured.NestedSlice(containerMap, "env")
 			require.NoError(t, err)
 			require.True(t, found)
 
 			var skrEnvFound bool
 			for _, envVar := range envSlice {
-				envVarMap := envVar.(map[string]interface{})
+				envVarMap := envVar.(map[string]any)
 				if envVarMap["name"] == declarativev2.SkrImagePullSecretEnvName {
 					skrEnvFound = true
 					require.Equal(t, secretName, envVarMap["value"])
@@ -286,22 +286,22 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvExists_ReturnsError(t *testing
 	}
 	resources := []*unstructured.Unstructured{
 		{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"apiVersion": "apps/v1",
 				"kind":       "Deployment",
-				"metadata": map[string]interface{}{
+				"metadata": map[string]any{
 					"name":      "manager-deployment",
 					"namespace": "default",
 				},
-				"spec": map[string]interface{}{
-					"template": map[string]interface{}{
-						"spec": map[string]interface{}{
-							"containers": []interface{}{
-								map[string]interface{}{
+				"spec": map[string]any{
+					"template": map[string]any{
+						"spec": map[string]any{
+							"containers": []any{
+								map[string]any{
 									"name":  "manager",
 									"image": "controller:latest",
-									"env": []interface{}{
-										map[string]interface{}{
+									"env": []any{
+										map[string]any{
 											"name":  declarativev2.SkrImagePullSecretEnvName,
 											"value": "some_value",
 										},
@@ -339,18 +339,18 @@ func TestCreateSkrImagePullSecretTransform_DoesntAddEnvVarToNonManagerDeployment
 	}
 	resources := []*unstructured.Unstructured{
 		{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"apiVersion": "apps/v1",
 				"kind":       "Deployment",
-				"metadata": map[string]interface{}{
+				"metadata": map[string]any{
 					"name":      "some-other-deployment",
 					"namespace": "default",
 				},
-				"spec": map[string]interface{}{
-					"template": map[string]interface{}{
-						"spec": map[string]interface{}{
-							"containers": []interface{}{
-								map[string]interface{}{
+				"spec": map[string]any{
+					"template": map[string]any{
+						"spec": map[string]any{
+							"containers": []any{
+								map[string]any{
 									"name":  "manager",
 									"image": "controller:latest",
 								},
@@ -371,7 +371,7 @@ func TestCreateSkrImagePullSecretTransform_DoesntAddEnvVarToNonManagerDeployment
 	require.True(t, found)
 	require.Len(t, containers, 1)
 
-	containerMap := containers[0].(map[string]interface{})
+	containerMap := containers[0].(map[string]any)
 	_, found, err = unstructured.NestedSlice(containerMap, "env")
 	require.NoError(t, err)
 	require.False(t, found)

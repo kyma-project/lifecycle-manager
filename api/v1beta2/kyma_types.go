@@ -17,6 +17,8 @@ limitations under the License.
 package v1beta2
 
 import (
+	"slices"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -338,10 +340,8 @@ func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType, conditionSt
 			continue
 		}
 		if len(conditionStatus) > 0 {
-			for i := range conditionStatus {
-				if existingCondition.Status == conditionStatus[i] {
-					return true
-				}
+			if slices.Contains(conditionStatus, existingCondition.Status) {
+				return true
 			}
 		} else {
 			return true

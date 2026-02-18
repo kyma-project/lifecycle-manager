@@ -96,13 +96,7 @@ runs:
         echo \
         "- op: add
           path: /spec/template/spec/containers/0/args/-
-          value: --self-signed-cert-duration=1h
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --self-signed-cert-renew-before=59m
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --self-signed-cert-renew-buffer=1m" >> self-signed-cert.yaml
+          value: --self-signed-cert-renew-buffer=30s" >> self-signed-cert.yaml
         fi
         cat self-signed-cert.yaml
         kustomize edit add patch --path self-signed-cert.yaml --kind Deployment

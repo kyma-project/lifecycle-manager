@@ -298,7 +298,7 @@ func (m *MockObject) SetAnnotations(annotations map[string]string) {
 }
 
 // SetAnnotations indicates an expected call of SetAnnotations.
-func (mr *MockObjectMockRecorder) SetAnnotations(annotations interface{}) *gomock.Call {
+func (mr *MockObjectMockRecorder) SetAnnotations(annotations any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAnnotations", reflect.TypeOf((*MockObject)(nil).SetAnnotations), annotations)
 }
@@ -310,7 +310,7 @@ func (m *MockObject) SetCreationTimestamp(timestamp v1.Time) {
 }
 
 // SetCreationTimestamp indicates an expected call of SetCreationTimestamp.
-func (mr *MockObjectMockRecorder) SetCreationTimestamp(timestamp interface{}) *gomock.Call {
+func (mr *MockObjectMockRecorder) SetCreationTimestamp(timestamp any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCreationTimestamp", reflect.TypeOf((*MockObject)(nil).SetCreationTimestamp), timestamp)
 }
@@ -322,7 +322,7 @@ func (m *MockObject) SetDeletionGracePeriodSeconds(arg0 *int64) {
 }
 
 // SetDeletionGracePeriodSeconds indicates an expected call of SetDeletionGracePeriodSeconds.
-func (mr *MockObjectMockRecorder) SetDeletionGracePeriodSeconds(arg0 interface{}) *gomock.Call {
+func (mr *MockObjectMockRecorder) SetDeletionGracePeriodSeconds(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDeletionGracePeriodSeconds", reflect.TypeOf((*MockObject)(nil).SetDeletionGracePeriodSeconds), arg0)
 }
@@ -334,7 +334,7 @@ func (m *MockObject) SetDeletionTimestamp(timestamp *v1.Time) {
 }
 
 // SetDeletionTimestamp indicates an expected call of SetDeletionTimestamp.
-func (mr *MockObjectMockRecorder) SetDeletionTimestamp(timestamp interface{}) *gomock.Call {
+func (mr *MockObjectMockRecorder) SetDeletionTimestamp(timestamp any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDeletionTimestamp", reflect.TypeOf((*MockObject)(nil).SetDeletionTimestamp), timestamp)
 }
@@ -346,7 +346,7 @@ func (m *MockObject) SetFinalizers(finalizers []string) {
 }
 
 // SetFinalizers indicates an expected call of SetFinalizers.
-func (mr *MockObjectMockRecorder) SetFinalizers(finalizers interface{}) *gomock.Call {
+func (mr *MockObjectMockRecorder) SetFinalizers(finalizers any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetFinalizers", reflect.TypeOf((*MockObject)(nil).SetFinalizers), finalizers)
 }
@@ -358,7 +358,7 @@ func (m *MockObject) SetGenerateName(name string) {
 }
 
 // SetGenerateName indicates an expected call of SetGenerateName.
-func (mr *MockObjectMockRecorder) SetGenerateName(name interface{}) *gomock.Call {
+func (mr *MockObjectMockRecorder) SetGenerateName(name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetGenerateName", reflect.TypeOf((*MockObject)(nil).SetGenerateName), name)
 }
@@ -370,7 +370,7 @@ func (m *MockObject) SetGeneration(generation int64) {
 }
 
 // SetGeneration indicates an expected call of SetGeneration.
-func (mr *MockObjectMockRecorder) SetGeneration(generation interface{}) *gomock.Call {
+func (mr *MockObjectMockRecorder) SetGeneration(generation any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetGeneration", reflect.TypeOf((*MockObject)(nil).SetGeneration), generation)
 }
@@ -382,7 +382,7 @@ func (m *MockObject) SetLabels(labels map[string]string) {
 }
 
 // SetLabels indicates an expected call of SetLabels.
-func (mr *MockObjectMockRecorder) SetLabels(labels interface{}) *gomock.Call {
+func (mr *MockObjectMockRecorder) SetLabels(labels any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLabels", reflect.TypeOf((*MockObject)(nil).SetLabels), labels)
 }
@@ -394,7 +394,7 @@ func (m *MockObject) SetManagedFields(managedFields []v1.ManagedFieldsEntry) {
 }
 
 // SetManagedFields indicates an expected call of SetManagedFields.
-func (mr *MockObjectMockRecorder) SetManagedFields(managedFields interface{}) *gomock.Call {
+func (mr *MockObjectMockRecorder) SetManagedFields(managedFields any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetManagedFields", reflect.TypeOf((*MockObject)(nil).SetManagedFields), managedFields)
 }
@@ -406,7 +406,7 @@ func (m *MockObject) SetName(name string) {
 }
 
 // SetName indicates an expected call of SetName.
-func (mr *MockObjectMockRecorder) SetName(name interface{}) *gomock.Call {
+func (mr *MockObjectMockRecorder) SetName(name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetName", reflect.TypeOf((*MockObject)(nil).SetName), name)
 }
@@ -418,7 +418,7 @@ func (m *MockObject) SetNamespace(namespace string) {
 }
 
 // SetNamespace indicates an expected call of SetNamespace.
-func (mr *MockObjectMockRecorder) SetNamespace(namespace interface{}) *gomock.Call {
+func (mr *MockObjectMockRecorder) SetNamespace(namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamespace", reflect.TypeOf((*MockObject)(nil).SetNamespace), namespace)
 }
@@ -430,7 +430,7 @@ func (m *MockObject) SetOwnerReferences(arg0 []v1.OwnerReference) {
 }
 
 // SetOwnerReferences indicates an expected call of SetOwnerReferences.
-func (mr *MockObjectMockRecorder) SetOwnerReferences(arg0 interface{}) *gomock.Call {
+func (mr *MockObjectMockRecorder) SetOwnerReferences(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOwnerReferences", reflect.TypeOf((*MockObject)(nil).SetOwnerReferences), arg0)
 }
@@ -442,7 +442,7 @@ func (m *MockObject) SetResourceVersion(version string) {
 }
 
 // SetResourceVersion indicates an expected call of SetResourceVersion.
-func (mr *MockObjectMockRecorder) SetResourceVersion(version interface{}) *gomock.Call {
+func (mr *MockObjectMockRecorder) SetResourceVersion(version any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetResourceVersion", reflect.TypeOf((*MockObject)(nil).SetResourceVersion), version)
 }
@@ -454,7 +454,7 @@ func (m *MockObject) SetSelfLink(selfLink string) {
 }
 
 // SetSelfLink indicates an expected call of SetSelfLink.
-func (mr *MockObjectMockRecorder) SetSelfLink(selfLink interface{}) *gomock.Call {
+func (mr *MockObjectMockRecorder) SetSelfLink(selfLink any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSelfLink", reflect.TypeOf((*MockObject)(nil).SetSelfLink), selfLink)
 }
@@ -466,7 +466,7 @@ func (m *MockObject) SetStatus(arg0 shared.Status) {
 }
 
 // SetStatus indicates an expected call of SetStatus.
-func (mr *MockObjectMockRecorder) SetStatus(arg0 interface{}) *gomock.Call {
+func (mr *MockObjectMockRecorder) SetStatus(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetStatus", reflect.TypeOf((*MockObject)(nil).SetStatus), arg0)
 }
@@ -478,7 +478,7 @@ func (m *MockObject) SetUID(uid types.UID) {
 }
 
 // SetUID indicates an expected call of SetUID.
-func (mr *MockObjectMockRecorder) SetUID(uid interface{}) *gomock.Call {
+func (mr *MockObjectMockRecorder) SetUID(uid any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUID", reflect.TypeOf((*MockObject)(nil).SetUID), uid)
 }

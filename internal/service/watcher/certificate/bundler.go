@@ -34,8 +34,7 @@ func NewBundler(opts ...func(*Bundler) *Bundler) *Bundler {
 	return bundler
 }
 
-// NOTE: LOW LEVEL PRIMITIVE!
-// Use only if intended to exchange the default x509.ParseCertificate function.
+// WithParseX509Function is a low level primitive that replaces the default x509.ParseCertificate function.
 func WithParseX509Function(f func([]byte) (*x509.Certificate, error)) func(*Bundler) *Bundler {
 	return func(b *Bundler) *Bundler {
 		b.parseX509Func = f
@@ -138,13 +137,17 @@ func containsCert(certs []*pem.Block, newCert *pem.Block) bool {
 }
 
 func prependCert(certs []*pem.Block, newCert *pem.Block) []*pem.Block {
-	newBundle := []*pem.Block{newCert}
+	newBundle := make([]*pem.Block, 0, 1+len(certs))
+	newBundle = append(newBundle, newCert)
 	newBundle = append(newBundle, certs...)
 	return newBundle
 }
 
 func encodePEMToBytes(certs []*pem.Block) []byte {
-	var bundle []byte
+	// Each PEM block is usually ~1-2KB; preallocate to reduce reallocations.
+	// The exact size depends on cert length, so this is a best-effort estimate.
+	const avgPEMBlockSizeBytes = 2 * 1024
+	bundle := make([]byte, 0, len(certs)*avgPEMBlockSizeBytes)
 	for _, cert := range certs {
 		bundle = append(bundle, pem.EncodeToMemory(cert)...)
 	}

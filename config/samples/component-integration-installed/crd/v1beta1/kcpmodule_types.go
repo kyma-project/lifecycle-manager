@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package v1beta1 contains sample CRD API types for component-integration-installed.
+//
 // +groupName=operator.kyma-project.io
 package v1beta1
 
@@ -32,11 +34,11 @@ type KCPModuleSpec struct {
 
 type RefTypeMetadata string
 
+// KCPModule is the Schema for the moduletemplates API.
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// KCPModule is the Schema for the moduletemplates API.
 type KCPModule struct {
 	apimetav1.TypeMeta   `json:",inline"`
 	apimetav1.ObjectMeta `json:"metadata,omitempty"`
@@ -45,10 +47,11 @@ type KCPModule struct {
 	Status KCPModuleStatus `json:"status,omitempty"`
 }
 
+// KCPModuleState is the state of a KCPModule.
 // +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error;Warning
 type KCPModuleState string
 
-// ManifestStatus defines the observed state of Manifest.
+// KCPModuleStatus defines the observed state of KCPModule.
 type KCPModuleStatus struct {
 	// +kubebuilder:validation:Enum=Ready;Processing;Error;Deleting;Warning
 	State KCPModuleState `json:"state"`
