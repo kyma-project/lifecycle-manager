@@ -10,6 +10,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 )
 
 const lastOperationDeleting = "waiting for modules to be deleted"
@@ -45,7 +46,7 @@ func (r *Repository) updateKymaStatus(ctx context.Context,
 
 	if err := r.statusWriter.Patch(ctx, kyma, client.Apply, &client.SubResourcePatchOptions{
 		PatchOptions: *(&client.PatchOptions{}).ApplyOptions([]client.PatchOption{client.ForceOwnership}),
-	}, client.FieldOwner(shared.OperatorName)); err != nil {
+	}, fieldowners.LegacyLifecycleManager); err != nil {
 		return fmt.Errorf("status could not be updated: %w", err)
 	}
 

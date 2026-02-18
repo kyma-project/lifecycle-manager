@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -224,7 +225,7 @@ func updateCRDPropertyDescription(clnt client.Client, crdKind shared.Kind,
 	if err := clnt.Patch(ctx, crd,
 		client.Apply,
 		client.ForceOwnership,
-		client.FieldOwner(shared.OperatorName)); err != nil {
+		fieldowners.LegacyLifecycleManager); err != nil {
 		return nil, err
 	}
 	crd, err = fetchCrd(clnt, crdKind)

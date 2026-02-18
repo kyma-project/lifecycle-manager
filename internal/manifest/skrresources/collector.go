@@ -20,13 +20,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 )
 
 const (
-	knownManagersDefault = string(manifestclient.DefaultFieldOwner) + ";" +
-		shared.OperatorName + ";" +
+	knownManagersDefault = string(fieldowners.DeclarativeApplier) + ";" +
+		string(fieldowners.LegacyLifecycleManager) + ";" +
 		"k3s" // Applied in k3s environments.
 	knownManagersEnvVar = "KLM_EXPERIMENTAL_KNOWN_MANAGERS"
 	knownManagersRegexp = `^[a-zA-Z][a-zA-Z0-9.:_/-]{1,127}$`

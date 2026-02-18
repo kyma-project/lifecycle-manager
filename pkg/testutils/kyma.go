@@ -13,6 +13,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
@@ -319,7 +320,7 @@ func SetKymaState(ctx context.Context, kyma *v1beta2.Kyma, clnt client.Client, s
 
 	return clnt.Status().Patch(ctx, kyma, client.Apply,
 		status.SubResourceOpts(client.ForceOwnership),
-		client.FieldOwner(shared.OperatorName))
+		fieldowners.LegacyLifecycleManager)
 }
 
 func ContainsKymaManagerField(

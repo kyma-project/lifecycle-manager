@@ -23,6 +23,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
@@ -145,7 +146,7 @@ func ApplyYAML(ctx context.Context, clnt client.Client, yamlFilePath string) err
 	}
 
 	for _, object := range resources {
-		err := clnt.Patch(ctx, object, client.Apply, client.ForceOwnership, client.FieldOwner(shared.OperatorName))
+		err := clnt.Patch(ctx, object, client.Apply, client.ForceOwnership, fieldowners.LegacyLifecycleManager)
 		if err != nil {
 			return fmt.Errorf("error applying patch to resource %s/%s: %w",
 				object.GetNamespace(), object.GetName(), err)

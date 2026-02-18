@@ -31,6 +31,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -193,7 +194,7 @@ func (r *Reconciler) updateWatcherState(ctx context.Context, watcher *v1beta2.Wa
 
 func (r *Reconciler) updateWatcherStatusUsingSSA(ctx context.Context, watcher *v1beta2.Watcher) error {
 	watcher.ManagedFields = nil
-	err := r.Client.Status().Patch(ctx, watcher, client.Apply, client.FieldOwner(shared.OperatorName),
+	err := r.Client.Status().Patch(ctx, watcher, client.Apply, fieldowners.LegacyLifecycleManager,
 		status.SubResourceOpts(client.ForceOwnership))
 	if err != nil {
 		err = fmt.Errorf("watcher status update failed: %w", err)

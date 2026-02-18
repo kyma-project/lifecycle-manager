@@ -14,6 +14,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/finalizer"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -133,7 +134,7 @@ func (c *Client) SyncDefaultModuleCR(ctx context.Context, manifest *v1beta2.Mani
 			return nil
 		}
 		if err := c.Create(ctx, resource,
-			client.FieldOwner(finalizer.CustomResourceManagerFinalizer)); err != nil &&
+			fieldowners.CustomResourceFinalizer); err != nil &&
 			!apierrors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create resource: %w", err)
 		}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 )
 
 type KymaHelper struct {
@@ -52,9 +53,8 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 		LastUpdateTime: apimetav1.NewTime(time.Now()),
 	}
 
-	fieldOwner := shared.OperatorName
 	if err := k.Patch(ctx, kyma, client.Apply, SubResourceOpts(client.ForceOwnership),
-		client.FieldOwner(fieldOwner)); err != nil {
+		fieldowners.LegacyLifecycleManager); err != nil {
 		return fmt.Errorf("status could not be updated: %w", err)
 	}
 

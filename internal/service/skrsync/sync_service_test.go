@@ -16,6 +16,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
@@ -131,7 +132,7 @@ func TestSyncImagePullSecret_WhenSuccessful_SyncsSecretToSkr(t *testing.T) {
 	// Verify patch options were correctly set
 	require.Len(t, mockClient.patchOptions, 2)
 	require.Contains(t, mockClient.patchOptions, client.ForceOwnership)
-	require.Contains(t, mockClient.patchOptions, client.FieldOwner(shared.OperatorName))
+	require.Contains(t, mockClient.patchOptions, fieldowners.LegacyLifecycleManager)
 }
 
 func TestSyncCrds_WhenCalled_ShouldInvokeUseCase(t *testing.T) {

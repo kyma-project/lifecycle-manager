@@ -9,6 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/skrresources"
 )
 
@@ -28,7 +29,7 @@ func TestConcurrentSSA(t *testing.T) {
 	fakeClientBuilder := fake.NewClientBuilder().WithRuntimeObjects(pod).Build()
 	_ = fakeClientBuilder.Create(t.Context(), pod)
 
-	inactiveCollector := skrresources.NewManifestLogCollector(nil, client.FieldOwner("test"))
+	inactiveCollector := skrresources.NewManifestLogCollector(nil, fieldowners.DeclarativeApplier)
 
 	type args struct {
 		clnt  client.Client
@@ -44,7 +45,7 @@ func TestConcurrentSSA(t *testing.T) {
 			"simple apply nothing",
 			args{
 				clnt:  fakeClientBuilder,
-				owner: client.FieldOwner("test"),
+				owner: fieldowners.LifecycleManager,
 			},
 			[]*resource.Info{},
 			nil,
