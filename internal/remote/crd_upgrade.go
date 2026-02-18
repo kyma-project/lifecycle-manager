@@ -219,7 +219,6 @@ func (s *SyncCrdsUseCase) fetchCrds(ctx context.Context, skrClient client.Client
 	if err := skrClient.Get(ctx, client.ObjectKey{Name: kcpCrdName}, crdFromRuntime); err != nil {
 		return nil, nil, fmt.Errorf("failed to fetch newly created CRD from runtime: %w", err)
 	}
-
 	return &kcpCrd, crdFromRuntime, nil
 }
 
