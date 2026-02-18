@@ -13,6 +13,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -102,8 +103,7 @@ func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 		return err
 	}
 
-	if err := r.doUpdateWithStrategy(ctx, kyma.Labels[shared.ManagedBy], module,
-		manifestInCluster, newManifest, moduleStatus); err != nil {
+	if err := r.doUpdateWithStrategy(ctx, module, manifestInCluster, newManifest, moduleStatus); err != nil {
 		return err
 	}
 	module.Manifest = newManifest
@@ -120,14 +120,14 @@ func getManifestStatus(manifest, manifestInCluster *v1beta2.Manifest) shared.Sta
 	return manifest.Status
 }
 
-func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, module *modulecommon.Module,
+func (r *Runner) doUpdateWithStrategy(ctx context.Context, module *modulecommon.Module,
 	manifestInCluster, newManifest *v1beta2.Manifest, kymaModuleStatus *v1beta2.ModuleStatus,
 ) error {
 	if !NeedToUpdate(manifestInCluster, newManifest, kymaModuleStatus, module) {
 		return nil
 	}
 	if module.Enabled {
-		return r.patchManifest(ctx, owner, newManifest)
+		return r.patchManifest(ctx, newManifest)
 	}
 	// For disabled module, the manifest CR is under deleting, in this case,
 	// we only update the spec when it's still not deleted.
@@ -154,10 +154,10 @@ func (r *Runner) getManifest(ctx context.Context, name, namespace string) (*v1be
 	return manifestInCluster, nil
 }
 
-func (r *Runner) patchManifest(ctx context.Context, owner string, newManifest *v1beta2.Manifest) error {
+func (r *Runner) patchManifest(ctx context.Context, newManifest *v1beta2.Manifest) error {
 	if err := r.Patch(ctx, newManifest,
 		client.Apply,
-		client.FieldOwner(owner),
+		fieldowners.LegacyLifecycleManager,
 		client.ForceOwnership,
 	); err != nil {
 		return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(newManifest), err)

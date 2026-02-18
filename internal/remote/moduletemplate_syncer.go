@@ -8,6 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -107,7 +108,7 @@ func moduleTemplatesDiffFor(first []v1beta2.ModuleTemplate) *collections.DiffCal
 
 func isModuleTemplateManagedByKcp(skrTemplate *v1beta2.ModuleTemplate) bool {
 	for _, managedFieldEntry := range skrTemplate.ManagedFields {
-		if managedFieldEntry.Manager == moduleCatalogSyncFieldManager {
+		if managedFieldEntry.Manager == string(fieldowners.ModuleCatalogSync) {
 			return true
 		}
 	}

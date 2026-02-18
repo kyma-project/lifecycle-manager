@@ -16,6 +16,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -94,7 +95,7 @@ func PatchCRD(ctx context.Context, clnt client.Client, crd *apiextensionsv1.Cust
 	err := clnt.Patch(ctx, crdToApply,
 		client.Apply,
 		client.ForceOwnership,
-		client.FieldOwner(shared.OperatorName))
+		fieldowners.LegacyLifecycleManager)
 	if err != nil {
 		return fmt.Errorf("failed to patch CRD: %w", err)
 	}

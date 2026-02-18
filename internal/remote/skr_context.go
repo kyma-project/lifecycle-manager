@@ -18,6 +18,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -26,8 +27,6 @@ import (
 var ErrNotFoundAndKCPKymaUnderDeleting = errors.New("not found and kcp kyma under deleting")
 
 const (
-	fieldManager = "kyma-sync-context"
-
 	crdInstallation     event.Reason = "CRDInstallation"
 	remoteInstallation  event.Reason = "RemoteInstallation"
 	metadataSyncFailure event.Reason = "MetadataSynchronization"
@@ -97,7 +96,7 @@ func (s *SkrContext) CreateKymaNamespace(ctx context.Context) error {
 
 	patch := client.RawPatch(types.ApplyPatchType, buf.Bytes())
 	force := true
-	patchOpts := &client.PatchOptions{Force: &force, FieldManager: fieldManager}
+	patchOpts := &client.PatchOptions{Force: &force, FieldManager: string(fieldowners.KymaSyncContextProvider)}
 	if err := s.Patch(ctx, namespace, patch, patchOpts); err != nil {
 		return fmt.Errorf("failed to ensure remote namespace exists: %w", err)
 	}
@@ -159,7 +158,7 @@ func (s *SkrContext) SynchronizeKymaMetadata(ctx context.Context, kcpKyma, skrKy
 	err := s.Patch(ctx,
 		metadataToSync,
 		client.Apply,
-		&client.PatchOptions{FieldManager: fieldManager, Force: &forceOwnership})
+		&client.PatchOptions{FieldManager: string(fieldowners.KymaSyncContextProvider), Force: &forceOwnership})
 	if err != nil {
 		err = fmt.Errorf("failed to synchronise Kyma metadata to SKR: %w", err)
 		s.event.Warning(kcpKyma, metadataSyncFailure, err)

@@ -8,6 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -110,7 +111,7 @@ func moduleReleaseMetasDiffFor(first []v1beta2.ModuleReleaseMeta) *collections.D
 
 func isModuleReleaseMetaManagedByKcp(skrObject *v1beta2.ModuleReleaseMeta) bool {
 	for _, managedFieldEntry := range skrObject.ManagedFields {
-		if managedFieldEntry.Manager == moduleCatalogSyncFieldManager {
+		if managedFieldEntry.Manager == string(fieldowners.ModuleCatalogSync) {
 			return true
 		}
 	}

@@ -12,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 )
 
 // TestModuleReleaseMetaSyncer_SyncToSKR_happypath tests the happy path of the SyncToSKR method,
@@ -151,7 +152,7 @@ func moduleReleaseMeta(name, namespace string) v1beta2.ModuleReleaseMeta {
 			Namespace: namespace,
 			ManagedFields: []apimetav1.ManagedFieldsEntry{
 				{
-					Manager:    moduleCatalogSyncFieldManager,
+					Manager:    string(fieldowners.ModuleCatalogSync),
 					Operation:  apimetav1.ManagedFieldsOperationApply,
 					APIVersion: v1beta2.GroupVersion.String(),
 					FieldsType: "FieldsV1",

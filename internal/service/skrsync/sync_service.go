@@ -11,6 +11,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 )
 
@@ -73,7 +74,7 @@ func (s *Service) SyncImagePullSecret(ctx context.Context, kyma types.Namespaced
 	err = skrContext.Patch(ctx, remoteSecret,
 		client.Apply,
 		client.ForceOwnership,
-		client.FieldOwner(shared.OperatorName))
+		fieldowners.LegacyLifecycleManager)
 	if err != nil {
 		return errors.Join(ErrFailedToSyncImagePullSecret, err)
 	}
