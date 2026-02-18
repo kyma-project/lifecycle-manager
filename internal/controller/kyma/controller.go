@@ -714,8 +714,7 @@ func (r *Reconciler) updateStatusWithError(ctx context.Context, kyma *v1beta2.Ky
 		ctx, kyma, shared.StateError, err.Error()); statusErr != nil {
 		r.Event.Warning(kyma, updateStatusError, statusErr)
 		// Return both errors - status update failure wraps the original error
-		return fmt.Errorf("error while updating status to %s (original error: %v): %w",
-			shared.StateError, err, statusErr)
+		return fmt.Errorf("error while updating status to %s: %w", shared.StateError, errors.Join(err, statusErr))
 	}
 	return err
 }
