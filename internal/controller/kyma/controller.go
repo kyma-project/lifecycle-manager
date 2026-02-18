@@ -315,7 +315,7 @@ func (r *Reconciler) handleDeletedSkr(ctx context.Context, kyma *v1beta2.Kyma) (
 		return ctrl.Result{}, err
 	}
 	r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, queue.IntendedRequeue)
-	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
+	return ctrl.Result{RequeueAfter: r.Success}, nil
 }
 
 //nolint:funlen // disable for kyma controller until split is done into provisioning and deprovisioning controllers
@@ -331,16 +331,17 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 				fmt.Errorf("could not update kyma status after triggering deletion: %w", err))
 		}
 		r.Metrics.RecordRequeueReason(metrics.StatusUpdateToDeleting, queue.IntendedRequeue)
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
+		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
 	if needsUpdate := kyma.EnsureLabelsAndFinalizers(); needsUpdate {
 		if err := r.Update(ctx, kyma); err != nil {
 			r.Metrics.RecordRequeueReason(metrics.LabelsAndFinalizersUpdate, queue.UnexpectedRequeue)
-			return ctrl.Result{}, r.updateStatusWithError(ctx, kyma, fmt.Errorf("failed to update kyma after finalizer check: %w", err))
+			return ctrl.Result{}, r.updateStatusWithError(ctx, kyma,
+				fmt.Errorf("failed to update kyma after finalizer check: %w", err))
 		}
 		r.Metrics.RecordRequeueReason(metrics.LabelsAndFinalizersUpdate, queue.IntendedRequeue)
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
+		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
 	updateRequired, err := r.SkrSyncService.SyncCrds(ctx, kyma)
@@ -351,17 +352,19 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 	if updateRequired {
 		if err := r.Update(ctx, kyma); err != nil {
 			r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdate, queue.UnexpectedRequeue)
-			return ctrl.Result{}, r.updateStatusWithError(ctx, kyma, fmt.Errorf("could not update kyma annotations: %w", err))
+			return ctrl.Result{}, r.updateStatusWithError(ctx, kyma,
+				fmt.Errorf("could not update kyma annotations: %w", err))
 		}
 		r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdate, queue.IntendedRequeue)
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
+		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
 	if r.SkrImagePullSecretSyncEnabled() {
 		if err := r.SkrSyncService.SyncImagePullSecret(ctx, kyma.GetNamespacedName()); err != nil {
 			r.Metrics.RecordRequeueReason(metrics.ImagePullSecretSync, queue.UnexpectedRequeue)
 			kyma.UpdateCondition(v1beta2.ConditionTypeSKRImagePullSecretSync, apimetav1.ConditionFalse)
-			return ctrl.Result{}, r.updateStatusWithError(ctx, kyma, fmt.Errorf("could not sync image pull secret: %w", err))
+			return ctrl.Result{}, r.updateStatusWithError(ctx, kyma,
+				fmt.Errorf("could not sync image pull secret: %w", err))
 		}
 		kyma.UpdateCondition(v1beta2.ConditionTypeSKRImagePullSecretSync, apimetav1.ConditionTrue)
 	}
@@ -381,7 +384,8 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 
 	if err := r.syncStatusToRemote(ctx, kyma); err != nil {
 		r.Metrics.RecordRequeueReason(metrics.StatusSyncToRemote, queue.UnexpectedRequeue)
-		return ctrl.Result{}, r.updateStatusWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma status: %w", err))
+		return ctrl.Result{}, r.updateStatusWithError(ctx, kyma,
+			fmt.Errorf("could not synchronize remote kyma status: %w", err))
 	}
 
 	if kyma.Status.State == shared.StateError {
@@ -493,7 +497,7 @@ func (r *Reconciler) handleInitialState(ctx context.Context, kyma *v1beta2.Kyma)
 		return ctrl.Result{}, err
 	}
 	r.Metrics.RecordRequeueReason(metrics.InitialStateHandling, queue.IntendedRequeue)
-	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
+	return ctrl.Result{RequeueAfter: r.Success}, nil
 }
 
 func (r *Reconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
@@ -610,7 +614,7 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 		return ctrl.Result{}, err
 	}
 	r.Metrics.RecordRequeueReason(metrics.KymaDeletion, queue.IntendedRequeue)
-	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
+	return ctrl.Result{RequeueAfter: r.Success}, nil
 }
 
 func (r *Reconciler) cleanupMetrics(kymaName string) {
@@ -705,17 +709,15 @@ func (r *Reconciler) updateStatus(ctx context.Context, kyma *v1beta2.Kyma,
 	return nil
 }
 
-// updateStatusWithError updates the Kyma status to Error state and ALWAYS returns the original error.
-// This ensures controller-runtime's workqueue applies exponential backoff via AddRateLimited().
-// Returning nil would bypass the workqueue's rate limiting, which is the deprecated Requeue: true pattern.
-func (r *Reconciler) updateStatusWithError(ctx context.Context, kyma *v1beta2.Kyma, originalErr error) error {
-	if statusErr := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, shared.StateError, originalErr.Error()); statusErr != nil {
+func (r *Reconciler) updateStatusWithError(ctx context.Context, kyma *v1beta2.Kyma, err error) error {
+	if statusErr := status.Helper(r).UpdateStatusForExistingModules(
+		ctx, kyma, shared.StateError, err.Error()); statusErr != nil {
 		r.Event.Warning(kyma, updateStatusError, statusErr)
 		// Return both errors - status update failure wraps the original error
-		return fmt.Errorf("error while updating status to %s (original error: %w): %w", shared.StateError, originalErr, statusErr)
+		return fmt.Errorf("error while updating status to %s (original error: %v): %w",
+			shared.StateError, err, statusErr)
 	}
-	// CRITICAL: Always return the original error so workqueue handles exponential backoff
-	return originalErr
+	return err
 }
 
 func (r *Reconciler) deleteManifest(ctx context.Context, trackedManifest *v1beta2.TrackingObject) error {
