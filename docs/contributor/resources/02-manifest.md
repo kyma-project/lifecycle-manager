@@ -105,9 +105,9 @@ spec:
 
 The config reference used an image layer reference that contains configuration data that could be used to further
 influence any potential rendering process while the resources are processed by
-the [declarative library](../../../internal/declarative/). It was resolved through a
+the [declarative library](https://github.com/kyma-project/lifecycle-manager/tree/main/internal/declarative). It was resolved through a
 translation of the ModuleTemplate CR to the Manifest CR during
-the [resolution of the modules](../../../internal/manifest/parser/template_to_module.go) in the Kyma CR control loop.
+the [resolution of the modules](https://github.com/kyma-project/lifecycle-manager/blob/main/internal/manifest/parser/template_to_module.go) in the Kyma CR control loop.
 
 Now, only raw manifests are supported, and the config layer is no longer used.
 
