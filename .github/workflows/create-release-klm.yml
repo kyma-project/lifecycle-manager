@@ -33,10 +33,72 @@ jobs:
         run: ./.github/scripts/release/validate_release_tag.sh ${{ github.event.inputs.name }}
       - name: Check if release doesn't exist yet
         run: ./.github/scripts/release/get_release_by_tag.sh ${{ github.event.inputs.name }} ${{ secrets.GITHUB_TOKEN }}
+
+  upgrade-images:
+    name: Upgrade main images
+    runs-on: ubuntu-latest
+    needs: validate-release
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      pr_number: ${{ steps.open-pr.outputs.pr_number }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+      - name: Bump version references
+        run: ./.github/scripts/release/upgrade_versions.sh
+        env:
+          IMG_VERSION: ${{ github.event.inputs.name }}
+      - name: Push version bump branch and open PR
+        id: open-pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="chore/upgrade-sec-scanners-${{ github.event.inputs.name }}"
+          git config --local user.email "jellyfish-bot@users.noreply.github.com"
+          git config --local user.name "jellyfish-bot"
+          git checkout -b "${BRANCH}"
+          git add sec-scanners-config.yaml
+          git commit -m "chore: upgrade sec-scanners bdba image versions to ${{ github.event.inputs.name }}" || echo "No changes to commit"
+          git push origin "${BRANCH}"
+          PR_URL=$(gh pr create \
+            --title "chore: upgrade sec-scanners bdba image versions to ${{ github.event.inputs.name }}" \
+            --body "Automated version bump of \`sec-scanners-config.yaml\` to \`${{ github.event.inputs.name }}\` as part of the release process." \
+            --base main \
+            --head "${BRANCH}")
+          PR_NUMBER=$(echo "${PR_URL}" | grep -oE '[0-9]+$')
+          echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "PR created: ${PR_URL}"
+
+  await-pr-merge:
+    name: Wait for version bump PR to be merged
+    runs-on: ubuntu-latest
+    needs: upgrade-images
+    environment: release
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Verify PR is merged
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_STATE=$(gh pr view ${{ needs.upgrade-images.outputs.pr_number }} \
+            --repo ${{ env.CODE_REPOSITORY }} \
+            --json state -q '.state')
+          if [ "${PR_STATE}" != "MERGED" ]; then
+            echo "PR #${{ needs.upgrade-images.outputs.pr_number }} is not merged yet (state: ${PR_STATE})."
+            echo "Please merge the PR before approving this environment gate."
+            exit 1
+          fi
+          echo "PR #${{ needs.upgrade-images.outputs.pr_number }} is merged. Proceeding with release."
+
   draft-release:
     name: Create draft release
     runs-on: ubuntu-latest
-    needs: validate-release
+    needs: [validate-release, await-pr-merge]
     permissions:
       contents: write
       id-token: write
@@ -45,6 +107,7 @@ jobs:
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
+          ref: main  # Checkout main after version bump PR is merged
       - name: Create changelog
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
