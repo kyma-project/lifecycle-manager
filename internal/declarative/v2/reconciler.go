@@ -185,7 +185,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if err := r.kcpClient.Delete(ctx, manifest); err != nil {
 			return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 		}
-		return ctrl.Result{RequeueAfter: r.requeueIntervals.Success}, nil
+		return ctrl.Result{RequeueAfter: r.requeueIntervals.Busy}, nil
 	}
 
 	err = r.orphanDetectionService.DetectOrphanedManifest(ctx, manifest)
@@ -230,8 +230,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if err := r.pruneDiff(ctx, skrClient, manifest, current, target, spec); errors.Is(err,
 		resources.ErrDeletionNotFinished) {
 		r.manifestMetrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
-		requeueAfter := queue.DetermineRequeueInterval(manifest.GetStatus().State, r.requeueIntervals)
-		return ctrl.Result{RequeueAfter: requeueAfter}, nil
+		return ctrl.Result{RequeueAfter: r.requeueIntervals.Busy}, nil
 	} else if err != nil {
 		return r.finishReconcile(ctx, manifest, metrics.ManifestPruneDiff, manifestStatus, err)
 	}
@@ -240,8 +239,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if err := modulecr.NewClient(skrClient).RemoveDefaultModuleCR(ctx, r.kcpClient, manifest); err != nil {
 			if errors.Is(err, finalizer.ErrRequeueRequired) {
 				r.manifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
-				requeueAfter := queue.DetermineRequeueInterval(manifest.GetStatus().State, r.requeueIntervals)
-				return ctrl.Result{RequeueAfter: requeueAfter}, nil
+				return ctrl.Result{RequeueAfter: r.requeueIntervals.Busy}, nil
 			}
 			return r.finishReconcile(ctx, manifest, metrics.ManifestPreDelete, manifestStatus, err)
 		}
@@ -254,8 +252,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if err := r.syncManifestState(ctx, skrClient, manifest, target); err != nil {
 		if errors.Is(err, finalizer.ErrRequeueRequired) {
 			r.manifestMetrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, queue.IntendedRequeue)
-			requeueAfter := queue.DetermineRequeueInterval(manifest.GetStatus().State, r.requeueIntervals)
-			return ctrl.Result{RequeueAfter: requeueAfter}, nil
+			return ctrl.Result{RequeueAfter: r.requeueIntervals.Busy}, nil
 		}
 		logf.FromContext(ctx).Error(err, "failed to sync manifest state")
 		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncState, manifestStatus, err)
@@ -300,7 +297,7 @@ func (r *Reconciler) handleLabelsRemovalFinalizer(ctx context.Context, skrClient
 	}
 
 	r.manifestMetrics.RecordRequeueReason(metrics.ManifestResourcesLabelRemoval, queue.IntendedRequeue)
-	return ctrl.Result{RequeueAfter: r.requeueIntervals.Success}, nil
+	return ctrl.Result{RequeueAfter: r.requeueIntervals.Busy}, nil
 }
 
 func (r *Reconciler) cleanupManifest(ctx context.Context, manifest *v1beta2.Manifest, manifestStatus shared.Status,
@@ -599,7 +596,7 @@ func (r *Reconciler) ssaSpec(ctx context.Context, manifest *v1beta2.Manifest,
 	if err := r.manifestClient.SsaSpec(ctx, manifest); err != nil {
 		return ctrl.Result{}, err
 	}
-	return ctrl.Result{RequeueAfter: r.requeueIntervals.Success}, nil
+	return ctrl.Result{RequeueAfter: r.requeueIntervals.Busy}, nil
 }
 
 func (r *Reconciler) updateManifest(ctx context.Context, manifest *v1beta2.Manifest,
@@ -611,7 +608,7 @@ func (r *Reconciler) updateManifest(ctx context.Context, manifest *v1beta2.Manif
 		return ctrl.Result{}, err
 	}
 
-	return ctrl.Result{RequeueAfter: r.requeueIntervals.Success}, nil
+	return ctrl.Result{RequeueAfter: r.requeueIntervals.Busy}, nil
 }
 
 func (r *Reconciler) recordReconciliationDuration(startTime time.Time, name string) {
