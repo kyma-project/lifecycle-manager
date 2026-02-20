@@ -200,26 +200,10 @@ func (s *SyncCrdsUseCase) fetchCrds(ctx context.Context, skrClient client.Client
 			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 		}, crdFromRuntime,
 	)
-
-	// Handle successful fetch
-	if err == nil {
-		return &kcpCrd, crdFromRuntime, nil
-	}
-
-	// Handle non-NotFound errors
-	if !apierrors.IsNotFound(err) {
+	if err != nil {
 		return nil, nil, fmt.Errorf("failed to fetch CRDs from runtime: %w", err)
 	}
 
-	// CRD doesn't exist in SKR, create it by applying from KCP
-	if err := PatchCRD(ctx, skrClient, &kcpCrd); err != nil {
-		return nil, nil, fmt.Errorf("failed to create CRD in runtime: %w", err)
-	}
-
-	// Fetch the newly created CRD to get its current state
-	if err := skrClient.Get(ctx, client.ObjectKey{Name: kcpCrdName}, crdFromRuntime); err != nil {
-		return nil, nil, fmt.Errorf("failed to fetch newly created CRD from runtime: %w", err)
-	}
 	return &kcpCrd, crdFromRuntime, nil
 }
 
