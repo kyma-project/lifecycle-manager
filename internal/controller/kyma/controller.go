@@ -331,7 +331,7 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 				fmt.Errorf("could not update kyma status after triggering deletion: %w", err))
 		}
 		r.Metrics.RecordRequeueReason(metrics.StatusUpdateToDeleting, queue.IntendedRequeue)
-		return ctrl.Result{RequeueAfter: r.Busy}, nil
+		return ctrl.Result{RequeueAfter: queue.ImmediateRequeue}, nil
 	}
 
 	if needsUpdate := kyma.EnsureLabelsAndFinalizers(); needsUpdate {
@@ -341,7 +341,7 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 				fmt.Errorf("failed to update kyma after finalizer check: %w", err))
 		}
 		r.Metrics.RecordRequeueReason(metrics.LabelsAndFinalizersUpdate, queue.IntendedRequeue)
-		return ctrl.Result{RequeueAfter: r.Busy}, nil
+		return ctrl.Result{RequeueAfter: queue.ImmediateRequeue}, nil
 	}
 
 	updateRequired, err := r.SkrSyncService.SyncCrds(ctx, kyma)
@@ -356,7 +356,7 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 				fmt.Errorf("could not update kyma annotations: %w", err))
 		}
 		r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdate, queue.IntendedRequeue)
-		return ctrl.Result{RequeueAfter: r.Busy}, nil
+		return ctrl.Result{RequeueAfter: queue.ImmediateRequeue}, nil
 	}
 
 	if r.SkrImagePullSecretSyncEnabled() {
@@ -497,7 +497,7 @@ func (r *Reconciler) handleInitialState(ctx context.Context, kyma *v1beta2.Kyma)
 		return ctrl.Result{}, err
 	}
 	r.Metrics.RecordRequeueReason(metrics.InitialStateHandling, queue.IntendedRequeue)
-	return ctrl.Result{RequeueAfter: r.Busy}, nil
+	return ctrl.Result{RequeueAfter: queue.ImmediateRequeue}, nil
 }
 
 func (r *Reconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
@@ -614,7 +614,7 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 		return ctrl.Result{}, err
 	}
 	r.Metrics.RecordRequeueReason(metrics.KymaDeletion, queue.IntendedRequeue)
-	return ctrl.Result{RequeueAfter: r.Busy}, nil
+	return ctrl.Result{RequeueAfter: queue.ImmediateRequeue}, nil
 }
 
 func (r *Reconciler) cleanupMetrics(kymaName string) {
