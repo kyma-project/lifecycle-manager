@@ -87,7 +87,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			r.Event.Warning(watcher, addFinalizerFailure, errFinalizerAdd)
 			return ctrl.Result{}, errFinalizerAdd
 		}
-		return ctrl.Result{Requeue: true}, r.updateFinalizer(ctx, watcher)
+		if err := r.updateFinalizer(ctx, watcher); err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{RequeueAfter: queue.ImmediateRequeue}, nil
 	}
 
 	watcher.InitializeConditions()
@@ -133,7 +136,10 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, watcher *v1beta2.W
 	if !finalizerRemoved {
 		return r.updateWatcherState(ctx, watcher, shared.StateError, errFinalizerRemove)
 	}
-	return ctrl.Result{Requeue: true}, r.updateFinalizer(ctx, watcher)
+	if err := r.updateFinalizer(ctx, watcher); err != nil {
+		return ctrl.Result{}, err
+	}
+	return ctrl.Result{RequeueAfter: queue.ImmediateRequeue}, nil
 }
 
 func (r *Reconciler) handleProcessingState(ctx context.Context, watcherCR *v1beta2.Watcher) (ctrl.Result, error) {

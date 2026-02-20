@@ -38,6 +38,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -143,7 +144,7 @@ func (r *Reconciler) handleSkrNotFoundError(ctx context.Context, kyma *v1beta2.K
 			logf.FromContext(ctx).Info("Removed purge finalizer for Kyma " + kyma.GetName())
 		}
 		r.Metrics.DeletePurgeError(ctx, kyma, metrics.ErrPurgeFinalizerRemoval)
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: queue.ImmediateRequeue}, nil
 	}
 
 	return ctrl.Result{}, fmt.Errorf("failed getting remote client for Kyma %s: %w", kyma.GetName(), err)

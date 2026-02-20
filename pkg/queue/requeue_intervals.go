@@ -7,6 +7,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
+// ImmediateRequeue is used for transition steps that must proceed without delay
+// (e.g. after updating status, labels, or finalizers). It replaces the deprecated
+// ctrl.Result{Requeue: true} pattern from controller-runtime v0.22+.
+// See: https://github.com/kubernetes-sigs/controller-runtime/pull/3025
+const ImmediateRequeue = 100 * time.Millisecond
+
 type RequeueIntervals struct {
 	Success time.Duration
 	Busy    time.Duration
