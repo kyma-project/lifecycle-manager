@@ -185,7 +185,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if err := r.kcpClient.Delete(ctx, manifest); err != nil {
 			return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 		}
-		return ctrl.Result{RequeueAfter: queue.ImmediateRequeue}, nil
+		return ctrl.Result{RequeueAfter: r.requeueIntervals.Success}, nil
 	}
 
 	err = r.orphanDetectionService.DetectOrphanedManifest(ctx, manifest)
