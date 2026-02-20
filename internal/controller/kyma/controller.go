@@ -315,7 +315,7 @@ func (r *Reconciler) handleDeletedSkr(ctx context.Context, kyma *v1beta2.Kyma) (
 		return ctrl.Result{}, err
 	}
 	r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, queue.IntendedRequeue)
-	return ctrl.Result{RequeueAfter: r.Success}, nil
+	return ctrl.Result{RequeueAfter: queue.ImmediateRequeue}, nil
 }
 
 //nolint:funlen // disable for kyma controller until split is done into provisioning and deprovisioning controllers
