@@ -17,5 +17,5 @@ VERSION="$1"
 BRANCH="chore/bump-sec-scanners-${VERSION}"
 
 echo "Deleting merged branch: ${BRANCH}"
-git push upstream --delete "${BRANCH}" || echo "Branch ${BRANCH} already deleted or does not exist"
+git push origin --delete "${BRANCH}" || echo "Branch ${BRANCH} already deleted or does not exist"
 echo "✅ Merged PR branch deleted: ${BRANCH}"
