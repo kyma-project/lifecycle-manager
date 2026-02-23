@@ -84,63 +84,63 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./.github/scripts/release/wait_for_pr_merge.sh ${{ needs.bump-images.outputs.pr_number }}
 
-  draft-release:
-    name: Create draft release
-    runs-on: ubuntu-latest
-    needs: [validate-release, await-bump-images-pr-merge]
-    permissions:
-      contents: write
-      id-token: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-        with:
-          fetch-depth: 0
-          ref: main  # Checkout main after version bump PR is merged
-      - name: Create changelog
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./.github/scripts/release/create_changelog.sh ${{ github.event.inputs.name }} ${{ env.IMAGE_REPO }}:${{ github.event.inputs.name }} ${{ github.event.inputs.since }}
-      - name: Draft release
-        id: draft-release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          RELEASE_ID=$(./.github/scripts/release/draft_release.sh ${{ github.event.inputs.name }})
-          echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
-      - name: Create tag
-        run: |
-          git tag ${{ github.event.inputs.name }}
-          git push origin ${{ github.event.inputs.name }} --tags
-    outputs:
-      release_id: ${{ steps.draft-release.outputs.release_id }}
-  builds:
-    needs: draft-release
-    uses: ./.github/workflows/build-image.yml
-    with:
-      tag: "${{ github.event.inputs.name }}"
-    permissions:
-      contents: read
-      id-token: write
-  publish_release:
-    name: Publish release
-    needs: [ validate-release, draft-release, builds ]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-        with:
-          fetch-depth: 0
-      - name: Wait for the Docker image
-        timeout-minutes: 20
-        env:
-          ITERATIONS: 40
-          SLEEP_SECONDS: 30
-        run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE_REPO }}:${{ github.event.inputs.name }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS }}
-      - name: Publish release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./.github/scripts/release/publish_release.sh ${{ needs.draft-release.outputs.release_id }}
+  # draft-release:
+  #   name: Create draft release
+  #   runs-on: ubuntu-latest
+  #   needs: [validate-release, await-bump-images-pr-merge]
+  #   permissions:
+  #     contents: write
+  #     id-token: write
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+  #       with:
+  #         fetch-depth: 0
+  #         ref: main  # Checkout main after version bump PR is merged
+  #     - name: Create changelog
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       run: ./.github/scripts/release/create_changelog.sh ${{ github.event.inputs.name }} ${{ env.IMAGE_REPO }}:${{ github.event.inputs.name }} ${{ github.event.inputs.since }}
+  #     - name: Draft release
+  #       id: draft-release
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       run: |
+  #         RELEASE_ID=$(./.github/scripts/release/draft_release.sh ${{ github.event.inputs.name }})
+  #         echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
+  #     - name: Create tag
+  #       run: |
+  #         git tag ${{ github.event.inputs.name }}
+  #         git push origin ${{ github.event.inputs.name }} --tags
+  #   outputs:
+  #     release_id: ${{ steps.draft-release.outputs.release_id }}
+  # builds:
+  #   needs: draft-release
+  #   uses: ./.github/workflows/build-image.yml
+  #   with:
+  #     tag: "${{ github.event.inputs.name }}"
+  #   permissions:
+  #     contents: read
+  #     id-token: write
+  # publish_release:
+  #   name: Publish release
+  #   needs: [ validate-release, draft-release, builds ]
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #     id-token: write
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+  #       with:
+  #         fetch-depth: 0
+  #     - name: Wait for the Docker image
+  #       timeout-minutes: 20
+  #       env:
+  #         ITERATIONS: 40
+  #         SLEEP_SECONDS: 30
+  #       run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE_REPO }}:${{ github.event.inputs.name }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS }}
+  #     - name: Publish release
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       run: ./.github/scripts/release/publish_release.sh ${{ needs.draft-release.outputs.release_id }}
