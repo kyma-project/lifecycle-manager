@@ -2,18 +2,22 @@
 
 # This script creates a PR for sec-scanners-config.yaml version bump
 #
-# Usage: ./create_sec_scanners_config_bump_pr.sh <version>
+# Usage: ./create_sec_scanners_config_bump_pr.sh <version> <github-token>
 #   version: The version being bumped (e.g., "1.3.9")
+#   github-token: The GitHub token for API access
 
 set -e
 
-if [ -z "$1" ]; then
-  echo "Error: Version argument is required"
-  echo "Usage: $0 <version>"
+if [ -z "$1" ] || [ -z "$2" ]; then
+  echo "Error: Version and github-token arguments are required"
+  echo "Usage: $0 <version> <github-token>"
   exit 1
 fi
 
 VERSION="$1"
+GITHUB_TOKEN="$2"
+
+export GITHUB_TOKEN
 
 echo "Creating PR for sec-scanners-config.yaml version bump to ${VERSION}"
 

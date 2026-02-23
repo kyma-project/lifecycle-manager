@@ -61,10 +61,8 @@ jobs:
             sec-scanners-config.yaml
       - name: Push version bump branch and open PR
         id: open-pr
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if PR_NUMBER=$(./.github/scripts/release/create_sec_scanners_config_bump_pr.sh ${{ github.event.inputs.name }}); then
+          if PR_NUMBER=$(./.github/scripts/release/create_sec_scanners_config_bump_pr.sh ${{ github.event.inputs.name }} ${{ secrets.GITHUB_TOKEN }}); then
             echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
           else
             echo "❌ Failed to create PR for sec-scanners-config.yaml bump"
