@@ -61,24 +61,13 @@ jobs:
             sec-scanners-config.yaml
       - name: Push version bump branch and open PR
         id: open-pr
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config --local user.email "jellyfish-bot@users.noreply.github.com"
-          git config --local user.name "jellyfish-bot"
-          BRANCH="chore/bump-sec-scanners-${{ github.event.inputs.name }}"
-          git checkout -b "${BRANCH}"
-          git add sec-scanners-config.yaml
-          git commit -m "chore: Bump sec-scanners-config.yaml .bdba image versions to ${{ github.event.inputs.name }}" || echo "No changes to commit"
-          git push upstream "${BRANCH}"
-          PR_URL=$(gh pr create \
-            --title "chore: Bump sec-scanners-config.yaml .bdba image versions to ${{ github.event.inputs.name }}" \
-            --body "Automated version bump of \`sec-scanners-config.yaml\` to \`${{ github.event.inputs.name }}\`." \
-            --base main \
-            --head "${BRANCH}")
-          PR_NUMBER=$(echo "${PR_URL}" | grep -oE '[0-9]+$')
-          echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
-          echo "PR created: ${PR_URL}"
+          if PR_NUMBER=$(./.github/scripts/release/create_sec_scanners_config_bump_pr.sh ...); then
+            echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          else
+            echo "❌ Failed to create PR for sec-scanners-config.yaml bump"
+            exit 1
+          fi
 
   await-bump-images-pr-merge:
     name: Wait for version bump PR to be merged
