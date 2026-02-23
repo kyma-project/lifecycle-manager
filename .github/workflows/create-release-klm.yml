@@ -46,6 +46,7 @@ jobs:
     if: ${{ !inputs.skip_sec_scanners_bump }}
     permissions:
       pull-requests: write
+      contents: write
     outputs:
       pr_number: ${{ steps.open-pr.outputs.pr_number }}
     steps:
