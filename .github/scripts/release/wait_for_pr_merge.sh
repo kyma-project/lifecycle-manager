@@ -17,8 +17,8 @@ PR_NUMBER="$1"
 
 echo "Waiting for PR #${PR_NUMBER} to be merged..."
 
-for i in {1..60}; do
-  echo "Check ${i}/60: Checking PR status..."
+for i in {1..360}; do
+  echo "Check ${i}/360: Checking PR status..."
   
   PR_STATE=$(gh pr view "${PR_NUMBER}" \
     --json state -q '.state')

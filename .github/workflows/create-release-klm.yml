@@ -80,7 +80,6 @@ jobs:
       pull-requests: read
     steps:
       - name: Wait for PR to be merged
-        timeout-minutes: 60
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./.github/scripts/release/wait_for_pr_merge.sh ${{ needs.bump-images.outputs.pr_number }}
