@@ -37,5 +37,5 @@ PR_URL=$(gh pr create \
 
 # Extract PR number and return it to caller
 PR_NUMBER=$(echo "${PR_URL}" | grep -oE '[0-9]+$')
-echo "PR created: ${PR_URL}"
+echo "✅ PR created: ${PR_URL}"
 echo "${PR_NUMBER}"
