@@ -11,7 +11,7 @@ patches:
     patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --skr-watcher-image-tag=2.1.3
+        value: --skr-watcher-image-tag=2.1.4
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --skr-watcher-image-registry=europe-docker.pkg.dev/kyma-project/prod
