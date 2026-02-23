@@ -83,6 +83,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./.github/scripts/release/wait_for_pr_merge.sh ${{ needs.bump-images.outputs.pr_number }}
+      - name: Delete merged branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./.github/scripts/release/delete_sec_scanners_config_pr_branch.sh ${{ github.event.inputs.name }}
 
   # draft-release:
   #   name: Create draft release
