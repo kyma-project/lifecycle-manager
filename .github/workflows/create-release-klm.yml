@@ -61,8 +61,10 @@ jobs:
             sec-scanners-config.yaml
       - name: Push version bump branch and open PR
         id: open-pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if PR_NUMBER=$(./.github/scripts/release/create_sec_scanners_config_bump_pr.sh ...); then
+          if PR_NUMBER=$(./.github/scripts/release/create_sec_scanners_config_bump_pr.sh ${{ github.event.inputs.name }}); then
             echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
           else
             echo "❌ Failed to create PR for sec-scanners-config.yaml bump"
@@ -81,36 +83,7 @@ jobs:
         timeout-minutes: 60
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          PR_NUMBER="${{ needs.bump-images.outputs.pr_number }}"
-          
-          echo "Waiting for PR #${PR_NUMBER} to be merged..."
-          
-          for i in {1..60}; do
-            echo "Check ${i}/60: Checking PR status..."
-            
-            PR_STATE=$(gh pr view "${PR_NUMBER}" \
-              --json state -q '.state')
-            
-            echo "PR #${PR_NUMBER} state: ${PR_STATE}"
-            
-            if [ "${PR_STATE}" = "MERGED" ]; then
-              echo "✅ PR #${PR_NUMBER} is merged! Proceeding with release."
-              exit 0
-            elif [ "${PR_STATE}" = "CLOSED" ]; then
-              echo "❌ PR #${PR_NUMBER} was closed without merging."
-              exit 1
-            fi
-            
-            if [ ${i} -lt 60 ]; then
-              echo "⏳ PR not merged yet. Waiting 60 seconds before next check..."
-              sleep 60
-            fi
-          done
-          
-          echo "❌ Timeout: PR #${PR_NUMBER} was not merged within 60 minutes."
-          echo "Please merge the PR and re-run the workflow."
-          exit 1
+        run: ./.github/scripts/release/wait_for_pr_merge.sh ${{ needs.bump-images.outputs.pr_number }}
 
   draft-release:
     name: Create draft release
