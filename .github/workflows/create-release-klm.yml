@@ -83,7 +83,7 @@ jobs:
       - name: dummy approve
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr review ${{ needs.bump-images.outputs.pr_number }} --approve --repo kyma-project/lifecycle-manager
+        run: gh pr review 3080 --approve --repo kyma-project/lifecycle-manager
 
   await-bump-images-pr-merge:
     name: Wait for version bump PR to be merged
