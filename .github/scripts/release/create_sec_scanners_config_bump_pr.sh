@@ -8,34 +8,36 @@
 set -e
 
 if [ -z "$1" ]; then
-  echo "Error: Version argument is required"
-  echo "Usage: $0 <version>"
+  echo "Error: Version argument is required" >&2
+  echo "Usage: $0 <version>" >&2
   exit 1
 fi
 
 VERSION="$1"
 
-echo "Creating PR for sec-scanners-config.yaml version bump to ${VERSION}"
+# Redirect informational messages to stderr so only PR number goes to stdout
+echo "Creating PR for sec-scanners-config.yaml version bump to ${VERSION}" >&2
 
 # Configure git
 git config --local user.email "jellyfish-bot@users.noreply.github.com"
 git config --local user.name "jellyfish-bot"
 
-# Create branch and push changes
+# Create branch and push changes (redirect output to stderr)
 BRANCH="chore/bump-sec-scanners-${VERSION}"
-git checkout -b "${BRANCH}"
+git checkout -b "${BRANCH}" >&2
 git add sec-scanners-config.yaml
-git commit -m "chore: Bump sec-scanners-config.yaml .bdba image versions to ${VERSION}" || echo "No changes to commit"
-git push origin "${BRANCH}"
+git commit -m "chore: Bump sec-scanners-config.yaml .bdba image versions to ${VERSION}" >&2
+git push upstream "${BRANCH}" >&2
 
-# Create PR
+# Create PR and extract PR number from the URL returned by gh
 PR_URL=$(gh pr create \
-  --title "chore: Bump sec-scanners-config.yaml .bdba image versions to ${VERSION}" \
-  --body "Automated version bump of \`sec-scanners-config.yaml\` to \`${VERSION}\`." \
+  --title "chore: bump sec-scanners-config.yaml bdba images to ${VERSION}" \
+  --body "This PR bumps the sec-scanners-config.yaml bdba image versions to ${VERSION}." \
   --base main \
   --head "${BRANCH}")
 
-# Extract PR number and return it to caller
+# Extract PR number from URL (e.g., https://github.com/owner/repo/pull/123 -> 123)
 PR_NUMBER=$(echo "${PR_URL}" | grep -oE '[0-9]+$')
-echo "✅ PR created: ${PR_URL}"
+
+# Output only the PR number to stdout
 echo "${PR_NUMBER}"
