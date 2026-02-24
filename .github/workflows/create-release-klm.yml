@@ -72,6 +72,19 @@ jobs:
             exit 1
           fi
 
+  dummy-approve-pr:
+    name: Dummy approve PR
+    runs-on: ubuntu-latest
+    needs: bump-images
+    if: ${{ !inputs.skip_sec_scanners_bump }}
+    permissions:
+      pull-requests: write
+    steps:
+      - name: dummy approve
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr review ${{ needs.bump-images.outputs.pr_number }} --approve --repo kyma-project/lifecycle-manager
+
   await-bump-images-pr-merge:
     name: Wait for version bump PR to be merged
     runs-on: ubuntu-latest
