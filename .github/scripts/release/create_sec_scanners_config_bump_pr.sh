@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 # This script creates a PR for sec-scanners-config.yaml version bump
+# Note that it writes to stderr for informational messages and only outputs the PR number to stdout,
+# which is important for CI usage.
 #
 # Usage: ./create_sec_scanners_config_bump_pr.sh <version>
 #   version: The version being bumped (e.g., "1.3.9")
