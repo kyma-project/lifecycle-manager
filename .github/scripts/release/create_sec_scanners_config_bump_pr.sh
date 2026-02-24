@@ -27,7 +27,7 @@ BRANCH="chore/bump-sec-scanners-${VERSION}"
 git checkout -b "${BRANCH}" >&2
 git add sec-scanners-config.yaml
 git commit -m "chore: Bump sec-scanners-config.yaml .bdba image versions to ${VERSION}" >&2
-git push upstream "${BRANCH}" >&2
+git push origin "${BRANCH}" >&2
 
 # Create PR and extract PR number from the URL returned by gh
 PR_URL=$(gh pr create \
