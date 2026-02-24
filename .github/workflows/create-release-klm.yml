@@ -63,6 +63,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Configure git
+          git config --local user.email "jellyfish-bot@users.noreply.github.com"
+          git config --local user.name "jellyfish-bot"
+
           if PR_NUMBER=$(./.github/scripts/release/create_sec_scanners_config_bump_pr.sh ${{ github.event.inputs.name }}); then
             echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
           else

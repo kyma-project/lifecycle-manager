@@ -20,10 +20,6 @@ VERSION="$1"
 # Redirect informational messages to stderr so only PR number goes to stdout
 echo "Creating PR for sec-scanners-config.yaml version bump to ${VERSION}" >&2
 
-# Configure git
-git config --local user.email "jellyfish-bot@users.noreply.github.com"
-git config --local user.name "jellyfish-bot"
-
 # Create branch and push changes (redirect output to stderr)
 BRANCH="chore/bump-sec-scanners-${VERSION}"
 git checkout -b "${BRANCH}" >&2
