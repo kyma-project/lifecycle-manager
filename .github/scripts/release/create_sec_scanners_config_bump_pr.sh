@@ -31,7 +31,7 @@ git push origin "${BRANCH}" >&2
 
 # Create PR and extract PR number from the URL returned by gh
 PR_URL=$(gh pr create \
-  --title "chore: bump sec-scanners-config.yaml bdba images to ${VERSION}" \
+  --title "chore: Bump sec-scanners-config.yaml bdba images to ${VERSION}" \
   --body "This PR bumps the sec-scanners-config.yaml bdba image versions to ${VERSION}." \
   --base main \
   --head "${BRANCH}")
