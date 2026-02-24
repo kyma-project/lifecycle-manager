@@ -36,9 +36,6 @@ PR_URL=$(gh pr create \
   --base main \
   --head "${BRANCH}")
 
-# Switch back to main branch (redirect output to stderr)
-git checkout main >&2
-
 # Extract PR number from URL (e.g., https://github.com/owner/repo/pull/123 -> 123)
 PR_NUMBER=$(echo "${PR_URL}" | grep -oE '[0-9]+$')
 
