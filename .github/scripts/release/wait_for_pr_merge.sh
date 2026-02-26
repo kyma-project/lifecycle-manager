@@ -25,7 +25,7 @@ for i in {1..360}; do
   
   echo "PR #${PR_NUMBER} state: ${PR_STATE}"
   
-  if [ "${PR_STATE}" = "MERGED" ]; then
+  if [ "${PR_STATE}" = "CLOSED" ]; then
     echo "✅ PR #${PR_NUMBER} is merged! Proceeding with release."
     exit 0
   elif [ "${PR_STATE}" = "CLOSED" ]; then
