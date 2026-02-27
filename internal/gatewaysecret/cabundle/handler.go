@@ -11,7 +11,9 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var ErrCACertificateNotReady = errors.New("watcher-serving ca certificate is not ready")
@@ -79,6 +81,12 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 	}
 
 	if h.requiresCertSwitching(notBefore) {
+		logf.FromContext(ctx).
+			V(log.InfoLevel).
+			Info("Switching gateway secret tls.crt",
+				"caNotBefore", notBefore.Format(time.RFC3339),
+				"serverCertSwitchGracePeriod", h.serverCertSwitchGracePeriod,
+			)
 		switchCertificate(gwSecret, rootSecret)
 	}
 	return h.client.UpdateGatewaySecret(ctx, gwSecret)
