@@ -482,6 +482,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		SkrSyncService:       skrSyncService,
 		ModulesStatusHandler: modulesStatusHandler,
 		SKRWebhookManager:    skrWebhookManager,
+		RateLimiter:          options.RateLimiter,
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.KymaRequeueSuccessInterval,
 			Busy:    flagVar.KymaRequeueBusyInterval,
@@ -527,6 +528,7 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 		PurgeFinalizerTimeout: flagVar.PurgeFinalizerTimeout,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.SkipPurgingFor),
 		Metrics:               metrics.NewPurgeMetrics(),
+		RateLimiter:           options.RateLimiter,
 	}).SetupWithManager(
 		mgr, options,
 	); err != nil {
@@ -570,7 +572,8 @@ func setupManifestReconciler(mgr ctrl.Manager,
 		Warning: flagVar.ManifestRequeueWarningInterval,
 		Jitter: queue.NewRequeueJitter(flagVar.ManifestRequeueJitterProbability,
 			flagVar.ManifestRequeueJitterPercentage),
-	}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, manifestClient, orphanDetectionService,
+	}, options.RateLimiter,
+		metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, manifestClient, orphanDetectionService,
 		specResolver, clientCache, skrClient, kcpClient, cachedManifestParser, customStateCheck,
 		flagVar.SkrImagePullSecret); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
@@ -599,10 +602,11 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, ev
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentWatcherReconciles
 
 	if err := (&watcherctrl.Reconciler{
-		Client:     mgr.GetClient(),
-		Event:      event,
-		Scheme:     mgr.GetScheme(),
-		RestConfig: mgr.GetConfig(),
+		Client:      mgr.GetClient(),
+		Event:       event,
+		Scheme:      mgr.GetScheme(),
+		RestConfig:  mgr.GetConfig(),
+		RateLimiter: options.RateLimiter,
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.WatcherRequeueSuccessInterval,
 			Busy:    flags.DefaultKymaRequeueBusyInterval,

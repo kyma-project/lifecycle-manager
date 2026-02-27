@@ -26,6 +26,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -50,6 +51,8 @@ const (
 type Reconciler struct {
 	client.Client
 	event.Event
+
+	RateLimiter workqueue.TypedRateLimiter[ctrl.Request]
 
 	SkrContextFactory     remote.SkrContextProvider
 	PurgeFinalizerTimeout time.Duration
@@ -77,12 +80,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	start := time.Now()
 	err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
 	if err != nil {
-		return r.handleSkrNotFoundError(ctx, kyma, err)
+		return r.handleSkrNotFoundError(ctx, req, kyma, err)
 	}
 
 	skrContext, err := r.SkrContextFactory.Get(kyma.GetNamespacedName())
 	if err != nil {
-		return r.handleSkrNotFoundError(ctx, kyma, err)
+		return r.handleSkrNotFoundError(ctx, req, kyma, err)
 	}
 
 	return r.handlePurge(ctx, kyma, skrContext.Client, start)
@@ -133,7 +136,9 @@ func (r *Reconciler) handleRemovingPurgeFinalizerFailedError(
 	return ctrl.Result{}, err
 }
 
-func (r *Reconciler) handleSkrNotFoundError(ctx context.Context, kyma *v1beta2.Kyma, err error) (ctrl.Result, error) {
+func (r *Reconciler) handleSkrNotFoundError(
+	ctx context.Context, req ctrl.Request, kyma *v1beta2.Kyma, err error,
+) (ctrl.Result, error) {
 	if util.IsNotFound(err) {
 		dropped, err := r.dropPurgeFinalizer(ctx, kyma)
 		if err != nil {
@@ -143,7 +148,7 @@ func (r *Reconciler) handleSkrNotFoundError(ctx context.Context, kyma *v1beta2.K
 			logf.FromContext(ctx).Info("Removed purge finalizer for Kyma " + kyma.GetName())
 		}
 		r.Metrics.DeletePurgeError(ctx, kyma, metrics.ErrPurgeFinalizerRemoval)
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: r.RateLimiter.When(req)}, nil
 	}
 
 	return ctrl.Result{}, fmt.Errorf("failed getting remote client for Kyma %s: %w", kyma.GetName(), err)

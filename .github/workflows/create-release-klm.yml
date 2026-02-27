@@ -1,7 +1,6 @@
 name: "Create Release For KLM Image"
 
 permissions:
-  id-token: write
   contents: read
 
 on:
@@ -15,6 +14,10 @@ on:
         description: "Changelog since"
         default: ""
         required: false
+      skip_sec_scanners_bump:
+        description: "Skip sec-scanners-config.yaml bump"
+        type: boolean
+        default: false
 
 env:
   IMAGE_REPO: europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager
@@ -33,10 +36,70 @@ jobs:
         run: ./.github/scripts/release/validate_release_tag.sh ${{ github.event.inputs.name }}
       - name: Check if release doesn't exist yet
         run: ./.github/scripts/release/get_release_by_tag.sh ${{ github.event.inputs.name }} ${{ secrets.GITHUB_TOKEN }}
+
+  bump-images:
+    name: Bump sec-scanners-config.yaml images
+    runs-on: ubuntu-latest
+    needs: validate-release
+    if: ${{ !inputs.skip_sec_scanners_bump }}
+    permissions:
+      pull-requests: write
+      contents: write
+    outputs:
+      pr_number: ${{ steps.open-pr.outputs.pr_number }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+      - name: Bump sec-scanners-config.yaml images
+        run: |
+          ./.github/scripts/release/bump_sec_scanners_versions.sh \
+            ${{ github.event.inputs.name }} \
+            europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager \
+            sec-scanners-config.yaml
+      - name: Push version bump branch and open PR
+        id: open-pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Configure git
+          git config --local user.email "jellyfish-bot@users.noreply.github.com"
+          git config --local user.name "jellyfish-bot"
+
+          if PR_NUMBER=$(./.github/scripts/release/create_sec_scanners_config_bump_pr.sh ${{ github.event.inputs.name }}); then
+            echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          else
+            echo "❌ Failed to create PR for sec-scanners-config.yaml bump"
+            exit 1
+          fi
+
+  await-bump-images-pr-merge:
+    name: Wait for version bump PR to be merged
+    runs-on: ubuntu-latest
+    needs: bump-images
+    if: ${{ !inputs.skip_sec_scanners_bump }}
+    permissions:
+      pull-requests: read
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+      - name: Wait for PR to be merged
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./.github/scripts/release/wait_for_pr_merge.sh ${{ needs.bump-images.outputs.pr_number }}
+      - name: Delete merged branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./.github/scripts/release/delete_sec_scanners_config_pr_branch.sh ${{ github.event.inputs.name }}
+
   draft-release:
     name: Create draft release
     runs-on: ubuntu-latest
-    needs: validate-release
+    needs: [validate-release, await-bump-images-pr-merge]
     permissions:
       contents: write
       id-token: write
@@ -62,6 +125,7 @@ jobs:
           git push origin ${{ github.event.inputs.name }} --tags
     outputs:
       release_id: ${{ steps.draft-release.outputs.release_id }}
+
   builds:
     needs: draft-release
     uses: ./.github/workflows/build-image.yml
@@ -70,6 +134,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+
   publish_release:
     name: Publish release
     needs: [ validate-release, draft-release, builds ]

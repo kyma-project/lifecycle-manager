@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	apicorev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -28,6 +29,7 @@ type SetupOptions struct {
 func SetupWithManager(mgr manager.Manager,
 	opts ctrlruntime.Options,
 	requeueIntervals queue.RequeueIntervals,
+	rateLimiter workqueue.TypedRateLimiter[ctrl.Request],
 	manifestMetrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
 	manifestClient declarativev2.ManifestAPIClient,
@@ -47,7 +49,8 @@ func SetupWithManager(mgr manager.Manager,
 			builder.WithPredicates(predicate.Or(predicate.GenerationChangedPredicate{},
 				predicate.LabelChangedPredicate{}))).
 		WithOptions(opts).
-		Complete(declarativev2.NewReconciler(requeueIntervals, manifestMetrics, mandatoryModulesMetrics, manifestClient,
+		Complete(declarativev2.NewReconciler(
+			requeueIntervals, rateLimiter, manifestMetrics, mandatoryModulesMetrics, manifestClient,
 			orphanDetectionService, specResolver, skrClientCache, skrClient, kcpClient, cachedManifestParser,
 			customStateCheck, skrImagePullSecretName)); err != nil {
 		return fmt.Errorf("failed to setup manager for manifest controller: %w", err)

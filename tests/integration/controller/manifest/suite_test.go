@@ -150,12 +150,13 @@ var _ = BeforeSuite(func() {
 	accessManagerService := testskrcontext.NewFakeAccessManagerService(testEnv, cfg)
 	cachedManifestParser := declarativev2.NewInMemoryCachedManifestParser(declarativev2.DefaultInMemoryParseTTL)
 
+	rateLimiter := internal.RateLimiter(1*time.Second, 5*time.Second, 30, 200)
 	reconciler = declarativev2.NewReconciler(queue.RequeueIntervals{
 		Success: 1 * time.Second,
 		Busy:    1 * time.Second,
 		Error:   1 * time.Second,
 		Warning: 1 * time.Second,
-	}, metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
+	}, rateLimiter, metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
 		manifestClient, orphanDetectionService, spec.NewResolver(keyChainLookup, extractor),
 		skrclientcache.NewService(),
 		skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService),
@@ -166,10 +167,7 @@ var _ = BeforeSuite(func() {
 		Watches(&apicorev1.Secret{}, handler.Funcs{}).
 		WithOptions(
 			ctrlruntime.Options{
-				RateLimiter: internal.RateLimiter(
-					1*time.Second, 5*time.Second,
-					30, 200,
-				),
+				RateLimiter:             rateLimiter,
 				MaxConcurrentReconciles: 1,
 			},
 		).Complete(reconciler)

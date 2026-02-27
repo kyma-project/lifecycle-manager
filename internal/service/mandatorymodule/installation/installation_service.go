@@ -72,10 +72,13 @@ func (s *Service) HandleInstallation(ctx context.Context, kyma *v1beta2.Kyma) er
 	if err != nil {
 		return fmt.Errorf("list mandatory modules failed: %w", err)
 	}
-	s.mandatoryModuleMetrics.RecordMandatoryModulesCount(len(mandatoryMrms))
 
+	s.mandatoryModuleMetrics.RecordMandatoryModulesCount(len(mandatoryMrms))
 	mandatoryTemplatesByName := make(templatelookup.ModuleTemplatesByModuleName)
 	for _, mrm := range mandatoryMrms {
+		if !mrm.DeletionTimestamp.IsZero() {
+			continue
+		}
 		moduleTemplate, err := s.mtRepo.GetSpecificVersionForModule(ctx, mrm.Name, mrm.Spec.Mandatory.Version)
 		if err != nil {
 			return fmt.Errorf("get ModuleTemplate for mandatory module %s failed: %w", mrm.Name, err)
