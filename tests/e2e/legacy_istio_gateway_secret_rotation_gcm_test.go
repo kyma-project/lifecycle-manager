@@ -38,20 +38,20 @@ var _ = Describe("Legacy Istio Gateway Secret Rotation With GCM", Ordered, func(
 				WithArguments(namespacedRootCASecretName, kcpClient).
 				Should(Succeed())
 
-			By("And LastModifiedAt timestamp is valid")
+			By("And caAddedToBundleAt timestamp is valid")
 			gwSecret, err := GetGatewaySecret(ctx, kcpClient)
 			Expect(err).NotTo(HaveOccurred())
-			lastModifiedAtTime, err := GetLastModifiedTimeFromAnnotation(gwSecret)
+			lastCaBundleExtendedTime, err := GetLastCaBundleExtendedTimeFromAnnotation(gwSecret)
 			Expect(err).To(Succeed())
 
 			By("When CA Certificate is rotated again")
 			Expect(RotateCAManuallyWithGCM(ctx, kcpClient)).
 				To(Succeed())
 
-			By("Then LastModifiedAt timestamp is updated")
+			By("Then caAddedToBundleAt timestamp is updated")
 			Eventually(GatewaySecretCreationTimeIsUpdated, 4*time.Minute).
 				WithContext(ctx).
-				WithArguments(lastModifiedAtTime, kcpClient).
+				WithArguments(lastCaBundleExtendedTime, kcpClient).
 				Should(Succeed())
 
 			By("And new Istio Gateway Secret is also a copy of CA Certificate")

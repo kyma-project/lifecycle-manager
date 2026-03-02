@@ -202,13 +202,13 @@ func TestIsSkrCertificateRenewalOverdue_WhenRenewalOverdue_ReturnsTrue(t *testin
 	require.True(t, secretRepo.getCalled)
 }
 
-func getGatewaySecretWithLastModifiedAnnotation(lastModifiedAnnotation string) *apicorev1.Secret {
+func getGatewaySecretWithLastModifiedAnnotation(rfc3339Value string) *apicorev1.Secret {
 	return &apicorev1.Secret{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      gatewaySecretName,
 			Namespace: testutils.IstioNamespace,
 			Annotations: map[string]string{
-				shared.LastModifiedAtAnnotation: lastModifiedAnnotation,
+				shared.CaAddedToBundleAtAnnotation: rfc3339Value,
 			},
 		},
 	}
@@ -293,7 +293,7 @@ func TestIsSkrCertificateRenewalOverdue_SecretRepositoryReturnsError_ReturnsErro
 	overdue, err := certService.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
 
 	require.Error(t, err)
-	require.ErrorContains(t, err, "failed to determine gateway secret lastModifiedAt")
+	require.ErrorContains(t, err, "failed to determine gateway secret caAddedToBundleAt")
 	require.True(t, overdue)
 	require.True(t, certRepo.getValidityCalled)
 	require.True(t, secretRepo.getCalled)
@@ -319,7 +319,7 @@ func TestIsSkrCertificateRenewalOverdue_SecretRepositoryReturnsError2_ReturnsErr
 	overdue, err := certService.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
 
 	require.Error(t, err)
-	require.ErrorContains(t, err, "failed to determine gateway secret lastModifiedAt")
+	require.ErrorContains(t, err, "failed to determine gateway secret caAddedToBundleAt")
 	require.True(t, overdue)
 	require.True(t, certRepo.getValidityCalled)
 	require.True(t, secretRepo.getCalled)

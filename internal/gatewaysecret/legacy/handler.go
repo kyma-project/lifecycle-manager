@@ -39,7 +39,7 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 
 	if h.requiresUpdate(gwSecret, notBefore) {
 		copyDataFromRootSecret(gwSecret, rootSecret)
-		setLastModifiedToNow(gwSecret)
+		setCaBundleTimeAnnotationToNow(gwSecret)
 
 		return h.client.UpdateGatewaySecret(ctx, gwSecret)
 	}
@@ -60,7 +60,7 @@ func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context, rootSec
 	}
 
 	copyDataFromRootSecret(newSecret, rootSecret)
-	setLastModifiedToNow(newSecret)
+	setCaBundleTimeAnnotationToNow(newSecret)
 
 	return h.client.CreateGatewaySecret(ctx, newSecret)
 }
@@ -68,19 +68,20 @@ func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context, rootSec
 func (h *Handler) requiresUpdate(gwSecret *apicorev1.Secret, notBefore time.Time) bool {
 	// If the last modified time of the gateway secret is after the notBefore time of the CA certificate,
 	// then we don't need to update the gateway secret
-	if lastModified, err := h.parseLastModifiedTime(gwSecret, shared.LastModifiedAtAnnotation); err == nil {
-		if !notBefore.IsZero() && lastModified.After(notBefore) {
+	if caBundleExtendedAt, err := h.parseLastModifiedTime(gwSecret, shared.CaAddedToBundleAtAnnotation); err == nil {
+		if !notBefore.IsZero() && caBundleExtendedAt.After(notBefore) {
 			return false
 		}
 	}
 	return true
 }
 
-func setLastModifiedToNow(secret *apicorev1.Secret) {
+func setCaBundleTimeAnnotationToNow(secret *apicorev1.Secret) {
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)
 	}
-	secret.Annotations[shared.LastModifiedAtAnnotation] = apimetav1.Now().Format(time.RFC3339)
+	secret.Annotations[shared.CaAddedToBundleAtAnnotation] = apimetav1.Now().Format(time.RFC3339)
+	delete(secret.Annotations, shared.LastModifiedAtAnnotation)
 }
 
 func copyDataFromRootSecret(secret *apicorev1.Secret, rootSecret *apicorev1.Secret) {

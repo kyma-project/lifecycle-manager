@@ -109,7 +109,7 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGat
 	mockClient.AssertNumberOfCalls(t, "CreateGatewaySecret", 1)
 	mockClient.AssertCalled(t, "CreateGatewaySecret", mock.Anything, mock.MatchedBy(
 		func(secret *apicorev1.Secret) bool {
-			return secret.Annotations[shared.LastModifiedAtAnnotation] != ""
+			return secret.Annotations[shared.CaAddedToBundleAtAnnotation] != ""
 		}))
 }
 
@@ -174,7 +174,7 @@ func TestManageGatewaySecret_WhenRequiresUpdate_UpdatesGatewaySecretWithUpdatedM
 	gwSecret := &apicorev1.Secret{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Annotations: map[string]string{
-				shared.LastModifiedAtAnnotation: originalTime.Format(time.RFC3339),
+				shared.CaAddedToBundleAtAnnotation: originalTime.Format(time.RFC3339),
 			},
 		},
 	}
@@ -196,7 +196,7 @@ func TestManageGatewaySecret_WhenRequiresUpdate_UpdatesGatewaySecretWithUpdatedM
 	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 1)
 	mockClient.AssertCalled(t, "UpdateGatewaySecret", mock.Anything, mock.MatchedBy(
 		func(secret *apicorev1.Secret) bool {
-			lastModified, ok := secret.Annotations[shared.LastModifiedAtAnnotation]
+			lastModified, ok := secret.Annotations[shared.CaAddedToBundleAtAnnotation]
 			if !ok {
 				return false
 			}

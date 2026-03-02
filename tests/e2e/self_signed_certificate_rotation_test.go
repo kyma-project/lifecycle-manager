@@ -51,7 +51,7 @@ var _ = Describe("Self Signed Certificate Rotation", Ordered, func() {
 				if secret.Annotations == nil {
 					secret.Annotations = make(map[string]string)
 				}
-				secret.Annotations[shared.LastModifiedAtAnnotation] = time.Now().Format(time.RFC3339)
+				secret.Annotations[shared.CaAddedToBundleAtAnnotation] = time.Now().Format(time.RFC3339)
 				return kcpClient.Update(ctx, secret)
 			}).WithContext(ctx).
 				Should(Succeed())
