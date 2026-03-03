@@ -35,6 +35,7 @@ fi
 
 cat <<EOF > module-config-for-e2e.yaml
 name: kyma-project.io/module/${MODULE_NAME}
+team: kyma/Jellyfish
 version: ${RELEASE_VERSION}
 security: sec-scanners-config.yaml
 manifest: template-operator.yaml
