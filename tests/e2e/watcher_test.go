@@ -174,19 +174,17 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
 
-			By("And skip-reconciliation label is added to KCP Kyma CR")
-			Eventually(UpdateKymaLabel).
-				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), shared.SkipReconcileLabel,
-					shared.EnableLabelValue).
-				Should(Succeed())
-
 			By("And KCP Kyma CR is deleted")
 			Eventually(DeleteKyma).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma, apimetav1.DeletePropagationBackground).
 				Should(Succeed())
 
+			// The skip-reconciliation label no longer blocks deletion; the reconciler proceeds
+			// with the deletion flow regardless. While the access secret still exists the
+			// reconciler will requeue after failing to reach the removed SKR cluster. Once
+			// the secret is manually deleted the next reconcile triggers handleDeletedSkr and
+			// cleans up the Kyma CR fully.
 			By("And Kubeconfig Secret is deleted")
 			Consistently(AccessSecretExists).
 				WithContext(ctx).
@@ -200,13 +198,6 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName()).
 				Should(MatchError(accessmanager.ErrAccessSecretNotFound))
-
-			By("And skip-reconciliation label is removed from KCP Kyma CR")
-			Eventually(UpdateKymaLabel).
-				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), shared.SkipReconcileLabel,
-					shared.DisableLabelValue).
-				Should(Succeed())
 		})
 
 		It("Then KCP Kyma CR is deleted", func() {
