@@ -40,6 +40,7 @@ func AddValidityToCertificateStatus(ctx context.Context,
 	if err := kcpClient.Status().Patch(
 		ctx,
 		certificate,
+		//nolint: staticcheck // issue #2706
 		client.Apply,
 		fieldowners.LifecycleManager,
 	); err != nil {

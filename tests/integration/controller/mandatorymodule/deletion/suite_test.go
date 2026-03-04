@@ -121,7 +121,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	deletionService := deletion.ComposeDeletionService(mgr.GetClient(),
-		event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName)))
+		event.NewRecorderWrapper(mgr.GetEventRecorder(shared.OperatorName)))
 	deletionReconciler := mandatorymodule.NewDeletionReconciler(
 		deletionService, intervals)
 

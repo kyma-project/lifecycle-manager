@@ -168,7 +168,7 @@ var _ = BeforeSuite(func() {
 		kcpClient,
 	)
 
-	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
+	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorder(shared.OperatorName))
 	skrClientCache := remote.NewClientCache()
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec, skrClientCache)
 	compDescrawBytes := builder.ComponentDescriptorFactoryFromSchema(compdescv2.SchemaVersion)

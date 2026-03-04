@@ -66,6 +66,7 @@ func EnsureCRFinalizer(ctx context.Context, kcp client.Client, manifest *v1beta2
 
 	if added := controllerutil.AddFinalizer(oMeta, CustomResourceManagerFinalizer); added {
 		if err := kcp.Patch(
+			//nolint: staticcheck // issue #2706
 			ctx, oMeta, client.Apply, client.ForceOwnership,
 			fieldowners.CustomResourceFinalizer,
 		); err != nil {

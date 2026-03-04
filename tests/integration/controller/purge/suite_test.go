@@ -111,7 +111,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	kcpClient = mgr.GetClient()
-	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
+	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorder(shared.OperatorName))
 	skrClientCache := remote.NewClientCache()
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec, skrClientCache)
 	reconciler = &purge.Reconciler{

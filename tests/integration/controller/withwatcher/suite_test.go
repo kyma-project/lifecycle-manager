@@ -159,7 +159,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 	gatewayRepository := istiogateway.NewRepository(kcpClientWithoutCache)
 
-	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
+	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorder(shared.OperatorName))
 	skrClientCache := remote.NewClientCache()
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec, skrClientCache)
 	Expect(err).ToNot(HaveOccurred())
@@ -220,7 +220,7 @@ var _ = BeforeSuite(func() {
 	err = (&watcherctrl.Reconciler{
 		Client:                mgr.GetClient(),
 		RestConfig:            mgr.GetConfig(),
-		Event:                 event.NewRecorderWrapper(mgr.GetEventRecorderFor("watcher")),
+		Event:                 event.NewRecorderWrapper(mgr.GetEventRecorder("watcher")),
 		Scheme:                k8sclientscheme.Scheme,
 		RequeueIntervals:      intervals,
 		IstioGatewayNamespace: ControlPlaneNamespace,

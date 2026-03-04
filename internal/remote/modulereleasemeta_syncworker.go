@@ -137,6 +137,7 @@ func patchDiffModuleReleaseMeta(
 	ssaPatchOptions *client.PatchOptions,
 ) error {
 	err := skrClient.Patch(
+		//nolint: staticcheck // issue #2706
 		ctx, diff, client.Apply, ssaPatchOptions,
 	)
 	if err != nil {

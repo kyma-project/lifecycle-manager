@@ -119,6 +119,7 @@ func (m *SkrWebhookManifestManager) Reconcile(ctx context.Context, kyma *v1beta2
 	err = m.chartReaderService.RunResourceOperationWithGroupedErrors(ctx, skrContext.Client, resources,
 		func(ctx context.Context, clt client.Client, resource client.Object) error {
 			resource.SetNamespace(m.remoteSyncNamespace)
+			//nolint: staticcheck // issue #2706
 			err := clt.Patch(ctx, resource, client.Apply, client.ForceOwnership, fieldowners.LegacyLifecycleManager)
 			if err != nil {
 				return fmt.Errorf("failed to patch resource %s: %w", resource.GetName(), err)
