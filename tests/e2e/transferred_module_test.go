@@ -31,8 +31,8 @@ var _ = Describe("Module Transferred to Another OCI Registry", Ordered, func() {
 		// Their values should be visible in the Manifest's Spec.LocalizedImages field
 		// and in the actual values in the target "template-operator-controller-manager" Deployment in the SKR.
 		rewrittenTemplateOperatorImage = "europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market/" +
-			"kyma-project/prod/template-operator:1.0.4" +
-			"@sha256:b561d0bad183d72bb4230e83a325587383dc967165bee336756672c82320bee9"
+			"kyma-project/prod/template-operator:1.0.5" +
+			"@sha256:c4bb6cae028ee580295d527663d62d5b1ac23a70dd73f7efed2c7ecbdc48a834"
 
 		rewrittenKedaManagerImage = "europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market/" +
 			"kyma-project/prod/keda-manager:1.7.0" +
