@@ -39,23 +39,22 @@ func SetupReconciler(mgr ctrl.Manager,
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentWatcherReconciles
 
 	clnt := gatewaysecretclient.NewGatewaySecretRotationClient(mgr.GetConfig(), certificateInterface)
-	var parseLastModifiedFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret,
-		annotation string,
-	) (time.Time, error) {
-		if strValue, ok := secret.Annotations[annotation]; ok {
-			if time, err := time.Parse(time.RFC3339, strValue); err == nil {
-				return time, nil
-			}
-		}
-		return time.Time{}, fmt.Errorf("%w: %s", errCouldNotGetTimeFromAnnotation, annotation)
-	}
 
 	var handler gatewaysecret.Handler
 	if flagVar.UseLegacyStrategyForIstioGatewaySecret {
+		var parseLastModifiedFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret,
+			annotation string,
+		) (time.Time, error) {
+			if strValue, ok := secret.Annotations[annotation]; ok {
+				if time, err := time.Parse(time.RFC3339, strValue); err == nil {
+					return time, nil
+				}
+			}
+			return time.Time{}, fmt.Errorf("%w: %s", errCouldNotGetTimeFromAnnotation, annotation)
+		}
 		handler = legacy.NewGatewaySecretHandler(clnt, parseLastModifiedFunc)
 	} else {
 		handler = cabundle.NewGatewaySecretHandler(clnt,
-			parseLastModifiedFunc,
 			flagVar.IstioGatewayServerCertSwitchGracePeriod,
 			certificate.NewBundler(),
 		)

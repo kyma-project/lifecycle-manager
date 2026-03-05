@@ -126,7 +126,7 @@ func GatewaySecretCreationTimeIsUpdated(ctx context.Context, oldTime time.Time, 
 		return err
 	}
 
-	currentTime, err := GetLastModifiedTimeFromAnnotation(gwSecret)
+	currentTime, err := GetLastCaBundleExtendedTimeFromAnnotation(gwSecret)
 	if err != nil {
 		return fmt.Errorf("failed to get last modified time %w", err)
 	}
@@ -147,13 +147,13 @@ func GetGatewaySecret(ctx context.Context, clnt client.Client) (*apicorev1.Secre
 	return secret, nil
 }
 
-func GetLastModifiedTimeFromAnnotation(secret *apicorev1.Secret) (time.Time, error) {
-	if gwSecretLastModifiedAtValue, ok := secret.Annotations[shared.LastModifiedAtAnnotation]; ok {
-		if gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue); err == nil {
-			return gwSecretLastModifiedAt, nil
+func GetLastCaBundleExtendedTimeFromAnnotation(secret *apicorev1.Secret) (time.Time, error) {
+	if gwSecretCaAddedToBundleAtValue, ok := secret.Annotations[shared.CaAddedToBundleAtAnnotation]; ok {
+		if gwSecretCaAddedToBundleTime, err := time.Parse(time.RFC3339, gwSecretCaAddedToBundleAtValue); err == nil {
+			return gwSecretCaAddedToBundleTime, nil
 		}
 	}
-	return time.Time{}, errors.New("getting lastModifiedAt time failed")
+	return time.Time{}, errors.New("getting caAddedToBundleAt time failed")
 }
 
 func RotateCAManuallyWithGCM(ctx context.Context, kcpClient client.Client) error {

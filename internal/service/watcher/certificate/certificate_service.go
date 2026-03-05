@@ -17,9 +17,9 @@ import (
 )
 
 var (
-	ErrDomainAnnotationEmpty              = errors.New("domain annotation is empty")
-	ErrDomainAnnotationMissing            = errors.New("domain annotation is missing")
-	ErrGatewaySecretMissingLastModifiedAt = errors.New("gateway secret is missing lastModifiedAt annotation")
+	ErrDomainAnnotationEmpty                      = errors.New("domain annotation is empty")
+	ErrDomainAnnotationMissing                    = errors.New("domain annotation is missing")
+	ErrGatewaySecretMissingBundlingTimeAnnotation = errors.New("gateway secret is missing caAddedToBundleAt annotation")
 )
 
 type CertificateRepository interface {
@@ -130,12 +130,12 @@ func (c *Service) IsSkrCertificateRenewalOverdue(ctx context.Context, kymaName s
 		return false, nil
 	}
 
-	gatewaySecretLastModifiedAt, err := c.getGatewaySecretLastModifiedAt(ctx)
+	gatewaySecretCaBundleExtendedAt, err := c.getGatewaySecretCaBundleExtendedAtTime(ctx)
 	if err != nil {
-		return true, fmt.Errorf("failed to determine gateway secret lastModifiedAt: %w", err)
+		return true, fmt.Errorf("failed to determine gateway secret caAddedToBundleAt: %w", err)
 	}
 
-	return time.Now().After(gatewaySecretLastModifiedAt.Add(c.config.RenewBuffer)), nil
+	return time.Now().After(gatewaySecretCaBundleExtendedAt.Add(c.config.RenewBuffer)), nil
 }
 
 // GetSkrCertificateSecret returns the SKR certificate secret.
@@ -205,29 +205,29 @@ func (s *Service) skrCertificateNeedsRenewal(ctx context.Context, certName strin
 		return false, fmt.Errorf("failed to determine SKR client certificate validity: %w", err)
 	}
 
-	gatewaySecretLastModifiedAt, err := s.getGatewaySecretLastModifiedAt(ctx)
+	gatewaySecretCaBundleExtendedAt, err := s.getGatewaySecretCaBundleExtendedAtTime(ctx)
 	if err != nil {
-		return false, fmt.Errorf("failed to determine gateway secret lastModifiedAt: %w", err)
+		return false, fmt.Errorf("failed to determine gateway secret caAddedToBundleAt: %w", err)
 	}
 
-	return certNotBefore.Before(gatewaySecretLastModifiedAt), nil
+	return certNotBefore.Before(gatewaySecretCaBundleExtendedAt), nil
 }
 
-func (s *Service) getGatewaySecretLastModifiedAt(ctx context.Context) (time.Time, error) {
+func (s *Service) getGatewaySecretCaBundleExtendedAtTime(ctx context.Context) (time.Time, error) {
 	gatewaySecret, err := s.secretRepo.Get(ctx, s.config.GatewaySecretName)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to get gateway secret: %w", err)
 	}
 
-	lastModifiedAtValue, ok := gatewaySecret.Annotations[shared.LastModifiedAtAnnotation]
+	caBundleExtendedAtValue, ok := gatewaySecret.Annotations[shared.CaAddedToBundleAtAnnotation]
 	if !ok {
-		return time.Time{}, ErrGatewaySecretMissingLastModifiedAt
+		return time.Time{}, ErrGatewaySecretMissingBundlingTimeAnnotation
 	}
 
-	lastModifiedAt, err := time.Parse(time.RFC3339, lastModifiedAtValue)
+	caBundleExtendedAt, err := time.Parse(time.RFC3339, caBundleExtendedAtValue)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("failed to parse gateway secret lastModifiedAt annotation: %w", err)
+		return time.Time{}, fmt.Errorf("failed to parse gateway secret caAddedToBundleAt annotation: %w", err)
 	}
 
-	return lastModifiedAt, nil
+	return caBundleExtendedAt, nil
 }

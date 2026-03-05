@@ -29,19 +29,16 @@ type Bundler interface {
 
 type Handler struct {
 	client                      gatewaysecret.Client
-	parseTimeFromAnnotationFunc gatewaysecret.TimeParserFunc
 	serverCertSwitchGracePeriod time.Duration
 	bundler                     Bundler
 }
 
 func NewGatewaySecretHandler(client gatewaysecret.Client,
-	timeParserFunc gatewaysecret.TimeParserFunc,
 	serverCertSwitchGracePeriod time.Duration,
 	bundler Bundler,
 ) *Handler {
 	return &Handler{
 		client:                      client,
-		parseTimeFromAnnotationFunc: timeParserFunc,
 		serverCertSwitchGracePeriod: serverCertSwitchGracePeriod,
 		bundler:                     bundler,
 	}
@@ -72,7 +69,7 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 	}
 
 	if bundled {
-		setLastModifiedToNow(gwSecret)
+		setCaBundleTimeAnnotationToNow(gwSecret)
 	}
 
 	err = h.dropExpiredCertsFromBundle(gwSecret)
@@ -111,7 +108,7 @@ func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context,
 	newSecret.Data[apicorev1.TLSPrivateKeyKey] = rootSecret.Data[apicorev1.TLSPrivateKeyKey]
 	newSecret.Data[gatewaysecret.CACrt] = rootSecret.Data[gatewaysecret.CACrt]
 
-	setLastModifiedToNow(newSecret)
+	setCaBundleTimeAnnotationToNow(newSecret)
 
 	return h.client.CreateGatewaySecret(ctx, newSecret)
 }
@@ -129,11 +126,14 @@ func bootstrapLegacyGatewaySecret(gwSecret *apicorev1.Secret,
 	}
 }
 
-func setLastModifiedToNow(secret *apicorev1.Secret) {
+func setCaBundleTimeAnnotationToNow(secret *apicorev1.Secret) {
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)
 	}
-	secret.Annotations[shared.LastModifiedAtAnnotation] = apimetav1.Now().Format(time.RFC3339)
+	secret.Annotations[shared.CaAddedToBundleAtAnnotation] = apimetav1.Now().Format(time.RFC3339)
+	//nolint:godox // valid TODO
+	//TODO: drop in the second release after 1.14.0
+	delete(secret.Annotations, shared.LastModifiedAtAnnotation)
 }
 
 func (h *Handler) bundleCACerts(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) (bool, error) {

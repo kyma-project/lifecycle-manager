@@ -24,7 +24,7 @@ func TestRenewSkrCertificate_WhenNeedsRenew_CallsRenewalServiceRenew(t *testing.
 			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Annotations: map[string]string{
-						shared.LastModifiedAtAnnotation: time.Now().Format(time.RFC3339),
+						shared.CaAddedToBundleAtAnnotation: time.Now().Format(time.RFC3339),
 					},
 				},
 			},
@@ -58,7 +58,7 @@ func TestRenewSkrCertificate_WhenSecretIndicatesNoRenew_RenewalServiceRenewIsNot
 			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Annotations: map[string]string{
-						shared.LastModifiedAtAnnotation: time.Now().Add(-3 * time.Hour).Format(time.RFC3339),
+						shared.CaAddedToBundleAtAnnotation: time.Now().Add(-3 * time.Hour).Format(time.RFC3339),
 					},
 				},
 			},
@@ -123,13 +123,13 @@ func TestRenewSkrCertificate_WhenSecretRepoGetReturnsError_RenewalServiceRenewIs
 
 	require.ErrorIs(t, err, assert.AnError)
 	assert.Contains(t, err.Error(), "failed to get gateway secret")
-	assert.Contains(t, err.Error(), "failed to determine gateway secret lastModifiedAt")
+	assert.Contains(t, err.Error(), "failed to determine gateway secret caAddedToBundleAt")
 	assert.True(t, certRepo.getValidityCalled)
 	assert.True(t, secretRepo.getCalled)
 	assert.False(t, certRepo.renewCalled)
 }
 
-func TestRenewSkrCertificate_WhenNoLastModifiedAtAnnotation_RenewalServiceRenewIsNotCalled(t *testing.T) {
+func TestRenewSkrCertificate_WhenCaBundleAnnotation_RenewalServiceRenewIsNotCalled(t *testing.T) {
 	certRepo := &certRepoStub{
 		getValidityStart: time.Now().Add(-2 * time.Hour),
 		getValidityEnd:   time.Now().Add(2 * time.Hour),
@@ -147,14 +147,14 @@ func TestRenewSkrCertificate_WhenNoLastModifiedAtAnnotation_RenewalServiceRenewI
 
 	err := certService.RenewSkrCertificate(t.Context(), kymaName)
 
-	require.ErrorIs(t, err, certificate.ErrGatewaySecretMissingLastModifiedAt)
-	assert.Contains(t, err.Error(), "failed to determine gateway secret lastModifiedAt")
+	require.ErrorIs(t, err, certificate.ErrGatewaySecretMissingBundlingTimeAnnotation)
+	assert.Contains(t, err.Error(), "failed to determine gateway secret caAddedToBundleAt")
 	assert.True(t, certRepo.getValidityCalled)
 	assert.True(t, secretRepo.getCalled)
 	assert.False(t, certRepo.renewCalled)
 }
 
-func TestRenewSkrCertificate_WhenLastModifiedAtAnnotationFailsToParse_RenewalServiceRenewIsNotCalled(t *testing.T) {
+func TestRenewSkrCertificate_WhenCaBundleAnnotationFailsToParse_RenewalServiceRenewIsNotCalled(t *testing.T) {
 	certRepo := &certRepoStub{
 		getValidityStart: time.Now().Add(-2 * time.Hour),
 		getValidityEnd:   time.Now().Add(2 * time.Hour),
@@ -164,7 +164,7 @@ func TestRenewSkrCertificate_WhenLastModifiedAtAnnotationFailsToParse_RenewalSer
 			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Annotations: map[string]string{
-						shared.LastModifiedAtAnnotation: "not a valid time string",
+						shared.CaAddedToBundleAtAnnotation: "not a valid time string",
 					},
 				},
 			},
@@ -181,8 +181,8 @@ func TestRenewSkrCertificate_WhenLastModifiedAtAnnotationFailsToParse_RenewalSer
 	err := certService.RenewSkrCertificate(t.Context(), kymaName)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to parse gateway secret lastModifiedAt annotation")
-	assert.Contains(t, err.Error(), "failed to determine gateway secret lastModifiedAt")
+	assert.Contains(t, err.Error(), "failed to determine gateway secret caAddedToBundleAt")
+	assert.Contains(t, err.Error(), "failed to parse gateway secret caAddedToBundleAt annotation")
 	assert.True(t, certRepo.getValidityCalled)
 	assert.True(t, secretRepo.getCalled)
 	assert.False(t, certRepo.renewCalled)
@@ -199,7 +199,7 @@ func TestRenewSkrCertificate_WhenRenewReturnsError_ReturnsError(t *testing.T) {
 			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Annotations: map[string]string{
-						shared.LastModifiedAtAnnotation: time.Now().Format(time.RFC3339),
+						shared.CaAddedToBundleAtAnnotation: time.Now().Format(time.RFC3339),
 					},
 				},
 			},

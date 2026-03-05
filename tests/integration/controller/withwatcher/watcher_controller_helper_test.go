@@ -157,7 +157,7 @@ func createGatewaySecret() *apicorev1.Secret {
 			Name:      "klm-istio-gateway",
 			Namespace: shared.IstioNamespace,
 			Annotations: map[string]string{
-				shared.LastModifiedAtAnnotation: apimetav1.Now().Add(-1 * time.Hour).Format(time.RFC3339),
+				shared.CaAddedToBundleAtAnnotation: apimetav1.Now().Add(-1 * time.Hour).Format(time.RFC3339),
 			},
 		},
 		Data: map[string][]byte{

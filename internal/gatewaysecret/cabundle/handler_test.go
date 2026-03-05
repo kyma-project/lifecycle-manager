@@ -13,7 +13,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/cabundle"
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/testutils"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
@@ -38,7 +37,6 @@ func TestManageGatewaySecret_WhenGetWatcherServingCertValidityReturnsError_Retur
 	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(time.Time{}, time.Time{}, someError)
 
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
-		nil,
 		gatewayServerCertSwitchGracePeriod,
 		certificate.NewBundler(),
 	)
@@ -58,7 +56,6 @@ func TestManageGatewaySecret_WhenGetWatcherServingCertValidityReturnsInvalidNotB
 	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(time.Time{}, time.Now(), nil)
 
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
-		nil,
 		gatewayServerCertSwitchGracePeriod,
 		certificate.NewBundler(),
 	)
@@ -80,7 +77,6 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsError_ReturnsError(t *te
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(nil, someError)
 
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
-		nil,
 		gatewayServerCertSwitchGracePeriod,
 		certificate.NewBundler(),
 	)
@@ -109,7 +105,6 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGat
 		},
 	}
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
-		nil,
 		gatewayServerCertSwitchGracePeriod,
 		certificate.NewBundler(),
 	)
@@ -132,7 +127,7 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGat
 				//nolint:revive // false positive
 				string(secret.Data[apicorev1.TLSPrivateKeyKey]) == string(rootSecret.Data[apicorev1.TLSPrivateKeyKey]) &&
 				string(secret.Data["ca.crt"]) == string(rootSecret.Data["ca.crt"]) &&
-				secret.Annotations[shared.LastModifiedAtAnnotation] != ""
+				secret.Annotations[shared.CaAddedToBundleAtAnnotation] != ""
 		}))
 }
 
@@ -145,7 +140,6 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundErrorAndCreation
 	mockClient.On("CreateGatewaySecret", mock.Anything, mock.Anything).Return(expectedError)
 
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
-		nil,
 		gatewayServerCertSwitchGracePeriod,
 		certificate.NewBundler(),
 	)
@@ -172,9 +166,7 @@ func TestManageGatewaySecret_WhenLegacySecret_BootstrapsLegacyGatewaySecret(t *t
 		},
 	}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
-	timeParserFunction := getTimeParserFunction(false)
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
-		timeParserFunction,
 		gatewayServerCertSwitchGracePeriod,
 		certificate.NewBundler(),
 	)
@@ -206,9 +198,7 @@ func TestManageGatewaySecret_BundlesAndDropsCerts(t *testing.T) {
 		},
 	}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
-	timeParserFunction := getTimeParserFunction(true)
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
-		timeParserFunction,
 		gatewayServerCertSwitchGracePeriod,
 		certificate.NewBundler(),
 	)
@@ -247,9 +237,7 @@ func TestManageGatewaySecret_WhenUpdateSecretFails_ReturnsError(t *testing.T) {
 	}, nil)
 	expectedError := errors.New("some-error")
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(expectedError)
-	timeParserFunction := getTimeParserFunction(true)
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
-		timeParserFunction,
 		gatewayServerCertSwitchGracePeriod,
 		certificate.NewBundler(),
 	)
@@ -283,10 +271,8 @@ func TestManageGatewaySecret_WhenRequiresCertSwitching_SwitchesTLSCertAndKeyWith
 		},
 	}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
-	timeParserFunction := getTimeParserFunction(false)
 	expiredServerCertSwitchGracePeriod := 30 * time.Minute
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
-		timeParserFunction,
 		expiredServerCertSwitchGracePeriod,
 		certificate.NewBundler(),
 	)
@@ -325,7 +311,6 @@ func TestManageGatewaySecret_WhenBundlingFails_ReturnsError(t *testing.T) {
 	}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(assert.AnError)
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
-		getTimeParserFunction(false),
 		gatewayServerCertSwitchGracePeriod,
 		certificate.NewBundler(),
 	)
@@ -358,7 +343,6 @@ func TestManageGatewaySecret_WhenDroppingExpiredCertsFails_ReturnsError(t *testi
 	}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(assert.AnError)
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
-		getTimeParserFunction(false),
 		gatewayServerCertSwitchGracePeriod,
 		certificate.NewBundler(certificate.WithParseX509Function(
 			func(_ []byte) (*x509.Certificate, error) {
@@ -382,23 +366,6 @@ func TestManageGatewaySecret_WhenDroppingExpiredCertsFails_ReturnsError(t *testi
 	// ASSERT
 	require.ErrorIs(t, err, certificate.ErrX509NotAfterIsZero)
 	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 0)
-}
-
-func getTimeParserFunction(bundlingRequired bool) gatewaysecret.TimeParserFunc {
-	var lastModifiedAt time.Time
-
-	if bundlingRequired {
-		lastModifiedAt = time.Now().Add(-2 * time.Hour)
-	} else {
-		lastModifiedAt = time.Now()
-	}
-
-	return func(secret *apicorev1.Secret, annotation string) (time.Time, error) {
-		if annotation == shared.LastModifiedAtAnnotation {
-			return lastModifiedAt, nil
-		}
-		return time.Time{}, nil
-	}
 }
 
 func notFoundError() error {

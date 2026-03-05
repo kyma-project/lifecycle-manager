@@ -34,13 +34,13 @@ In the [figure for step 1](../assets/adr-007/watcher-certificates-1.png), the or
 
 ### 2. Update the Server CA Bundle
 
-KLM watches the *klm-watcher* secret (2a). When it changes, KLM adds the new CA certificate to the CA bundle in *klm-istio-gateway* (2b). It further adds the `lastModifiedAt` annotation to the *klm-istio-gateway* secret, indicating the last time the CA bundle was updated. In this step, also all previously stored CA certificates stored in the CA bundle are removed if they have expired.
+KLM watches the *klm-watcher* secret (2a). When it changes, KLM adds the new CA certificate to the CA bundle in *klm-istio-gateway* (2b). It further adds the `caAddedToBundleAt` annotation to the *klm-istio-gateway* secret, indicating the last time the CA bundle was updated. In this step, also all previously stored CA certificates stored in the CA bundle are removed if they have expired.
 
 In the [figure for step 2](../assets/adr-007/watcher-certificates-2.png), the new blue CA certificate is pushed into the CA bundle.
 
 ### 3. Trigger Reissuance of Client Certificates
 
-As part of the Kyma CR reconciliation, KLM gets the *klm-istio-gateway* to determine the last time the CA bundle was updated, indicated by the `lastModifiedAt` annotation (3a). If the `lastModifiedAt` of the CA bundle is more recent than the issued client certificate, KLM triggers reissuance of the client certificate. (3b).
+As part of the Kyma CR reconciliation, KLM gets the *klm-istio-gateway* to determine the last time the CA bundle was updated, indicated by the `caAddedToBundleAt` annotation (3a). If the `caAddedToBundleAt` of the CA bundle is more recent than the issued client certificate, KLM triggers reissuance of the client certificate. (3b).
 
 > The trigger for reissuance is actually performed on the Certificate CRs and not on the related secret. For landscapes where *cert-manager* is used, this is done by setting the `Issuing` condition in the Certificate CR. For landscapes where *Gardener certificate-management* is used, the `renew: true` spec field is set on the Certificate CR. In the figure, the secret is shown for simplicity.
 
@@ -54,7 +54,7 @@ In the [figure for step 4](../assets/adr-007/watcher-certificates-4.png), cert-m
 
 ### 5. Sync Reissued Client Certificates to SKR
 
-As part of the next Kyma CR reconciliation, KLM again gets the *klm-istio-gateway* secret to determine the last time the CA bundle was updated (5a). Now, since the *\*-webhook-tls* secret containing the related client certificate is newer than the `lastModifiedAt` annotation of the *klm-istio-gateway* (5b), KLM doesn't delete the *\*-webhook-tls* secret again. Instead, it syncs the client certificate together with the updated CA bundle to the SKR (5c).
+As part of the next Kyma CR reconciliation, KLM again gets the *klm-istio-gateway* secret to determine the last time the CA bundle was updated (5a). Now, since the *\*-webhook-tls* secret containing the related client certificate is newer than the `caAddedToBundleAt` annotation of the *klm-istio-gateway* (5b), KLM doesn't delete the *\*-webhook-tls* secret again. Instead, it syncs the client certificate together with the updated CA bundle to the SKR (5c).
 
 In the [figure for step 5](../assets/adr-007/watcher-certificates-5.png), the yellow client certificate is replaced by the new pruple one and the CA bundle is updated to the newer one including the blue CA certificate.
 
