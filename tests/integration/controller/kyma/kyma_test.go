@@ -246,12 +246,13 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			expectKymaStatusModules(ctx, kyma, module.Name, shared.StateReady)),
 	)
 
-	It("Stop Kyma skip Reconciliation so that it can be deleted", func() {
-		Eventually(UpdateKymaLabel, Timeout, Interval).
-			WithContext(ctx).
-			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), shared.SkipReconcileLabel,
-				"false").
-			Should(Succeed())
+	It("Kyma should be deleted even when skip-reconciliation label is still set", func() {
+		By("Triggering Kyma deletion while skip-reconciliation label is still active", func() {
+			Eventually(DeleteCR, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma).
+				Should(Succeed())
+		})
 	})
 })
 
