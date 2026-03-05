@@ -101,8 +101,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [validate-release, await-bump-images-pr-merge]
     if: |
-      always() && 
-      needs.validate-release.result == 'success' && 
+      always() &&
+      needs.validate-release.result == 'success' &&
       (needs.await-bump-images-pr-merge.result == 'success' || needs.await-bump-images-pr-merge.result == 'skipped')
     permissions:
       contents: write
