@@ -160,7 +160,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	status.InitConditions(kyma, r.WatcherEnabled(), r.SkrImagePullSecretSyncEnabled())
 
-	if kyma.SkipReconciliation() {
+	if kyma.SkipReconciliation() && kyma.DeletionTimestamp.IsZero() {
 		logger.V(log.DebugLevel).Info("skipping reconciliation for Kyma: " + kyma.Name)
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
