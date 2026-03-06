@@ -233,10 +233,6 @@ func (s *Service) getGatewaySecretCaBundleExtendedAtTime(ctx context.Context) (t
 }
 
 func getCaAddedToBundleAtAnnotation(secret *apicorev1.Secret) (string, bool) {
-	if secret.Annotations == nil {
-		return "", false
-	}
-
 	if value, ok := secret.Annotations[shared.CaAddedToBundleAtAnnotation]; ok {
 		return value, true
 	}
