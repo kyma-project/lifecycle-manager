@@ -139,7 +139,7 @@ func TestManageGatewaySecret_WhenRequiresUpdate_UpdatesGatewaySecretWithRootSecr
 	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, time.Time{}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	var mockFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret,
-		annotation string,
+		annotation, fallbackAnnotation string,
 	) (time.Time, error) {
 		return time.Now(), nil
 	}
@@ -182,7 +182,7 @@ func TestManageGatewaySecret_WhenRequiresUpdate_UpdatesGatewaySecretWithUpdatedM
 	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, time.Time{}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	var mockFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret,
-		annotation string,
+		annotation, fallbackAnnotation string,
 	) (time.Time, error) {
 		return time.Now(), nil
 	}
@@ -214,7 +214,7 @@ func TestManageGatewaySecret_WhenRequiresUpdateAndUpdateFails_ReturnsError(t *te
 	expectedError := errors.New("some-error")
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(expectedError)
 	var mockFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret,
-		annotation string,
+		annotation, fallbackAnnotation string,
 	) (time.Time, error) {
 		return time.Now(), nil
 	}
@@ -237,7 +237,7 @@ func TestManageGatewaySecret_WhenRequiresUpdateIsFalse_DoesNotUpdateGatewaySecre
 	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(time.Now().Add(-1*time.Hour), time.Time{}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	var mockFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret,
-		annotation string,
+		annotation, fallbackAnnotation string,
 	) (time.Time, error) {
 		return time.Now(), nil
 	}
@@ -258,7 +258,7 @@ func TestManageGatewaySecret_WhenTimeParserFuncReturnsError_UpdatesGatewaySecret
 	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, time.Time{}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	var mockFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret,
-		annotation string,
+		annotation, fallbackAnnotation string,
 	) (time.Time, error) {
 		return time.Time{}, errors.New("some-error")
 	}
