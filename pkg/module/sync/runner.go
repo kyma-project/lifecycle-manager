@@ -156,6 +156,7 @@ func (r *Runner) getManifest(ctx context.Context, name, namespace string) (*v1be
 
 func (r *Runner) patchManifest(ctx context.Context, newManifest *v1beta2.Manifest) error {
 	if err := r.Patch(ctx, newManifest,
+		//nolint: staticcheck // issues: #2706, #2707
 		client.Apply,
 		fieldowners.LegacyLifecycleManager,
 		client.ForceOwnership,

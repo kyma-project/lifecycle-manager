@@ -3,7 +3,7 @@ package event
 import (
 	apicorev1 "k8s.io/api/core/v1"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 )
 
 type Event interface {
@@ -18,10 +18,10 @@ const (
 )
 
 type RecorderWrapper struct {
-	recorder record.EventRecorder
+	recorder events.EventRecorder
 }
 
-func NewRecorderWrapper(recorder record.EventRecorder) *RecorderWrapper {
+func NewRecorderWrapper(recorder events.EventRecorder) *RecorderWrapper {
 	return &RecorderWrapper{recorder}
 }
 
@@ -29,14 +29,18 @@ func (e *RecorderWrapper) Normal(obj machineryruntime.Object, reason Reason, msg
 	if obj == nil {
 		return
 	}
-	e.recorder.Event(obj, apicorev1.EventTypeNormal, string(reason), msg)
+	var related machineryruntime.Object = nil // related object is optional. We may consider using it in the future.
+	action := ""                              // action is optional. We may consider using it in the future.
+	e.recorder.Eventf(obj, related, apicorev1.EventTypeNormal, string(reason), action, msg)
 }
 
 func (e *RecorderWrapper) Warning(obj machineryruntime.Object, reason Reason, err error) {
 	if obj == nil || err == nil {
 		return
 	}
-	e.recorder.Event(obj, apicorev1.EventTypeWarning, string(reason), truncatedErrMsg(err))
+	var related machineryruntime.Object = nil // related object is optional. We may consider using it in the future.
+	action := ""                              // action is optional. We may consider using it in the future.
+	e.recorder.Eventf(obj, related, apicorev1.EventTypeWarning, string(reason), action, truncatedErrMsg(err))
 }
 
 func truncatedErrMsg(err error) string {

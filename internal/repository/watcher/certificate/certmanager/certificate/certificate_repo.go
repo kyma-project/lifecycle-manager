@@ -99,6 +99,7 @@ func (r *Repository) Create(ctx context.Context, name, commonName string, dnsNam
 	// Patch instead of Create + IgnoreAlreadyExists for cases where we change the config of certificates, e.g. duration
 	err := r.kcpClient.Patch(ctx,
 		cert,
+		//nolint: staticcheck // issues: #2706, #2707
 		client.Apply,
 		client.ForceOwnership,
 		fieldowners.LifecycleManager,

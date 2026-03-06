@@ -195,7 +195,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 	remoteClientCache := remote.NewClientCache()
 	kcpClient := mgr.GetClient()
-	eventRecorder := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
+	eventRecorder := event.NewRecorderWrapper(mgr.GetEventRecorder(shared.OperatorName))
 
 	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
 	if err != nil {

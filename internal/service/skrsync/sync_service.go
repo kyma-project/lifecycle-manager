@@ -72,6 +72,7 @@ func (s *Service) SyncImagePullSecret(ctx context.Context, kyma types.Namespaced
 	remoteSecret.Namespace = shared.DefaultRemoteNamespace
 	clearClusterSpecificMetadata(remoteSecret)
 	err = skrContext.Patch(ctx, remoteSecret,
+		//nolint: staticcheck // issues: #2706, #2707
 		client.Apply,
 		client.ForceOwnership,
 		fieldowners.LegacyLifecycleManager)
