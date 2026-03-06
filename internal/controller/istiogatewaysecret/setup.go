@@ -42,17 +42,7 @@ func SetupReconciler(mgr ctrl.Manager,
 
 	var handler gatewaysecret.Handler
 	if flagVar.UseLegacyStrategyForIstioGatewaySecret {
-		var parseLastModifiedFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret,
-			annotation string,
-		) (time.Time, error) {
-			if strValue, ok := secret.Annotations[annotation]; ok {
-				if time, err := time.Parse(time.RFC3339, strValue); err == nil {
-					return time, nil
-				}
-			}
-			return time.Time{}, fmt.Errorf("%w: %s", errCouldNotGetTimeFromAnnotation, annotation)
-		}
-		handler = legacy.NewGatewaySecretHandler(clnt, parseLastModifiedFunc)
+		handler = legacy.NewGatewaySecretHandler(clnt, legacyHandlerParseAnnotationTime)
 	} else {
 		handler = cabundle.NewGatewaySecretHandler(clnt,
 			flagVar.IstioGatewayServerCertSwitchGracePeriod,
@@ -102,4 +92,25 @@ func (r *Reconciler) setupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 
 func isRootSecret(object client.Object) bool {
 	return object.GetNamespace() == shared.IstioNamespace && object.GetName() == kcpRootSecretName
+}
+
+func legacyHandlerParseAnnotationTime(secret *apicorev1.Secret,
+	annotation, fallbackAnnotation string,
+) (time.Time, error) {
+	if strValue, ok := secret.Annotations[annotation]; ok {
+		if time, err := time.Parse(time.RFC3339, strValue); err == nil {
+			return time, nil
+		}
+
+		return time.Time{}, fmt.Errorf("%w: %s", errCouldNotGetTimeFromAnnotation, annotation)
+	}
+	if strValue, ok := secret.Annotations[fallbackAnnotation]; ok {
+		if time, err := time.Parse(time.RFC3339, strValue); err == nil {
+			return time, nil
+		}
+
+		return time.Time{}, fmt.Errorf("%w: %s", errCouldNotGetTimeFromAnnotation, fallbackAnnotation)
+	}
+
+	return time.Time{}, fmt.Errorf("%w: %s or %s", errCouldNotGetTimeFromAnnotation, annotation, fallbackAnnotation)
 }

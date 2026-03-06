@@ -1,6 +1,6 @@
 packages:
   internal/controller: 100
-  internal/controller/istiogatewaysecret: 28
+  internal/controller/istiogatewaysecret: 26
   internal/crd: 92
   internal/descriptor/cache: 90
   internal/descriptor/provider: 100

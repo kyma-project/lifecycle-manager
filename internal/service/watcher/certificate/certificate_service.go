@@ -219,7 +219,7 @@ func (s *Service) getGatewaySecretCaBundleExtendedAtTime(ctx context.Context) (t
 		return time.Time{}, fmt.Errorf("failed to get gateway secret: %w", err)
 	}
 
-	caBundleExtendedAtValue, ok := gatewaySecret.Annotations[shared.CaAddedToBundleAtAnnotation]
+	caBundleExtendedAtValue, ok := getCaAddedToBundleAtAnnotation(gatewaySecret)
 	if !ok {
 		return time.Time{}, ErrGatewaySecretMissingBundlingTimeAnnotation
 	}
@@ -230,4 +230,16 @@ func (s *Service) getGatewaySecretCaBundleExtendedAtTime(ctx context.Context) (t
 	}
 
 	return caBundleExtendedAt, nil
+}
+
+func getCaAddedToBundleAtAnnotation(secret *apicorev1.Secret) (string, bool) {
+	if value, ok := secret.Annotations[shared.CaAddedToBundleAtAnnotation]; ok {
+		return value, true
+	}
+
+	// To be removed along with fallback logic, issue: #3105.
+	// Fallback to lastModifiedAt for the transition phase until next bundling occurs,
+	// when the "lastModifiedAt" will be replaced by "caAddedToBundleAt".
+	value, ok := secret.Annotations[shared.LastModifiedAtAnnotation]
+	return value, ok
 }
