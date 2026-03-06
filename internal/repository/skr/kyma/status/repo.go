@@ -78,7 +78,7 @@ func (r *Repository) SetStateDeleting(ctx context.Context, kymaName types.Namesp
 	if err := skrClient.Status().Patch(
 		ctx,
 		kyma,
-		//nolint: staticcheck // issue #2706
+		//nolint: staticcheck // issues: #2706, #2707
 		client.Apply,
 		client.ForceOwnership,
 		fieldowners.LifecycleManager,

@@ -53,7 +53,7 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 		LastUpdateTime: apimetav1.NewTime(time.Now()),
 	}
 
-	//nolint: staticcheck // issue #2706
+	//nolint: staticcheck // issues: #2706, #2707
 	if err := k.Patch(ctx, kyma, client.Apply, SubResourceOpts(client.ForceOwnership),
 		fieldowners.LegacyLifecycleManager); err != nil {
 		return fmt.Errorf("status could not be updated: %w", err)

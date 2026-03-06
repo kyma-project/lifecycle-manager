@@ -93,7 +93,7 @@ func PatchCRD(ctx context.Context, clnt client.Client, crd *apiextensionsv1.Cust
 	}))
 
 	err := clnt.Patch(ctx, crdToApply,
-		//nolint: staticcheck // issue #2706
+		//nolint: staticcheck // issues: #2706, #2707
 		client.Apply,
 		client.ForceOwnership,
 		fieldowners.LegacyLifecycleManager)

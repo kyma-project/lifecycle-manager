@@ -157,7 +157,7 @@ func (s *SkrContext) SynchronizeKymaMetadata(ctx context.Context, kcpKyma, skrKy
 	forceOwnership := true
 	err := s.Patch(ctx,
 		metadataToSync,
-		//nolint: staticcheck // issue #2706
+		//nolint: staticcheck // issues: #2706, #2707
 		client.Apply,
 		&client.PatchOptions{FieldManager: string(fieldowners.KymaSyncContextProvider), Force: &forceOwnership})
 	if err != nil {

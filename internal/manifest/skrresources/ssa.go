@@ -135,7 +135,7 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 		)
 	}
 	obj.SetManagedFields(nil)
-	//nolint: staticcheck // issue #2706
+	//nolint: staticcheck // issues: #2706, #2707
 	err := c.clnt.Patch(ctx, obj, client.Apply, client.ForceOwnership, c.owner)
 	if err != nil {
 		return fmt.Errorf(

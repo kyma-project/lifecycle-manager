@@ -44,7 +44,7 @@ func (r *Repository) updateKymaStatus(ctx context.Context,
 		LastUpdateTime: apimetav1.NewTime(time.Now()),
 	}
 
-	//nolint: staticcheck // issue #2706
+	//nolint: staticcheck // issues: #2706, #2707
 	if err := r.statusWriter.Patch(ctx, kyma, client.Apply, &client.SubResourcePatchOptions{
 		PatchOptions: *(&client.PatchOptions{}).ApplyOptions([]client.PatchOption{client.ForceOwnership}),
 	}, fieldowners.LegacyLifecycleManager); err != nil {

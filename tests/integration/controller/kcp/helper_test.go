@@ -223,7 +223,7 @@ func updateCRDPropertyDescription(clnt client.Client, crdKind shared.Kind,
 		PreserveUnknownFields: crd.Spec.PreserveUnknownFields,
 	}
 	if err := clnt.Patch(ctx, crd,
-		client.Apply, //nolint: staticcheck // issue #2706
+		client.Apply, //nolint: staticcheck // issues: #2706, #2707
 		client.ForceOwnership,
 		fieldowners.LegacyLifecycleManager); err != nil {
 		return nil, err
