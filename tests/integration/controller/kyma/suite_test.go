@@ -179,7 +179,7 @@ var _ = BeforeSuite(func() {
 		return nil
 	}
 
-	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
+	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorder(shared.OperatorName))
 	skrClientCache := remote.NewClientCache()
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec, skrClientCache)
 	noOpMetricsFunc := func(kymaName, moduleName string) {}

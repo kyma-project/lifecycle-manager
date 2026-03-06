@@ -5,14 +5,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 )
 
 func TestNormalEvent_CalledWithObject(t *testing.T) {
-	fakeRecorder := record.NewFakeRecorder(1)
+	fakeRecorder := events.NewFakeRecorder(1)
 	eventRec := event.NewRecorderWrapper(fakeRecorder)
 
 	k := &v1beta2.Kyma{}
@@ -24,7 +24,7 @@ func TestNormalEvent_CalledWithObject(t *testing.T) {
 }
 
 func TestNormalEvent_CalledWithNilObject(t *testing.T) {
-	fakeRecorder := record.NewFakeRecorder(1)
+	fakeRecorder := events.NewFakeRecorder(1)
 	eventRec := event.NewRecorderWrapper(fakeRecorder)
 
 	eventRec.Normal(nil, "test", "")
@@ -33,7 +33,7 @@ func TestNormalEvent_CalledWithNilObject(t *testing.T) {
 }
 
 func TestWarningEvent_CalledWithNilObject(t *testing.T) {
-	fakeRecorder := record.NewFakeRecorder(1)
+	fakeRecorder := events.NewFakeRecorder(1)
 	eventRec := event.NewRecorderWrapper(fakeRecorder)
 
 	err := errors.New("error")
@@ -43,7 +43,7 @@ func TestWarningEvent_CalledWithNilObject(t *testing.T) {
 }
 
 func TestWarningEvent_CalledWithNilError(t *testing.T) {
-	fakeRecorder := record.NewFakeRecorder(1)
+	fakeRecorder := events.NewFakeRecorder(1)
 	eventRec := event.NewRecorderWrapper(fakeRecorder)
 
 	k := &v1beta2.Kyma{}
@@ -53,7 +53,7 @@ func TestWarningEvent_CalledWithNilError(t *testing.T) {
 }
 
 func TestWarningEvent_CalledWithErrorMsg50(t *testing.T) {
-	fakeRecorder := record.NewFakeRecorder(1)
+	fakeRecorder := events.NewFakeRecorder(1)
 	eventRec := event.NewRecorderWrapper(fakeRecorder)
 
 	k := &v1beta2.Kyma{}
@@ -66,7 +66,7 @@ func TestWarningEvent_CalledWithErrorMsg50(t *testing.T) {
 }
 
 func TestWarningEvent_CalledWithErrorMsgLongerThanMax(t *testing.T) {
-	fakeRecorder := record.NewFakeRecorder(1)
+	fakeRecorder := events.NewFakeRecorder(1)
 	eventRec := event.NewRecorderWrapper(fakeRecorder)
 
 	k := &v1beta2.Kyma{}
@@ -81,7 +81,7 @@ func TestWarningEvent_CalledWithErrorMsgLongerThanMax(t *testing.T) {
 }
 
 func TestWarningEvent_CalledWithEmptyErrorMsg(t *testing.T) {
-	fakeRecorder := record.NewFakeRecorder(1)
+	fakeRecorder := events.NewFakeRecorder(1)
 	eventRec := event.NewRecorderWrapper(fakeRecorder)
 
 	k := &v1beta2.Kyma{}

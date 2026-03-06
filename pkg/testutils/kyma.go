@@ -318,6 +318,7 @@ func SetKymaState(ctx context.Context, kyma *v1beta2.Kyma, clnt client.Client, s
 	})
 	kyma.ManagedFields = nil
 
+	//nolint: staticcheck // issues: #2706, #2707
 	return clnt.Status().Patch(ctx, kyma, client.Apply,
 		status.SubResourceOpts(client.ForceOwnership),
 		fieldowners.LegacyLifecycleManager)
