@@ -279,9 +279,16 @@ func DefineFlagVar() *FlagVar {
 		DefaultMinMaintenanceWindowSize,
 		"Minimum duration of maintenance window required for reconciling modules with downtime.")
 	flag.StringVar(&flagVar.OciRegistryCredSecretName, "oci-registry-cred-secret", "",
-		"Allows to configure name of the Secret containing the OCI registry credential")
+		"Allows to configure the name of the Secret containing the credentials for "+
+			"the OCI registry storing the OCM component versions of modules. "+
+			"Must not be set together with --oci-registry-host. "+
+			"The Secret must be of type 'kubernetes.io/dockerconfigjson'.",
+	)
 	flag.StringVar(&flagVar.OciRegistryHost, "oci-registry-host", "",
-		"Allows to configure hostname of the OCI registry.")
+		"Allows to configure the hostname of the OCI registry storing the OCM component versions of modules. "+
+			"Must not be set together with --oci-registry-cred-secret. "+
+			"If the OCI registry requires authentication, the --oci-registry-cred-secret flag must be used instead.",
+	)
 	flag.StringVar(&flagVar.SkrImagePullSecret, "skr-image-pull-secret", "",
 		"Allows to reference a secret for the SKR clusters to pull images from private registries.")
 
