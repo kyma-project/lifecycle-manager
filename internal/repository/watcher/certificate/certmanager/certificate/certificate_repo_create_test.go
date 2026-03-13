@@ -46,7 +46,7 @@ func TestCreate_ClientCallSucceeds_Returns(t *testing.T) {
 					shared.ManagedBy:    shared.OperatorName,
 				},
 			},
-			IssuerRef: certmanagermetav1.ObjectReference{
+			IssuerRef: certmanagermetav1.IssuerReference{
 				Name: issuerName,
 				Kind: certmanagerv1.IssuerKind,
 			},
