@@ -78,7 +78,7 @@ func (r *Repository) Create(ctx context.Context, name, commonName string, dnsNam
 			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
 				Labels: certificate.GetCertificateLabels(),
 			},
-			IssuerRef: certmanagermetav1.ObjectReference{
+			IssuerRef: certmanagermetav1.IssuerReference{
 				Name: r.issuerName,
 				Kind: certmanagerv1.IssuerKind,
 			},
