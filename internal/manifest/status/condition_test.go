@@ -124,12 +124,12 @@ func TestInitializeStatusConditions_RemovesModuleCRConditionWhenPolicyChanges(t 
 
 func TestIsModuleCRInstallConditionTrue(t *testing.T) {
 	t.Run("missing condition", func(t *testing.T) {
-		st := shared.Status{Conditions: nil}
-		require.False(t, status.IsModuleCRInstallConditionTrue(st))
+		statusValue := shared.Status{Conditions: nil}
+		require.False(t, status.IsModuleCRInstallConditionTrue(statusValue))
 	})
 
 	t.Run("present but false", func(t *testing.T) {
-		st := shared.Status{
+		statusValue := shared.Status{
 			Conditions: []apimetav1.Condition{
 				{
 					Type:   string(status.ConditionTypeModuleCR),
@@ -137,11 +137,11 @@ func TestIsModuleCRInstallConditionTrue(t *testing.T) {
 				},
 			},
 		}
-		require.False(t, status.IsModuleCRInstallConditionTrue(st))
+		require.False(t, status.IsModuleCRInstallConditionTrue(statusValue))
 	})
 
 	t.Run("present and true", func(t *testing.T) {
-		st := shared.Status{
+		statusValue := shared.Status{
 			Conditions: []apimetav1.Condition{
 				{
 					Type:   string(status.ConditionTypeModuleCR),
@@ -149,7 +149,7 @@ func TestIsModuleCRInstallConditionTrue(t *testing.T) {
 				},
 			},
 		}
-		require.True(t, status.IsModuleCRInstallConditionTrue(st))
+		require.True(t, status.IsModuleCRInstallConditionTrue(statusValue))
 	})
 }
 
@@ -159,14 +159,14 @@ func TestSetModuleCRInstallConditionTrue(t *testing.T) {
 		manifest.SetGeneration(1)
 		manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
 		status.InitializeStatusConditions(manifest)
-		st := manifest.GetStatus()
-		st.Conditions = nil
-		manifest.SetStatus(st)
+		statusObj := manifest.GetStatus()
+		statusObj.Conditions = nil
+		manifest.SetStatus(statusObj)
 
 		status.SetModuleCRInstallConditionTrue(manifest)
 
 		require.Empty(t, manifest.GetStatus().Conditions)
-		require.Empty(t, manifest.GetStatus().LastOperation.Operation)
+		require.Empty(t, manifest.GetStatus().Operation)
 	})
 
 	t.Run("condition already true - no-op", func(t *testing.T) {
@@ -174,20 +174,20 @@ func TestSetModuleCRInstallConditionTrue(t *testing.T) {
 		manifest.SetGeneration(1)
 		manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
 		status.InitializeStatusConditions(manifest)
-		st := manifest.GetStatus()
+		statusObj := manifest.GetStatus()
 
-		moduleCR := meta.FindStatusCondition(st.Conditions, string(status.ConditionTypeModuleCR))
+		moduleCR := meta.FindStatusCondition(statusObj.Conditions, string(status.ConditionTypeModuleCR))
 		require.NotNil(t, moduleCR)
 		moduleCR.Status = apimetav1.ConditionTrue
-		meta.SetStatusCondition(&st.Conditions, *moduleCR)
-		manifest.SetStatus(st)
+		meta.SetStatusCondition(&statusObj.Conditions, *moduleCR)
+		manifest.SetStatus(statusObj)
 
 		status.SetModuleCRInstallConditionTrue(manifest)
 
 		moduleCR = meta.FindStatusCondition(manifest.GetStatus().Conditions, string(status.ConditionTypeModuleCR))
 		require.NotNil(t, moduleCR)
 		require.Equal(t, apimetav1.ConditionTrue, moduleCR.Status)
-		require.Empty(t, manifest.GetStatus().LastOperation.Operation)
+		require.Empty(t, manifest.GetStatus().Operation)
 	})
 
 	t.Run("condition false - becomes true and sets operation", func(t *testing.T) {
@@ -201,7 +201,7 @@ func TestSetModuleCRInstallConditionTrue(t *testing.T) {
 		moduleCR := meta.FindStatusCondition(manifest.GetStatus().Conditions, string(status.ConditionTypeModuleCR))
 		require.NotNil(t, moduleCR)
 		require.Equal(t, apimetav1.ConditionTrue, moduleCR.Status)
-		require.Equal(t, "Module CR is installed and ready for use", manifest.GetStatus().LastOperation.Operation)
+		require.Equal(t, "Module CR is installed and ready for use", manifest.GetStatus().Operation)
 	})
 }
 
@@ -209,14 +209,14 @@ func TestSetResourcesConditionTrue(t *testing.T) {
 	t.Run("condition missing - no-op", func(t *testing.T) {
 		manifest := &v1beta2.Manifest{}
 		manifest.SetGeneration(1)
-		st := manifest.GetStatus()
-		st.Conditions = nil
-		manifest.SetStatus(st)
+		statusObj := manifest.GetStatus()
+		statusObj.Conditions = nil
+		manifest.SetStatus(statusObj)
 
 		status.SetResourcesConditionTrue(manifest)
 
 		require.Empty(t, manifest.GetStatus().Conditions)
-		require.Empty(t, manifest.GetStatus().LastOperation.Operation)
+		require.Empty(t, manifest.GetStatus().Operation)
 	})
 
 	t.Run("condition already true - no-op", func(t *testing.T) {
@@ -224,21 +224,20 @@ func TestSetResourcesConditionTrue(t *testing.T) {
 		manifest.SetGeneration(1)
 		manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyIgnore
 		status.InitializeStatusConditions(manifest)
-		st := manifest.GetStatus()
+		statusObj := manifest.GetStatus()
 
-		resources := meta.FindStatusCondition(st.Conditions, string(status.ConditionTypeResources))
+		resources := meta.FindStatusCondition(statusObj.Conditions, string(status.ConditionTypeResources))
 		require.NotNil(t, resources)
 		resources.Status = apimetav1.ConditionTrue
-		meta.SetStatusCondition(&st.Conditions, *resources)
-		manifest.SetStatus(st)
+		meta.SetStatusCondition(&statusObj.Conditions, *resources)
+		manifest.SetStatus(statusObj)
 
 		status.SetResourcesConditionTrue(manifest)
 
-		resources = meta.FindStatusCondition(manifest.GetStatus().Conditions,
-			string(status.ConditionTypeResources))
+		resources = meta.FindStatusCondition(manifest.GetStatus().Conditions, string(status.ConditionTypeResources))
 		require.NotNil(t, resources)
 		require.Equal(t, apimetav1.ConditionTrue, resources.Status)
-		require.Empty(t, manifest.GetStatus().LastOperation.Operation)
+		require.Empty(t, manifest.GetStatus().Operation)
 	})
 
 	t.Run("condition false - becomes true and sets operation", func(t *testing.T) {
@@ -249,11 +248,10 @@ func TestSetResourcesConditionTrue(t *testing.T) {
 
 		status.SetResourcesConditionTrue(manifest)
 
-		resources := meta.FindStatusCondition(manifest.GetStatus().Conditions,
-			string(status.ConditionTypeResources))
+		resources := meta.FindStatusCondition(manifest.GetStatus().Conditions, string(status.ConditionTypeResources))
 		require.NotNil(t, resources)
 		require.Equal(t, apimetav1.ConditionTrue, resources.Status)
-		require.Equal(t, "resources are parsed and ready for use", manifest.GetStatus().LastOperation.Operation)
+		require.Equal(t, "resources are parsed and ready for use", manifest.GetStatus().Operation)
 	})
 }
 
@@ -261,14 +259,14 @@ func TestSetInstallationConditionTrue(t *testing.T) {
 	t.Run("condition missing - no-op", func(t *testing.T) {
 		manifest := &v1beta2.Manifest{}
 		manifest.SetGeneration(1)
-		st := manifest.GetStatus()
-		st.Conditions = nil
-		manifest.SetStatus(st)
+		statusObj := manifest.GetStatus()
+		statusObj.Conditions = nil
+		manifest.SetStatus(statusObj)
 
 		status.SetInstallationConditionTrue(manifest)
 
 		require.Empty(t, manifest.GetStatus().Conditions)
-		require.Empty(t, manifest.GetStatus().LastOperation.Operation)
+		require.Empty(t, manifest.GetStatus().Operation)
 	})
 
 	t.Run("condition already true - no-op", func(t *testing.T) {
@@ -276,13 +274,13 @@ func TestSetInstallationConditionTrue(t *testing.T) {
 		manifest.SetGeneration(1)
 		manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyIgnore
 		status.InitializeStatusConditions(manifest)
-		st := manifest.GetStatus()
+		statusObj := manifest.GetStatus()
 
-		installation := meta.FindStatusCondition(st.Conditions, string(status.ConditionTypeInstallation))
+		installation := meta.FindStatusCondition(statusObj.Conditions, string(status.ConditionTypeInstallation))
 		require.NotNil(t, installation)
 		installation.Status = apimetav1.ConditionTrue
-		meta.SetStatusCondition(&st.Conditions, *installation)
-		manifest.SetStatus(st)
+		meta.SetStatusCondition(&statusObj.Conditions, *installation)
+		manifest.SetStatus(statusObj)
 
 		status.SetInstallationConditionTrue(manifest)
 
@@ -290,7 +288,7 @@ func TestSetInstallationConditionTrue(t *testing.T) {
 			string(status.ConditionTypeInstallation))
 		require.NotNil(t, installation)
 		require.Equal(t, apimetav1.ConditionTrue, installation.Status)
-		require.Empty(t, manifest.GetStatus().LastOperation.Operation)
+		require.Empty(t, manifest.GetStatus().Operation)
 	})
 
 	t.Run("condition false - becomes true and sets operation", func(t *testing.T) {
@@ -305,7 +303,6 @@ func TestSetInstallationConditionTrue(t *testing.T) {
 			string(status.ConditionTypeInstallation))
 		require.NotNil(t, installation)
 		require.Equal(t, apimetav1.ConditionTrue, installation.Status)
-		require.Equal(t, "installation is ready and resources can be used",
-			manifest.GetStatus().LastOperation.Operation)
+		require.Equal(t, "installation is ready and resources can be used", manifest.GetStatus().Operation)
 	})
 }

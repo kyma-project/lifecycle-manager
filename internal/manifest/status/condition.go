@@ -1,10 +1,10 @@
 package status
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
