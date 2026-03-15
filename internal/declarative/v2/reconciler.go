@@ -388,7 +388,7 @@ func (r *Reconciler) renderResources(ctx context.Context, skrClient skrclient.Cl
 		return nil, nil, err
 	}
 
-	status.ConfirmResourcesCondition(manifest)
+	status.SetResourcesConditionTrue(manifest)
 	return target, current, nil
 }
 
@@ -408,9 +408,12 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient skrclient.
 ) error {
 	manifestStatus := manifest.GetStatus()
 
-	if err := modulecr.NewClient(skrClient).SyncDefaultModuleCR(ctx, manifest); err != nil {
-		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
-		return err
+	if !status.IsModuleCRInstallConditionTrue(manifestStatus) {
+		if err := modulecr.NewClient(skrClient).SyncDefaultModuleCR(ctx, manifest); err != nil {
+			manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
+			return err
+		}
+		status.SetModuleCRInstallConditionTrue(manifest)
 	}
 
 	if err := finalizer.EnsureCRFinalizer(ctx, r.kcpClient, manifest); err != nil {

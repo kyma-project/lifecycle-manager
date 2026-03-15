@@ -12,11 +12,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/finalizer"
-	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -125,10 +123,6 @@ func (c *Client) SyncDefaultModuleCR(ctx context.Context, manifest *v1beta2.Mani
 	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
-	resource.SetLabels(collections.MergeMapsSilent(resource.GetLabels(), map[string]string{
-		shared.ManagedBy: shared.ManagedByLabelValue,
-	}))
-
 	if err := c.Get(ctx, client.ObjectKeyFromObject(resource), resource); err != nil && util.IsNotFound(err) {
 		if !manifest.GetDeletionTimestamp().IsZero() {
 			return nil

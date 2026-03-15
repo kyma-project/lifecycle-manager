@@ -3,38 +3,309 @@ package status_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/status"
 )
 
-func TestConfirmInstallationCondition(t *testing.T) {
+func TestInitializeStatusConditions_DefaultPolicy_AddsDefaultConditions(t *testing.T) {
 	manifest := &v1beta2.Manifest{}
-	manifest.SetGeneration(1)
+	manifest.SetGeneration(7)
+	manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyIgnore
 
-	status.ConfirmInstallationCondition(manifest)
+	status.InitializeStatusConditions(manifest)
 
-	conditions := manifest.GetStatus().Conditions
-	if len(conditions) != 1 {
-		t.Fatalf("expected 1 condition, got %d", len(conditions))
-	}
+	conds := manifest.GetStatus().Conditions
+	require.Len(t, conds, 2)
 
-	condition := conditions[0]
-	if condition.Type != string(status.ConditionTypeInstallation) {
-		t.Errorf("expected condition type %s, got %s", status.ConditionTypeInstallation, condition.Type)
+	resources := meta.FindStatusCondition(conds, string(status.ConditionTypeResources))
+	require.NotNil(t, resources)
+	require.Equal(t, apimetav1.ConditionFalse, resources.Status)
+	require.Equal(t, string(status.ConditionReasonResourcesAreAvailable), resources.Reason)
+	require.Equal(t, "resources are parsed and ready for use", resources.Message)
+	require.Equal(t, manifest.GetGeneration(), resources.ObservedGeneration)
+
+	installation := meta.FindStatusCondition(conds, string(status.ConditionTypeInstallation))
+	require.NotNil(t, installation)
+	require.Equal(t, apimetav1.ConditionFalse, installation.Status)
+	require.Equal(t, string(status.ConditionReasonReady), installation.Reason)
+	require.Equal(t, "installation is ready and resources can be used", installation.Message)
+	require.Equal(t, manifest.GetGeneration(), installation.ObservedGeneration)
+
+	moduleCR := meta.FindStatusCondition(conds, string(status.ConditionTypeModuleCR))
+	require.Nil(t, moduleCR)
+}
+
+func TestInitializeStatusConditions_CreateAndDelete_AddsModuleCRCondition(t *testing.T) {
+	manifest := &v1beta2.Manifest{}
+	manifest.SetGeneration(3)
+	manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
+
+	status.InitializeStatusConditions(manifest)
+
+	conds := manifest.GetStatus().Conditions
+	require.Len(t, conds, 3)
+
+	moduleCR := meta.FindStatusCondition(conds, string(status.ConditionTypeModuleCR))
+	require.NotNil(t, moduleCR)
+	require.Equal(t, apimetav1.ConditionFalse, moduleCR.Status)
+	require.Equal(t, string(status.ConditionReasonModuleCRInstalled), moduleCR.Reason)
+	require.Equal(t, "Module CR is installed and ready for use", moduleCR.Message)
+	require.Equal(t, manifest.GetGeneration(), moduleCR.ObservedGeneration)
+}
+
+func TestInitializeStatusConditions_DoesNotDuplicateExistingConditions(t *testing.T) {
+	manifest := &v1beta2.Manifest{}
+	manifest.SetGeneration(10)
+	manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyIgnore
+
+	existingResources := apimetav1.Condition{
+		Type:               string(status.ConditionTypeResources),
+		Status:             apimetav1.ConditionTrue,
+		Reason:             "Custom",
+		Message:            "custom message",
+		ObservedGeneration: 1,
 	}
-	if condition.Reason != string(status.ConditionReasonReady) {
-		t.Errorf("expected condition reason %s, got %s", status.ConditionReasonReady, condition.Reason)
+	existingOther := apimetav1.Condition{
+		Type:               "Other",
+		Status:             apimetav1.ConditionFalse,
+		Reason:             "Other",
+		Message:            "other message",
+		ObservedGeneration: 1,
 	}
-	if condition.Status != apimetav1.ConditionTrue {
-		t.Errorf("expected condition status %s, got %s", apimetav1.ConditionTrue, condition.Status)
+	manifest.SetStatus(shared.Status{Conditions: []apimetav1.Condition{existingResources, existingOther}})
+
+	status.InitializeStatusConditions(manifest)
+
+	conds := manifest.GetStatus().Conditions
+	require.Len(t, conds, 3)
+
+	resources := meta.FindStatusCondition(conds, string(status.ConditionTypeResources))
+	require.NotNil(t, resources)
+	require.Equal(t, apimetav1.ConditionTrue, resources.Status)
+	require.Equal(t, "Custom", resources.Reason)
+	require.Equal(t, "custom message", resources.Message)
+	require.Equal(t, int64(1), resources.ObservedGeneration)
+
+	installation := meta.FindStatusCondition(conds, string(status.ConditionTypeInstallation))
+	require.NotNil(t, installation)
+	require.Equal(t, apimetav1.ConditionFalse, installation.Status)
+	require.Equal(t, manifest.GetGeneration(), installation.ObservedGeneration)
+
+	other := meta.FindStatusCondition(conds, "Other")
+	require.NotNil(t, other)
+}
+
+func TestInitializeStatusConditions_RemovesModuleCRConditionWhenPolicyChanges(t *testing.T) {
+	manifest := &v1beta2.Manifest{}
+	manifest.SetGeneration(5)
+	manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyIgnore
+
+	moduleCR := apimetav1.Condition{
+		Type:               string(status.ConditionTypeModuleCR),
+		Status:             apimetav1.ConditionTrue,
+		Reason:             string(status.ConditionReasonModuleCRInstalled),
+		Message:            "Module CR is installed and ready for use",
+		ObservedGeneration: 5,
 	}
-	if condition.Message != "installation is ready and resources can be used" {
-		t.Errorf("expected condition message %s, got %s", "installation is ready and resources can be used",
-			condition.Message)
-	}
-	if condition.ObservedGeneration != manifest.GetGeneration() {
-		t.Errorf("expected observed generation %d, got %d", manifest.GetGeneration(), condition.ObservedGeneration)
-	}
+	manifest.SetStatus(shared.Status{Conditions: []apimetav1.Condition{moduleCR}})
+
+	status.InitializeStatusConditions(manifest)
+
+	conds := manifest.GetStatus().Conditions
+	require.Nil(t, meta.FindStatusCondition(conds, string(status.ConditionTypeModuleCR)))
+	require.NotNil(t, meta.FindStatusCondition(conds, string(status.ConditionTypeResources)))
+	require.NotNil(t, meta.FindStatusCondition(conds, string(status.ConditionTypeInstallation)))
+}
+
+func TestIsModuleCRInstallConditionTrue(t *testing.T) {
+	t.Run("missing condition", func(t *testing.T) {
+		st := shared.Status{Conditions: nil}
+		require.False(t, status.IsModuleCRInstallConditionTrue(st))
+	})
+
+	t.Run("present but false", func(t *testing.T) {
+		st := shared.Status{
+			Conditions: []apimetav1.Condition{
+				{
+					Type:   string(status.ConditionTypeModuleCR),
+					Status: apimetav1.ConditionFalse,
+				},
+			},
+		}
+		require.False(t, status.IsModuleCRInstallConditionTrue(st))
+	})
+
+	t.Run("present and true", func(t *testing.T) {
+		st := shared.Status{
+			Conditions: []apimetav1.Condition{
+				{
+					Type:   string(status.ConditionTypeModuleCR),
+					Status: apimetav1.ConditionTrue,
+				},
+			},
+		}
+		require.True(t, status.IsModuleCRInstallConditionTrue(st))
+	})
+}
+
+func TestSetModuleCRInstallConditionTrue(t *testing.T) {
+	t.Run("condition missing - no-op", func(t *testing.T) {
+		manifest := &v1beta2.Manifest{}
+		manifest.SetGeneration(1)
+		manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
+		status.InitializeStatusConditions(manifest)
+		st := manifest.GetStatus()
+		st.Conditions = nil
+		manifest.SetStatus(st)
+
+		status.SetModuleCRInstallConditionTrue(manifest)
+
+		require.Empty(t, manifest.GetStatus().Conditions)
+		require.Empty(t, manifest.GetStatus().LastOperation.Operation)
+	})
+
+	t.Run("condition already true - no-op", func(t *testing.T) {
+		manifest := &v1beta2.Manifest{}
+		manifest.SetGeneration(1)
+		manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
+		status.InitializeStatusConditions(manifest)
+		st := manifest.GetStatus()
+
+		moduleCR := meta.FindStatusCondition(st.Conditions, string(status.ConditionTypeModuleCR))
+		require.NotNil(t, moduleCR)
+		moduleCR.Status = apimetav1.ConditionTrue
+		meta.SetStatusCondition(&st.Conditions, *moduleCR)
+		manifest.SetStatus(st)
+
+		status.SetModuleCRInstallConditionTrue(manifest)
+
+		moduleCR = meta.FindStatusCondition(manifest.GetStatus().Conditions, string(status.ConditionTypeModuleCR))
+		require.NotNil(t, moduleCR)
+		require.Equal(t, apimetav1.ConditionTrue, moduleCR.Status)
+		require.Empty(t, manifest.GetStatus().LastOperation.Operation)
+	})
+
+	t.Run("condition false - becomes true and sets operation", func(t *testing.T) {
+		manifest := &v1beta2.Manifest{}
+		manifest.SetGeneration(1)
+		manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
+		status.InitializeStatusConditions(manifest)
+
+		status.SetModuleCRInstallConditionTrue(manifest)
+
+		moduleCR := meta.FindStatusCondition(manifest.GetStatus().Conditions, string(status.ConditionTypeModuleCR))
+		require.NotNil(t, moduleCR)
+		require.Equal(t, apimetav1.ConditionTrue, moduleCR.Status)
+		require.Equal(t, "Module CR is installed and ready for use", manifest.GetStatus().LastOperation.Operation)
+	})
+}
+
+func TestSetResourcesConditionTrue(t *testing.T) {
+	t.Run("condition missing - no-op", func(t *testing.T) {
+		manifest := &v1beta2.Manifest{}
+		manifest.SetGeneration(1)
+		st := manifest.GetStatus()
+		st.Conditions = nil
+		manifest.SetStatus(st)
+
+		status.SetResourcesConditionTrue(manifest)
+
+		require.Empty(t, manifest.GetStatus().Conditions)
+		require.Empty(t, manifest.GetStatus().LastOperation.Operation)
+	})
+
+	t.Run("condition already true - no-op", func(t *testing.T) {
+		manifest := &v1beta2.Manifest{}
+		manifest.SetGeneration(1)
+		manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyIgnore
+		status.InitializeStatusConditions(manifest)
+		st := manifest.GetStatus()
+
+		resources := meta.FindStatusCondition(st.Conditions, string(status.ConditionTypeResources))
+		require.NotNil(t, resources)
+		resources.Status = apimetav1.ConditionTrue
+		meta.SetStatusCondition(&st.Conditions, *resources)
+		manifest.SetStatus(st)
+
+		status.SetResourcesConditionTrue(manifest)
+
+		resources = meta.FindStatusCondition(manifest.GetStatus().Conditions,
+			string(status.ConditionTypeResources))
+		require.NotNil(t, resources)
+		require.Equal(t, apimetav1.ConditionTrue, resources.Status)
+		require.Empty(t, manifest.GetStatus().LastOperation.Operation)
+	})
+
+	t.Run("condition false - becomes true and sets operation", func(t *testing.T) {
+		manifest := &v1beta2.Manifest{}
+		manifest.SetGeneration(1)
+		manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyIgnore
+		status.InitializeStatusConditions(manifest)
+
+		status.SetResourcesConditionTrue(manifest)
+
+		resources := meta.FindStatusCondition(manifest.GetStatus().Conditions,
+			string(status.ConditionTypeResources))
+		require.NotNil(t, resources)
+		require.Equal(t, apimetav1.ConditionTrue, resources.Status)
+		require.Equal(t, "resources are parsed and ready for use", manifest.GetStatus().LastOperation.Operation)
+	})
+}
+
+func TestSetInstallationConditionTrue(t *testing.T) {
+	t.Run("condition missing - no-op", func(t *testing.T) {
+		manifest := &v1beta2.Manifest{}
+		manifest.SetGeneration(1)
+		st := manifest.GetStatus()
+		st.Conditions = nil
+		manifest.SetStatus(st)
+
+		status.SetInstallationConditionTrue(manifest)
+
+		require.Empty(t, manifest.GetStatus().Conditions)
+		require.Empty(t, manifest.GetStatus().LastOperation.Operation)
+	})
+
+	t.Run("condition already true - no-op", func(t *testing.T) {
+		manifest := &v1beta2.Manifest{}
+		manifest.SetGeneration(1)
+		manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyIgnore
+		status.InitializeStatusConditions(manifest)
+		st := manifest.GetStatus()
+
+		installation := meta.FindStatusCondition(st.Conditions, string(status.ConditionTypeInstallation))
+		require.NotNil(t, installation)
+		installation.Status = apimetav1.ConditionTrue
+		meta.SetStatusCondition(&st.Conditions, *installation)
+		manifest.SetStatus(st)
+
+		status.SetInstallationConditionTrue(manifest)
+
+		installation = meta.FindStatusCondition(manifest.GetStatus().Conditions,
+			string(status.ConditionTypeInstallation))
+		require.NotNil(t, installation)
+		require.Equal(t, apimetav1.ConditionTrue, installation.Status)
+		require.Empty(t, manifest.GetStatus().LastOperation.Operation)
+	})
+
+	t.Run("condition false - becomes true and sets operation", func(t *testing.T) {
+		manifest := &v1beta2.Manifest{}
+		manifest.SetGeneration(1)
+		manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyIgnore
+		status.InitializeStatusConditions(manifest)
+
+		status.SetInstallationConditionTrue(manifest)
+
+		installation := meta.FindStatusCondition(manifest.GetStatus().Conditions,
+			string(status.ConditionTypeInstallation))
+		require.NotNil(t, installation)
+		require.Equal(t, apimetav1.ConditionTrue, installation.Status)
+		require.Equal(t, "installation is ready and resources can be used",
+			manifest.GetStatus().LastOperation.Operation)
+	})
 }
