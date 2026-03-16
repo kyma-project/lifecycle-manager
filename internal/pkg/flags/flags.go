@@ -291,8 +291,8 @@ func DefineFlagVar() *FlagVar {
 	)
 	flag.StringVar(&flagVar.ModulesRepositorySubPath, "modules-repository-sub-path", "",
 		"Allows to configure an additional repository sub path that is appended to the OCI registry host. "+
-			"This is required when the configured OCI registry is a general-purpose registry and the OCM component versions "+
-			"of modules are stored under a specific sub path within that registry.",
+			"This is required when the configured OCI registry is a general-purpose registry and the OCM component "+
+			"versions of modules are stored under a specific sub path within that registry.",
 	)
 	flag.StringVar(&flagVar.SkrImagePullSecret, "skr-image-pull-secret", "",
 		"Allows to reference a secret for the SKR clusters to pull images from private registries.")
