@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"path"
+	"net/url"
 
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,7 +68,10 @@ func (oci *OCIRegistryHostProvider) ResolveHost(ctx context.Context) (string, er
 	}
 
 	if oci.modulesRepositorySubPath != "" {
-		host = path.Join(host, oci.modulesRepositorySubPath)
+		host, err = url.JoinPath(host, oci.modulesRepositorySubPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to join host with modules repository sub path: %w", err)
+		}
 	}
 
 	return host, nil
