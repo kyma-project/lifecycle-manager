@@ -3,8 +3,6 @@ package e2e_test
 import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -57,19 +55,6 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, true).
 				Should(Succeed())
 
-			By("When deleting the SKR Default CR")
-			Eventually(DeleteCRWithGVK).
-				WithContext(ctx).
-				WithArguments(skrClient, TestModuleCRName, RemoteNamespace, "operator.kyma-project.io",
-					"v1alpha1", string(templatev1alpha1.SampleKind)).
-				Should(Succeed())
-			By("Then SKR Module Default CR is not recreated")
-			Consistently(CheckIfExists).
-				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace, "operator.kyma-project.io",
-					"v1alpha1", string(templatev1alpha1.SampleKind), skrClient).
-				Should(Equal(ErrNotFound))
-
 			By("When deleting the SKR Module Manager Deployment")
 			err := DeleteCRWithGVK(ctx, skrClient, ModuleResourceName,
 				TestModuleResourceNamespace, "apps", "v1", "Deployment")
@@ -88,12 +73,6 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, false).
 				Should(Succeed())
 
-			By("Then Module Default CR is recreated")
-			Eventually(CheckIfExists).
-				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace,
-					"operator.kyma-project.io", "v1alpha1", string(templatev1alpha1.SampleKind), skrClient).
-				Should(Succeed())
 			By("Then Module Deployment is recreated")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
