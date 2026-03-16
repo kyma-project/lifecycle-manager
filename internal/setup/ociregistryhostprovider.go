@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path"
 
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,9 +16,10 @@ type SecretGetter interface {
 }
 
 type OCIRegistryHostProvider struct {
-	secretGetter   SecretGetter
-	host           string
-	credSecretName string
+	secretGetter             SecretGetter
+	host                     string
+	credSecretName           string
+	modulesRepositorySubPath string
 }
 
 var (
@@ -32,6 +34,7 @@ func NewOCIRegistryHostProvider(
 	secretGetter SecretGetter,
 	host string,
 	credSecretName string,
+	modulesRepositorySubPath string,
 ) (*OCIRegistryHostProvider, error) {
 	if secretGetter == nil {
 		return nil, ErrSecretGetterNil
@@ -44,18 +47,31 @@ func NewOCIRegistryHostProvider(
 	}
 
 	return &OCIRegistryHostProvider{
-		secretGetter:   secretGetter,
-		host:           host,
-		credSecretName: credSecretName,
+		secretGetter:             secretGetter,
+		host:                     host,
+		credSecretName:           credSecretName,
+		modulesRepositorySubPath: modulesRepositorySubPath,
 	}, nil
 }
 
 func (oci *OCIRegistryHostProvider) ResolveHost(ctx context.Context) (string, error) {
+	var host string
+	var err error
+
 	if oci.host != "" {
-		return oci.host, nil
+		host = oci.host
+	} else {
+		host, err = oci.getHostFromCredSecret(ctx)
+		if err != nil {
+			return "", err
+		}
 	}
 
-	return oci.getHostFromCredSecret(ctx)
+	if oci.modulesRepositorySubPath != "" {
+		host = path.Join(host, oci.modulesRepositorySubPath)
+	}
+
+	return host, nil
 }
 
 func (oci *OCIRegistryHostProvider) getHostFromCredSecret(ctx context.Context) (string, error) {
