@@ -44,7 +44,8 @@ func getDefaultConditions(manifest *v1beta2.Manifest) []apimetav1.Condition {
 		getDefaultResourcesCondition(manifest),
 		getDefaultInstallationCondition(manifest),
 	}
-	if manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyCreateAndDelete {
+	if manifest.Spec.Resource != nil &&
+		manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyCreateAndDelete {
 		defaultConditions = append(defaultConditions, getDefaultModuleCRInstalledCondition(manifest))
 	}
 	return defaultConditions
@@ -52,7 +53,8 @@ func getDefaultConditions(manifest *v1beta2.Manifest) []apimetav1.Condition {
 
 func getConditionsToRemove(manifest *v1beta2.Manifest) []apimetav1.Condition {
 	var conditionsToRemove []apimetav1.Condition
-	if manifest.Spec.CustomResourcePolicy != v1beta2.CustomResourcePolicyCreateAndDelete {
+	if manifest.Spec.Resource == nil ||
+		manifest.Spec.CustomResourcePolicy != v1beta2.CustomResourcePolicyCreateAndDelete {
 		conditionsToRemove = append(conditionsToRemove, getDefaultModuleCRInstalledCondition(manifest))
 	}
 	return conditionsToRemove
@@ -112,6 +114,7 @@ func setConditionToTrue(manifest *v1beta2.Manifest, conditionType ConditionType)
 
 	if condition != nil && condition.Status != apimetav1.ConditionTrue {
 		condition.Status = apimetav1.ConditionTrue
+		condition.ObservedGeneration = manifest.GetGeneration()
 		meta.SetStatusCondition(&status.Conditions, *condition)
 		manifest.SetStatus(status.WithOperation(condition.Message))
 	}

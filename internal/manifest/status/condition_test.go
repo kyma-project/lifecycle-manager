@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -44,6 +45,9 @@ func TestInitializeStatusConditions_CreateAndDelete_AddsModuleCRCondition(t *tes
 	manifest := &v1beta2.Manifest{}
 	manifest.SetGeneration(3)
 	manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
+	moduleCRResource := &unstructured.Unstructured{}
+	moduleCRResource.SetName("test-resource")
+	manifest.Spec.Resource = moduleCRResource
 
 	status.InitializeStatusConditions(manifest)
 
@@ -56,6 +60,18 @@ func TestInitializeStatusConditions_CreateAndDelete_AddsModuleCRCondition(t *tes
 	require.Equal(t, string(status.ConditionReasonModuleCRInstalled), moduleCR.Reason)
 	require.Equal(t, "Module CR is installed and ready for use", moduleCR.Message)
 	require.Equal(t, manifest.GetGeneration(), moduleCR.ObservedGeneration)
+}
+
+func TestInitializeStatusConditions_CreateAndDelete_NoResourceSet_DoesNotAddModuleCRCondition(t *testing.T) {
+	manifest := &v1beta2.Manifest{}
+	manifest.SetGeneration(3)
+	manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
+
+	status.InitializeStatusConditions(manifest)
+
+	conds := manifest.GetStatus().Conditions
+	require.Len(t, conds, 2)
+	require.Nil(t, meta.FindStatusCondition(conds, string(status.ConditionTypeModuleCR)))
 }
 
 func TestInitializeStatusConditions_DoesNotDuplicateExistingConditions(t *testing.T) {
@@ -158,6 +174,7 @@ func TestSetModuleCRInstallConditionTrue(t *testing.T) {
 		manifest := &v1beta2.Manifest{}
 		manifest.SetGeneration(1)
 		manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
+		manifest.Spec.Resource = &unstructured.Unstructured{}
 		status.InitializeStatusConditions(manifest)
 		statusObj := manifest.GetStatus()
 		statusObj.Conditions = nil
@@ -173,6 +190,7 @@ func TestSetModuleCRInstallConditionTrue(t *testing.T) {
 		manifest := &v1beta2.Manifest{}
 		manifest.SetGeneration(1)
 		manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
+		manifest.Spec.Resource = &unstructured.Unstructured{}
 		status.InitializeStatusConditions(manifest)
 		statusObj := manifest.GetStatus()
 
@@ -194,6 +212,7 @@ func TestSetModuleCRInstallConditionTrue(t *testing.T) {
 		manifest := &v1beta2.Manifest{}
 		manifest.SetGeneration(1)
 		manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
+		manifest.Spec.Resource = &unstructured.Unstructured{}
 		status.InitializeStatusConditions(manifest)
 
 		status.SetModuleCRInstallConditionTrue(manifest)
@@ -201,6 +220,7 @@ func TestSetModuleCRInstallConditionTrue(t *testing.T) {
 		moduleCR := meta.FindStatusCondition(manifest.GetStatus().Conditions, string(status.ConditionTypeModuleCR))
 		require.NotNil(t, moduleCR)
 		require.Equal(t, apimetav1.ConditionTrue, moduleCR.Status)
+		require.Equal(t, manifest.GetGeneration(), moduleCR.ObservedGeneration)
 		require.Equal(t, "Module CR is installed and ready for use", manifest.GetStatus().Operation)
 	})
 }
