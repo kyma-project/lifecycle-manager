@@ -20,7 +20,7 @@ type ConditionReason string
 
 const (
 	ConditionReasonResourcesAreAvailable ConditionReason = "ResourcesAvailable"
-	ConditionReasonModuleCRInstalled     ConditionReason = "ModuleCRInstalled"
+	ConditionReasonModuleCRCreated       ConditionReason = "ModuleCRCreated"
 	ConditionReasonReady                 ConditionReason = "Ready"
 )
 
@@ -41,8 +41,8 @@ func getDefaultConditions(manifest *v1beta2.Manifest) []apimetav1.Condition {
 		getDefaultResourcesCondition(manifest),
 		getDefaultInstallationCondition(manifest),
 	}
-	if manifest.DeploysModuleCR() {
-		defaultConditions = append(defaultConditions, getDefaultModuleCRInstalledCondition(manifest))
+	if manifest.ShouldCreateDefaultModuleCR() {
+		defaultConditions = append(defaultConditions, getDefaultModuleCRCreatedCondition(manifest))
 	}
 	return defaultConditions
 }
@@ -67,12 +67,12 @@ func getDefaultResourcesCondition(manifest *v1beta2.Manifest) apimetav1.Conditio
 	}
 }
 
-func getDefaultModuleCRInstalledCondition(manifest *v1beta2.Manifest) apimetav1.Condition {
+func getDefaultModuleCRCreatedCondition(manifest *v1beta2.Manifest) apimetav1.Condition {
 	return apimetav1.Condition{
 		Type:               string(ConditionTypeModuleCR),
-		Reason:             string(ConditionReasonModuleCRInstalled),
+		Reason:             string(ConditionReasonModuleCRCreated),
 		Status:             apimetav1.ConditionFalse,
-		Message:            "module CR has not been deployed to SKR",
+		Message:            "module CR has not been created to SKR",
 		ObservedGeneration: manifest.GetGeneration(),
 	}
 }
@@ -92,7 +92,7 @@ func SetInstallationConditionTrue(manifest *v1beta2.Manifest) {
 }
 
 func SetModuleCRInstallConditionTrue(manifest *v1beta2.Manifest) {
-	setConditionToTrue(manifest, ConditionTypeModuleCR, "module CR was deployed")
+	setConditionToTrue(manifest, ConditionTypeModuleCR, "module CR was created")
 }
 
 func setConditionToTrue(manifest *v1beta2.Manifest, conditionType ConditionType, message string) {

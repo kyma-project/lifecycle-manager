@@ -57,8 +57,8 @@ func TestInitializeStatusConditions_CreateAndDelete_AddsModuleCRCondition(t *tes
 	moduleCR := meta.FindStatusCondition(conds, string(status.ConditionTypeModuleCR))
 	require.NotNil(t, moduleCR)
 	require.Equal(t, apimetav1.ConditionFalse, moduleCR.Status)
-	require.Equal(t, string(status.ConditionReasonModuleCRInstalled), moduleCR.Reason)
-	require.Equal(t, "module CR has not been deployed to SKR", moduleCR.Message)
+	require.Equal(t, string(status.ConditionReasonModuleCRCreated), moduleCR.Reason)
+	require.Equal(t, "module CR has not been created to SKR", moduleCR.Message)
 	require.Equal(t, manifest.GetGeneration(), moduleCR.ObservedGeneration)
 }
 
@@ -199,7 +199,7 @@ func TestSetModuleCRInstallConditionTrue(t *testing.T) {
 		require.NotNil(t, moduleCR)
 		require.Equal(t, apimetav1.ConditionTrue, moduleCR.Status)
 		require.Equal(t, manifest.GetGeneration(), moduleCR.ObservedGeneration)
-		require.Equal(t, "module CR was deployed", manifest.GetStatus().Operation)
+		require.Equal(t, "module CR was created", manifest.GetStatus().Operation)
 	})
 }
 

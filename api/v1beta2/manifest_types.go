@@ -214,6 +214,6 @@ func (manifest *Manifest) GenerateCacheKey() (string, bool) {
 	return cacheKey, true
 }
 
-func (manifest *Manifest) DeploysModuleCR() bool {
+func (manifest *Manifest) ShouldCreateDefaultModuleCR() bool {
 	return manifest.Spec.CustomResourcePolicy == CustomResourcePolicyCreateAndDelete && manifest.Spec.Resource != nil
 }

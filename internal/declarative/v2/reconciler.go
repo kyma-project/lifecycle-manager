@@ -408,7 +408,7 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient skrclient.
 ) error {
 	manifestStatus := manifest.GetStatus()
 
-	if manifest.DeploysModuleCR() && !status.IsModuleCRInstallConditionTrue(manifestStatus) {
+	if manifest.ShouldCreateDefaultModuleCR() && !status.IsModuleCRInstallConditionTrue(manifestStatus) {
 		if err := modulecr.NewClient(skrClient).SyncDefaultModuleCR(ctx, manifest); err != nil {
 			manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 			return err

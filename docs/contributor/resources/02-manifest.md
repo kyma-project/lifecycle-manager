@@ -69,8 +69,6 @@ The Manifest CR state is set based on the following logic, managed by the manife
 * `Processing`: While the manifest is being applied and the Deployment is still starting, the state of the Manifest CR is set to `Processing`.
 * `Error`: If the deployment cannot start, for example, due to an `ImagePullBackOff` error, or if the application of the manifest fails, the state of the Manifest CR is set to `Error`.
 * `Deleting`:  If the Manifest CR is marked for deletion, the state of the Manifest CR is set to `Deleting`.
-* `Warning`: If the module is deployed but cannot be used due to misconfiguration that requires user interaction, the state of the Manifest CR is set to `Warning`.
-* `Unmanaged`: If the module is unmanaged, the state of the Manifest CR is set to `Unmanaged`.
 
 This state provides a reliable way to track the lifecycle of the Manifest CR and the associated module. It offers insights into the deployment process and any potential issues while being decoupled from the module's business logic.
 
@@ -78,11 +76,11 @@ This state provides a reliable way to track the lifecycle of the Manifest CR and
 
 The Manifest CR uses conditions to track the progress of individual reconciliation steps. The following condition types are used:
 
-| Type | Reason | Description |
-|---|---|---|
+| Type | Reason               | Description |
+|---|----------------------|---|
 | `Resources` | `ResourcesAvailable` | Indicates whether the module resources have been parsed and are ready for use. |
-| `Installation` | `Ready` | Indicates whether the installation is ready and the resources can be used. |
-| `ModuleCR` | `ModuleCRInstalled` | Indicates whether the module CR has been deployed to the SKR cluster. |
+| `Installation` | `Ready`              | Indicates whether the installation is ready and the resources can be used. |
+| `ModuleCR` | `ModuleCRCreated`    | Indicates whether the module CR has been deployed to the SKR cluster. |
 
 The `Resources` and `Installation` conditions are always present on every Manifest CR.
 
