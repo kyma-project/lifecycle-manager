@@ -13,7 +13,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/status"
 )
 
-func TestInitializeStatusConditions_DefaultPolicy_AddsDefaultConditions(t *testing.T) {
+func TestInitializeStatusConditions_IgnorePolicy_AddsExpectedDefaultConditions(t *testing.T) {
 	manifest := &v1beta2.Manifest{}
 	manifest.SetGeneration(7)
 	manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyIgnore
