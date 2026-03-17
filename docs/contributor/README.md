@@ -17,3 +17,10 @@
 * [Lifecycle Manager Components](11-components.md)
 * [Lifecycle Manager Flags](12-klm-arguments.md)
 * [Creating ModuleTemplate(using modulectl & ocm cli)](14-creating-moduletemplate.md)
+
+## Contributing to Documentation for Private and Partner-Managed Landscapes Operators
+
+If you update, add, or remove content in [SAP BTP, Kyma Runtime Operator's Guide](https://help.sap.com/docs/KYMAOPS/kyma_product-kyma-runtime_kyma-operator-guide/00-05-sap-btp-kyma-runtime-operators-guide-intro.html?state=DRAF), that is meant for the operators and administrators of private and partner-managed landscapes, follow these steps:
+
+1. Make sure that the source file or directory is part of the [`manifest.yaml`](https://github.tools.sap/kyma/product-kyma-runtime/blob/main/manifest.yaml) file.
+2. Make sure that all the relevant, operator-related documents are part of the [`toc.yaml`](https://github.tools.sap/kyma/product-kyma-runtime/blob/main/docs/toc.yaml) file.
