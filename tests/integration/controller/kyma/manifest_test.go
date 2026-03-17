@@ -68,7 +68,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 		data := unstructured.Unstructured{}
 		data.SetGroupVersionKind(schema.GroupVersionKind{
 			Group:   shared.OperatorGroup,
-			Version: v1beta2.GroupVersion.Version,
+			Version: v1beta2.SchemeGroupVersion.Version,
 			Kind:    "Sample",
 		})
 		data.Object["spec"] = map[string]any{

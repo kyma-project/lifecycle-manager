@@ -104,7 +104,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 	return &v1beta2.Watcher{
 		TypeMeta: apimetav1.TypeMeta{
 			Kind:       string(shared.WatcherKind),
-			APIVersion: v1beta2.GroupVersion.String(),
+			APIVersion: v1beta2.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      managerInstanceName,
@@ -121,8 +121,8 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 				managerInstanceName + "-watchable": "true",
 			},
 			ResourceToWatch: v1beta2.WatchableGVR{
-				Group:    v1beta2.GroupVersion.Group,
-				Version:  v1beta2.GroupVersion.Version,
+				Group:    v1beta2.SchemeGroupVersion.Group,
+				Version:  v1beta2.SchemeGroupVersion.Version,
 				Resource: shared.KymaKind.Plural(),
 			},
 			Field: field,

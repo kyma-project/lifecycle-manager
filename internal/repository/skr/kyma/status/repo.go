@@ -60,7 +60,7 @@ func (r *Repository) SetStateDeleting(ctx context.Context, kymaName types.Namesp
 	kyma := &v1beta2.Kyma{
 		TypeMeta: apimetav1.TypeMeta{
 			Kind:       string(shared.KymaKind),
-			APIVersion: v1beta2.GroupVersion.String(),
+			APIVersion: v1beta2.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      shared.DefaultRemoteKymaName,

@@ -6,6 +6,10 @@ IMG_NAME := $(IMG_REPO)/$(APP_NAME)
 IMG := $(IMG_NAME):$(DOCKER_TAG)
 BUILD_VERSION := from_makefile
 
+# APPLYCONFIGURATION_GEN_VERSION refers to the version of applyconfiguration-gen
+# to be used for code generation of apply configurations.
+APPLYCONFIGURATION_GEN_VERSION = $(shell yq e '.applyconfiguration-gen' ./versions.yaml)
+
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = $(shell yq e '.envtest_k8s' ./versions.yaml)
 ENVTEST_VERSION = $(shell yq e '.envtest' ./versions.yaml)
@@ -173,6 +177,11 @@ $(KUSTOMIZE): $(LOCALBIN)
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
 $(CONTROLLER_GEN): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) $(GO) install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
+
+.PHONY: applyconfiguration-gen
+applyconfiguration-gen:
+	GOBIN=$(LOCALBIN) $(GO) install k8s.io/code-generator/cmd/applyconfiguration-gen@v$(APPLYCONFIGURATION_GEN_VERSION)
+	pushd api; $(LOCALBIN)/applyconfiguration-gen --output-dir ./applyconfigurations --output-pkg github.com/kyma-project/lifecycle-manager/api/applyconfigurations ./v1beta2; popd
 
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.

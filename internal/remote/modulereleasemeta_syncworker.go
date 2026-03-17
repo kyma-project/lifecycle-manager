@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	applyconfigurationsv1beta2 "github.com/kyma-project/lifecycle-manager/api/applyconfigurations/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
@@ -22,7 +22,7 @@ var (
 // moduleReleaseMetaConcurrentWorker performs ModuleReleaseMeta synchronization using multiple goroutines.
 type moduleReleaseMetaConcurrentWorker struct {
 	namespace  string
-	patchDiff  func(ctx context.Context, obj *v1beta2.ModuleReleaseMeta) error
+	patchDiff  func(ctx context.Context, diff *applyconfigurationsv1beta2.ModuleReleaseMetaApplyConfiguration) error
 	deleteDiff func(ctx context.Context, obj *v1beta2.ModuleReleaseMeta) error
 	createCRD  func(ctx context.Context) error
 }
@@ -33,8 +33,11 @@ func newModuleReleaseMetaConcurrentWorker(
 	kcpClient, skrClient client.Client,
 	settings *Settings,
 ) *moduleReleaseMetaConcurrentWorker {
-	patchDiffFn := func(ctx context.Context, obj *v1beta2.ModuleReleaseMeta) error {
-		return patchDiffModuleReleaseMeta(ctx, obj, skrClient, settings.SSAPatchOptions)
+	patchDiffFn := func(
+		ctx context.Context,
+		diff *applyconfigurationsv1beta2.ModuleReleaseMetaApplyConfiguration,
+	) error {
+		return patchDiffModuleReleaseMeta(ctx, diff, skrClient, settings.SsaApplyOptions)
 	}
 
 	deleteDiffFn := func(ctx context.Context, obj *v1beta2.ModuleReleaseMeta) error {
@@ -63,8 +66,8 @@ func (c *moduleReleaseMetaConcurrentWorker) SyncConcurrently(
 	results := make(chan error, channelLength)
 	for kcpIndex := range kcpModules {
 		go func() {
-			prepareModuleReleaseMetaForSSA(&kcpModules[kcpIndex], c.namespace)
-			results <- c.patchDiff(ctx, &kcpModules[kcpIndex])
+			applyConfig := prepareModuleReleaseMetaForSSA(&kcpModules[kcpIndex], c.namespace)
+			results <- c.patchDiff(ctx, applyConfig)
 		}()
 	}
 	var errs []error
@@ -117,29 +120,64 @@ func createModuleReleaseMetaCRDInRuntime(ctx context.Context, kcpClient client.C
 	return createCRDInRuntime(ctx, shared.ModuleReleaseMetaKind, errModuleReleaseMetaCRDNotReady, kcpClient, skrClient)
 }
 
-func prepareModuleReleaseMetaForSSA(moduleReleaseMeta *v1beta2.ModuleReleaseMeta, namespace string) {
-	moduleReleaseMeta.SetResourceVersion("")
-	moduleReleaseMeta.SetUID("")
-	moduleReleaseMeta.SetManagedFields([]apimetav1.ManagedFieldsEntry{})
-	moduleReleaseMeta.SetLabels(collections.MergeMapsSilent(moduleReleaseMeta.GetLabels(), map[string]string{
-		shared.ManagedBy: shared.ManagedByLabelValue,
-	}))
-
+func prepareModuleReleaseMetaForSSA(moduleReleaseMeta *v1beta2.ModuleReleaseMeta, namespace string,
+) *applyconfigurationsv1beta2.ModuleReleaseMetaApplyConfiguration {
+	// It would be better to not change the namespace of the moduleReleaseMeta object here,
+	// but at this moment it is required to perform comparisons between objects
+	// later on - namespace is part of the object identity function.
+	// This can be refactored.
 	if namespace != "" {
 		moduleReleaseMeta.SetNamespace(namespace)
 	}
+
+	var applyChannels []*applyconfigurationsv1beta2.ChannelVersionAssignmentApplyConfiguration
+	if len(moduleReleaseMeta.Spec.Channels) > 0 {
+		for _, channel := range moduleReleaseMeta.Spec.Channels {
+			applyChannels = append(applyChannels, applyconfigurationsv1beta2.ChannelVersionAssignment().
+				WithChannel(channel.Channel).
+				WithVersion(channel.Version))
+		}
+	}
+
+	var applyMandatory *applyconfigurationsv1beta2.MandatoryApplyConfiguration
+	if moduleReleaseMeta.Spec.Mandatory != nil {
+		applyMandatory = applyconfigurationsv1beta2.Mandatory().
+			WithVersion(moduleReleaseMeta.Spec.Mandatory.Version)
+	}
+
+	specApplyConfig := applyconfigurationsv1beta2.ModuleReleaseMetaSpec().
+		WithModuleName(moduleReleaseMeta.Spec.ModuleName).
+		WithOcmComponentName(moduleReleaseMeta.Spec.OcmComponentName).
+		WithChannels(applyChannels...).
+		WithMandatory(applyMandatory)
+
+	if moduleReleaseMeta.Spec.Beta { //nolint:staticcheck // backward compatibility
+		//nolint:staticcheck // backward compatibility
+		specApplyConfig = specApplyConfig.WithBeta(moduleReleaseMeta.Spec.Beta)
+	}
+	if moduleReleaseMeta.Spec.Internal { //nolint:staticcheck // backward compatibility
+		//nolint:staticcheck // backward compatibility
+		specApplyConfig = specApplyConfig.WithInternal(moduleReleaseMeta.Spec.Internal)
+	}
+
+	labelsApplyConfig := collections.MergeMapsSilent(moduleReleaseMeta.GetLabels(),
+		map[string]string{shared.ManagedBy: shared.ManagedByLabelValue})
+
+	res := applyconfigurationsv1beta2.ModuleReleaseMeta(
+		moduleReleaseMeta.GetName(), moduleReleaseMeta.GetNamespace()).
+		WithLabels(labelsApplyConfig).
+		WithSpec(specApplyConfig)
+
+	return res
 }
 
 func patchDiffModuleReleaseMeta(
 	ctx context.Context,
-	diff *v1beta2.ModuleReleaseMeta,
+	diff *applyconfigurationsv1beta2.ModuleReleaseMetaApplyConfiguration,
 	skrClient client.Client,
-	ssaPatchOptions *client.PatchOptions,
+	ssaApplyOptions *client.ApplyOptions,
 ) error {
-	err := skrClient.Patch(
-		//nolint: staticcheck // issues: #2706, #2707
-		ctx, diff, client.Apply, ssaPatchOptions,
-	)
+	err := skrClient.Apply(ctx, diff, ssaApplyOptions)
 	if err != nil {
 		return fmt.Errorf("could not apply ModuleReleaseMeta diff: %w", err)
 	}

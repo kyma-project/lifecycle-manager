@@ -18,7 +18,7 @@ func NewManifestBuilder() ManifestBuilder {
 	return ManifestBuilder{
 		manifest: &v1beta2.Manifest{
 			TypeMeta: apimetav1.TypeMeta{
-				APIVersion: v1beta2.GroupVersion.String(),
+				APIVersion: v1beta2.SchemeGroupVersion.String(),
 				Kind:       string(shared.ManifestKind),
 			},
 			ObjectMeta: apimetav1.ObjectMeta{

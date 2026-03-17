@@ -1,3 +1,4 @@
+//nolint:dupl,revive // False positive. The code has identical structure as modulereleasemeta_syncer.go, but the types are different. Even if this could be handled with generics, I don't think the reduced readability would be worth it.
 package remote
 
 import (

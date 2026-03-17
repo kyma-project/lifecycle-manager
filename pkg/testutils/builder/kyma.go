@@ -22,7 +22,7 @@ func NewKymaBuilder() KymaBuilder {
 	return KymaBuilder{
 		kyma: &v1beta2.Kyma{
 			TypeMeta: apimetav1.TypeMeta{
-				APIVersion: v1beta2.GroupVersion.String(),
+				APIVersion: v1beta2.SchemeGroupVersion.String(),
 				Kind:       string(shared.KymaKind),
 			},
 			ObjectMeta: apimetav1.ObjectMeta{

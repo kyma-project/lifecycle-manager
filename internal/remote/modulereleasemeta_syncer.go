@@ -1,3 +1,4 @@
+//nolint:dupl,revive // False positive. The code has identical structure as moduletemplate_syncer.go, but the types are different. Even if this could be handled with generics, I don't think the reduced readability would be worth it.
 package remote
 
 import (
@@ -62,8 +63,8 @@ func (mts *moduleReleaseMetaSyncer) SyncToSKR(
 		return err
 	}
 
-	runtimeModuleReleases := &v1beta2.ModuleReleaseMetaList{}
-	if err := mts.skrClient.List(ctx, runtimeModuleReleases); err != nil {
+	remoteModuleReleases := &v1beta2.ModuleReleaseMetaList{}
+	if err := mts.skrClient.List(ctx, remoteModuleReleases); err != nil {
 		// it can happen that the ModuleReleaseMeta CRD is not caught during to apply if there are no objects to apply
 		// if this is the case and there is no CRD there can never be any ModuleReleaseMetas to delete
 		if meta.IsNoMatchError(err) {
@@ -72,7 +73,7 @@ func (mts *moduleReleaseMetaSyncer) SyncToSKR(
 		return fmt.Errorf("failed to list ModuleReleaseMetas from runtime: %w", err)
 	}
 
-	diffsToDelete := moduleReleaseMetasDiffFor(runtimeModuleReleases.Items).NotExistingIn(kcpModuleReleases)
+	diffsToDelete := moduleReleaseMetasDiffFor(remoteModuleReleases.Items).NotExistingIn(kcpModuleReleases)
 	diffsToDelete = collections.FilterInPlace(diffsToDelete, isModuleReleaseMetaManagedByKcp)
 	return worker.DeleteConcurrently(ctx, collections.Dereference(diffsToDelete))
 }
