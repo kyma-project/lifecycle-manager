@@ -213,3 +213,7 @@ func (manifest *Manifest) GenerateCacheKey() (string, bool) {
 	cacheKey := strings.Join([]string{kymaName, manifest.GetNamespace()}, "|")
 	return cacheKey, true
 }
+
+func (manifest *Manifest) DeploysModuleCR() bool {
+	return manifest.Spec.CustomResourcePolicy == CustomResourcePolicyCreateAndDelete && manifest.Spec.Resource != nil
+}

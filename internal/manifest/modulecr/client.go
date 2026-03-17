@@ -118,7 +118,7 @@ func (c *Client) RemoveDefaultModuleCR(ctx context.Context, kcp client.Client, m
 // if not available it created the resource.
 // It is used to provide the controller with default data in the Runtime.
 func (c *Client) SyncDefaultModuleCR(ctx context.Context, manifest *v1beta2.Manifest) error {
-	if manifest.Spec.Resource == nil || manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
+	if !manifest.DeploysModuleCR() {
 		return nil
 	}
 

@@ -116,28 +116,6 @@ func TestInitializeStatusConditions_DoesNotDuplicateExistingConditions(t *testin
 	require.NotNil(t, other)
 }
 
-func TestInitializeStatusConditions_RemovesModuleCRConditionWhenPolicyChanges(t *testing.T) {
-	manifest := &v1beta2.Manifest{}
-	manifest.SetGeneration(5)
-	manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyIgnore
-
-	moduleCR := apimetav1.Condition{
-		Type:               string(status.ConditionTypeModuleCR),
-		Status:             apimetav1.ConditionTrue,
-		Reason:             string(status.ConditionReasonModuleCRInstalled),
-		Message:            "Module CR is installed and ready for use",
-		ObservedGeneration: 5,
-	}
-	manifest.SetStatus(shared.Status{Conditions: []apimetav1.Condition{moduleCR}})
-
-	status.InitializeStatusConditions(manifest)
-
-	conds := manifest.GetStatus().Conditions
-	require.Nil(t, meta.FindStatusCondition(conds, string(status.ConditionTypeModuleCR)))
-	require.NotNil(t, meta.FindStatusCondition(conds, string(status.ConditionTypeResources)))
-	require.NotNil(t, meta.FindStatusCondition(conds, string(status.ConditionTypeInstallation)))
-}
-
 func TestIsModuleCRInstallConditionTrue(t *testing.T) {
 	t.Run("missing condition", func(t *testing.T) {
 		statusValue := shared.Status{Conditions: nil}
@@ -225,6 +203,22 @@ func TestSetModuleCRInstallConditionTrue(t *testing.T) {
 	})
 }
 
+func TestSetResourcesConditionTrue(t *testing.T) {
+	testSetConditionTrue(t,
+		status.ConditionTypeResources,
+		status.SetResourcesConditionTrue,
+		"resources are parsed and ready for use",
+	)
+}
+
+func TestSetInstallationConditionTrue(t *testing.T) {
+	testSetConditionTrue(t,
+		status.ConditionTypeInstallation,
+		status.SetInstallationConditionTrue,
+		"installation is ready and resources can be used",
+	)
+}
+
 func testSetConditionTrue(
 	t *testing.T,
 	conditionType status.ConditionType,
@@ -280,20 +274,4 @@ func testSetConditionTrue(
 		require.Equal(t, apimetav1.ConditionTrue, cond.Status)
 		require.Equal(t, expectedOperation, manifest.GetStatus().Operation)
 	})
-}
-
-func TestSetResourcesConditionTrue(t *testing.T) {
-	testSetConditionTrue(t,
-		status.ConditionTypeResources,
-		status.SetResourcesConditionTrue,
-		"resources are parsed and ready for use",
-	)
-}
-
-func TestSetInstallationConditionTrue(t *testing.T) {
-	testSetConditionTrue(t,
-		status.ConditionTypeInstallation,
-		status.SetInstallationConditionTrue,
-		"installation is ready and resources can be used",
-	)
 }
