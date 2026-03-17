@@ -103,6 +103,8 @@ linters:
           alias: machineryutilruntime
         - pkg: k8s.io/apimachinery/pkg/util/yaml
           alias: machineryaml
+        - pkg: k8s.io/client-go/applyconfigurations/core/v1
+          alias: corev1ac
         - pkg: k8s.io/client-go/kubernetes/scheme
           alias: k8sclientscheme
         - pkg: k8s.io/client-go/kubernetes/typed/core/v1
