@@ -87,7 +87,7 @@ The Manifest CR uses conditions to track the progress of individual reconciliati
 The `Resources` and `Installation` conditions are always present on every Manifest CR.
 
 The `ModuleCR` condition is only added when **both** of the following are true:
-- **.spec.resource** is set (that is, the module defines a default custom resource).
+- **.spec.resource** is set (that is, the module defines a default module CR).
 - **.spec.customResourcePolicy** is set to `CreateAndDelete`.
 
 ### **.metadata.labels**
