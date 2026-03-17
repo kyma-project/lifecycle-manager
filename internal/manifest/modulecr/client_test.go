@@ -84,6 +84,7 @@ func TestClient_SyncDefaultModuleCR(t *testing.T) {
 	kcpClient := fake.NewClientBuilder().WithScheme(testScheme).Build()
 	skrClient := modulecr.NewClient(kcpClient)
 	manifest := testutils.NewTestManifest("test-manifest")
+	manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
 	manifest.SetFinalizers([]string{finalizer.CustomResourceManagerFinalizer, finalizer.DefaultFinalizer})
 	moduleCR := unstructured.Unstructured{}
 	moduleCR.SetGroupVersionKind(
