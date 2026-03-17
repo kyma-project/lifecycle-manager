@@ -17,6 +17,7 @@ import (
 
 // Checking compliance with the interface methods implemented below.
 var _ client.Client = &SKRClient{}
+
 var _ client.Client = &ProxyClient{}
 
 var (
@@ -221,7 +222,9 @@ func (p *ProxyClient) List(ctx context.Context, obj client.ObjectList, opts ...c
 // Apply implements client.Client.
 // It extracts the GVK from the ApplyConfiguration to verify RESTMapper integrity,
 // then delegates to the underlying baseClient.
-func (p *ProxyClient) Apply(ctx context.Context, obj machineryruntime.ApplyConfiguration, opts ...client.ApplyOption) error {
+func (p *ProxyClient) Apply(
+	ctx context.Context, obj machineryruntime.ApplyConfiguration, opts ...client.ApplyOption,
+) error {
 	gvk, err := gvkFromApplyConfiguration(obj)
 	if err != nil {
 		return fmt.Errorf("failed to extract GVK from apply configuration: %w", err)
@@ -247,4 +250,14 @@ func (p *ProxyClient) Status() client.StatusWriter {
 
 func (p *ProxyClient) SubResource(subResource string) client.SubResourceClient {
 	return p.baseClient.SubResource(subResource)
+}
+
+// SetMapper replaces the RESTMapper used for resource mapping verification.
+func (p *ProxyClient) SetMapper(mapper meta.RESTMapper) {
+	p.mapper = mapper
+}
+
+// SetBaseClient replaces the underlying client used to perform API calls.
+func (p *ProxyClient) SetBaseClient(c client.Client) {
+	p.baseClient = c
 }
