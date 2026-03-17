@@ -27,14 +27,14 @@ func TestInitializeStatusConditions_IgnorePolicy_AddsExpectedDefaultConditions(t
 	require.NotNil(t, resources)
 	require.Equal(t, apimetav1.ConditionFalse, resources.Status)
 	require.Equal(t, string(status.ConditionReasonResourcesAreAvailable), resources.Reason)
-	require.Equal(t, "resources are parsed and ready for use", resources.Message)
+	require.Equal(t, "resources not parsed", resources.Message)
 	require.Equal(t, manifest.GetGeneration(), resources.ObservedGeneration)
 
 	installation := meta.FindStatusCondition(conds, string(status.ConditionTypeInstallation))
 	require.NotNil(t, installation)
 	require.Equal(t, apimetav1.ConditionFalse, installation.Status)
 	require.Equal(t, string(status.ConditionReasonReady), installation.Reason)
-	require.Equal(t, "installation is ready and resources can be used", installation.Message)
+	require.Equal(t, "installation is not ready", installation.Message)
 	require.Equal(t, manifest.GetGeneration(), installation.ObservedGeneration)
 
 	moduleCR := meta.FindStatusCondition(conds, string(status.ConditionTypeModuleCR))
@@ -58,7 +58,7 @@ func TestInitializeStatusConditions_CreateAndDelete_AddsModuleCRCondition(t *tes
 	require.NotNil(t, moduleCR)
 	require.Equal(t, apimetav1.ConditionFalse, moduleCR.Status)
 	require.Equal(t, string(status.ConditionReasonModuleCRInstalled), moduleCR.Reason)
-	require.Equal(t, "Module CR is installed and ready for use", moduleCR.Message)
+	require.Equal(t, "module CR has not been deployed to SKR", moduleCR.Message)
 	require.Equal(t, manifest.GetGeneration(), moduleCR.ObservedGeneration)
 }
 
@@ -199,7 +199,7 @@ func TestSetModuleCRInstallConditionTrue(t *testing.T) {
 		require.NotNil(t, moduleCR)
 		require.Equal(t, apimetav1.ConditionTrue, moduleCR.Status)
 		require.Equal(t, manifest.GetGeneration(), moduleCR.ObservedGeneration)
-		require.Equal(t, "Module CR is installed and ready for use", manifest.GetStatus().Operation)
+		require.Equal(t, "module CR was deployed", manifest.GetStatus().Operation)
 	})
 }
 
