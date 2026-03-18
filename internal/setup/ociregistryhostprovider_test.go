@@ -257,7 +257,7 @@ func TestOCIRegistry_ResolveHost_ReturnsError_WhenHostAndSubPathJoinFails(t *tes
 	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "%invalid", "", "kyma-modules")
 	host, err := ociRegistry.ResolveHost(t.Context())
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to join host with modules repository sub path")
+	require.Contains(t, err.Error(), "failed to join host with modules repository subpath")
 	require.Empty(t, host)
 }
 

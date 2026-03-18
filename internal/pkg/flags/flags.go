@@ -289,10 +289,10 @@ func DefineFlagVar() *FlagVar {
 			"Must not be set together with --oci-registry-cred-secret. "+
 			"If the OCI registry requires authentication, the --oci-registry-cred-secret flag must be used instead.",
 	)
-	flag.StringVar(&flagVar.ModulesRepositorySubPath, "modules-repository-sub-path", "",
-		"Allows to configure an additional repository sub path that is appended to the OCI registry host. "+
+	flag.StringVar(&flagVar.ModulesRepositorySubPath, "modules-repository-subpath", "",
+		"Allows to configure an additional repository subpath that is appended to the OCI registry host. "+
 			"This is required when the configured OCI registry is a general-purpose registry and the OCM component "+
-			"versions of modules are stored under a specific sub path within that registry.",
+			"versions of modules are stored under a specific subpath within that registry.",
 	)
 	flag.StringVar(&flagVar.SkrImagePullSecret, "skr-image-pull-secret", "",
 		"Allows to reference a secret for the SKR clusters to pull images from private registries.")

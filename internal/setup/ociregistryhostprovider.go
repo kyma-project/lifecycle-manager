@@ -70,7 +70,7 @@ func (oci *OCIRegistryHostProvider) ResolveHost(ctx context.Context) (string, er
 	if oci.modulesRepositorySubPath != "" {
 		host, err = url.JoinPath(host, oci.modulesRepositorySubPath)
 		if err != nil {
-			return "", fmt.Errorf("failed to join host with modules repository sub path: %w", err)
+			return "", fmt.Errorf("failed to join host with modules repository subpath: %w", err)
 		}
 	}
 
