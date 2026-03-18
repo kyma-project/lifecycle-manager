@@ -3,12 +3,10 @@
 
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))e2e.common.mk
 
-MANDATORY_TEMPLATE_V2 := $(E2E_TESTS_DIR)/mandatory_template_v2.yaml
-
 .PHONY: klm-patch
 klm-patch:
 	@echo "::group::KLM patch"
-	@echo "No test-specific KLM patches"
+	### Add Changes Here
 	@echo "::endgroup::"
 
 .PHONY: module-setup
@@ -17,9 +15,7 @@ module-setup:
 	@export PATH=$(LOCALBIN):$$PATH
 	if [ -f $(MANDATORY_TEMPLATE_V2) ]; then echo "ERROR: $(MANDATORY_TEMPLATE_V2) already exists. Run 'make clean-test-artifacts' first."; exit 1; fi
 	@pushd $(TEMPLATE_OPERATOR_DIR) > /dev/null
-	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh --module-name template-operator --version 1.1.0-smoke-test --deployment-name template-operator-v1-controller-manager --deployable-version 1.0.4 --mandatory
-	$(SCRIPTS_DIR)/deploy_mandatory_modulereleasemeta.sh template-operator 1.1.0-smoke-test
-	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh --module-name template-operator --version 2.4.1-smoke-test --deployment-name template-operator-v2-controller-manager --deployable-version 1.0.4 --mandatory --skip-apply
+	### Add Changes Here
 	cp template.yaml $(MANDATORY_TEMPLATE_V2)
 	@popd > /dev/null
 	@echo "::endgroup::"
@@ -34,14 +30,11 @@ test-run: log-tool-versions
 	@echo "::group::E2E test: Mandatory Module Installation and Deletion"
 	@export PATH=$(LOCALBIN):$$PATH
 	@pushd $(E2E_TESTS_DIR) > /dev/null
-	set +e; $(GO) test -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module Installation and Deletion"; status=$$?; set -e
+	### Change Test Name
+	set +e; $(GO) test -timeout 20m -ginkgo.v -ginkgo.focus "CHANGE ME!"; status=$$?; set -e
 	@popd > /dev/null
 	@echo "::endgroup::"
 	exit $${status}
 
-.PHONY: clean-test-artifacts
-clean-test-artifacts:
-	rm -f $(MANDATORY_TEMPLATE_V2)
-
 .PHONY: test
-test: clean-test-artifacts create-clusters klm-patch deploy-klm module-setup test-run
+test: create-clusters klm-patch deploy-klm module-setup test-run
