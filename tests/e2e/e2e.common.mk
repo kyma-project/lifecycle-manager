@@ -81,6 +81,7 @@ $(LOCALBIN):
 
 .PHONY: ginkgo-install
 ginkgo-install: $(LOCALBIN) ## Install ginkgo into LOCALBIN (skipped if already present).
+	@echo "::group::Install ginkgo"
 	@if [ -f $(LOCALBIN)/ginkgo ]; then \
 		echo "ginkgo already installed, skipping"; \
 	else \
@@ -88,9 +89,11 @@ ginkgo-install: $(LOCALBIN) ## Install ginkgo into LOCALBIN (skipped if already 
 		$(INSTALL_SCRIPTS_DIR)/ginkgo_install.sh $(GINKGO_VERSION) && \
 		popd > /dev/null; \
 	fi
+	@echo "::endgroup::"
 
 .PHONY: kustomize-install
 kustomize-install: $(LOCALBIN) ## Install kustomize into LOCALBIN (skipped if already present).
+	@echo "::group::Install kustomize"
 	@if [ -f $(LOCALBIN)/kustomize ]; then \
 		echo "kustomize already installed, skipping"; \
 	else \
@@ -98,9 +101,11 @@ kustomize-install: $(LOCALBIN) ## Install kustomize into LOCALBIN (skipped if al
 		$(INSTALL_SCRIPTS_DIR)/kustomize_install.sh $(KUSTOMIZE_VERSION) && \
 		popd > /dev/null; \
 	fi
+	@echo "::endgroup::"
 
 .PHONY: modulectl-install
 modulectl-install: $(LOCALBIN) ## Install modulectl into LOCALBIN (skipped if already present).
+	@echo "::group::Install modulectl"
 	@if [ -f $(LOCALBIN)/modulectl ]; then \
 		echo "modulectl already installed, skipping"; \
 	else \
@@ -108,9 +113,11 @@ modulectl-install: $(LOCALBIN) ## Install modulectl into LOCALBIN (skipped if al
 		$(INSTALL_SCRIPTS_DIR)/modulectl_install.sh $(MODULECTL_VERSION) && \
 		popd > /dev/null; \
 	fi
+	@echo "::endgroup::"
 
 .PHONY: istioctl-install
 istioctl-install: $(LOCALBIN) ## Install istioctl into LOCALBIN (skipped if already present).
+	@echo "::group::Install istioctl"
 	@if [ -f $(LOCALBIN)/istioctl ]; then \
 		echo "istioctl already installed, skipping"; \
 	else \
@@ -118,9 +125,11 @@ istioctl-install: $(LOCALBIN) ## Install istioctl into LOCALBIN (skipped if alre
 		$(INSTALL_SCRIPTS_DIR)/istioctl_install.sh $(ISTIOCTL_VERSION) && \
 		popd > /dev/null; \
 	fi
+	@echo "::endgroup::"
 
 .PHONY: ocm-install
 ocm-install: $(LOCALBIN) ## Install ocm CLI into LOCALBIN (skipped if already present).
+	@echo "::group::Install ocm"
 	@if [ -f $(LOCALBIN)/ocm ]; then \
 		echo "ocm already installed, skipping"; \
 	else \
@@ -128,6 +137,7 @@ ocm-install: $(LOCALBIN) ## Install ocm CLI into LOCALBIN (skipped if already pr
 		$(INSTALL_SCRIPTS_DIR)/ocm_install.sh $(OCM_VERSION) && \
 		popd > /dev/null; \
 	fi
+	@echo "::endgroup::"
 
 .PHONY: tools-install
 tools-install: istioctl-install kustomize-install modulectl-install ocm-install ginkgo-install
@@ -174,6 +184,7 @@ teardown: ## Delete KCP and SKR test clusters.
 
 .PHONY: log-tool-versions
 log-tool-versions: ## Print the versions of all tools used in the test run.
+	@echo "::group::Tool versions"
 	@echo "K8S VERSION:          $(K8S_VERSION)"
 	@echo "CERT-MANAGER VERSION: $(CERT_MANAGER_VERSION)"
 	@echo "ISTIOCTL VERSION:     $(ISTIOCTL_VERSION)"
@@ -181,3 +192,4 @@ log-tool-versions: ## Print the versions of all tools used in the test run.
 	@echo "MODULECTL VERSION:    $(MODULECTL_VERSION)"
 	@echo "OCM VERSION:          $(OCM_VERSION)"
 	@echo "GINKGO VERSION:       $(GINKGO_VERSION)"
+	@echo "::endgroup::"

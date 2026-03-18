@@ -13,10 +13,8 @@ klm-patch:
 module-setup:
 	@echo "::group::Test-specific module metadata setup"
 	@export PATH=$(LOCALBIN):$$PATH
-	if [ -f $(MANDATORY_TEMPLATE_V2) ]; then echo "ERROR: $(MANDATORY_TEMPLATE_V2) already exists. Run 'make clean-test-artifacts' first."; exit 1; fi
 	@pushd $(TEMPLATE_OPERATOR_DIR) > /dev/null
 	### Add Changes Here
-	cp template.yaml $(MANDATORY_TEMPLATE_V2)
 	@popd > /dev/null
 	@echo "::endgroup::"
 
