@@ -4,10 +4,10 @@
 #   include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))e2e.common.mk
 #
 # Each test file MUST define:
-#   - test-setup   : deploy test-specific module templates and metadata
+#   - module-setup : deploy test-specific module templates and metadata
+#   - klm-patch    : apply any test-specific patches to lifecycle-manager manifests (if needed)
 #   - test-run     : run the Ginkgo test with the correct focus string
 #   - test         : top-level target that chains all steps together
-
 
 ##@ Sanity checks
 
