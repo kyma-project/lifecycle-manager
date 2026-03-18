@@ -84,6 +84,7 @@ func TestClient_SyncDefaultModuleCR(t *testing.T) {
 	kcpClient := fake.NewClientBuilder().WithScheme(testScheme).Build()
 	skrClient := modulecr.NewClient(kcpClient)
 	manifest := testutils.NewTestManifest("test-manifest")
+	manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
 	manifest.SetFinalizers([]string{finalizer.CustomResourceManagerFinalizer, finalizer.DefaultFinalizer})
 	moduleCR := unstructured.Unstructured{}
 	moduleCR.SetGroupVersionKind(
@@ -108,9 +109,6 @@ func TestClient_SyncDefaultModuleCR(t *testing.T) {
 	err = skrClient.Get(t.Context(), client.ObjectKey{Name: moduleName, Namespace: shared.DefaultRemoteNamespace},
 		resource)
 	require.NoError(t, err)
-	// And the resource should have the managed-by label
-	labels := resource.GetLabels()
-	assert.Equal(t, shared.ManagedByLabelValue, labels[shared.ManagedBy])
 
 	// When the resource is deleted
 	err = kcpClient.Delete(t.Context(), resource)

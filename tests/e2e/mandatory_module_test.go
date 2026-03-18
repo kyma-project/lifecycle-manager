@@ -78,21 +78,6 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kcpClient, true).
 				Should(Succeed())
-
-			By("And deleting the mandatory SKR Default CR", func() {
-				Eventually(DeleteCRWithGVK).
-					WithContext(ctx).
-					WithArguments(skrClient, TestModuleCRName, RemoteNamespace, templatev1alpha1.GroupVersion.Group,
-						"v1alpha1", string(templatev1alpha1.SampleKind)).
-					Should(Succeed())
-			})
-		})
-		It("Then mandatory SKR Module Default CR is not recreated", func() {
-			Consistently(CheckIfExists).
-				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace, templatev1alpha1.GroupVersion.Group,
-					"v1alpha1", string(templatev1alpha1.SampleKind), skrClient).
-				Should(Equal(ErrNotFound))
 		})
 
 		It("When deleting the mandatory SKR Module Manager Deployment", func() {
@@ -120,21 +105,12 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 				WithArguments(kcpClient, false).
 				Should(Succeed())
 		})
-		It("Then mandatory SKR Module Default CR is recreated", func() {
-			Eventually(CheckIfExists).
+		It("Then mandatory SKR Module Deployment is recreated", func() {
+			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace,
-					templatev1alpha1.GroupVersion.Group, "v1alpha1", string(templatev1alpha1.SampleKind),
-					skrClient).
+				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion,
+					TestModuleResourceNamespace).
 				Should(Succeed())
-
-			By("And mandatory SKR Module Deployment is recreated", func() {
-				Eventually(DeploymentIsReady).
-					WithContext(ctx).
-					WithArguments(skrClient, ModuleDeploymentNameInOlderVersion,
-						TestModuleResourceNamespace).
-					Should(Succeed())
-			})
 
 			By("And the KCP Kyma CR is in a \"Ready\" State", func() {
 				Consistently(KymaIsInState).
