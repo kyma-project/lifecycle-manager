@@ -27,35 +27,96 @@ func (m *mockSecretGetter) Get(ctx context.Context, name string, opts apimetav1.
 func TestNewOCIRegistry(t *testing.T) {
 	mockSecretGettr := new(mockSecretGetter)
 
-	_, err := setup.NewOCIRegistryHostProvider(nil, "", "")
+	_, err := setup.NewOCIRegistryHostProvider(nil, "", "", "")
 	require.ErrorIs(t, err, setup.ErrSecretGetterNil)
 
-	_, err = setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "")
+	_, err = setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "", "")
 	require.ErrorIs(t, err, setup.ErrHostAndCredSecretEmpty)
 
-	_, err = setup.NewOCIRegistryHostProvider(mockSecretGettr, "host", "secret")
+	_, err = setup.NewOCIRegistryHostProvider(mockSecretGettr, "host", "secret", "")
 	require.ErrorIs(t, err, setup.ErrBothHostAndCredSecret)
 
-	ociRegistry, err := setup.NewOCIRegistryHostProvider(mockSecretGettr, "host", "")
+	ociRegistry, err := setup.NewOCIRegistryHostProvider(mockSecretGettr, "host", "", "")
 	require.NoError(t, err)
 	require.NotNil(t, ociRegistry)
 
-	ociRegistry, err = setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "secret")
+	ociRegistry, err = setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "secret", "")
 	require.NoError(t, err)
 	require.NotNil(t, ociRegistry)
 }
 
 func TestOCIRegistry_ResolveHost_WithHost(t *testing.T) {
 	mockSecretGettr := new(mockSecretGetter)
-	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "myhost", "")
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "myhost", "", "")
 	host, err := ociRegistry.ResolveHost(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, "myhost", host)
 }
 
+func TestOCIRegistry_ResolveHost_WithHost_AndSubPath(t *testing.T) {
+	mockSecretGettr := new(mockSecretGetter)
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "myhost", "", "kyma-modules")
+	host, err := ociRegistry.ResolveHost(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "myhost/kyma-modules", host)
+}
+
+func TestOCIRegistry_ResolveHost_WithHost_ContainingSubPath_AndAdditionalSubPath(t *testing.T) {
+	mockSecretGettr := new(mockSecretGetter)
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "myhost/existing-path", "", "kyma-modules")
+	host, err := ociRegistry.ResolveHost(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "myhost/existing-path/kyma-modules", host)
+}
+
+func TestOCIRegistry_ResolveHost_WithHost_WithScheme_AndSubPath(t *testing.T) {
+	mockSecretGettr := new(mockSecretGetter)
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "https://myhost", "", "kyma-modules")
+	host, err := ociRegistry.ResolveHost(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "https://myhost/kyma-modules", host)
+}
+
+func TestOCIRegistry_ResolveHost_WithHost_WithScheme_ContainingSubPath_AndAdditionalSubPath(t *testing.T) {
+	mockSecretGettr := new(mockSecretGetter)
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(
+		mockSecretGettr,
+		"https://myhost/existing-path",
+		"",
+		"kyma-modules",
+	)
+	host, err := ociRegistry.ResolveHost(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "https://myhost/existing-path/kyma-modules", host)
+}
+
+func TestOCIRegistry_ResolveHost_WithHost_TrailingSlash_AndSubPath(t *testing.T) {
+	mockSecretGettr := new(mockSecretGetter)
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "myhost/existing-path/", "", "kyma-modules")
+	host, err := ociRegistry.ResolveHost(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "myhost/existing-path/kyma-modules", host)
+}
+
+func TestOCIRegistry_ResolveHost_WithHost_AndSubPath_LeadingSlash(t *testing.T) {
+	mockSecretGettr := new(mockSecretGetter)
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "myhost/existing-path", "", "/kyma-modules")
+	host, err := ociRegistry.ResolveHost(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "myhost/existing-path/kyma-modules", host)
+}
+
+func TestOCIRegistry_ResolveHost_WithHost_TrailingSlash_AndSubPath_LeadingSlash(t *testing.T) {
+	mockSecretGettr := new(mockSecretGetter)
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "myhost/existing-path/", "", "/kyma-modules")
+	host, err := ociRegistry.ResolveHost(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "myhost/existing-path/kyma-modules", host)
+}
+
 func TestOCIRegistry_ResolveHost_WithCredSecret_Success(t *testing.T) {
 	mockSecretGettr := new(mockSecretGetter)
-	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "mysecret")
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "mysecret", "")
 
 	dockerConfigJson, err := getValidDockerConfigJson("myregistry.io")
 	require.NoError(t, err)
@@ -67,6 +128,118 @@ func TestOCIRegistry_ResolveHost_WithCredSecret_Success(t *testing.T) {
 	host, err := ociRegistry.ResolveHost(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, "myregistry.io", host)
+}
+
+func TestOCIRegistry_ResolveHost_WithCredSecret_AndSubPath(t *testing.T) {
+	mockSecretGettr := new(mockSecretGetter)
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "mysecret", "kyma-modules")
+
+	dockerConfigJson, err := getValidDockerConfigJson("myregistry.io")
+	require.NoError(t, err)
+	secret := &apicorev1.Secret{
+		Data: map[string][]byte{".dockerconfigjson": dockerConfigJson},
+	}
+	mockSecretGettr.On("Get", mock.Anything, "mysecret", mock.Anything).Return(secret, nil)
+
+	host, err := ociRegistry.ResolveHost(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "myregistry.io/kyma-modules", host)
+}
+
+func TestOCIRegistry_ResolveHost_WithCredSecret_ContainingSubPath_AndAdditionalSubPath(t *testing.T) {
+	mockSecretGettr := new(mockSecretGetter)
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "mysecret", "kyma-modules")
+
+	dockerConfigJson, err := getValidDockerConfigJson("myregistry.io/existing-path")
+	require.NoError(t, err)
+	secret := &apicorev1.Secret{
+		Data: map[string][]byte{".dockerconfigjson": dockerConfigJson},
+	}
+	mockSecretGettr.On("Get", mock.Anything, "mysecret", mock.Anything).Return(secret, nil)
+
+	host, err := ociRegistry.ResolveHost(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "myregistry.io/existing-path/kyma-modules", host)
+}
+
+func TestOCIRegistry_ResolveHost_WithCredSecret_WithScheme_AndSubPath(t *testing.T) {
+	mockSecretGettr := new(mockSecretGetter)
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "mysecret", "kyma-modules")
+
+	dockerConfigJson, err := getValidDockerConfigJson("https://myregistry.io")
+	require.NoError(t, err)
+	secret := &apicorev1.Secret{
+		Data: map[string][]byte{".dockerconfigjson": dockerConfigJson},
+	}
+	mockSecretGettr.On("Get", mock.Anything, "mysecret", mock.Anything).Return(secret, nil)
+
+	host, err := ociRegistry.ResolveHost(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "https://myregistry.io/kyma-modules", host)
+}
+
+func TestOCIRegistry_ResolveHost_WithCredSecret_WithScheme_ContainingSubPath_AndAdditionalSubPath(t *testing.T) {
+	mockSecretGettr := new(mockSecretGetter)
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "mysecret", "kyma-modules")
+
+	dockerConfigJson, err := getValidDockerConfigJson("https://myregistry.io/existing-path")
+	require.NoError(t, err)
+	secret := &apicorev1.Secret{
+		Data: map[string][]byte{".dockerconfigjson": dockerConfigJson},
+	}
+	mockSecretGettr.On("Get", mock.Anything, "mysecret", mock.Anything).Return(secret, nil)
+
+	host, err := ociRegistry.ResolveHost(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "https://myregistry.io/existing-path/kyma-modules", host)
+}
+
+func TestOCIRegistry_ResolveHost_WithCredSecret_TrailingSlash_AndSubPath(t *testing.T) {
+	mockSecretGettr := new(mockSecretGetter)
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "mysecret", "kyma-modules")
+
+	dockerConfigJson, err := getValidDockerConfigJson("myregistry.io/existing-path/")
+	require.NoError(t, err)
+	secret := &apicorev1.Secret{
+		Data: map[string][]byte{".dockerconfigjson": dockerConfigJson},
+	}
+	mockSecretGettr.On("Get", mock.Anything, "mysecret", mock.Anything).Return(secret, nil)
+
+	host, err := ociRegistry.ResolveHost(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "myregistry.io/existing-path/kyma-modules", host)
+}
+
+func TestOCIRegistry_ResolveHost_WithCredSecret_AndSubPath_LeadingSlash(t *testing.T) {
+	mockSecretGettr := new(mockSecretGetter)
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "mysecret", "/kyma-modules")
+
+	dockerConfigJson, err := getValidDockerConfigJson("myregistry.io/existing-path")
+	require.NoError(t, err)
+	secret := &apicorev1.Secret{
+		Data: map[string][]byte{".dockerconfigjson": dockerConfigJson},
+	}
+	mockSecretGettr.On("Get", mock.Anything, "mysecret", mock.Anything).Return(secret, nil)
+
+	host, err := ociRegistry.ResolveHost(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "myregistry.io/existing-path/kyma-modules", host)
+}
+
+func TestOCIRegistry_ResolveHost_WithCredSecret_TrailingSlash_AndSubPath_LeadingSlash(t *testing.T) {
+	mockSecretGettr := new(mockSecretGetter)
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "mysecret", "/kyma-modules")
+
+	dockerConfigJson, err := getValidDockerConfigJson("myregistry.io/existing-path/")
+	require.NoError(t, err)
+	secret := &apicorev1.Secret{
+		Data: map[string][]byte{".dockerconfigjson": dockerConfigJson},
+	}
+	mockSecretGettr.On("Get", mock.Anything, "mysecret", mock.Anything).Return(secret, nil)
+
+	host, err := ociRegistry.ResolveHost(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "myregistry.io/existing-path/kyma-modules", host)
 }
 
 func getValidDockerConfigJson(hostName string) ([]byte, error) {
@@ -81,7 +254,7 @@ func getValidDockerConfigJson(hostName string) ([]byte, error) {
 
 func TestOCIRegistry_ResolveHost_ReturnsError_WhenSecretGetterReturnsError(t *testing.T) {
 	mockSecretGettr := new(mockSecretGetter)
-	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "mysecret")
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "mysecret", "")
 
 	unexpectedError := errors.New("unexpected error")
 	mockSecretGettr.On("Get", mock.Anything, "mysecret", mock.Anything).Return((*apicorev1.Secret)(nil),
@@ -93,7 +266,7 @@ func TestOCIRegistry_ResolveHost_ReturnsError_WhenSecretGetterReturnsError(t *te
 
 func TestOCIRegistry_ResolveHost_ReturnsError_WhenSecretIsNotDockerConfig(t *testing.T) {
 	mockSecretGettr := new(mockSecretGetter)
-	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "mysecret")
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "mysecret", "")
 
 	secret := &apicorev1.Secret{Data: map[string][]byte{"other": {}}}
 	mockSecretGettr.On("Get", mock.Anything, "mysecret", mock.Anything).Return(secret, nil).Once()
@@ -104,7 +277,7 @@ func TestOCIRegistry_ResolveHost_ReturnsError_WhenSecretIsNotDockerConfig(t *tes
 
 func TestOCIRegistry_ResolveHost_ReturnsError_WhenCredSecretMalformed(t *testing.T) {
 	mockSecretGettr := new(mockSecretGetter)
-	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "mysecret")
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "mysecret", "")
 
 	secret := &apicorev1.Secret{Data: map[string][]byte{".dockerconfigjson": []byte("notjson")}}
 	mockSecretGettr.On("Get", mock.Anything, "mysecret", mock.Anything).Return(secret, nil).Once()
@@ -116,7 +289,7 @@ func TestOCIRegistry_ResolveHost_ReturnsError_WhenCredSecretMalformed(t *testing
 
 func TestOCIRegistry_ResolveHost_ReturnsError_WhenCredSecretHasNotHosts(t *testing.T) {
 	mockSecretGettr := new(mockSecretGetter)
-	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "mysecret")
+	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "mysecret", "")
 
 	jsonDockerConfig, err := getEmptyDockerConfigJson()
 	require.NoError(t, err)
