@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
+	"strings"
 
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,22 +56,22 @@ func NewOCIRegistryHostProvider(
 
 func (oci *OCIRegistryHostProvider) ResolveHost(ctx context.Context) (string, error) {
 	var host string
-	var err error
 
 	if oci.host != "" {
 		host = oci.host
 	} else {
+		var err error
 		host, err = oci.getHostFromCredSecret(ctx)
 		if err != nil {
 			return "", err
 		}
 	}
 
+	// String concatenation is used explicitly
+	// url.JoinPath may introduce problems due to unwanted URL encoding
+	// path.Join may introduce problems if the host contains scheme or port
 	if oci.modulesRepositorySubPath != "" {
-		host, err = url.JoinPath(host, oci.modulesRepositorySubPath)
-		if err != nil {
-			return "", fmt.Errorf("failed to join host with modules repository subpath: %w", err)
-		}
+		host = strings.TrimRight(host, "/") + "/" + strings.TrimLeft(oci.modulesRepositorySubPath, "/")
 	}
 
 	return host, nil

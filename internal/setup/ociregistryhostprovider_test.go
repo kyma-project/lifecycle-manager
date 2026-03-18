@@ -252,15 +252,6 @@ func getValidDockerConfigJson(hostName string) ([]byte, error) {
 	return jsonDockerConfig, err
 }
 
-func TestOCIRegistry_ResolveHost_ReturnsError_WhenHostAndSubPathJoinFails(t *testing.T) {
-	mockSecretGettr := new(mockSecretGetter)
-	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "%invalid", "", "kyma-modules")
-	host, err := ociRegistry.ResolveHost(t.Context())
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to join host with modules repository subpath")
-	require.Empty(t, host)
-}
-
 func TestOCIRegistry_ResolveHost_ReturnsError_WhenSecretGetterReturnsError(t *testing.T) {
 	mockSecretGettr := new(mockSecretGetter)
 	ociRegistry, _ := setup.NewOCIRegistryHostProvider(mockSecretGettr, "", "mysecret", "")
