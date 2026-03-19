@@ -43,7 +43,10 @@ runs:
         echo \
         "- op: add
           path: /spec/template/spec/containers/0/args/-
-          value: --oci-registry-host=https://europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market" >> oci_registry_host.yaml
+          value: --oci-registry-host=https://europe-west3-docker.pkg.dev
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --modules-repository-subpath=sap-kyma-jellyfish-dev/restricted-market" >> oci_registry_host.yaml
         cat oci_registry_host.yaml
         kustomize edit add patch --path oci_registry_host.yaml --kind Deployment
         popd

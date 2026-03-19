@@ -40,6 +40,8 @@ The module was referenced by a Kyma CR asking for it in the `regular` channel.
 
 The data that should be used for the initialization of a custom resource after the module has been installed. It is only used if the `.spec.modules[].customResourcePolicy` in the Kyma CR is set to `CreateAndDelete`. The data field must be filled with a valid custom resource (that can be of any type available in the API-Server _after_  module initialization). If set to `Ignore` by the module specification of the Kyma CR, it is entirely ignored, even when filled.
 
+When `CreateAndDelete` is used, the manifest reconciler tracks whether the module CR was successfully deployed to the runtime cluster via the `ModuleCR` condition on the corresponding Manifest CR. See [Manifest CR status conditions](./02-manifest.md#statusconditions) for details.
+
 A (partial) example could look like this:
 
 ```yaml

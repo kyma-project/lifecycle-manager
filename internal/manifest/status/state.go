@@ -17,7 +17,7 @@ func RequireManifestStateUpdateAfterSyncResource(manifest *v1beta2.Manifest, new
 		if newState == shared.StateProcessing || newState == shared.StateError {
 			manifest.SetStatus(manifestStatus.WithState(newState).WithOperation(WaitingForResourcesMsg))
 		} else {
-			ConfirmInstallationCondition(manifest)
+			SetInstallationConditionTrue(manifest)
 			manifest.SetStatus(manifestStatus.WithState(newState).WithOperation(ResourcesAreReadyMsg))
 		}
 		return true

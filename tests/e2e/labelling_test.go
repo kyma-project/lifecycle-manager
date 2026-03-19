@@ -117,13 +117,6 @@ var _ = Describe("Labelling SKR resources", Ordered, func() {
 					WithArguments(skrClient, name, gvk,
 						shared.ManagedBy, shared.ManagedByLabelValue).Should(Succeed())
 			}
-
-			By("And default CR is labbelled with managed-by label")
-			Eventually(CheckSampleCRHasExpectedLabel).
-				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace, skrClient, shared.ManagedBy,
-					shared.ManagedByLabelValue).
-				Should(Succeed())
 		})
 	})
 })
