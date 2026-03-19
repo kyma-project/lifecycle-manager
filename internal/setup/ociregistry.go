@@ -93,7 +93,7 @@ func getRegistry(ctx context.Context, secretRepo SecretRepository, registry stri
 		return "", ErrRegistryAndCredSecretEmpty
 	}
 	if registry != "" && registryCredSecretName != "" {
-		return "false", ErrBothRegistryAndCredSecret
+		return "", ErrBothRegistryAndCredSecret
 	}
 
 	if registry != "" {
