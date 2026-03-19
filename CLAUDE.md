@@ -4,9 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Project Is
 
-Kyma Lifecycle Manager (KLM) is a Kubernetes operator built with controller-runtime that manages the lifecycle of Kyma modules running on SAP BTP Kyma runtimes (SKRs).
-It handles module management, like provisioning, module resources sync and deletion. The operator runs on a central control plane (KCP) and manages remote SKR (SAP Kyma Runtime) clusters. The main controllers are Kyma controller and Manifest controller, where Kyma contains the general status of the module installation and Kyma cluster, and the Manifest contains the module details.
-Modules are OCM (Open Component Model) bundled resources, that are versioned (Component Version) and released in a unmodifiabable way. Users enable and disable modules generally by modifying the Kyma CR on the SKR cluster, where our skr-webhook (watcher) component listens for changes and sends reconciliation requests to KLM on KCP.
+Kyma Lifecycle Manager (KLM) is a Kubernetes operator built with controller-runtime that manages the lifecycle of Kyma modules running on SAP BTP Kyma runtimes. It runs on a central **control plane (KCP)** cluster and manages remote **SAP Kyma Runtime (SKR)** clusters. Its core responsibilities include module provisioning, resource synchronization, and deletion.
+
+The two main controllers are:
+- **Kyma controller** — tracks the overall status of module installations and the Kyma cluster.
+- **Manifest controller** — manages individual module deployment details.
+
+Modules are **OCM (Open Component Model)** bundled resources, versioned as Component Versions and released in an unmodifiable way. Users enable and disable modules by modifying the Kyma CR on the SKR cluster. The skr-webhook (Watcher) component on the SKR listens for these changes and sends reconciliation requests back to KLM on KCP.
 
 ## Build and Development Commands
 
