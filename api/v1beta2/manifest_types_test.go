@@ -20,10 +20,59 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
+
+func TestShouldCreateDefaultModuleCR(t *testing.T) {
+	resource := &unstructured.Unstructured{}
+
+	tests := []struct {
+		name     string
+		manifest *v1beta2.Manifest
+		want     bool
+	}{
+		{
+			name: "returns true when policy is CreateAndDelete, resource is set, and ModuleCR condition is absent",
+			manifest: &v1beta2.Manifest{
+				Spec: v1beta2.ManifestSpec{
+					CustomResourcePolicy: v1beta2.CustomResourcePolicyCreateAndDelete,
+					Resource:             resource,
+				},
+			},
+			want: true,
+		},
+		{
+			name: "returns false when policy is Ignore",
+			manifest: &v1beta2.Manifest{
+				Spec: v1beta2.ManifestSpec{
+					CustomResourcePolicy: v1beta2.CustomResourcePolicyIgnore,
+					Resource:             resource,
+				},
+			},
+			want: false,
+		},
+		{
+			name: "returns false when resource is nil",
+			manifest: &v1beta2.Manifest{
+				Spec: v1beta2.ManifestSpec{
+					CustomResourcePolicy: v1beta2.CustomResourcePolicyCreateAndDelete,
+					Resource:             nil,
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.manifest.ShouldCreateDefaultModuleCR()
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
 
 func TestGetCacheKey(t *testing.T) {
 	manifest := &v1beta2.Manifest{}

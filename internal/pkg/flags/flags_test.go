@@ -417,6 +417,11 @@ func Test_Flags_Validate(t *testing.T) {
 			flags: newFlagVarBuilder().withOciRegistryHost("test").withOciRegistryCredSecretName("test").build(),
 			err:   common.ErrBothOCIRegistryHostAndCredSecretProvided,
 		},
+		{
+			name:  "ModulesRepositorySubPath is optional and does not affect validation",
+			flags: newFlagVarBuilder().withModulesRepositorySubPath("some/sub/path").build(),
+			err:   nil,
+		},
 	}
 
 	for _, tt := range tests {
@@ -511,5 +516,10 @@ func (b *flagVarBuilder) withOciRegistryHost(host string) *flagVarBuilder {
 
 func (b *flagVarBuilder) withOciRegistryCredSecretName(secretName string) *flagVarBuilder {
 	b.flags.OciRegistryCredSecretName = secretName
+	return b
+}
+
+func (b *flagVarBuilder) withModulesRepositorySubPath(subPath string) *flagVarBuilder {
+	b.flags.ModulesRepositorySubPath = subPath
 	return b
 }

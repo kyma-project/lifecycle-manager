@@ -61,16 +61,32 @@ Lifecycle Manager fetches the raw manifest from the OCI layer and resolves it in
 
 The resource is the default data that should be initialized for the module and is directly copied from **.spec.data** of the ModuleTemplate CR after normalizing it with the **namespace** for the synchronized module.
 
-### **.status**
+### **.status.state**
 
-The Manifest CR status is set based on the following logic, managed by the manifest reconciler:
+The Manifest CR state is set based on the following logic, managed by the manifest reconciler:
 
-* `Ready`: If the module defined in the Manifest CR is successfully applied and the deployed module is up and running, the status of the Manifest CR is set to `Ready`.
-* `Processing`: While the manifest is being applied and the Deployment is still starting, the status of the Manifest CR is set to `Processing`.
-* `Error`: If the deployment cannot start, for example, due to an `ImagePullBackOff` error, or if the application of the manifest fails, the status of the Manifest CR is set to `Error`.
-* `Deleting`:  If the Manifest CR is marked for deletion, the status of the Manifest CR is set to `Deleting`.
+* `Ready`: If the module defined in the Manifest CR is successfully applied and the deployed module is up and running, the state of the Manifest CR is set to `Ready`.
+* `Processing`: While the manifest is being applied and the Deployment is still starting, the state of the Manifest CR is set to `Processing`.
+* `Error`: If the deployment cannot start, for example, due to an `ImagePullBackOff` error, or if the application of the manifest fails, the state of the Manifest CR is set to `Error`.
+* `Deleting`:  If the Manifest CR is marked for deletion, the state of the Manifest CR is set to `Deleting`.
 
-This status provides a reliable way to track the state of the Manifest CR and the associated module. It offers insights into the deployment process and any potential issues while being decoupled from the module's business logic.
+This state provides a reliable way to track the lifecycle of the Manifest CR and the associated module. It offers insights into the deployment process and any potential issues while being decoupled from the module's business logic.
+
+### **.status.conditions**
+
+The Manifest CR uses conditions to track the progress of individual reconciliation steps. The following condition types are used:
+
+| Type | Reason               | Description |
+|---|----------------------|---|
+| `Resources` | `ResourcesAvailable` | Indicates whether the module resources have been parsed and are ready for use. |
+| `Installation` | `Ready`              | Indicates whether the installation is ready and the resources can be used. |
+| `ModuleCR` | `ModuleCRCreated`    | Indicates whether the module CR has been deployed to the SKR cluster. |
+
+The `Resources` and `Installation` conditions are always present on every Manifest CR.
+
+The `ModuleCR` condition is only added when **both** of the following are true:
+- **.spec.resource** is set (that is, the module defines a default module CR).
+- **.spec.customResourcePolicy** is set to `CreateAndDelete`.
 
 ### **.metadata.labels**
 

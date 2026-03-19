@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,9 +16,10 @@ type SecretGetter interface {
 }
 
 type OCIRegistryHostProvider struct {
-	secretGetter   SecretGetter
-	host           string
-	credSecretName string
+	secretGetter             SecretGetter
+	host                     string
+	credSecretName           string
+	modulesRepositorySubPath string
 }
 
 var (
@@ -32,6 +34,7 @@ func NewOCIRegistryHostProvider(
 	secretGetter SecretGetter,
 	host string,
 	credSecretName string,
+	modulesRepositorySubPath string,
 ) (*OCIRegistryHostProvider, error) {
 	if secretGetter == nil {
 		return nil, ErrSecretGetterNil
@@ -44,18 +47,34 @@ func NewOCIRegistryHostProvider(
 	}
 
 	return &OCIRegistryHostProvider{
-		secretGetter:   secretGetter,
-		host:           host,
-		credSecretName: credSecretName,
+		secretGetter:             secretGetter,
+		host:                     host,
+		credSecretName:           credSecretName,
+		modulesRepositorySubPath: modulesRepositorySubPath,
 	}, nil
 }
 
 func (oci *OCIRegistryHostProvider) ResolveHost(ctx context.Context) (string, error) {
+	var host string
+
 	if oci.host != "" {
-		return oci.host, nil
+		host = oci.host
+	} else {
+		var err error
+		host, err = oci.getHostFromCredSecret(ctx)
+		if err != nil {
+			return "", err
+		}
 	}
 
-	return oci.getHostFromCredSecret(ctx)
+	// String concatenation is used explicitly
+	// url.JoinPath may introduce problems due to unwanted URL encoding
+	// path.Join may introduce problems if the host contains scheme or port
+	if oci.modulesRepositorySubPath != "" {
+		host = strings.TrimRight(host, "/") + "/" + strings.TrimLeft(oci.modulesRepositorySubPath, "/")
+	}
+
+	return host, nil
 }
 
 func (oci *OCIRegistryHostProvider) getHostFromCredSecret(ctx context.Context) (string, error) {

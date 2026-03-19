@@ -4,6 +4,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
@@ -19,48 +20,90 @@ type ConditionReason string
 
 const (
 	ConditionReasonResourcesAreAvailable ConditionReason = "ResourcesAvailable"
-	ConditionReasonModuleCRWarning       ConditionReason = "Warning"
+	ConditionReasonModuleCRCreated       ConditionReason = "ModuleCRCreated"
 	ConditionReasonReady                 ConditionReason = "Ready"
 )
 
-func initInstallationCondition(manifest *v1beta2.Manifest) apimetav1.Condition {
+func InitializeStatusConditions(manifest *v1beta2.Manifest) {
+	status := manifest.GetStatus()
+
+	for _, condition := range getDefaultConditions(manifest) {
+		if meta.FindStatusCondition(status.Conditions, condition.Type) == nil {
+			meta.SetStatusCondition(&status.Conditions, condition)
+		}
+	}
+
+	manifest.SetStatus(status)
+}
+
+func getDefaultConditions(manifest *v1beta2.Manifest) []apimetav1.Condition {
+	defaultConditions := []apimetav1.Condition{
+		getDefaultResourcesCondition(manifest),
+		getDefaultInstallationCondition(manifest),
+	}
+	if manifest.ShouldCreateDefaultModuleCR() {
+		defaultConditions = append(defaultConditions, getDefaultModuleCRCreatedCondition(manifest))
+	}
+	return defaultConditions
+}
+
+func getDefaultInstallationCondition(manifest *v1beta2.Manifest) apimetav1.Condition {
 	return apimetav1.Condition{
 		Type:               string(ConditionTypeInstallation),
 		Reason:             string(ConditionReasonReady),
 		Status:             apimetav1.ConditionFalse,
-		Message:            "installation is ready and resources can be used",
+		Message:            "installation is not ready",
 		ObservedGeneration: manifest.GetGeneration(),
 	}
 }
 
-func initResourcesCondition(manifest *v1beta2.Manifest) apimetav1.Condition {
+func getDefaultResourcesCondition(manifest *v1beta2.Manifest) apimetav1.Condition {
 	return apimetav1.Condition{
 		Type:               string(ConditionTypeResources),
 		Reason:             string(ConditionReasonResourcesAreAvailable),
 		Status:             apimetav1.ConditionFalse,
-		Message:            "resources are parsed and ready for use",
+		Message:            "resources not parsed",
 		ObservedGeneration: manifest.GetGeneration(),
 	}
 }
 
-func ConfirmResourcesCondition(manifest *v1beta2.Manifest) {
-	status := manifest.GetStatus()
-	resourceCondition := initResourcesCondition(manifest)
-
-	if !meta.IsStatusConditionTrue(status.Conditions, resourceCondition.Type) {
-		resourceCondition.Status = apimetav1.ConditionTrue
-		meta.SetStatusCondition(&status.Conditions, resourceCondition)
-		manifest.SetStatus(status.WithOperation(resourceCondition.Message))
+func getDefaultModuleCRCreatedCondition(manifest *v1beta2.Manifest) apimetav1.Condition {
+	return apimetav1.Condition{
+		Type:               string(ConditionTypeModuleCR),
+		Reason:             string(ConditionReasonModuleCRCreated),
+		Status:             apimetav1.ConditionFalse,
+		Message:            "module CR has not been created to SKR",
+		ObservedGeneration: manifest.GetGeneration(),
 	}
 }
 
-func ConfirmInstallationCondition(manifest *v1beta2.Manifest) {
-	status := manifest.GetStatus()
-	installationCondition := initInstallationCondition(manifest)
+func IsModuleCRInstallConditionTrue(status shared.Status) bool {
+	condition := meta.FindStatusCondition(status.Conditions, string(ConditionTypeModuleCR))
 
-	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) {
-		installationCondition.Status = apimetav1.ConditionTrue
-		meta.SetStatusCondition(&status.Conditions, installationCondition)
-		manifest.SetStatus(status.WithOperation(installationCondition.Message))
+	return condition != nil && condition.Status == apimetav1.ConditionTrue
+}
+
+func SetResourcesConditionTrue(manifest *v1beta2.Manifest) {
+	setConditionToTrue(manifest, ConditionTypeResources, "resources are parsed and ready for use")
+}
+
+func SetInstallationConditionTrue(manifest *v1beta2.Manifest) {
+	setConditionToTrue(manifest, ConditionTypeInstallation, "installation is ready and resources can be used")
+}
+
+func SetModuleCRInstallConditionTrue(manifest *v1beta2.Manifest) {
+	setConditionToTrue(manifest, ConditionTypeModuleCR, "module CR was created")
+}
+
+func setConditionToTrue(manifest *v1beta2.Manifest, conditionType ConditionType, message string) {
+	status := manifest.GetStatus()
+	condition := meta.FindStatusCondition(status.Conditions, string(conditionType))
+
+	if condition != nil && condition.Status != apimetav1.ConditionTrue {
+		condition.Status = apimetav1.ConditionTrue
+		condition.ObservedGeneration = manifest.GetGeneration()
+		condition.Message = message
+		meta.SetStatusCondition(&status.Conditions, *condition)
+		manifest.SetStatus(status.WithOperation(condition.Message))
 	}
 }
