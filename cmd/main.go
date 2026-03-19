@@ -245,13 +245,10 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	sharedMetrics := metrics.NewSharedMetrics()
 
 	ociRegistry := getOciRegistry(mgr.GetConfig(), flagVar, logger)
-	ociRegistryHost := ociRegistry.GetReference()
-	insecure := ociRegistry.IsInsecure()
 
 	descriptorProvider := componentdescriptorcache.ComposeCachedDescriptorProvider(
 		keychainLookupFromFlag(mgr.GetClient(), flagVar),
-		ociRegistryHost,
-		insecure,
+		ociRegistry,
 		logger,
 		bootstrapFailedExitCode,
 	)
@@ -276,11 +273,11 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	kymaLookupSvc := kymalookupcmpse.ComposeKymaLookupService(kymaRepo)
 
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
-		kymaMetrics, logger, maintenanceWindow, ociRegistryHost, kymaDeletionSvc, kymaLookupSvc)
+		kymaMetrics, logger, maintenanceWindow, ociRegistry.GetReference(), kymaDeletionSvc, kymaLookupSvc)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
 		eventRecorder, kymaRepo)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, logger,
-		ociRegistryHost)
+		ociRegistry.GetReference())
 	setupMandatoryModuleDeletionReconciler(mgr, eventRecorder, flagVar, options, logger)
 
 	setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, logger)
@@ -422,7 +419,7 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
 	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SkrWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
-	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, ociRegistryHost string,
+	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, ociRegistry string,
 	kymaDeletionSvc *kymadeletionsvc.Service, kymaLookupSvc *kymalookupsvc.Service,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
@@ -439,7 +436,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 
 	kymaReconcilerConfig := kyma.ReconcilerConfig{
 		RemoteSyncNamespace:    flagVar.RemoteSyncNamespace,
-		OCIRegistryHost:        ociRegistryHost,
+		OCIRegistry:            ociRegistry,
 		SkrImagePullSecretName: flagVar.SkrImagePullSecret,
 	}
 	kcpSystemSecretRepo := secretrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
@@ -605,14 +602,14 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager,
 	options ctrlruntime.Options,
 	metrics *metrics.MandatoryModulesMetrics,
 	setupLog logr.Logger,
-	ociRegistryHost string,
+	ociRegistry string,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
 
-	installationService := installation.ComposeInstallationService(mgr.GetClient(), descriptorProvider, ociRegistryHost,
+	installationService := installation.ComposeInstallationService(mgr.GetClient(), descriptorProvider, ociRegistry,
 		flagVar.RemoteSyncNamespace, metrics)
 	installationReconciler := mandatorymodule.NewInstallationReconciler(installationService,
 		queue.RequeueIntervals{

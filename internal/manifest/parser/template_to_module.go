@@ -29,19 +29,19 @@ type Parser struct {
 
 	descriptorProvider  *provider.CachedDescriptorProvider
 	remoteSyncNamespace string
-	ociRepo             string
+	ociRegistry         string
 }
 
 func NewParser(clnt client.Client,
 	descriptorProvider *provider.CachedDescriptorProvider,
 	remoteSyncNamespace string,
-	ociRepo string,
+	ociRegistry string,
 ) *Parser {
 	return &Parser{
 		Client:              clnt,
 		descriptorProvider:  descriptorProvider,
 		remoteSyncNamespace: remoteSyncNamespace,
-		ociRepo:             ociRepo,
+		ociRegistry:         ociRegistry,
 	}
 }
 
@@ -105,7 +105,7 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 	setNameAndNamespaceIfEmpty(template, name, p.remoteSyncNamespace)
 	var manifest *v1beta2.Manifest
 	if manifest, err = newManifestFromTemplate(module.Module,
-		template.ModuleTemplate, descriptor, p.ociRepo); err != nil {
+		template.ModuleTemplate, descriptor, p.ociRegistry); err != nil {
 		template.Err = err
 		modules = append(modules, &modulecommon.Module{
 			ModuleName:   module.Name,
@@ -148,7 +148,7 @@ func newManifestFromTemplate(
 	module v1beta2.Module,
 	template *v1beta2.ModuleTemplate,
 	descriptor *types.Descriptor,
-	repo string,
+	ociRegistry string,
 ) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}
 	if manifest.Annotations == nil {
@@ -167,7 +167,7 @@ func newManifestFromTemplate(
 		return nil, fmt.Errorf("could not parse descriptor: %w", err)
 	}
 
-	if err := translateLayersAndMergeIntoManifest(manifest, layers, repo); err != nil {
+	if err := translateLayersAndMergeIntoManifest(manifest, layers, ociRegistry); err != nil {
 		return nil, fmt.Errorf("could not translate layers and merge them: %w", err)
 	}
 
@@ -210,21 +210,21 @@ func getLocalizedImagesFromDescriptor(descriptor *types.Descriptor) []string {
 	return localizedImages
 }
 
-func translateLayersAndMergeIntoManifest(manifest *v1beta2.Manifest, layers img.Layers, repo string) error {
+func translateLayersAndMergeIntoManifest(manifest *v1beta2.Manifest, layers img.Layers, ociRegistry string) error {
 	for _, layer := range layers {
-		if err := insertLayerIntoManifest(manifest, layer, repo); err != nil {
+		if err := insertLayerIntoManifest(manifest, layer, ociRegistry); err != nil {
 			return fmt.Errorf("error in layer %s: %w", layer.LayerName, err)
 		}
 	}
 	return nil
 }
 
-func insertLayerIntoManifest(manifest *v1beta2.Manifest, layer img.Layer, ociRepoFromConfig string) error {
+func insertLayerIntoManifest(manifest *v1beta2.Manifest, layer img.Layer, ociRegistry string) error {
 	switch layer.LayerName {
 	case v1beta2.DefaultCRLayer:
 		// default CR layer is not relevant for the manifest
 	case v1beta2.ConfigLayer:
-		imageSpec, err := layer.ConvertToImageSpec(ociRepoFromConfig)
+		imageSpec, err := layer.ConvertToImageSpec(ociRegistry)
 		if err != nil {
 			return fmt.Errorf("error while parsing config layer: %w", err)
 		}
@@ -241,7 +241,7 @@ func insertLayerIntoManifest(manifest *v1beta2.Manifest, layer img.Layer, ociRep
 		// as it is known to be reachable.
 		// After all, we've been able to read the ComponentDescriptor using it.
 		ociImageCopy := img.OCI{
-			Repo: ociRepoFromConfig,
+			Repo: ociRegistry,
 			Name: ociImage.Name,
 			Ref:  ociImage.Ref,
 			Type: ociImage.Type,
