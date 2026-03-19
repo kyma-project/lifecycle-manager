@@ -14,6 +14,10 @@ const (
 	httpSchemePrefix  = "http://"
 )
 
+type dockerConfigAuths struct {
+	Auths map[string]any `json:"auths"`
+}
+
 type SecretRepository interface {
 	Get(ctx context.Context, name string) (*apicorev1.Secret, error)
 }
@@ -116,32 +120,41 @@ func getRegistryFromCredSecret(ctx context.Context,
 		return "", errors.Join(ErrFailedToGetRegistrySecret, err)
 	}
 
-	data, ok := secret.Data[apicorev1.DockerConfigJsonKey]
-	if !ok {
-		return "", ErrSecretMissingDockerConfig
+	dockerConfig, err := getDockerConfigFromSecret(secret)
+	if err != nil {
+		return "", err
 	}
 
-	var dockerConfig struct {
-		Auths map[string]any `json:"auths"`
-	}
-	if err := json.Unmarshal(data, &dockerConfig); err != nil {
-		return "", errors.Join(ErrFailedToUnmarshalDockerConfig, err)
-	}
-
-	if len(dockerConfig.Auths) > 1 {
-		return "", ErrMoreThanOneRegistryFound
-	}
-
-	if len(dockerConfig.Auths) == 0 {
-		return "", ErrNoRegistryFound
-	}
-
+	// return the first non-empty registry found in the auths map
 	for registry := range dockerConfig.Auths {
 		if registry != "" {
 			return registry, nil
 		}
 	}
+
 	return "", ErrNoRegistryFound
+}
+
+func getDockerConfigFromSecret(secret *apicorev1.Secret) (*dockerConfigAuths, error) {
+	data, ok := secret.Data[apicorev1.DockerConfigJsonKey]
+	if !ok {
+		return nil, ErrSecretMissingDockerConfig
+	}
+
+	var dockerConfig dockerConfigAuths
+	if err := json.Unmarshal(data, &dockerConfig); err != nil {
+		return nil, errors.Join(ErrFailedToUnmarshalDockerConfig, err)
+	}
+
+	if len(dockerConfig.Auths) > 1 {
+		return nil, ErrMoreThanOneRegistryFound
+	}
+
+	if len(dockerConfig.Auths) == 0 {
+		return nil, ErrNoRegistryFound
+	}
+
+	return &dockerConfig, nil
 }
 
 func trimScheme(registry string) string {
