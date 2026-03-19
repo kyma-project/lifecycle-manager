@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/resource"
@@ -128,22 +129,20 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 	ctx context.Context,
 	info *resource.Info,
 ) error {
-	obj, isTyped := info.Object.(client.Object)
-	if !isTyped {
+	unstrObj, isUnstructured := info.Object.(*unstructured.Unstructured)
+	if !isUnstructured {
 		return fmt.Errorf(
-			"%s is not a valid client-go object: %w", info.ObjectName(), ErrClientObjectConversionFailed,
+			"%s is not a valid unstructured object: %w", info.ObjectName(), ErrClientObjectConversionFailed,
 		)
 	}
-	obj.SetManagedFields(nil)
-	//nolint: staticcheck // issues: #2706, #2707
-	err := c.clnt.Patch(ctx, obj, client.Apply, client.ForceOwnership, c.owner)
+	err := c.clnt.Apply(ctx, client.ApplyConfigurationFromUnstructured(unstrObj), client.ForceOwnership, c.owner)
 	if err != nil {
 		return fmt.Errorf(
 			"patch for %s failed: %w", info.ObjectName(), supressLongClientErrors(err),
 		)
 	}
 
-	c.collector.Collect(ctx, obj)
+	c.collector.Collect(ctx, unstrObj)
 	return nil
 }
 
