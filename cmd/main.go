@@ -53,8 +53,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/provider/componentdescriptorcache"
-	"github.com/kyma-project/lifecycle-manager/cmd/composition/repository/oci"
-	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/componentdescriptor"
 	kymadeletioncmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/kyma/deletion"
 	kymalookupcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/kyma/lookup"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/deletion"
@@ -70,7 +68,6 @@ import (
 	watcherctrl "github.com/kyma-project/lifecycle-manager/internal/controller/watcher"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
@@ -258,22 +255,12 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		ociRegistryHost = noSchemeRef
 	}
 
-	ocmDescriptorRepository := oci.ComposeOCIRepository(
+	descriptorProvider := componentdescriptorcache.ComposeCachedDescriptorProvider(
 		keychainLookupFromFlag(mgr.GetClient(), flagVar),
 		ociRegistryHost,
 		insecure,
 		logger,
 		bootstrapFailedExitCode,
-	)
-	ocmDescriptorService := componentdescriptor.ComposeComponentDescriptorService(
-		ocmDescriptorRepository,
-		logger,
-		bootstrapFailedExitCode,
-	)
-
-	descriptorProvider := componentdescriptorcache.ComposeCachedDescriptorProvider(
-		ocmDescriptorService,
-		descriptorcache.NewDescriptorCache(),
 	)
 
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
