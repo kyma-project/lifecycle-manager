@@ -29,15 +29,15 @@ type OCIRegistry struct {
 }
 
 var (
-	ErrSecretRepoNil                 = errors.New("secretRepo cannot be nil")
-	ErrRegistryAndCredSecretEmpty    = errors.New("registry and credSecretName cannot both be empty")
-	ErrBothRegistryAndCredSecret     = errors.New("either registry or credSecretName should be provided, not both")
-	ErrFailedToResolveHostFromSecret = errors.New("failed to resolve registry from credential secret")
-	ErrFailedToGetRegistrySecret     = errors.New("failed to get registry credential secret")
-	ErrSecretMissingDockerConfig     = errors.New("secret missing .dockerconfigjson field")
-	ErrFailedToUnmarshalDockerConfig = errors.New("failed to unmarshal .dockerconfigjson")
-	ErrMoreThanOneRegistryFound      = errors.New("more than one registry found in the credential secret")
-	ErrNoRegistryFound               = errors.New("no registry found in .dockerconfigjson")
+	ErrSecretRepoNil                     = errors.New("secretRepo cannot be nil")
+	ErrRegistryAndCredSecretEmpty        = errors.New("registry and credSecretName cannot both be empty")
+	ErrBothRegistryAndCredSecret         = errors.New("either registry or credSecretName should be provided, not both")
+	ErrFailedToResolveRegistryFromSecret = errors.New("failed to resolve registry from credential secret")
+	ErrFailedToGetRegistrySecret         = errors.New("failed to get registry credential secret")
+	ErrSecretMissingDockerConfig         = errors.New("secret missing .dockerconfigjson field")
+	ErrFailedToUnmarshalDockerConfig     = errors.New("failed to unmarshal .dockerconfigjson")
+	ErrMoreThanOneRegistryFound          = errors.New("more than one registry found in the credential secret")
+	ErrNoRegistryFound                   = errors.New("no registry found in .dockerconfigjson")
 )
 
 // NewOCIRegistry creates a new OCIRegistry and resolves the registry eagerly.
@@ -105,7 +105,7 @@ func getRegistry(ctx context.Context,
 
 	registry, err := getRegistryFromCredSecret(ctx, secretRepo, registryCredSecretName)
 	if err != nil {
-		return "", errors.Join(ErrFailedToResolveHostFromSecret, err)
+		return "", errors.Join(ErrFailedToResolveRegistryFromSecret, err)
 	}
 
 	return registry, nil
