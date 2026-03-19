@@ -330,13 +330,16 @@ func getOciRegistryHost(config *rest.Config, flagVar *flags.FlagVar, setupLog lo
 	}
 	secretInterface := clientset.CoreV1().Secrets(shared.DefaultControlPlaneNamespace)
 
-	ociRegistrySetup, err := setup.NewOCIRegistryHostProvider(secretInterface, flagVar.OciRegistryHost,
-		flagVar.OciRegistryCredSecretName, flagVar.ModulesRepositorySubPath)
+	ociRegistry, err := setup.NewOCIRegistry(secretInterface)
 	if err != nil {
 		setupLog.Error(err, "failed to setup OCI registry")
 		os.Exit(bootstrapFailedExitCode)
 	}
-	ociRegistryHost, err := ociRegistrySetup.ResolveHost(context.Background())
+	ociRegistryHost, err := ociRegistry.Resolve(context.Background(),
+		flagVar.OciRegistryHost,
+		flagVar.OciRegistryCredSecretName,
+		flagVar.ModulesRepositorySubPath,
+	)
 	if err != nil {
 		setupLog.Error(err, "failed to resolve OCI registry host")
 		os.Exit(bootstrapFailedExitCode)
