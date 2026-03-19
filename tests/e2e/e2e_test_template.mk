@@ -15,6 +15,7 @@ module-setup:
 	@export PATH=$(LOCALBIN):$$PATH
 	@pushd $(TEMPLATE_OPERATOR_DIR) > /dev/null
 	### Add Changes Here
+	# You can use variables like $(MODULE_NAME), $(MODULE_OLDER_VERSION), etc from e2e.common.mk file
 	@popd > /dev/null
 	@echo "::endgroup::"
 

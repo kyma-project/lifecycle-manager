@@ -46,6 +46,12 @@ INSTALL_SCRIPTS_DIR   := $(realpath $(LIFECYCLE_MANAGER_DIR)/scripts/install/)
 TEMPLATE_OPERATOR_DIR := $(realpath $(LIFECYCLE_MANAGER_DIR)/../template-operator/)
 LOCALBIN              ?= $(E2E_TESTS_DIR)/bin
 
+$(if $(wildcard $(LIFECYCLE_MANAGER_DIR)),,$(error LIFECYCLE_MANAGER_DIR not found: $(LIFECYCLE_MANAGER_DIR)))
+$(if $(E2E_TESTS_DIR),,        $(error E2E_TESTS_DIR not found: $(LIFECYCLE_MANAGER_DIR)/tests/e2e))
+$(if $(SCRIPTS_DIR),,          $(error SCRIPTS_DIR not found: $(LIFECYCLE_MANAGER_DIR)/scripts/tests))
+$(if $(INSTALL_SCRIPTS_DIR),,  $(error INSTALL_SCRIPTS_DIR not found: $(LIFECYCLE_MANAGER_DIR)/scripts/install))
+$(if $(TEMPLATE_OPERATOR_DIR),,$(error TEMPLATE_OPERATOR_DIR not found: $(LIFECYCLE_MANAGER_DIR)/../template-operator))
+
 
 ##@ Tool versions
 # Note: no "v" prefix — the install scripts expect bare version numbers.
@@ -179,6 +185,15 @@ teardown: ## Delete KCP and SKR test clusters.
 	@$(SCRIPTS_DIR)/clusters_cleanup.sh
 	@echo "::endgroup::"
 
+
+##@ Module Metadata Variables
+
+MODULE_NAME   := template-operator
+MODULE_DEPLOYABLE_VERSION    := 1.0.4
+MODULE_OLDER_VERSION    := 1.1.0-smoke-test
+MODULE_DEPLOYMENT_OLDER_VERSION := template-operator-v1-controller-manager
+MODULE_NEWER_VERSION    := 2.4.1-smoke-test
+MODULE_DEPLOYMENT_NEWER_VERSION := template-operator-v2-controller-manager
 
 ##@ Test helpers
 

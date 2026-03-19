@@ -14,8 +14,8 @@ module-setup:
 	@echo "::group::Test-specific module metadata setup"
 	@export PATH=$(LOCALBIN):$$PATH
 	@pushd $(TEMPLATE_OPERATOR_DIR) > /dev/null
-	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh --module-name template-operator --version 1.1.0-smoke-test --deployment-name template-operator-v1-controller-manager --deployable-version 1.0.4 --mandatory
-	$(SCRIPTS_DIR)/deploy_mandatory_modulereleasemeta.sh template-operator 1.1.0-smoke-test
+	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh --module-name $(MODULE_NAME) --version $(MODULE_OLDER_VERSION) --deployment-name $(MODULE_DEPLOYMENT_OLDER_VERSION) --deployable-version $(MODULE_DEPLOYABLE_VERSION) --mandatory
+	$(SCRIPTS_DIR)/deploy_mandatory_modulereleasemeta.sh $(MODULE_NAME) $(MODULE_OLDER_VERSION)
 	@popd > /dev/null
 	@echo "::endgroup::"
 
