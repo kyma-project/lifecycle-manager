@@ -14,11 +14,6 @@ const (
 	httpSchemePrefix  = "http://"
 )
 
-var schemesToTrim = []string{
-	httpsSchemePrefix,
-	httpSchemePrefix,
-}
-
 type SecretRepository interface {
 	Get(ctx context.Context, name string) (*apicorev1.Secret, error)
 }
@@ -88,7 +83,11 @@ func (oci *OCIRegistry) IsInsecure() bool {
 	return oci.insecure
 }
 
-func getRegistry(ctx context.Context, secretRepo SecretRepository, registry string, registryCredSecretName string) (string, error) {
+func getRegistry(ctx context.Context,
+	secretRepo SecretRepository,
+	registry string,
+	registryCredSecretName string,
+) (string, error) {
 	if registry == "" && registryCredSecretName == "" {
 		return "", ErrRegistryAndCredSecretEmpty
 	}
@@ -108,7 +107,10 @@ func getRegistry(ctx context.Context, secretRepo SecretRepository, registry stri
 	return registry, nil
 }
 
-func getRegistryFromCredSecret(ctx context.Context, secretRepo SecretRepository, credSecretName string) (string, error) {
+func getRegistryFromCredSecret(ctx context.Context,
+	secretRepo SecretRepository,
+	credSecretName string,
+) (string, error) {
 	secret, err := secretRepo.Get(ctx, credSecretName)
 	if err != nil {
 		return "", errors.Join(ErrFailedToGetRegistrySecret, err)
@@ -142,11 +144,16 @@ func getRegistryFromCredSecret(ctx context.Context, secretRepo SecretRepository,
 	return "", ErrNoRegistryFound
 }
 
-func trimScheme(s string) string {
+func trimScheme(registry string) string {
+	schemesToTrim := []string{
+		httpsSchemePrefix,
+		httpSchemePrefix,
+	}
+
 	for _, scheme := range schemesToTrim {
-		if r, found := strings.CutPrefix(s, scheme); found {
+		if r, found := strings.CutPrefix(registry, scheme); found {
 			return r
 		}
 	}
-	return s
+	return registry
 }

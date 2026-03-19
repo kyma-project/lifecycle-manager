@@ -77,7 +77,12 @@ func TestOCIRegistry_Resolve_WithRegistry_WithScheme_AndSubPath(t *testing.T) {
 
 func TestOCIRegistry_Resolve_WithRegistry_WithScheme_ContainingSubPath_AndAdditionalSubPath(t *testing.T) {
 	mockSecretGettr := new(mockSecretGetter)
-	ociRegistry, err := setup.NewOCIRegistry(t.Context(), mockSecretGettr, "https://myhost/existing-path", "", "kyma-modules")
+	ociRegistry, err := setup.NewOCIRegistry(t.Context(),
+		mockSecretGettr,
+		"https://myhost/existing-path",
+		"",
+		"kyma-modules",
+	)
 	require.NoError(t, err)
 	require.Equal(t, "myhost/existing-path/kyma-modules", ociRegistry.GetReference())
 }
