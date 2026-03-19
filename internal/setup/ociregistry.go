@@ -26,7 +26,8 @@ type SecretRepository interface {
 
 // OCIRegistry is a setup helper that resolves the OCI registry based on the provided registry configuration.
 type OCIRegistry struct {
-	secretRepo SecretRepository
+	registry string
+	insecure bool
 }
 
 var (
@@ -41,56 +42,54 @@ var (
 	ErrNoRegistryFound               = errors.New("no registry found in .dockerconfigjson")
 )
 
-func NewOCIRegistry(secretRepo SecretRepository) (*OCIRegistry, error) {
+// NewOCIRegistry creates a new OCIRegistry and resolves the registry eagerly.
+// Only one of registry or registryCredSecretName must be provided. If both are provided, an error is returned.
+// If registryCredSecretName is provided, the registry is extracted from the specified Kubernetes secret.
+// The subPath is appended to the registry if it is not empty.
+func NewOCIRegistry(
+	ctx context.Context,
+	secretRepo SecretRepository,
+	registry string,
+	registryCredSecretName string,
+	subPath string,
+) (*OCIRegistry, error) {
 	if secretRepo == nil {
 		return nil, ErrSecretRepoNil
 	}
 
-	return &OCIRegistry{
-		secretRepo: secretRepo,
-	}, nil
-}
-
-// Resolve resolves the OCI registry reference based on the provided parameters.
-// Only one of registry or registryCredSecretName must be provided. If both are provided, an error is returned.
-// If registryCredSecretName is provided, the registry is extracted from the specified Kubernetes secret.
-// The subPath is appended to the registry reference if it is not empty.
-// It returns the resolved registry reference (host + optional path) without scheme.
-func (oci *OCIRegistry) Resolve(ctx context.Context,
-	registry string,
-	registryCredSecretName string,
-	subPath string,
-) (string, error) {
-	registry, err := oci.getRegistry(ctx, registry, registryCredSecretName)
+	registry, err := getRegistry(ctx, secretRepo, registry, registryCredSecretName)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+
+	insecure := strings.HasPrefix(registry, httpSchemePrefix)
 
 	registry = trimScheme(registry)
 
 	// String concatenation is used explicitly
 	// url.JoinPath may introduce problems due to unwanted URL encoding
-	// path.Join may introduce problems if the registry reference contains a port
+	// path.Join may introduce problems if the registry contains a port
 	if subPath != "" {
 		registry = strings.TrimRight(registry, "/") + "/" + strings.TrimLeft(subPath, "/")
 	}
 
-	return registry, nil
+	return &OCIRegistry{
+		registry: registry,
+		insecure: insecure,
+	}, nil
 }
 
-// IsInsecure checks if the registry is insecure (i.e., uses http scheme) based on the provided parameters.
-// Only one of registry or registryCredSecretName must be provided. If both are provided, an error is returned.
-// If registryCredSecretName is provided, the registry is extracted from the specified Kubernetes secret.
-func (oci *OCIRegistry) IsInsecure(ctx context.Context, registry string, registryCredSecretName string) (bool, error) {
-	registry, err := oci.getRegistry(ctx, registry, registryCredSecretName)
-	if err != nil {
-		return false, err
-	}
-
-	return strings.HasPrefix(registry, httpSchemePrefix), nil
+// GetReference returns the resolved registry reference (host + optional path) without scheme.
+func (oci *OCIRegistry) GetReference() string {
+	return oci.registry
 }
 
-func (oci *OCIRegistry) getRegistry(ctx context.Context, registry string, registryCredSecretName string) (string, error) {
+// IsInsecure returns whether the registry uses an insecure (http) connection.
+func (oci *OCIRegistry) IsInsecure() bool {
+	return oci.insecure
+}
+
+func getRegistry(ctx context.Context, secretRepo SecretRepository, registry string, registryCredSecretName string) (string, error) {
 	if registry == "" && registryCredSecretName == "" {
 		return "", ErrRegistryAndCredSecretEmpty
 	}
@@ -102,7 +101,7 @@ func (oci *OCIRegistry) getRegistry(ctx context.Context, registry string, regist
 		return registry, nil
 	}
 
-	registry, err := oci.getRegistryFromCredSecret(ctx, registryCredSecretName)
+	registry, err := getRegistryFromCredSecret(ctx, secretRepo, registryCredSecretName)
 	if err != nil {
 		return "", errors.Join(ErrFailedToResolveHostFromSecret, err)
 	}
@@ -110,8 +109,8 @@ func (oci *OCIRegistry) getRegistry(ctx context.Context, registry string, regist
 	return registry, nil
 }
 
-func (oci *OCIRegistry) getRegistryFromCredSecret(ctx context.Context, credSecretName string) (string, error) {
-	secret, err := oci.secretRepo.Get(ctx, credSecretName, apimetav1.GetOptions{})
+func getRegistryFromCredSecret(ctx context.Context, secretRepo SecretRepository, credSecretName string) (string, error) {
+	secret, err := secretRepo.Get(ctx, credSecretName, apimetav1.GetOptions{})
 	if err != nil {
 		return "", errors.Join(ErrFailedToGetRegistrySecret, err)
 	}

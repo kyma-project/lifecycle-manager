@@ -25,7 +25,6 @@ import (
 	"net/http/pprof"
 	"os"
 	"reflect"
-	"strings"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -245,15 +244,9 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	sharedMetrics := metrics.NewSharedMetrics()
 
-	ociRegistryHost := getOciRegistryHost(mgr.GetConfig(), flagVar, logger)
-	var insecure bool
-
-	if noSchemeRef, found := strings.CutPrefix(ociRegistryHost, "http://"); found {
-		insecure = true
-		ociRegistryHost = noSchemeRef
-	} else if noSchemeRef, found := strings.CutPrefix(ociRegistryHost, "https://"); found {
-		ociRegistryHost = noSchemeRef
-	}
+	ociRegistry := getOciRegistry(mgr.GetConfig(), flagVar, logger)
+	ociRegistryHost := ociRegistry.GetReference()
+	insecure := ociRegistry.IsInsecure()
 
 	descriptorProvider := componentdescriptorcache.ComposeCachedDescriptorProvider(
 		keychainLookupFromFlag(mgr.GetClient(), flagVar),
@@ -309,7 +302,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 }
 
-func getOciRegistryHost(config *rest.Config, flagVar *flags.FlagVar, setupLog logr.Logger) string {
+func getOciRegistry(config *rest.Config, flagVar *flags.FlagVar, setupLog logr.Logger) *setup.OCIRegistry {
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		setupLog.Error(err, "unable to create kubernetes clientset")
@@ -317,21 +310,17 @@ func getOciRegistryHost(config *rest.Config, flagVar *flags.FlagVar, setupLog lo
 	}
 	secretInterface := clientset.CoreV1().Secrets(shared.DefaultControlPlaneNamespace)
 
-	ociRegistry, err := setup.NewOCIRegistry(secretInterface)
-	if err != nil {
-		setupLog.Error(err, "failed to setup OCI registry")
-		os.Exit(bootstrapFailedExitCode)
-	}
-	ociRegistryHost, err := ociRegistry.Resolve(context.Background(),
+	ociRegistry, err := setup.NewOCIRegistry(context.Background(),
+		secretInterface,
 		flagVar.OciRegistryHost,
 		flagVar.OciRegistryCredSecretName,
 		flagVar.ModulesRepositorySubPath,
 	)
 	if err != nil {
-		setupLog.Error(err, "failed to resolve OCI registry host")
+		setupLog.Error(err, "failed to setup OCI registry")
 		os.Exit(bootstrapFailedExitCode)
 	}
-	return ociRegistryHost
+	return ociRegistry
 }
 
 func initMaintenanceWindow(minWindowSize time.Duration, logger logr.Logger) maintenancewindows.MaintenanceWindow {
