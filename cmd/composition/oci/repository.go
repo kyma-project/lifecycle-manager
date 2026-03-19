@@ -11,7 +11,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 )
 
-func ComposeOCIRepository(
+func ComposeRepository(
 	kcl spec.KeyChainLookup,
 	ociRegistry *setup.OCIRegistry,
 	logger logr.Logger,

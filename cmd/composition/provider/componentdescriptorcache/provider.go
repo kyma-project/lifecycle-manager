@@ -19,7 +19,7 @@ func ComposeCachedDescriptorProvider(
 	logger logr.Logger,
 	bootstrapFailedExitCode int,
 ) *provider.CachedDescriptorProvider {
-	ocmDescriptorRepository := oci.ComposeOCIRepository(
+	ocmDescriptorRepository := oci.ComposeRepository(
 		kcl,
 		ociRegistry,
 		logger,

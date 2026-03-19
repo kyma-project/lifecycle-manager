@@ -243,7 +243,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	sharedMetrics := metrics.NewSharedMetrics()
 
-	ociRegistry := oci.ComposeOCIRegistry(secretRepo, flagVar, logger, bootstrapFailedExitCode)
+	ociRegistry := oci.ComposeRegistry(secretRepo, flagVar, logger, bootstrapFailedExitCode)
 
 	descriptorProvider := componentdescriptorcache.ComposeCachedDescriptorProvider(
 		keychainLookupFromFlag(mgr.GetClient(), flagVar),

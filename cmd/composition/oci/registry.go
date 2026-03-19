@@ -11,8 +11,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 )
 
-// ComposeOCIRegistry creates a new OCIRegistry instance from the provided secret repository and flag configuration.
-func ComposeOCIRegistry(
+// ComposeRegistry creates a new OCIRegistry instance from the provided secret repository and flag configuration.
+func ComposeRegistry(
 	secretRepo *secretrepo.Repository,
 	flagVar *flags.FlagVar,
 	logger logr.Logger,
