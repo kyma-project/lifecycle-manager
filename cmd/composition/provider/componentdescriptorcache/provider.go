@@ -3,7 +3,7 @@ package componentdescriptorcache
 import (
 	"github.com/go-logr/logr"
 
-	"github.com/kyma-project/lifecycle-manager/cmd/composition/repository/oci"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/oci"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/componentdescriptor"
 	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"

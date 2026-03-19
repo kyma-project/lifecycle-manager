@@ -49,6 +49,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/oci"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/provider/componentdescriptorcache"
 	kymadeletioncmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/kyma/deletion"
 	kymalookupcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/kyma/lookup"
@@ -242,7 +243,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	sharedMetrics := metrics.NewSharedMetrics()
 
-	ociRegistry := getOciRegistry(secretRepo, flagVar, logger)
+	ociRegistry := oci.ComposeOCIRegistry(secretRepo, flagVar, logger, bootstrapFailedExitCode)
 
 	descriptorProvider := componentdescriptorcache.ComposeCachedDescriptorProvider(
 		keychainLookupFromFlag(mgr.GetClient(), flagVar),
@@ -295,20 +296,6 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		logger.Error(err, "problem running manager")
 		os.Exit(runtimeProblemExitCode)
 	}
-}
-
-func getOciRegistry(secretRepo *secretrepo.Repository, flagVar *flags.FlagVar, setupLog logr.Logger) *setup.OCIRegistry {
-	ociRegistry, err := setup.NewOCIRegistry(context.Background(),
-		secretRepo,
-		flagVar.OciRegistryHost,
-		flagVar.OciRegistryCredSecretName,
-		flagVar.ModulesRepositorySubPath,
-	)
-	if err != nil {
-		setupLog.Error(err, "failed to setup OCI registry")
-		os.Exit(bootstrapFailedExitCode)
-	}
-	return ociRegistry
 }
 
 func initMaintenanceWindow(minWindowSize time.Duration, logger logr.Logger) maintenancewindows.MaintenanceWindow {
