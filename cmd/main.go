@@ -37,9 +37,7 @@ import (
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/client-go/kubernetes"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -199,8 +197,8 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		os.Exit(bootstrapFailedExitCode)
 	}
 	gatewayRepository := istiogateway.NewRepository(kcpClientWithoutCache)
-	accessSecretRepository := secretrepo.NewRepository(kcpClientWithoutCache, shared.DefaultControlPlaneNamespace)
-	accessManagerService := accessmanager.NewService(accessSecretRepository)
+	secretRepo := secretrepo.NewRepository(kcpClientWithoutCache, shared.DefaultControlPlaneNamespace)
+	accessManagerService := accessmanager.NewService(secretRepo)
 	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient,
 		remoteClientCache,
 		eventRecorder,
@@ -244,7 +242,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	sharedMetrics := metrics.NewSharedMetrics()
 
-	ociRegistry := getOciRegistry(mgr.GetConfig(), flagVar, logger)
+	ociRegistry := getOciRegistry(secretRepo, flagVar, logger)
 
 	descriptorProvider := componentdescriptorcache.ComposeCachedDescriptorProvider(
 		keychainLookupFromFlag(mgr.GetClient(), flagVar),
@@ -265,7 +263,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		certificateRepository,
 		kymaMetrics,
 		kymaRepo,
-		accessSecretRepository,
+		secretRepo,
 		remoteClientCache,
 		skrWebhookManager,
 	)
@@ -299,16 +297,9 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 }
 
-func getOciRegistry(config *rest.Config, flagVar *flags.FlagVar, setupLog logr.Logger) *setup.OCIRegistry {
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		setupLog.Error(err, "unable to create kubernetes clientset")
-		os.Exit(bootstrapFailedExitCode)
-	}
-	secretInterface := clientset.CoreV1().Secrets(shared.DefaultControlPlaneNamespace)
-
+func getOciRegistry(secretRepo *secretrepo.Repository, flagVar *flags.FlagVar, setupLog logr.Logger) *setup.OCIRegistry {
 	ociRegistry, err := setup.NewOCIRegistry(context.Background(),
-		secretInterface,
+		secretRepo,
 		flagVar.OciRegistryHost,
 		flagVar.OciRegistryCredSecretName,
 		flagVar.ModulesRepositorySubPath,

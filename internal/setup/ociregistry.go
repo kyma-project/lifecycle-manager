@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	apicorev1 "k8s.io/api/core/v1"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -21,7 +20,7 @@ var schemesToTrim = []string{
 }
 
 type SecretRepository interface {
-	Get(ctx context.Context, name string, opts apimetav1.GetOptions) (*apicorev1.Secret, error)
+	Get(ctx context.Context, name string) (*apicorev1.Secret, error)
 }
 
 // OCIRegistry is a setup helper that resolves the OCI registry based on the provided registry configuration.
@@ -110,7 +109,7 @@ func getRegistry(ctx context.Context, secretRepo SecretRepository, registry stri
 }
 
 func getRegistryFromCredSecret(ctx context.Context, secretRepo SecretRepository, credSecretName string) (string, error) {
-	secret, err := secretRepo.Get(ctx, credSecretName, apimetav1.GetOptions{})
+	secret, err := secretRepo.Get(ctx, credSecretName)
 	if err != nil {
 		return "", errors.Join(ErrFailedToGetRegistrySecret, err)
 	}

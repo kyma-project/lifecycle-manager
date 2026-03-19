@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	apicorev1 "k8s.io/api/core/v1"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 )
@@ -18,9 +17,9 @@ type mockSecretGetter struct {
 	mock.Mock
 }
 
-func (m *mockSecretGetter) Get(ctx context.Context, name string, opts apimetav1.GetOptions,
+func (m *mockSecretGetter) Get(ctx context.Context, name string,
 ) (*apicorev1.Secret, error) {
-	args := m.Called(ctx, name, opts)
+	args := m.Called(ctx, name)
 	return args.Get(0).(*apicorev1.Secret), args.Error(1)
 }
 
