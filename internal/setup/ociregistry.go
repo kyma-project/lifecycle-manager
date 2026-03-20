@@ -36,8 +36,8 @@ var (
 	ErrFailedToGetRegistrySecret         = errors.New("failed to get registry credential secret")
 	ErrSecretMissingDockerConfig         = errors.New("secret missing .dockerconfigjson field")
 	ErrFailedToUnmarshalDockerConfig     = errors.New("failed to unmarshal .dockerconfigjson")
-	ErrMoreThanOneRegistryFound          = errors.New("more than one registry found in the credential secret")
-	ErrNoRegistryFound                   = errors.New("no registry found in .dockerconfigjson")
+	ErrExactlyOneRegistryExpected        = errors.New(".dockerconfigjson must contain exactly one registry")
+	ErrRegistryMustNotBeEmpty            = errors.New("registry in .dockerconfigjson is empty")
 )
 
 // NewOCIRegistry creates a new OCIRegistry and resolves the registry eagerly.
@@ -132,7 +132,7 @@ func getRegistryFromCredSecret(ctx context.Context,
 		}
 	}
 
-	return "", ErrNoRegistryFound
+	return "", ErrRegistryMustNotBeEmpty
 }
 
 func getDockerConfigFromSecret(secret *apicorev1.Secret) (*dockerConfigAuths, error) {
@@ -146,12 +146,8 @@ func getDockerConfigFromSecret(secret *apicorev1.Secret) (*dockerConfigAuths, er
 		return nil, errors.Join(ErrFailedToUnmarshalDockerConfig, err)
 	}
 
-	if len(dockerConfig.Auths) > 1 {
-		return nil, ErrMoreThanOneRegistryFound
-	}
-
-	if len(dockerConfig.Auths) == 0 {
-		return nil, ErrNoRegistryFound
+	if len(dockerConfig.Auths) != 1 {
+		return nil, ErrExactlyOneRegistryExpected
 	}
 
 	return &dockerConfig, nil
