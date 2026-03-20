@@ -30,7 +30,7 @@ func (e *RecorderWrapper) Normal(obj machineryruntime.Object, reason Reason, msg
 		return
 	}
 	var related machineryruntime.Object = nil // related object is optional. We may consider using it in the future.
-	action := ""                              // action is optional. We may consider using it in the future.
+	action := string(reason)
 	e.recorder.Eventf(obj, related, apicorev1.EventTypeNormal, string(reason), action, msg)
 }
 
@@ -39,7 +39,7 @@ func (e *RecorderWrapper) Warning(obj machineryruntime.Object, reason Reason, er
 		return
 	}
 	var related machineryruntime.Object = nil // related object is optional. We may consider using it in the future.
-	action := ""                              // action is optional. We may consider using it in the future.
+	action := string(reason) 
 	e.recorder.Eventf(obj, related, apicorev1.EventTypeWarning, string(reason), action, truncatedErrMsg(err))
 }
 
