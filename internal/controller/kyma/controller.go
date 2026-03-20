@@ -103,7 +103,7 @@ type SkrSyncService interface {
 // Usually read from flags or environment variables.
 type ReconcilerConfig struct {
 	RemoteSyncNamespace    string
-	OCIRegistryHost        string
+	OCIRegistry            string
 	SkrImagePullSecretName string
 }
 
@@ -686,7 +686,7 @@ func (r *Reconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
 
 func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma) error {
 	templates := r.TemplateLookup.GetRegularTemplates(ctx, kyma)
-	prsr := parser.NewParser(r.Client, r.DescriptorProvider, r.Config.RemoteSyncNamespace, r.Config.OCIRegistryHost)
+	prsr := parser.NewParser(r.Client, r.DescriptorProvider, r.Config.RemoteSyncNamespace, r.Config.OCIRegistry)
 	modules := prsr.GenerateModulesFromTemplates(kyma, templates)
 
 	runner := sync.New(r)

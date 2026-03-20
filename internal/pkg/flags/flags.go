@@ -282,7 +282,8 @@ func DefineFlagVar() *FlagVar {
 		"Allows to configure the name of the Secret containing the credentials for "+
 			"the OCI registry storing the OCM component versions of modules. "+
 			"Must not be set together with --oci-registry-host. "+
-			"The Secret must be of type 'kubernetes.io/dockerconfigjson'.",
+			"The Secret must be of type 'kubernetes.io/dockerconfigjson'. "+
+			"The 'Auths' map of the .dockerconfigjson must contain one entry only.",
 	)
 	flag.StringVar(&flagVar.OciRegistryHost, "oci-registry-host", "",
 		"Allows to configure the hostname of the OCI registry storing the OCM component versions of modules. "+
