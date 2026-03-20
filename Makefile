@@ -179,7 +179,7 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) $(GO) install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
 
 .PHONY: applyconfiguration-gen
-applyconfiguration-gen:
+applyconfiguration-gen: $(LOCALBIN)
 	GOBIN=$(LOCALBIN) $(GO) install k8s.io/code-generator/cmd/applyconfiguration-gen@v$(APPLYCONFIGURATION_GEN_VERSION)
 	pushd api; $(LOCALBIN)/applyconfiguration-gen --output-dir ./applyconfigurations --output-pkg github.com/kyma-project/lifecycle-manager/api/applyconfigurations ./v1beta2; popd
 
