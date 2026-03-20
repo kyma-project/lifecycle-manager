@@ -116,7 +116,7 @@ func TestOCIRegistry_Resolve_WithCredSecret_Success(t *testing.T) {
 	secret := &apicorev1.Secret{
 		Data: map[string][]byte{".dockerconfigjson": dockerConfigJson},
 	}
-	mockSecretGettr.On("Get", mock.Anything, "mysecret", mock.Anything).Return(secret, nil)
+	mockSecretGettr.On("Get", mock.Anything, "mysecret").Return(secret, nil)
 
 	ociRegistry, err := setup.NewOCIRegistry(t.Context(), mockSecretGettr, "", "mysecret", "")
 	require.NoError(t, err)
@@ -270,10 +270,32 @@ func TestOCIRegistry_Resolve_ReturnsError_WhenCredSecretMalformed(t *testing.T) 
 func TestOCIRegistry_Resolve_ReturnsError_WhenCredSecretHasNoURLs(t *testing.T) {
 	mockSecretGettr := new(mockSecretGetter)
 
-	jsonDockerConfig, err := getEmptyRegistryDockerConfigJson()
+	jsonDockerConfig, err := getDockerConfigJsonWithNoEntries()
 	require.NoError(t, err)
 	secret := &apicorev1.Secret{Data: map[string][]byte{".dockerconfigjson": jsonDockerConfig}}
 	mockSecretGettr.On("Get", mock.Anything, "mysecret", mock.Anything).Return(secret, nil).Once()
+	_, err = setup.NewOCIRegistry(t.Context(), mockSecretGettr, "", "mysecret", "")
+	require.ErrorIs(t, err, setup.ErrExactlyOneRegistryExpected)
+}
+
+func TestOCIRegistry_Resolve_ReturnsError_WhenCredSecretHasMultipleEntries(t *testing.T) {
+	mockSecretGettr := new(mockSecretGetter)
+
+	jsonDockerConfig, err := getDockerConfigJsonWithMultipleEntries()
+	require.NoError(t, err)
+	secret := &apicorev1.Secret{Data: map[string][]byte{".dockerconfigjson": jsonDockerConfig}}
+	mockSecretGettr.On("Get", mock.Anything, "mysecret").Return(secret, nil).Once()
+	_, err = setup.NewOCIRegistry(t.Context(), mockSecretGettr, "", "mysecret", "")
+	require.ErrorIs(t, err, setup.ErrExactlyOneRegistryExpected)
+}
+
+func TestOCIRegistry_Resolve_ReturnsError_WhenCredSecretHasNoEntries(t *testing.T) {
+	mockSecretGettr := new(mockSecretGetter)
+
+	jsonDockerConfig, err := getDockerConfigJsonWithEmptyStringEntry()
+	require.NoError(t, err)
+	secret := &apicorev1.Secret{Data: map[string][]byte{".dockerconfigjson": jsonDockerConfig}}
+	mockSecretGettr.On("Get", mock.Anything, "mysecret").Return(secret, nil).Once()
 	_, err = setup.NewOCIRegistry(t.Context(), mockSecretGettr, "", "mysecret", "")
 	require.ErrorIs(t, err, setup.ErrRegistryMustNotBeEmpty)
 }
@@ -299,12 +321,22 @@ func TestOCIRegistry_IsInsecure_WithoutScheme(t *testing.T) {
 	require.False(t, ociRegistry.IsInsecure())
 }
 
-func getEmptyDockerConfigJson() ([]byte, error) {
+func getDockerConfigJsonWithNoEntries() ([]byte, error) {
 	dockerConfig := map[string]any{"auths": map[string]any{}}
 	return json.Marshal(dockerConfig)
 }
 
-func getEmptyRegistryDockerConfigJson() ([]byte, error) {
+func getDockerConfigJsonWithMultipleEntries() ([]byte, error) {
+	dockerConfig := map[string]any{
+		"auths": map[string]any{
+			"registry1.io": map[string]string{"auth": "dXNlcjpwYXNz"},
+			"registry2.io": map[string]string{"auth": "dXNlcjpwYXNz"},
+		},
+	}
+	return json.Marshal(dockerConfig)
+}
+
+func getDockerConfigJsonWithEmptyStringEntry() ([]byte, error) {
 	dockerConfig := map[string]any{
 		"auths": map[string]any{
 			"": map[string]string{},
