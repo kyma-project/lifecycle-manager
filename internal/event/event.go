@@ -25,6 +25,8 @@ func NewRecorderWrapper(recorder events.EventRecorder) *RecorderWrapper {
 	return &RecorderWrapper{recorder}
 }
 
+// Normal records a normal event for the given object with the specified reason and message.
+// The provided obj must not be nil and the reason must not be empty.
 func (e *RecorderWrapper) Normal(obj machineryruntime.Object, reason Reason, msg string) {
 	if obj == nil {
 		return
@@ -34,12 +36,14 @@ func (e *RecorderWrapper) Normal(obj machineryruntime.Object, reason Reason, msg
 	e.recorder.Eventf(obj, related, apicorev1.EventTypeNormal, string(reason), action, msg)
 }
 
+// Warning records a warning event for the given object with the specified reason and error message.
+// The provided obj must not be nil and the err must not be nil. The reason must not be empty.
 func (e *RecorderWrapper) Warning(obj machineryruntime.Object, reason Reason, err error) {
 	if obj == nil || err == nil {
 		return
 	}
 	var related machineryruntime.Object = nil // related object is optional. We may consider using it in the future.
-	action := string(reason) 
+	action := string(reason)
 	e.recorder.Eventf(obj, related, apicorev1.EventTypeWarning, string(reason), action, truncatedErrMsg(err))
 }
 
