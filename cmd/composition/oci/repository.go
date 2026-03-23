@@ -8,21 +8,21 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/ocm"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/ocm/oci"
+	"github.com/kyma-project/lifecycle-manager/internal/setup"
 )
 
-func ComposeOCIRepository(
+func ComposeRepository(
 	kcl spec.KeyChainLookup,
-	hostWithPort string,
-	insecure bool,
+	ociRegistry *setup.OCIRegistry,
 	logger logr.Logger,
 	bootstrapFailedExitCode int,
 ) *ocm.RepositoryReader {
-	ociRepository, err := oci.NewRepository(kcl, insecure)
+	ociRepository, err := oci.NewRepository(kcl, ociRegistry.IsInsecure())
 	if err != nil {
 		logger.Error(err, "failed to create OCI repository")
 		os.Exit(bootstrapFailedExitCode)
 	}
-	ocmRepository, err := ocm.NewRepository(hostWithPort, ociRepository)
+	ocmRepository, err := ocm.NewRepository(ociRegistry.GetReference(), ociRepository)
 	if err != nil {
 		logger.Error(err, "failed to create OCI repository")
 		os.Exit(bootstrapFailedExitCode)
