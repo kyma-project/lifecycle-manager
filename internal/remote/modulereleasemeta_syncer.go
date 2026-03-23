@@ -53,18 +53,18 @@ func newModuleReleaseMetaSyncer(kcpClient, skrClient client.Client, settings *Se
 // 1. All ModuleReleaseMeta that have to be created based on the ModuleReleaseMetas existing in the Control Plane.
 // 2. All ModuleReleaseMeta that have to be removed as they are not existing in the Control Plane.
 // It uses Server-Side-Apply Patches to optimize the turnaround required.
-func (mts *moduleReleaseMetaSyncer) SyncToSKR(
+func (mrmSyncer *moduleReleaseMetaSyncer) SyncToSKR(
 	ctx context.Context,
 	kcpModuleReleases []v1beta2.ModuleReleaseMeta,
 ) error {
-	worker := mts.syncWorkerFactoryFn(mts.kcpClient, mts.skrClient, mts.settings)
+	worker := mrmSyncer.syncWorkerFactoryFn(mrmSyncer.kcpClient, mrmSyncer.skrClient, mrmSyncer.settings)
 
 	if err := worker.SyncConcurrently(ctx, kcpModuleReleases); err != nil {
 		return err
 	}
 
 	remoteModuleReleases := &v1beta2.ModuleReleaseMetaList{}
-	if err := mts.skrClient.List(ctx, remoteModuleReleases); err != nil {
+	if err := mrmSyncer.skrClient.List(ctx, remoteModuleReleases); err != nil {
 		// it can happen that the ModuleReleaseMeta CRD is not caught during to apply if there are no objects to apply
 		// if this is the case and there is no CRD there can never be any ModuleReleaseMetas to delete
 		if meta.IsNoMatchError(err) {
@@ -79,9 +79,9 @@ func (mts *moduleReleaseMetaSyncer) SyncToSKR(
 }
 
 // DeleteAllManaged deletes all ModuleReleaseMetas managed by KLM from the SKR cluster.
-func (mts *moduleReleaseMetaSyncer) DeleteAllManaged(ctx context.Context) error {
+func (mrmSyncer *moduleReleaseMetaSyncer) DeleteAllManaged(ctx context.Context) error {
 	moduleReleaseMetasRuntime := &v1beta2.ModuleReleaseMetaList{Items: []v1beta2.ModuleReleaseMeta{}}
-	if err := mts.skrClient.List(ctx, moduleReleaseMetasRuntime); err != nil {
+	if err := mrmSyncer.skrClient.List(ctx, moduleReleaseMetasRuntime); err != nil {
 		// if there is no CRD or no ModuleReleaseMeta exists,
 		// there can never be any ModuleReleaseMeta to delete
 		if util.IsNotFound(err) {
@@ -91,7 +91,7 @@ func (mts *moduleReleaseMetaSyncer) DeleteAllManaged(ctx context.Context) error 
 	}
 	for i := range moduleReleaseMetasRuntime.Items {
 		if isModuleReleaseMetaManagedByKcp(&moduleReleaseMetasRuntime.Items[i]) {
-			if err := mts.skrClient.Delete(ctx, &moduleReleaseMetasRuntime.Items[i]); err != nil &&
+			if err := mrmSyncer.skrClient.Delete(ctx, &moduleReleaseMetasRuntime.Items[i]); err != nil &&
 				!util.IsNotFound(err) {
 				return fmt.Errorf("failed to delete ModuleReleaseMeta from skr: %w", err)
 			}
