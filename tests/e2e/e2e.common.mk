@@ -233,7 +233,6 @@ module-setup-in-older-version:
 		--version $(MODULE_OLDER_VERSION) \
 		--deployment-name $(MODULE_DEPLOYMENT_OLDER_VERSION) \
 		--deployable-version $(MODULE_DEPLOYABLE_VERSION)
-	$(SCRIPTS_DIR)/deploy_mandatory_modulereleasemeta.sh $(MODULE_NAME) $(MODULE_OLDER_VERSION)
 	@popd > /dev/null
 	@echo "::endgroup::"
 
