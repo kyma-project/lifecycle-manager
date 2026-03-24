@@ -419,9 +419,11 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient skrclient.
 	if err := finalizer.EnsureCRFinalizer(ctx, r.kcpClient, manifest); err != nil {
 		return err
 	}
+
 	if !manifest.GetDeletionTimestamp().IsZero() {
 		if status.RequireManifestStateUpdateAfterSyncResource(manifest, shared.StateDeleting) {
-			return errStateRequireUpdate
+			return fmt.Errorf("%w: from %s to %s", errStateRequireUpdate,
+				manifestStatus.State, shared.StateDeleting)
 		}
 		return nil
 	}
@@ -431,8 +433,10 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient skrclient.
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return err
 	}
+
 	if status.RequireManifestStateUpdateAfterSyncResource(manifest, managerState) {
-		return errStateRequireUpdate
+		return fmt.Errorf("%w: from %s to %s", errStateRequireUpdate,
+			manifestStatus.State, managerState)
 	}
 	return nil
 }
@@ -580,14 +584,22 @@ func (r *Reconciler) finishReconcile(ctx context.Context, manifest *v1beta2.Mani
 	requeueReason metrics.ManifestRequeueReason, previousStatus shared.Status, originalErr error,
 ) (ctrl.Result, error) {
 	if err := r.manifestClient.PatchStatusIfDiffExist(ctx, manifest, previousStatus); err != nil {
+		logf.FromContext(ctx).Error(err, "failed to patch manifest status when finishing reconciliation",
+			"previousStatus", previousStatus,
+			"newStatus", manifest.GetStatus(),
+		)
 		return ctrl.Result{}, err
 	}
 	switch {
 	case util.IsConnectionRelatedError(originalErr):
+		logf.FromContext(ctx).Error(originalErr, "connection related error during reconciliation",
+			"requeueReason", requeueReason)
 		r.evictSKRClientCache(ctx, manifest)
 		r.manifestMetrics.RecordRequeueReason(metrics.ManifestUnauthorized, queue.UnexpectedRequeue)
 		return ctrl.Result{}, originalErr
 	case originalErr != nil:
+		logf.FromContext(ctx).Error(originalErr, "error during reconciliation",
+			"requeueReason", requeueReason)
 		r.manifestMetrics.RecordRequeueReason(requeueReason, queue.UnexpectedRequeue)
 		return ctrl.Result{}, originalErr
 	default:

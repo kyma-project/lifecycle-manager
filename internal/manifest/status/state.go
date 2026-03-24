@@ -13,15 +13,16 @@ const (
 func RequireManifestStateUpdateAfterSyncResource(manifest *v1beta2.Manifest, newState shared.State) bool {
 	manifestStatus := manifest.GetStatus()
 
-	if newState != manifestStatus.State {
-		if newState == shared.StateProcessing || newState == shared.StateError {
-			manifest.SetStatus(manifestStatus.WithState(newState).WithOperation(WaitingForResourcesMsg))
-		} else {
-			SetInstallationConditionTrue(manifest)
-			manifest.SetStatus(manifestStatus.WithState(newState).WithOperation(ResourcesAreReadyMsg))
-		}
-		return true
+	if newState == manifestStatus.State {
+		return false
 	}
 
-	return false
+	if newState == shared.StateProcessing || newState == shared.StateError {
+		manifest.SetStatus(manifestStatus.WithState(newState).WithOperation(WaitingForResourcesMsg))
+	} else {
+		SetInstallationConditionTrue(manifest)
+		manifest.SetStatus(manifestStatus.WithState(newState).WithOperation(ResourcesAreReadyMsg))
+	}
+
+	return true
 }

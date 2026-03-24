@@ -25,7 +25,6 @@ import (
 	"net/http/pprof"
 	"os"
 	"reflect"
-	"strings"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -38,9 +37,7 @@ import (
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/client-go/kubernetes"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,9 +49,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/oci"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/provider/componentdescriptorcache"
-	"github.com/kyma-project/lifecycle-manager/cmd/composition/repository/oci"
-	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/componentdescriptor"
 	kymadeletioncmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/kyma/deletion"
 	kymalookupcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/kyma/lookup"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/deletion"
@@ -70,7 +66,6 @@ import (
 	watcherctrl "github.com/kyma-project/lifecycle-manager/internal/controller/watcher"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
@@ -203,8 +198,8 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		os.Exit(bootstrapFailedExitCode)
 	}
 	gatewayRepository := istiogateway.NewRepository(kcpClientWithoutCache)
-	accessSecretRepository := secretrepo.NewRepository(kcpClientWithoutCache, shared.DefaultControlPlaneNamespace)
-	accessManagerService := accessmanager.NewService(accessSecretRepository)
+	secretRepo := secretrepo.NewRepository(kcpClientWithoutCache, shared.DefaultControlPlaneNamespace)
+	accessManagerService := accessmanager.NewService(secretRepo)
 	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient,
 		remoteClientCache,
 		eventRecorder,
@@ -248,32 +243,13 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	sharedMetrics := metrics.NewSharedMetrics()
 
-	ociRegistryHost := getOciRegistryHost(mgr.GetConfig(), flagVar, logger)
-	var insecure bool
-
-	if noSchemeRef, found := strings.CutPrefix(ociRegistryHost, "http://"); found {
-		insecure = true
-		ociRegistryHost = noSchemeRef
-	} else if noSchemeRef, found := strings.CutPrefix(ociRegistryHost, "https://"); found {
-		ociRegistryHost = noSchemeRef
-	}
-
-	ocmDescriptorRepository := oci.ComposeOCIRepository(
-		keychainLookupFromFlag(mgr.GetClient(), flagVar),
-		ociRegistryHost,
-		insecure,
-		logger,
-		bootstrapFailedExitCode,
-	)
-	ocmDescriptorService := componentdescriptor.ComposeComponentDescriptorService(
-		ocmDescriptorRepository,
-		logger,
-		bootstrapFailedExitCode,
-	)
+	ociRegistry := oci.ComposeRegistry(secretRepo, flagVar, logger, bootstrapFailedExitCode)
 
 	descriptorProvider := componentdescriptorcache.ComposeCachedDescriptorProvider(
-		ocmDescriptorService,
-		descriptorcache.NewDescriptorCache(),
+		keychainLookupFromFlag(mgr.GetClient(), flagVar),
+		ociRegistry,
+		logger,
+		bootstrapFailedExitCode,
 	)
 
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
@@ -288,7 +264,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		certificateRepository,
 		kymaMetrics,
 		kymaRepo,
-		accessSecretRepository,
+		secretRepo,
 		remoteClientCache,
 		skrWebhookManager,
 	)
@@ -296,11 +272,11 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	kymaLookupSvc := kymalookupcmpse.ComposeKymaLookupService(kymaRepo)
 
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
-		kymaMetrics, logger, maintenanceWindow, ociRegistryHost, kymaDeletionSvc, kymaLookupSvc)
+		kymaMetrics, logger, maintenanceWindow, ociRegistry.GetReference(), kymaDeletionSvc, kymaLookupSvc)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
 		eventRecorder, kymaRepo)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, logger,
-		ociRegistryHost)
+		ociRegistry.GetReference())
 	setupMandatoryModuleDeletionReconciler(mgr, eventRecorder, flagVar, options, logger)
 
 	setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, logger)
@@ -320,28 +296,6 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		logger.Error(err, "problem running manager")
 		os.Exit(runtimeProblemExitCode)
 	}
-}
-
-func getOciRegistryHost(config *rest.Config, flagVar *flags.FlagVar, setupLog logr.Logger) string {
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		setupLog.Error(err, "unable to create kubernetes clientset")
-		os.Exit(bootstrapFailedExitCode)
-	}
-	secretInterface := clientset.CoreV1().Secrets(shared.DefaultControlPlaneNamespace)
-
-	ociRegistrySetup, err := setup.NewOCIRegistryHostProvider(secretInterface, flagVar.OciRegistryHost,
-		flagVar.OciRegistryCredSecretName, flagVar.ModulesRepositorySubPath)
-	if err != nil {
-		setupLog.Error(err, "failed to setup OCI registry")
-		os.Exit(bootstrapFailedExitCode)
-	}
-	ociRegistryHost, err := ociRegistrySetup.ResolveHost(context.Background())
-	if err != nil {
-		setupLog.Error(err, "failed to resolve OCI registry host")
-		os.Exit(bootstrapFailedExitCode)
-	}
-	return ociRegistryHost
 }
 
 func initMaintenanceWindow(minWindowSize time.Duration, logger logr.Logger) maintenancewindows.MaintenanceWindow {
@@ -443,7 +397,7 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
 	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SkrWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
-	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, ociRegistryHost string,
+	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, ociRegistry string,
 	kymaDeletionSvc *kymadeletionsvc.Service, kymaLookupSvc *kymalookupsvc.Service,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
@@ -460,7 +414,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 
 	kymaReconcilerConfig := kyma.ReconcilerConfig{
 		RemoteSyncNamespace:    flagVar.RemoteSyncNamespace,
-		OCIRegistryHost:        ociRegistryHost,
+		OCIRegistry:            ociRegistry,
 		SkrImagePullSecretName: flagVar.SkrImagePullSecret,
 	}
 	kcpSystemSecretRepo := secretrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
@@ -626,14 +580,14 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager,
 	options ctrlruntime.Options,
 	metrics *metrics.MandatoryModulesMetrics,
 	setupLog logr.Logger,
-	ociRegistryHost string,
+	ociRegistry string,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
 
-	installationService := installation.ComposeInstallationService(mgr.GetClient(), descriptorProvider, ociRegistryHost,
+	installationService := installation.ComposeInstallationService(mgr.GetClient(), descriptorProvider, ociRegistry,
 		flagVar.RemoteSyncNamespace, metrics)
 	installationReconciler := mandatorymodule.NewInstallationReconciler(installationService,
 		queue.RequeueIntervals{
