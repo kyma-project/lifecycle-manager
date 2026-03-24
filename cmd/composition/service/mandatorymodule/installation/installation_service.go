@@ -15,13 +15,13 @@ import (
 
 func ComposeInstallationService(clnt client.Client,
 	descriptorProvider *provider.CachedDescriptorProvider,
-	ociRegistryHost string,
+	ociRegistry string,
 	remoteSyncNamespace string,
 	metrics *metrics.MandatoryModulesMetrics,
 ) *installation.Service {
 	mrmRepo := modulereleasemeta.NewRepository(clnt, shared.DefaultControlPlaneNamespace)
 	mtRepo := moduletemplate.NewRepository(clnt, shared.DefaultControlPlaneNamespace)
-	moduleParser := parser.NewParser(clnt, descriptorProvider, remoteSyncNamespace, ociRegistryHost)
+	moduleParser := parser.NewParser(clnt, descriptorProvider, remoteSyncNamespace, ociRegistry)
 	manifestCreator := sync.New(clnt)
 	return installation.NewService(mrmRepo, mtRepo, moduleParser, manifestCreator, metrics)
 }
