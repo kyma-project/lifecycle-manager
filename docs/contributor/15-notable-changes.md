@@ -17,11 +17,6 @@ Notable changes are Kyma Lifecycle Manager (KLM) updates that require operator a
   - **Feature** — A new feature that requires operator action before or during deployment.
   - **Migration** — Changes that involve data, infrastructure, or version migrations.
 
-## Prerequisites
-
-- The [`notable-changes`](../../notable-changes) directory exists in the repository root.
-- KLM is listed in the `component-version.yaml` file.
-
 ## Creating a Notable Change
 
 When introducing a KLM change that requires operator action:
@@ -47,18 +42,14 @@ When introducing a KLM change that requires operator action:
    - **type**: `EXTERNAL` or `INTERNAL`
    - **category**: `CONFIGURATION`, `FEATURE`, or `MIGRATION`
 
-4. Set the document title using the format: **"Updating KLM: `<Name of the update>`"**.
+4. Set the document title using the format: **"KLM: `<Name of the update>`"**.
 
 5. Clearly describe the impact, required actions, and any other relevant details.
 
 6. Include any supporting files (migration scripts, configuration examples) in the same folder.
 
-> **Note:** If the change spans multiple KCP components, document it directly in the `docs/02-10-update` directory of the `product-kyma-runtime` repository instead. Create a subdirectory named with the release version and change name (for example, `1.2.0/credentialbindings-migration`).
-
 ## Publication
 
-KCP components listed in `component-version.yaml` are automatically scanned for new notable changes. Files from the `notable-changes` directory are pulled into the `docs/02-10-update` directory of the `product-kyma-runtime` repository and aggregated by release version.
-
-Notable changes from the last two weeks are bundled into biweekly KCP packages. For example, if the previous KLM version in a KCP package was 1.16.0 and the current is 1.16.5, all notable changes from 1.16.1 through 1.16.5 are included.
+KCP components listed in `product-kyma-runtime/kcp/component-version.yaml` are automatically scanned for new notable changes. Files from the `notable-changes` directory are pulled into the `docs/02-10-update` directory of the `product-kyma-runtime` repository and aggregated by release version.
 
 The packages are automatically uploaded to the Help Portal as part of the **SAP BTP, Kyma Runtime Operator's Guide** under the **Update** section.
