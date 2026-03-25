@@ -65,6 +65,11 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithArguments(skrClient, ModuleResourceName,
 					TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
+			Consistently(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments(skrClient, ModuleResourceName,
+					TestModuleResourceNamespace).
+				Should(Equal(ErrNotFound))
 		})
 
 		It("When the Manifest skip reconciliation label removed", func() {
@@ -110,23 +115,29 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
 					shared.StateDeleting).
 				Should(Succeed())
-		})
-
-		It("Then Manifest Status LastUpdateTime does not get changed", func() {
-			Eventually(ManifestStatusOperationContainsMessage).
+			Consistently(CheckManifestIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
+					shared.StateDeleting).
+				Should(Succeed())
+			Consistently(ManifestStatusOperationContainsMessage).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
 					waitingForFinalizersOperationMsg).
 				Should(Succeed())
+		})
 
-			manifest, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
-			Expect(err).To(Not(HaveOccurred()))
-
-			Consistently(ManifestStatusLastUpdateTimeIsNotChanged).
+		It("When a blocking finalizer is removed from the Manifest CR", func() {
+			Eventually(RemoveFinalizerFromManifest).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
-					manifest.Status).
+					"blocking-finalizer").
 				Should(Succeed())
+			By("Then the Manifest CR gets deleted")
+			Eventually(GetManifest).
+				WithContext(ctx).
+				WithArguments(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+				Should(Equal(ErrNotFound))
 		})
 	})
 })
