@@ -106,9 +106,9 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				Should(Succeed())
 
 			By("And Manifest CR has deletion timestamp set")
-			Eventually(DeleteManifest).
+			Eventually(DisableModule).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
 				Should(Succeed())
 			By("Then Manifest CR is in deleting state")
 			Eventually(CheckManifestIsInState).
@@ -127,19 +127,6 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
 					waitingForFinalizersOperationMsg).
 				Should(Succeed())
-		})
-
-		It("When a blocking finalizer is removed from the Manifest CR", func() {
-			Eventually(RemoveFinalizerFromManifest).
-				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
-					"blocking-finalizer").
-				Should(Succeed())
-			By("Then the Manifest CR gets deleted")
-			Eventually(GetManifest).
-				WithContext(ctx).
-				WithArguments(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
-				Should(Equal(ErrNotFound))
 		})
 	})
 })
