@@ -110,6 +110,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
 				Should(Succeed())
+			By("Then Manifest CR is in deleting state")
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
@@ -120,6 +121,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
 					shared.StateDeleting).
 				Should(Succeed())
+			By("And Manifest CR has message about waiting for finalizers")
 			Consistently(ManifestStatusOperationContainsMessage).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
