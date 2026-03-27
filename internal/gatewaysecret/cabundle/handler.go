@@ -2,6 +2,8 @@ package cabundle
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"time"
@@ -22,25 +24,37 @@ const (
 	caBundleTempCertKey = "temp.ca.crt"
 )
 
+var ErrorServerCertificateParsingFailure = errors.New("failed to parse server certificate from gateway secret")
+
 type Bundler interface {
 	Bundle(bundle *[]byte, cert []byte) (bool, error)
 	DropExpiredCerts(bundle *[]byte) (bool, error)
 }
 
+type GatewaySecretMetrics interface {
+	ServerCertificateCloseToExpiry(set bool)
+}
+
 type Handler struct {
 	client                      gatewaysecret.Client
 	serverCertSwitchGracePeriod time.Duration
+	serverCertExpiryWindow      time.Duration
 	bundler                     Bundler
+	metrics                     GatewaySecretMetrics
 }
 
 func NewGatewaySecretHandler(client gatewaysecret.Client,
 	serverCertSwitchGracePeriod time.Duration,
+	serverCertExpiryWindow time.Duration,
 	bundler Bundler,
+	metrics GatewaySecretMetrics,
 ) *Handler {
 	return &Handler{
 		client:                      client,
 		serverCertSwitchGracePeriod: serverCertSwitchGracePeriod,
+		serverCertExpiryWindow:      serverCertExpiryWindow,
 		bundler:                     bundler,
+		metrics:                     metrics,
 	}
 }
 
@@ -86,6 +100,11 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 			)
 		switchCertificate(gwSecret, rootSecret)
 	}
+
+	if err := h.updateServerCertExpiryMetric(gwSecret); err != nil {
+		return err
+	}
+
 	return h.client.UpdateGatewaySecret(ctx, gwSecret)
 }
 
@@ -165,6 +184,32 @@ func (h *Handler) dropExpiredCertsFromBundle(gatewaySecret *apicorev1.Secret) er
 	}
 
 	return nil
+}
+
+func (h *Handler) updateServerCertExpiryMetric(gwSecret *apicorev1.Secret) error {
+	isCloseToExpiry, _, err := serverCertCloseToExpiry(gwSecret, h.serverCertExpiryWindow)
+	if err != nil {
+		return err
+	}
+
+	h.metrics.ServerCertificateCloseToExpiry(isCloseToExpiry)
+	return nil
+}
+
+func serverCertCloseToExpiry(gatewaySecret *apicorev1.Secret, expiryWindow time.Duration) (bool, time.Time, error) {
+	serverCertBytes := gatewaySecret.Data[apicorev1.TLSCertKey]
+	block, _ := pem.Decode(serverCertBytes)
+	if block == nil {
+		return false, time.Time{}, ErrorServerCertificateParsingFailure
+	}
+	serverCert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return false, time.Time{}, ErrorServerCertificateParsingFailure
+	}
+	if time.Now().Add(expiryWindow).After(serverCert.NotAfter) {
+		return true, serverCert.NotAfter, nil
+	}
+	return false, serverCert.NotAfter, nil
 }
 
 func switchCertificate(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
