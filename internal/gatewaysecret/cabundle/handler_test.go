@@ -456,7 +456,7 @@ func TestManageGatewaySecret_WhenServerCertNotCloseToExpiry_SetsMetricToFalse(t 
 	}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 
-	var gotSet bool
+	gotSet := true // init to true so the assertion fails if the callback is never called
 	metricsMock := metricsMockFunc(func(set bool) { gotSet = set })
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
 		gatewayServerCertSwitchGracePeriod,
