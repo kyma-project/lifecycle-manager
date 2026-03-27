@@ -187,7 +187,7 @@ func (h *Handler) dropExpiredCertsFromBundle(gatewaySecret *apicorev1.Secret) er
 }
 
 func (h *Handler) updateServerCertExpiryMetric(gwSecret *apicorev1.Secret) error {
-	isCloseToExpiry, _, err := serverCertCloseToExpiry(gwSecret, h.serverCertExpiryWindow)
+	isCloseToExpiry, err := serverCertCloseToExpiry(gwSecret, h.serverCertExpiryWindow)
 	if err != nil {
 		return err
 	}
@@ -196,20 +196,20 @@ func (h *Handler) updateServerCertExpiryMetric(gwSecret *apicorev1.Secret) error
 	return nil
 }
 
-func serverCertCloseToExpiry(gatewaySecret *apicorev1.Secret, expiryWindow time.Duration) (bool, time.Time, error) {
+func serverCertCloseToExpiry(gatewaySecret *apicorev1.Secret, expiryWindow time.Duration) (bool, error) {
 	serverCertBytes := gatewaySecret.Data[apicorev1.TLSCertKey]
 	block, _ := pem.Decode(serverCertBytes)
 	if block == nil {
-		return false, time.Time{}, ErrServerCertificateParsingFailure
+		return false, ErrServerCertificateParsingFailure
 	}
 	serverCert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return false, time.Time{}, ErrServerCertificateParsingFailure
+		return false, ErrServerCertificateParsingFailure
 	}
 	if time.Now().Add(expiryWindow).After(serverCert.NotAfter) {
-		return true, serverCert.NotAfter, nil
+		return true, nil
 	}
-	return false, serverCert.NotAfter, nil
+	return false, nil
 }
 
 func switchCertificate(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
