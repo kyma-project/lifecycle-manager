@@ -102,7 +102,7 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 	}
 
 	if err := h.updateServerCertExpiryMetric(gwSecret); err != nil {
-		return err
+		logf.FromContext(ctx).Error(err, "failed to update server certificate expiry metric")
 	}
 
 	return h.client.UpdateGatewaySecret(ctx, gwSecret)
