@@ -6,8 +6,10 @@ import (
 )
 
 const (
+	//nolint:gosec // not a credential
 	MetricGatewaySecretServerCertCloseToExpiry     = "lifecycle_mgr_gateway_secret_server_cert_close_to_expiry"
-	MetricHelpGatewaySecretServerCertCloseToExpiry = "Indicates whether the server certificate in the gateway secret is close to expiry (1) or not (0)"
+	MetricHelpGatewaySecretServerCertCloseToExpiry = "Indicates whether the server certificate in the gateway secret" +
+		" is close to expiry (1) or not (0)"
 )
 
 type GatewaySecret struct {

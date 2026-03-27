@@ -510,7 +510,7 @@ func TestManageGatewaySecret_WhenServerCertIsInvalidPEM_ReturnsError(t *testing.
 	err := handler.ManageGatewaySecret(t.Context(), rootSecret)
 
 	// ASSERT
-	require.ErrorIs(t, err, cabundle.ErrorServerCertificateParsingFailure)
+	require.ErrorIs(t, err, cabundle.ErrServerCertificateParsingFailure)
 	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 0)
 }
 

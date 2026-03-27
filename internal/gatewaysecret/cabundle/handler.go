@@ -24,7 +24,7 @@ const (
 	caBundleTempCertKey = "temp.ca.crt"
 )
 
-var ErrorServerCertificateParsingFailure = errors.New("failed to parse server certificate from gateway secret")
+var ErrServerCertificateParsingFailure = errors.New("failed to parse server certificate from gateway secret")
 
 type Bundler interface {
 	Bundle(bundle *[]byte, cert []byte) (bool, error)
@@ -200,11 +200,11 @@ func serverCertCloseToExpiry(gatewaySecret *apicorev1.Secret, expiryWindow time.
 	serverCertBytes := gatewaySecret.Data[apicorev1.TLSCertKey]
 	block, _ := pem.Decode(serverCertBytes)
 	if block == nil {
-		return false, time.Time{}, ErrorServerCertificateParsingFailure
+		return false, time.Time{}, ErrServerCertificateParsingFailure
 	}
 	serverCert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return false, time.Time{}, ErrorServerCertificateParsingFailure
+		return false, time.Time{}, ErrServerCertificateParsingFailure
 	}
 	if time.Now().Add(expiryWindow).After(serverCert.NotAfter) {
 		return true, serverCert.NotAfter, nil
