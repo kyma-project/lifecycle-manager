@@ -129,9 +129,12 @@ func GetManifestWithMetadata(ctx context.Context,
 	return manifest, nil
 }
 
-func AddFinalizerToManifest(ctx context.Context, clnt client.Client, kymaName,
+func AddFinalizerToManifest(ctx context.Context,
+	clnt client.Client,
+	kymaName,
 	kymaNamespace,
-	moduleName, finalizer string,
+	moduleName,
+	finalizer string,
 ) error {
 	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
 	if err != nil {
@@ -140,6 +143,35 @@ func AddFinalizerToManifest(ctx context.Context, clnt client.Client, kymaName,
 
 	allFinalizers := append(manifest.GetFinalizers(), finalizer)
 	manifest.SetFinalizers(allFinalizers)
+	err = clnt.Update(ctx, manifest)
+	if err != nil {
+		return fmt.Errorf("failed to update manifest, %w", err)
+	}
+
+	return nil
+}
+
+func RemoveFinalizerFromManifest(ctx context.Context,
+	clnt client.Client,
+	kymaName,
+	kymaNamespace,
+	moduleName,
+	finalizer string,
+) error {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
+		return err
+	}
+
+	// add all but the finalizer to be removed
+	var newFinalizers []string
+	for _, f := range manifest.GetFinalizers() {
+		if f != finalizer {
+			newFinalizers = append(newFinalizers, f)
+		}
+	}
+
+	manifest.SetFinalizers(newFinalizers)
 	err = clnt.Update(ctx, manifest)
 	if err != nil {
 		return fmt.Errorf("failed to update manifest, %w", err)

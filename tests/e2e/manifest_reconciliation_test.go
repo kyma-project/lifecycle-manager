@@ -65,6 +65,11 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithArguments(skrClient, ModuleResourceName,
 					TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
+			Consistently(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments(skrClient, ModuleResourceName,
+					TestModuleResourceNamespace).
+				Should(Equal(ErrNotFound))
 		})
 
 		It("When the Manifest skip reconciliation label removed", func() {
@@ -101,31 +106,26 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				Should(Succeed())
 
 			By("And Manifest CR has deletion timestamp set")
-			Eventually(DeleteManifest).
+			Eventually(DisableModule).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
 				Should(Succeed())
+			By("Then Manifest CR is in deleting state")
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
 					shared.StateDeleting).
 				Should(Succeed())
-		})
-
-		It("Then Manifest Status LastUpdateTime does not get changed", func() {
-			Eventually(ManifestStatusOperationContainsMessage).
+			Consistently(CheckManifestIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
+					shared.StateDeleting).
+				Should(Succeed())
+			By("And Manifest CR has message about waiting for finalizers")
+			Consistently(ManifestStatusOperationContainsMessage).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
 					waitingForFinalizersOperationMsg).
-				Should(Succeed())
-
-			manifest, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
-			Expect(err).To(Not(HaveOccurred()))
-
-			Consistently(ManifestStatusLastUpdateTimeIsNotChanged).
-				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
-					manifest.Status).
 				Should(Succeed())
 		})
 	})
