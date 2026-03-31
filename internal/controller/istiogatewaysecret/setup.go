@@ -20,6 +20,7 @@ import (
 	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/legacy"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
@@ -44,9 +45,12 @@ func SetupReconciler(mgr ctrl.Manager,
 	if flagVar.UseLegacyStrategyForIstioGatewaySecret {
 		handler = legacy.NewGatewaySecretHandler(clnt, legacyHandlerParseAnnotationTime)
 	} else {
+		gatewaySecretMetrics := metrics.NewGatewaySecret()
 		handler = cabundle.NewGatewaySecretHandler(clnt,
 			flagVar.IstioGatewayServerCertSwitchGracePeriod,
+			flagVar.IstioGatewayServerCertExpiryWindow,
 			certificate.NewBundler(),
+			gatewaySecretMetrics,
 		)
 	}
 
