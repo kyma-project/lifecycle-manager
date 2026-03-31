@@ -64,6 +64,10 @@ func NewService(mrmRepo ModuleReleaseMetaRepository,
 }
 
 func (s *Service) HandleInstallation(ctx context.Context, kyma *v1beta2.Kyma) error {
+	if !kyma.DeletionTimestamp.IsZero() {
+		return installation.ErrKymaBeingDeleted
+	}
+
 	if kyma.SkipReconciliation() {
 		return installation.ErrSkippingReconciliationKyma
 	}

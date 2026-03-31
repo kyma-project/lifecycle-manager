@@ -49,7 +49,8 @@ func NewInstallationReconciler(installationService InstallationService,
 func (r *InstallationReconciler) Reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	err := r.installationService.HandleInstallation(ctx, kyma)
 	if err != nil {
-		if errors.Is(err, installation.ErrSkippingReconciliationKyma) {
+		if errors.Is(err, installation.ErrSkippingReconciliationKyma) ||
+			errors.Is(err, installation.ErrKymaBeingDeleted) {
 			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, fmt.Errorf("mandatory module installation reconciliation failed: %w", err)

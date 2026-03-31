@@ -29,6 +29,22 @@ func TestInstallationReconciler_Reconcile_WhenKymaSkipReconciliation_DoesntReque
 	require.Equal(t, ctrl.Result{}, result)
 }
 
+func TestInstallationReconciler_Reconcile_WhenKymaBeingDeleted_DoesntRequeue(t *testing.T) {
+	t.Parallel()
+
+	mockInstallationService := &mockMrmInstallationService{
+		HandleInstallationError: installation.ErrKymaBeingDeleted,
+	}
+	reconciler := mandatorymodule.NewInstallationReconciler(mockInstallationService, getRequeueIntervals())
+
+	kyma := &v1beta2.Kyma{}
+
+	result, err := reconciler.Reconcile(context.Background(), kyma)
+	require.True(t, mockInstallationService.HandleInstallationCalled)
+	require.NoError(t, err)
+	require.Equal(t, ctrl.Result{}, result)
+}
+
 func TestInstallationReconciler_Reconcile_WhenHandleInstallationSucceeds_RequeuesAfterSuccessInterval(t *testing.T) {
 	t.Parallel()
 
