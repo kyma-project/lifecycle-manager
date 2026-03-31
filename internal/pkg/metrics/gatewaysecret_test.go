@@ -49,9 +49,13 @@ func TestGatewaySecretMetrics_ServerCertificateCloseToExpiry_WhenToggledToFalse_
 	t.Cleanup(func() { ctrlmetrics.Registry.Unregister(gatewaySecret.ServerCertCloseToExpiryGauge) })
 
 	gatewaySecret.ServerCertificateCloseToExpiry(true)
+	err := testutil.CollectAndCompare(gatewaySecret.ServerCertCloseToExpiryGauge,
+		strings.NewReader(expectedGatewaySecretMetricOutput(1)))
+	require.NoError(t, err)
+
 	gatewaySecret.ServerCertificateCloseToExpiry(false)
 
-	err := testutil.CollectAndCompare(gatewaySecret.ServerCertCloseToExpiryGauge,
+	err = testutil.CollectAndCompare(gatewaySecret.ServerCertCloseToExpiryGauge,
 		strings.NewReader(expectedGatewaySecretMetricOutput(0)))
 	require.NoError(t, err)
 }
