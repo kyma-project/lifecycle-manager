@@ -188,11 +188,12 @@ teardown: ## Delete KCP and SKR test clusters.
 
 ##@ Module Metadata Variables
 
-MODULE_NAME   := template-operator
-MODULE_DEPLOYABLE_VERSION    := 1.0.4
-MODULE_OLDER_VERSION    := 1.1.0-smoke-test
+MODULE_NAME                     := template-operator
+MODULE_DEPLOYABLE_VERSION       := 1.0.4
+MODULE_DEPLOYMENT_CURRENT_VERSION := template-operator-controller-manager
+MODULE_OLDER_VERSION            := 1.1.0-smoke-test
 MODULE_DEPLOYMENT_OLDER_VERSION := template-operator-v1-controller-manager
-MODULE_NEWER_VERSION    := 2.4.1-smoke-test
+MODULE_NEWER_VERSION            := 2.4.1-smoke-test
 MODULE_DEPLOYMENT_NEWER_VERSION := template-operator-v2-controller-manager
 
 ##@ Test helpers
@@ -207,4 +208,43 @@ log-tool-versions: ## Print the versions of all tools used in the test run.
 	@echo "MODULECTL VERSION:    $(MODULECTL_VERSION)"
 	@echo "OCM VERSION:          $(OCM_VERSION)"
 	@echo "GINKGO VERSION:       $(GINKGO_VERSION)"
+	@echo "::endgroup::"
+
+.PHONY: module-setup-latest
+module-setup-latest:
+	@echo "::group::Module setup of latest template-operator"
+	@export PATH=$(LOCALBIN):$$PATH
+	@pushd $(TEMPLATE_OPERATOR_DIR) > /dev/null
+	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh \
+		--module-name $(MODULE_NAME) \
+		--version $(MODULE_DEPLOYABLE_VERSION) \
+		--deployment-name $(MODULE_DEPLOYMENT_CURRENT_VERSION) \
+		--deployable-version $(MODULE_DEPLOYABLE_VERSION)
+	@popd > /dev/null
+	@echo "::endgroup::"
+
+.PHONY: module-setup-in-older-version
+module-setup-in-older-version:
+	@echo "::group::Module setup with $(MODULE_OLDER_VERSION)"
+	@export PATH=$(LOCALBIN):$$PATH
+	@pushd $(TEMPLATE_OPERATOR_DIR) > /dev/null
+	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh \
+		--module-name $(MODULE_NAME) \
+		--version $(MODULE_OLDER_VERSION) \
+		--deployment-name $(MODULE_DEPLOYMENT_OLDER_VERSION) \
+		--deployable-version $(MODULE_DEPLOYABLE_VERSION)
+	@popd > /dev/null
+	@echo "::endgroup::"
+
+.PHONY: module-setup-in-newer-version
+module-setup-in-newer-version:
+	@echo "::group::Module setup with $(MODULE_NEWER_VERSION)"
+	@export PATH=$(LOCALBIN):$$PATH
+	@pushd $(TEMPLATE_OPERATOR_DIR) > /dev/null
+	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh \
+		--module-name $(MODULE_NAME) \
+		--version $(MODULE_NEWER_VERSION) \
+		--deployment-name $(MODULE_DEPLOYMENT_NEWER_VERSION) \
+		--deployable-version $(MODULE_DEPLOYABLE_VERSION)
+	@popd > /dev/null
 	@echo "::endgroup::"
