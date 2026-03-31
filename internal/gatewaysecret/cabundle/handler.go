@@ -204,7 +204,7 @@ func serverCertCloseToExpiry(gatewaySecret *apicorev1.Secret, expiryWindow time.
 	}
 	serverCert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return false, fmt.Errorf("%s: %w", ErrServerCertificateParsingFailure.Error())
+		return false, fmt.Errorf("%w: %w", ErrServerCertificateParsingFailure, err)
 	}
 	if time.Now().Add(expiryWindow).After(serverCert.NotAfter) {
 		return true, nil
