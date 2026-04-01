@@ -73,7 +73,6 @@ This document provides a list of flags that can be set to control some specific 
 | `istio-namespace`                                  | string   | istio-system  | Namespace for Istio resources in a cluster                                                                               |
 | `istio-gateway-name`                               | string   | klm-watcher   | Name of the Istio Gateway resource in a cluster                                                                          |
 | `istio-gateway-namespace`                          | string   | kcp-system    | Namespace for the Istio Gateway resource in a cluster                                                                    |
-| `legacy-strategy-for-istio-gateway-secret`         | bool     | false         | Use the legacy strategy (with downtime) for the Istio Gateway Secret                                                     |
 
 ## Metrics and Health Configuration
 
