@@ -208,6 +208,9 @@ module-transferred-to-another-oci-registry:
 fips-mode-metric:
 	$(GO_TEST) "FIPS Mode metric"
 
+gateway-secret-server-cert-metric:
+	$(MAKE) -f $(MAKEFILE_DIR)/gateway_secret_server_cert_metric_test.mk test
+
 simulate-skr-secret-rotation-evict-client-cache:
 	$(GO_TEST) "SKR client cache get evicted due to connection error caused by secret rotation"
 

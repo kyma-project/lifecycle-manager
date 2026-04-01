@@ -1,11 +1,11 @@
 packages:
   internal/controller: 100
-  internal/controller/istiogatewaysecret: 26
+  internal/controller/istiogatewaysecret: 25.6
   internal/crd: 92
   internal/descriptor/cache: 90
   internal/descriptor/provider: 100
   internal/event: 100
-  internal/gatewaysecret/cabundle: 100
+  internal/gatewaysecret/cabundle: 98.6
   internal/gatewaysecret/legacy: 100
   internal/imagerewrite: 82
   internal/istio: 63

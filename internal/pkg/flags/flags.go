@@ -55,6 +55,7 @@ const (
 	DefaultSelfSignedCertKeySize                                        = 4096
 	DefaultSelfSignedCertificateIssuerName                              = "klm-watcher-selfsigned"
 	DefaultIstioGatewayServerCertSwitchGracePeriod                      = 4 * 24 * time.Hour
+	DefaultIstioGatewayServerCertExpiryWindow                           = 14 * 24 * time.Hour
 	DefaultIstioGatewaySecretRequeueSuccessInterval                     = 5 * time.Minute
 	DefaultIstioGatewaySecretRequeueErrInterval                         = 2 * time.Second
 	DefaultRemoteSyncNamespace                                          = shared.DefaultRemoteNamespace
@@ -247,6 +248,9 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.IstioGatewayServerCertSwitchGracePeriod,
 		"istio-gateway-server-cert-switch-grace-period", DefaultIstioGatewayServerCertSwitchGracePeriod,
 		"Duration after the rotation of the CA certificate when the Gateway certificate will be switched.")
+	flag.DurationVar(&flagVar.IstioGatewayServerCertExpiryWindow,
+		"istio-gateway-server-cert-expiry-window", DefaultIstioGatewayServerCertExpiryWindow,
+		"Duration before the server certificate expiry within which the certificate is considered close to expiry.")
 	flag.StringVar(&flagVar.SelfSignedCertIssuerNamespace, "self-signed-cert-issuer-namespace",
 		DefaultSelfSignedCertIssuerNamespace,
 		"Namespace of the Issuer for self-signed certificates.")
@@ -367,6 +371,7 @@ type FlagVar struct {
 	ManifestRequeueJitterPercentage            float64
 	IstioGatewayCertSwitchBeforeExpirationTime time.Duration // Deprecated: not considered by KLM anymore
 	IstioGatewayServerCertSwitchGracePeriod    time.Duration
+	IstioGatewayServerCertExpiryWindow         time.Duration
 	IstioGatewaySecretRequeueSuccessInterval   time.Duration
 	IstioGatewaySecretRequeueErrInterval       time.Duration
 	MinMaintenanceWindowSize                   time.Duration
