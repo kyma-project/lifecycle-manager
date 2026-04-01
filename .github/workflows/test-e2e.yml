@@ -90,6 +90,7 @@ jobs:
           - module-transferred-to-another-oci-registry
           - simulate-skr-secret-rotation-evict-client-cache
           - skr-image-pull-secret-sync
+          - gateway-secret-server-cert-metric
 
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -132,14 +133,16 @@ jobs:
 
       - name: Deploy lifecycle-manager
         if: ${{ matrix.e2e-test != 'mandatory-module' &&
-                matrix.e2e-test != 'mandatory-module-metrics' }}
+                matrix.e2e-test != 'mandatory-module-metrics'&&
+                matrix.e2e-test != 'gateway-secret-server-cert-metric'  }}
         uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
         with:
           klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
           klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
       - name: Deploy template-operator
         if: ${{ matrix.e2e-test != 'mandatory-module' &&
-                matrix.e2e-test != 'mandatory-module-metrics' }}
+                matrix.e2e-test != 'mandatory-module-metrics'&&
+                matrix.e2e-test != 'gateway-secret-server-cert-metric'  }}
         uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
         with:
           module_version: ${{ steps.configuration.outputs.template_operator_version }}
