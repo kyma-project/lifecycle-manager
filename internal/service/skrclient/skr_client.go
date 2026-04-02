@@ -8,7 +8,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/discovery"
@@ -33,7 +32,7 @@ type Client interface {
 	client.Client
 }
 
-type MappingResolver func(obj machineryruntime.Object, mapper meta.RESTMapper) (*meta.RESTMapping,
+type MappingResolver func(gvk schema.GroupVersionKind, mapper meta.RESTMapper) (*meta.RESTMapping,
 	error,
 )
 
@@ -146,7 +145,7 @@ func (s *SKRClient) SetResourceInfoClientResolver(resolver ResourceInfoClientRes
 }
 
 func (s *SKRClient) ResourceInfo(obj *unstructured.Unstructured) (*resource.Info, error) {
-	mapping, err := s.mappingResolver(obj, s.discoveryShortcutExpander)
+	mapping, err := s.mappingResolver(obj.GetObjectKind().GroupVersionKind(), s.discoveryShortcutExpander)
 	if err != nil {
 		return nil, err
 	}
@@ -208,10 +207,9 @@ func setKubernetesDefaults(config *rest.Config) error {
 	return nil
 }
 
-func getResourceMapping(obj machineryruntime.Object, mapper meta.RESTMapper) (*meta.RESTMapping,
+func getResourceMapping(gvk schema.GroupVersionKind, mapper meta.RESTMapper) (*meta.RESTMapping,
 	error,
 ) {
-	gvk := obj.GetObjectKind().GroupVersionKind()
 	mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 	if gvk.Empty() {
 		return mapping, nil
