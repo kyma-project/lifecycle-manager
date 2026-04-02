@@ -17,7 +17,7 @@ func TestInstallationReconciler_Reconcile_WhenKymaSkipReconciliation_DoesntReque
 	t.Parallel()
 
 	mockInstallationService := &mockMrmInstallationService{
-		HandleInstallationError: installation.ErrSkippingReconciliationKyma,
+		HandleInstallationError: installation.ErrSkipReconcileKyma,
 	}
 	reconciler := mandatorymodule.NewInstallationReconciler(mockInstallationService, getRequeueIntervals())
 

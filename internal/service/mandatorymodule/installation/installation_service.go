@@ -69,7 +69,7 @@ func (s *Service) HandleInstallation(ctx context.Context, kyma *v1beta2.Kyma) er
 	}
 
 	if kyma.SkipReconciliation() {
-		return installation.ErrSkippingReconciliationKyma
+		return installation.ErrSkipReconcileKyma
 	}
 
 	mandatoryMrms, err := s.mrmRepo.ListMandatory(ctx)

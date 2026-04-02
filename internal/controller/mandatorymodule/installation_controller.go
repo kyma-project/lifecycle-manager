@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	ctrl "sigs.k8s.io/controller-runtime"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/installation"
@@ -49,8 +50,9 @@ func NewInstallationReconciler(installationService InstallationService,
 func (r *InstallationReconciler) Reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	err := r.installationService.HandleInstallation(ctx, kyma)
 	if err != nil {
-		if errors.Is(err, installation.ErrSkippingReconciliationKyma) ||
+		if errors.Is(err, installation.ErrSkipReconcileKyma) ||
 			errors.Is(err, installation.ErrKymaBeingDeleted) {
+			logf.FromContext(ctx).Info("Mandatory module installation: ", "reason", err.Error())
 			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, fmt.Errorf("mandatory module installation reconciliation failed: %w", err)
