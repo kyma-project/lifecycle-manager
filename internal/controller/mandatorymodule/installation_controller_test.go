@@ -10,14 +10,30 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
-	"github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/installation"
+	installerrors "github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/installation"
 )
 
 func TestInstallationReconciler_Reconcile_WhenKymaSkipReconciliation_DoesntRequeue(t *testing.T) {
 	t.Parallel()
 
 	mockInstallationService := &mockMrmInstallationService{
-		HandleInstallationError: installation.ErrSkippingReconciliationKyma,
+		HandleInstallationError: installerrors.ErrSkipReconcileKyma,
+	}
+	reconciler := mandatorymodule.NewInstallationReconciler(mockInstallationService, getRequeueIntervals())
+
+	kyma := &v1beta2.Kyma{}
+
+	result, err := reconciler.Reconcile(context.Background(), kyma)
+	require.True(t, mockInstallationService.HandleInstallationCalled)
+	require.NoError(t, err)
+	require.Equal(t, ctrl.Result{}, result)
+}
+
+func TestInstallationReconciler_Reconcile_WhenKymaBeingDeleted_DoesntRequeue(t *testing.T) {
+	t.Parallel()
+
+	mockInstallationService := &mockMrmInstallationService{
+		HandleInstallationError: installerrors.ErrKymaBeingDeleted,
 	}
 	reconciler := mandatorymodule.NewInstallationReconciler(mockInstallationService, getRequeueIntervals())
 

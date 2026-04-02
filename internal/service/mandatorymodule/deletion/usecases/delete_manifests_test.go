@@ -13,7 +13,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
-type MockManifestRepo struct {
+type mockManifestRepo struct {
 	ListAllForModuleCalled   bool
 	DeleteAllForModuleCalled bool
 	ListAllForModuleError    error
@@ -22,7 +22,7 @@ type MockManifestRepo struct {
 	ManifestsToReturn        []apimetav1.PartialObjectMetadata
 }
 
-func (m *MockManifestRepo) ListAllForModule(_ context.Context, moduleName string) (
+func (m *mockManifestRepo) ListAllForModule(_ context.Context, moduleName string) (
 	[]apimetav1.PartialObjectMetadata, error,
 ) {
 	m.ListAllForModuleCalled = true
@@ -30,7 +30,7 @@ func (m *MockManifestRepo) ListAllForModule(_ context.Context, moduleName string
 	return m.ManifestsToReturn, m.ListAllForModuleError
 }
 
-func (m *MockManifestRepo) DeleteAllForModule(_ context.Context, moduleName string) error {
+func (m *mockManifestRepo) DeleteAllForModule(_ context.Context, moduleName string) error {
 	m.DeleteAllForModuleCalled = true
 	m.CalledWithModuleName = moduleName
 	return m.DeleteAllForModuleError
@@ -39,7 +39,7 @@ func (m *MockManifestRepo) DeleteAllForModule(_ context.Context, moduleName stri
 func TestDeleteManifests_WithManifests(t *testing.T) {
 	t.Parallel()
 
-	mockRepo := &MockManifestRepo{
+	mockRepo := &mockManifestRepo{
 		ManifestsToReturn: []apimetav1.PartialObjectMetadata{
 			{ObjectMeta: apimetav1.ObjectMeta{Name: random.Name()}},
 		},
@@ -67,7 +67,7 @@ func TestDeleteManifests_WithManifests(t *testing.T) {
 func TestDeleteManifests_NoManifests(t *testing.T) {
 	t.Parallel()
 
-	mockRepo := &MockManifestRepo{
+	mockRepo := &mockManifestRepo{
 		ManifestsToReturn: []apimetav1.PartialObjectMetadata{},
 	}
 	mockEventHandler := &mockEventHandler{}
@@ -88,7 +88,7 @@ func TestDeleteManifests_ListError(t *testing.T) {
 	t.Parallel()
 
 	expectedErr := errors.New("list error")
-	mockRepo := &MockManifestRepo{
+	mockRepo := &mockManifestRepo{
 		ListAllForModuleError: expectedErr,
 	}
 	mockEventHandler := &mockEventHandler{}
@@ -110,7 +110,7 @@ func TestDeleteManifests_DeleteError(t *testing.T) {
 	t.Parallel()
 
 	expectedErr := errors.New("delete error")
-	mockRepo := &MockManifestRepo{
+	mockRepo := &mockManifestRepo{
 		DeleteAllForModuleError: expectedErr,
 	}
 	mockEventHandler := &mockEventHandler{}

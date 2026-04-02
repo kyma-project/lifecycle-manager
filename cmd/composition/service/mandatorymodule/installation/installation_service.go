@@ -9,7 +9,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/modulereleasemeta"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/moduletemplate"
-	"github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule/installation"
+	installservice "github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule/installation"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 )
 
@@ -18,10 +18,10 @@ func ComposeInstallationService(clnt client.Client,
 	ociRegistry string,
 	remoteSyncNamespace string,
 	metrics *metrics.MandatoryModulesMetrics,
-) *installation.Service {
+) *installservice.Service {
 	mrmRepo := modulereleasemeta.NewRepository(clnt, shared.DefaultControlPlaneNamespace)
 	mtRepo := moduletemplate.NewRepository(clnt, shared.DefaultControlPlaneNamespace)
 	moduleParser := parser.NewParser(clnt, descriptorProvider, remoteSyncNamespace, ociRegistry)
 	manifestCreator := sync.New(clnt)
-	return installation.NewService(mrmRepo, mtRepo, moduleParser, manifestCreator, metrics)
+	return installservice.NewService(mrmRepo, mtRepo, moduleParser, manifestCreator, metrics)
 }
