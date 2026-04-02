@@ -19,7 +19,8 @@ import (
 )
 
 func TestHandleInstallation_KymaBeingDeleted_ReturnsErrKymaBeingDeleted(t *testing.T) {
-	svc := installservice.NewService(&mrmRepoStub{}, &mtRepoStub{}, &moduleParserStub{}, &manifestCreatorStub{}, &metricsStub{})
+	svc := installservice.NewService(&mrmRepoStub{}, &mtRepoStub{},
+		&moduleParserStub{}, &manifestCreatorStub{}, &metricsStub{})
 	kyma := builder.NewKymaBuilder().WithDeletionTimestamp().Build()
 
 	err := svc.HandleInstallation(t.Context(), kyma)
@@ -28,7 +29,8 @@ func TestHandleInstallation_KymaBeingDeleted_ReturnsErrKymaBeingDeleted(t *testi
 }
 
 func TestHandleInstallation_SkipReconciliation_ReturnsErrSkipReconcileKyma(t *testing.T) {
-	svc := installservice.NewService(&mrmRepoStub{}, &mtRepoStub{}, &moduleParserStub{}, &manifestCreatorStub{}, &metricsStub{})
+	svc := installservice.NewService(&mrmRepoStub{}, &mtRepoStub{}, &moduleParserStub{},
+		&manifestCreatorStub{}, &metricsStub{})
 	kyma := builder.NewKymaBuilder().
 		WithLabel(shared.SkipReconcileLabel, shared.EnableLabelValue).
 		Build()
@@ -40,7 +42,8 @@ func TestHandleInstallation_SkipReconciliation_ReturnsErrSkipReconcileKyma(t *te
 
 func TestHandleInstallation_ListMandatoryFails_ReturnsError(t *testing.T) {
 	mrmRepo := &mrmRepoStub{listErr: assert.AnError}
-	svc := installservice.NewService(mrmRepo, &mtRepoStub{}, &moduleParserStub{}, &manifestCreatorStub{}, &metricsStub{})
+	svc := installservice.NewService(mrmRepo, &mtRepoStub{}, &moduleParserStub{},
+		&manifestCreatorStub{}, &metricsStub{})
 	kyma := builder.NewKymaBuilder().Build()
 
 	err := svc.HandleInstallation(t.Context(), kyma)
@@ -119,9 +122,11 @@ func TestHandleInstallation_SingleMandatoryModule_Success(t *testing.T) {
 		Build()
 
 	mrmRepo := &mrmRepoStub{mrms: []v1beta2.ModuleReleaseMeta{*mrm}}
-	mtRepo := &mtRepoStub{templates: map[mtRepoKey]*v1beta2.ModuleTemplate{
-		{name: "test-module", version: "1.0.0"}: mt,
-	}}
+	mtRepo := &mtRepoStub{
+		templates: map[mtRepoKey]*v1beta2.ModuleTemplate{
+			{name: "test-module", version: "1.0.0"}: mt,
+		},
+	}
 	metrics := &metricsStub{}
 	parser := &moduleParserStub{}
 	creator := &manifestCreatorStub{}
@@ -156,9 +161,11 @@ func TestHandleInstallation_EmptyOcmComponentName_TemplateInfoContainsError(t *t
 		Build()
 
 	mrmRepo := &mrmRepoStub{mrms: []v1beta2.ModuleReleaseMeta{*mrm}}
-	mtRepo := &mtRepoStub{templates: map[mtRepoKey]*v1beta2.ModuleTemplate{
-		{name: "test-module", version: "1.0.0"}: mt,
-	}}
+	mtRepo := &mtRepoStub{
+		templates: map[mtRepoKey]*v1beta2.ModuleTemplate{
+			{name: "test-module", version: "1.0.0"}: mt,
+		},
+	}
 	parser := &moduleParserStub{}
 	creator := &manifestCreatorStub{}
 	svc := installservice.NewService(mrmRepo, mtRepo, parser, creator, &metricsStub{})
@@ -196,10 +203,12 @@ func TestHandleInstallation_MultipleMandatoryModules_AllProcessed(t *testing.T) 
 		Build()
 
 	mrmRepo := &mrmRepoStub{mrms: []v1beta2.ModuleReleaseMeta{*mrm1, *mrm2}}
-	mtRepo := &mtRepoStub{templates: map[mtRepoKey]*v1beta2.ModuleTemplate{
-		{name: "module-aaa", version: "1.0.0"}: mt1,
-		{name: "module-bbb", version: "2.0.0"}: mt2,
-	}}
+	mtRepo := &mtRepoStub{
+		templates: map[mtRepoKey]*v1beta2.ModuleTemplate{
+			{name: "module-aaa", version: "1.0.0"}: mt1,
+			{name: "module-bbb", version: "2.0.0"}: mt2,
+		},
+	}
 	metrics := &metricsStub{}
 	parser := &moduleParserStub{}
 	creator := &manifestCreatorStub{}
@@ -249,7 +258,9 @@ type mtRepoStub struct {
 	getErr    error
 }
 
-func (s *mtRepoStub) GetSpecificVersionForModule(_ context.Context, moduleName, version string) (*v1beta2.ModuleTemplate, error) {
+func (s *mtRepoStub) GetSpecificVersionForModule(_ context.Context,
+	moduleName, version string,
+) (*v1beta2.ModuleTemplate, error) {
 	if s.getErr != nil {
 		return nil, s.getErr
 	}

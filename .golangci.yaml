@@ -171,6 +171,10 @@ linters:
           alias: gcmcertificate
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache
           alias: skrclientcache
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/installation
+          alias: installerrors
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule/installation
+          alias: installservice
       no-unaliased: true
       no-extra-aliases: true
     ireturn:
@@ -246,6 +250,7 @@ linters:
           - maintidx
           - nilnil
           - wrapcheck
+          - varnamelen
         path: _test\.go
       - linters:
           - err113
