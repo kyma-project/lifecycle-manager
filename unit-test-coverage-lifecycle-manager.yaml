@@ -6,7 +6,6 @@ packages:
   internal/descriptor/provider: 100
   internal/event: 100
   internal/gatewaysecret/cabundle: 98.6
-  internal/gatewaysecret/legacy: 100
   internal/imagerewrite: 82
   internal/istio: 63
   internal/manifest/filemutex: 100
