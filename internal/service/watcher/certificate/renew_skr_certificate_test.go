@@ -224,19 +224,19 @@ func TestRenewSkrCertificate_WhenRenewReturnsError_ReturnsError(t *testing.T) {
 	assert.Equal(t, kymaName+expectedCertNameSuffix, certRepo.receivedCertName)
 }
 
-func (m *certRepoStub) Renew(_ context.Context, certName string) error {
-	m.renewCalled = true
-	m.receivedCertName = certName
+func (r *certRepoStub) Renew(_ context.Context, certName string) error {
+	r.renewCalled = true
+	r.receivedCertName = certName
 
-	if m.renewErr != nil {
-		return m.renewErr
+	if r.renewErr != nil {
+		return r.renewErr
 	}
 
 	return nil
 }
 
-func (m *certRepoStub) GetValidity(_ context.Context, certName string) (time.Time, time.Time, error) {
-	m.getValidityCalled = true
-	m.receivedCertName = certName
-	return m.getValidityStart, m.getValidityEnd, m.getValidityErr
+func (r *certRepoStub) GetValidity(_ context.Context, certName string) (time.Time, time.Time, error) {
+	r.getValidityCalled = true
+	r.receivedCertName = certName
+	return r.getValidityStart, r.getValidityEnd, r.getValidityErr
 }

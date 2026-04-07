@@ -55,6 +55,7 @@ const (
 	DefaultSelfSignedCertKeySize                                        = 4096
 	DefaultSelfSignedCertificateIssuerName                              = "klm-watcher-selfsigned"
 	DefaultIstioGatewayServerCertSwitchGracePeriod                      = 4 * 24 * time.Hour
+	DefaultIstioGatewayServerCertExpiryWindow                           = 14 * 24 * time.Hour
 	DefaultIstioGatewaySecretRequeueSuccessInterval                     = 5 * time.Minute
 	DefaultIstioGatewaySecretRequeueErrInterval                         = 2 * time.Second
 	DefaultRemoteSyncNamespace                                          = shared.DefaultRemoteNamespace
@@ -247,6 +248,9 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.IstioGatewayServerCertSwitchGracePeriod,
 		"istio-gateway-server-cert-switch-grace-period", DefaultIstioGatewayServerCertSwitchGracePeriod,
 		"Duration after the rotation of the CA certificate when the Gateway certificate will be switched.")
+	flag.DurationVar(&flagVar.IstioGatewayServerCertExpiryWindow,
+		"istio-gateway-server-cert-expiry-window", DefaultIstioGatewayServerCertExpiryWindow,
+		"Duration before the server certificate expiry within which the certificate is considered close to expiry.")
 	flag.StringVar(&flagVar.SelfSignedCertIssuerNamespace, "self-signed-cert-issuer-namespace",
 		DefaultSelfSignedCertIssuerNamespace,
 		"Namespace of the Issuer for self-signed certificates.")
@@ -256,8 +260,6 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.IstioGatewaySecretRequeueErrInterval,
 		"istio-gateway-secret-requeue-error-interval", DefaultIstioGatewaySecretRequeueErrInterval,
 		"Duration after which the Istio Gateway Secret is enqueued after unsuccessful reconciliation.")
-	flag.BoolVar(&flagVar.UseLegacyStrategyForIstioGatewaySecret, "legacy-strategy-for-istio-gateway-secret",
-		false, "Use the legacy strategy (with downtime) for the Istio Gateway Secret.")
 	flag.StringVar(&flagVar.DropCrdStoredVersionMap, "drop-crd-stored-version-map", DefaultDropCrdStoredVersionMap,
 		"API versions to be dropped from the storage version. The input format should be a "+
 			"comma-separated list of API versions, where each API version is in the format 'kind:version'.")
@@ -367,6 +369,7 @@ type FlagVar struct {
 	ManifestRequeueJitterPercentage            float64
 	IstioGatewayCertSwitchBeforeExpirationTime time.Duration // Deprecated: not considered by KLM anymore
 	IstioGatewayServerCertSwitchGracePeriod    time.Duration
+	IstioGatewayServerCertExpiryWindow         time.Duration
 	IstioGatewaySecretRequeueSuccessInterval   time.Duration
 	IstioGatewaySecretRequeueErrInterval       time.Duration
 	MinMaintenanceWindowSize                   time.Duration

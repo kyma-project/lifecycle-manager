@@ -94,3 +94,6 @@ bin
 
 # rendered manifest
 **/manifest.yaml
+
+# claude
+.claude/settings.local.json

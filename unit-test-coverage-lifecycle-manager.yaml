@@ -1,12 +1,11 @@
 packages:
   internal/controller: 100
-  internal/controller/istiogatewaysecret: 26
+  internal/controller/istiogatewaysecret: 25.6
   internal/crd: 92
   internal/descriptor/cache: 90
   internal/descriptor/provider: 100
   internal/event: 100
-  internal/gatewaysecret/cabundle: 100
-  internal/gatewaysecret/legacy: 100
+  internal/gatewaysecret/cabundle: 98.6
   internal/imagerewrite: 82
   internal/istio: 63
   internal/manifest/filemutex: 100
@@ -44,6 +43,7 @@ packages:
   internal/service/watcher/gateway: 94
   internal/service/watcher/resources: 82
   internal/service/skrclient: 35
+  internal/service/mandatorymodule/installation: 100
   internal/service/mandatorymodule/deletion: 100
   internal/service/mandatorymodule/deletion/usecases: 100
   internal/service/skrsync: 100

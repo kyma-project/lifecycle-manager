@@ -133,12 +133,6 @@ module-upgrade-channel-switch:
 modulereleasemeta-module-upgrade-new-version:
 	$(GO_TEST) "Module with ModuleReleaseMeta Upgrade By New Version"
 
-legacy-istio-gateway-secret-rotation:
-	$(GO_TEST) "Legacy Istio Gateway Secret Rotation With Cert-Manager"
-
-legacy-istio-gateway-secret-rotation-gcm:
-	$(GO_TEST) "Legacy Istio Gateway Secret Rotation With GCM"
-
 self-signed-certificate-rotation:
 	$(GO_TEST) "Self Signed Certificate Rotation"
 
@@ -207,6 +201,9 @@ module-transferred-to-another-oci-registry:
 
 fips-mode-metric:
 	$(GO_TEST) "FIPS Mode metric"
+
+gateway-secret-server-cert-metric:
+	$(MAKE) -f $(MAKEFILE_DIR)/gateway_secret_server_cert_metric_test.mk test
 
 simulate-skr-secret-rotation-evict-client-cache:
 	$(GO_TEST) "SKR client cache get evicted due to connection error caused by secret rotation"

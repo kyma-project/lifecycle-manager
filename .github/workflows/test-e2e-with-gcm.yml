@@ -42,7 +42,6 @@ jobs:
       matrix:
         e2e-test:
           - watcher-enqueue
-          - legacy-istio-gateway-secret-rotation-gcm
           - modulereleasemeta-watch-trigger
 
     runs-on: ubuntu-latest

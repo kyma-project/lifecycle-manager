@@ -3,8 +3,15 @@ package commontestutils
 import (
 	"bytes"
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -175,4 +182,41 @@ func RotateCAManuallyWithGCM(ctx context.Context, kcpClient client.Client) error
 		return fmt.Errorf("failed to patch CA certificate: %w", err)
 	}
 	return nil
+}
+
+func UpdateGatewaySecretWithExpiringCert(ctx context.Context, k8sClient client.Client) error {
+	certPEM, err := generateSelfSignedCertPEM(time.Now().Add(-1*time.Hour), time.Now().Add(7*24*time.Hour))
+	if err != nil {
+		return err
+	}
+
+	secret, err := GetGatewaySecret(ctx, k8sClient)
+	if err != nil {
+		return err
+	}
+
+	patch := secret.DeepCopy()
+	patch.Data[apicorev1.TLSCertKey] = certPEM
+	return k8sClient.Patch(ctx, patch, client.MergeFrom(secret))
+}
+
+func generateSelfSignedCertPEM(notBefore, notAfter time.Time) ([]byte, error) {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate key: %w", err)
+	}
+
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "test"},
+		NotBefore:    notBefore,
+		NotAfter:     notAfter,
+	}
+
+	der, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create certificate: %w", err)
+	}
+
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}), nil
 }

@@ -181,6 +181,16 @@ func GetMandatoryModuleStateMetric(ctx context.Context, kymaName, moduleName, st
 	return parseCount(re, bodyString)
 }
 
+func GetGatewaySecretServerCertCloseToExpiryGauge(ctx context.Context) (int, error) {
+	bodyString, err := getKCPMetricsBody(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	re := regexp.MustCompile(metrics.MetricGatewaySecretServerCertCloseToExpiry + ` (\d+)`)
+	return parseCount(re, bodyString)
+}
+
 func GetWatcherFailedKcpTotalMetric(ctx context.Context) (int, error) {
 	metricsBody, err := getSKRMetricsBody(ctx)
 	if err != nil {
