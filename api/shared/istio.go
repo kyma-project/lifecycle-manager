@@ -4,7 +4,6 @@ const (
 	CACertificateName           = "klm-watcher-serving"
 	IstioNamespace              = "istio-system"
 	GatewaySecretName           = "klm-istio-gateway" //nolint:gosec // It is just a name
-	LastModifiedAtAnnotation    = "lastModifiedAt"
 	CaAddedToBundleAtAnnotation = "caAddedToBundleAt"
 	GCMSecretAnnotation         = "cert.gardener.cloud/requestedAt" //nolint:gosec // It is just a name
 )
