@@ -214,49 +214,11 @@ func getGatewaySecretWithCaAddedToBundleAtAnnotation(rfc3339Value string) *apico
 	}
 }
 
-// To be removed along with fallback logic, issue: #3105.
-func getGatewaySecretWithOldAnnotation(rfc3339Value string) *apicorev1.Secret {
-	return &apicorev1.Secret{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      gatewaySecretName,
-			Namespace: testutils.IstioNamespace,
-			Annotations: map[string]string{
-				shared.LastModifiedAtAnnotation: rfc3339Value,
-			},
-		},
-	}
-}
-
 func TestIsSkrCertificateRenewalOverdue_WhenClientCertificateMoreRecentThanCA_ReturnsFalse(t *testing.T) {
 	caRotationTime := time.Now().Add(-time.Second)
 	clientCertRotationTime := time.Now()
 
 	gatewaySecret := getGatewaySecretWithCaAddedToBundleAtAnnotation(caRotationTime.Format(time.RFC3339))
-	secretRepo := &secretRepoStub{
-		getSecrets: []*apicorev1.Secret{gatewaySecret, gatewaySecret},
-	}
-	certRepo := &certRepoStub{
-		getValidityStart: clientCertRotationTime,
-		getValidityEnd:   clientCertRotationTime.Add(time.Hour),
-	}
-	certService := certificate.NewService(certRepo, secretRepo, certificate.Config{
-		RenewBuffer: renewBuffer,
-	})
-
-	overdue, err := certService.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
-
-	require.NoError(t, err)
-	require.False(t, overdue)
-	require.True(t, certRepo.getValidityCalled)
-	require.True(t, secretRepo.getCalled)
-}
-
-// To be removed along with fallback logic, issue: #3105.
-func TestIsSkrCertificateRenewalOverdue_WhenCertHasOldAnnotation_ReturnsFalse(t *testing.T) {
-	caRotationTime := time.Now().Add(-time.Second)
-	clientCertRotationTime := time.Now()
-
-	gatewaySecret := getGatewaySecretWithOldAnnotation(caRotationTime.Format(time.RFC3339))
 	secretRepo := &secretRepoStub{
 		getSecrets: []*apicorev1.Secret{gatewaySecret, gatewaySecret},
 	}
