@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/rest"
@@ -23,7 +22,7 @@ func (f *FakeAccessManagerService) GetAccessRestConfigByKyma(_ context.Context, 
 	return &rest.Config{Host: "http://example.invalid"}, nil
 }
 
-func fakeMappingResolver(_ machineryruntime.Object, _ meta.RESTMapper) (*meta.RESTMapping, error) {
+func fakeMappingResolver(_ schema.GroupVersionKind, _ meta.RESTMapper) (*meta.RESTMapping, error) {
 	return &meta.RESTMapping{
 		Resource: schema.GroupVersionResource{
 			Group:    "",
