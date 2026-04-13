@@ -233,13 +233,6 @@ func (s *Service) getGatewaySecretCaBundleExtendedAtTime(ctx context.Context) (t
 }
 
 func getCaAddedToBundleAtAnnotation(secret *apicorev1.Secret) (string, bool) {
-	if value, ok := secret.Annotations[shared.CaAddedToBundleAtAnnotation]; ok {
-		return value, true
-	}
-
-	// To be removed along with fallback logic, issue: #3105.
-	// Fallback to lastModifiedAt for the transition phase until next bundling occurs,
-	// when the "lastModifiedAt" will be replaced by "caAddedToBundleAt".
-	value, ok := secret.Annotations[shared.LastModifiedAtAnnotation]
+	value, ok := secret.Annotations[shared.CaAddedToBundleAtAnnotation]
 	return value, ok
 }

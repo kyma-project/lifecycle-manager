@@ -15,7 +15,7 @@ import (
 // Checking compliance with the interface methods implemented below.
 var _ client.Client = &SKRClient{}
 
-var ErrNotImplemented = errors.New("not implemented")
+var ErrFailedToCastApplyConfig = errors.New("failed to cast apply configuration to client.Object or apiVersionAndKind")
 
 // ProxyClient holds information required to proxy Client requests to verify RESTMapper integrity.
 // During the proxy, the underlying mapper verifies mapping for the calling resource.
@@ -69,7 +69,7 @@ func (p *ProxyClient) RESTMapper() meta.RESTMapper {
 
 // Create implements client.Client.
 func (p *ProxyClient) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-	if _, err := getResourceMapping(obj, p.mapper); err != nil {
+	if _, err := getResourceMapping(obj.GetObjectKind().GroupVersionKind(), p.mapper); err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
 	err := p.baseClient.Create(ctx, obj, opts...)
@@ -81,7 +81,7 @@ func (p *ProxyClient) Create(ctx context.Context, obj client.Object, opts ...cli
 
 // Update implements client.Client.
 func (p *ProxyClient) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
-	if _, err := getResourceMapping(obj, p.mapper); err != nil {
+	if _, err := getResourceMapping(obj.GetObjectKind().GroupVersionKind(), p.mapper); err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
 	err := p.baseClient.Update(ctx, obj, opts...)
@@ -93,7 +93,7 @@ func (p *ProxyClient) Update(ctx context.Context, obj client.Object, opts ...cli
 
 // Delete implements client.Client.
 func (p *ProxyClient) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
-	if _, err := getResourceMapping(obj, p.mapper); err != nil {
+	if _, err := getResourceMapping(obj.GetObjectKind().GroupVersionKind(), p.mapper); err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
 	err := p.baseClient.Delete(ctx, obj, opts...)
@@ -107,7 +107,7 @@ func (p *ProxyClient) Delete(ctx context.Context, obj client.Object, opts ...cli
 func (p *ProxyClient) DeleteAllOf(
 	ctx context.Context, obj client.Object, opts ...client.DeleteAllOfOption,
 ) error {
-	if _, err := getResourceMapping(obj, p.mapper); err != nil {
+	if _, err := getResourceMapping(obj.GetObjectKind().GroupVersionKind(), p.mapper); err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
 	err := p.baseClient.DeleteAllOf(ctx, obj, opts...)
@@ -121,7 +121,7 @@ func (p *ProxyClient) DeleteAllOf(
 func (p *ProxyClient) Patch(
 	ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption,
 ) error {
-	if _, err := getResourceMapping(obj, p.mapper); err != nil {
+	if _, err := getResourceMapping(obj.GetObjectKind().GroupVersionKind(), p.mapper); err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
 	err := p.baseClient.Patch(ctx, obj, patch, opts...)
@@ -137,7 +137,7 @@ func (p *ProxyClient) Get(ctx context.Context,
 	obj client.Object,
 	opts ...client.GetOption,
 ) error {
-	if _, err := getResourceMapping(obj, p.mapper); err != nil {
+	if _, err := getResourceMapping(obj.GetObjectKind().GroupVersionKind(), p.mapper); err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
 	err := p.baseClient.Get(ctx, key, obj, opts...)
@@ -149,7 +149,7 @@ func (p *ProxyClient) Get(ctx context.Context,
 
 // List implements client.Client.
 func (p *ProxyClient) List(ctx context.Context, obj client.ObjectList, opts ...client.ListOption) error {
-	if _, err := getResourceMapping(obj, p.mapper); err != nil {
+	if _, err := getResourceMapping(obj.GetObjectKind().GroupVersionKind(), p.mapper); err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
 	err := p.baseClient.List(ctx, obj, opts...)
@@ -159,10 +159,46 @@ func (p *ProxyClient) List(ctx context.Context, obj client.ObjectList, opts ...c
 	return nil
 }
 
-// Apply is not implemented yet.
-// Returns error implemented in https://github.com/kyma-project/lifecycle-manager/issues/2707.
-func (p *ProxyClient) Apply(_ context.Context, _ machineryruntime.ApplyConfiguration, _ ...client.ApplyOption) error {
-	return ErrNotImplemented
+func (p *ProxyClient) Apply(ctx context.Context,
+	applyConfig machineryruntime.ApplyConfiguration,
+	opts ...client.ApplyOption,
+) error {
+	gvk, err := gvkFromApplyConfig(applyConfig)
+	if err != nil {
+		return fmt.Errorf("failed to get GVK from apply configuration: %w", err)
+	}
+
+	if _, err := getResourceMapping(gvk, p.mapper); err != nil {
+		return fmt.Errorf("failed to get resource mapping for [%v]: %w", gvk, err)
+	}
+
+	err = p.baseClient.Apply(ctx, applyConfig, opts...)
+	if err != nil {
+		return fmt.Errorf("failed to apply object for [%v]: %w", gvk, err)
+	}
+
+	return nil
+}
+
+type apiVersionAndKind interface {
+	GetKind() *string
+	GetAPIVersion() *string
+}
+
+func gvkFromApplyConfig(applyConfig machineryruntime.ApplyConfiguration) (schema.GroupVersionKind, error) {
+	// ApplyConfiguration implements client.Objects if constructed from unstructured
+	obj, ok := applyConfig.(client.Object)
+	if ok {
+		return obj.GetObjectKind().GroupVersionKind(), nil
+	}
+
+	// ApplyConfiguration implemts apiVersionKind if constructed from typed apply configuration
+	apiVersionKind, ok := applyConfig.(apiVersionAndKind)
+	if ok {
+		return schema.FromAPIVersionAndKind(*apiVersionKind.GetAPIVersion(), *apiVersionKind.GetKind()), nil
+	}
+
+	return schema.GroupVersionKind{}, ErrFailedToCastApplyConfig
 }
 
 // Status implements client.StatusClient.

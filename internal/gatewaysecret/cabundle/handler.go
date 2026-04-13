@@ -136,9 +136,6 @@ func setCaBundleTimeAnnotationToNow(secret *apicorev1.Secret) {
 		secret.Annotations = make(map[string]string)
 	}
 	secret.Annotations[shared.CaAddedToBundleAtAnnotation] = apimetav1.Now().Format(time.RFC3339)
-	//nolint:godox // valid TODO
-	//TODO: drop in the second release after 1.14.0, issue: 3105.
-	delete(secret.Annotations, shared.LastModifiedAtAnnotation)
 }
 
 func (h *Handler) bundleCACerts(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) (bool, error) {

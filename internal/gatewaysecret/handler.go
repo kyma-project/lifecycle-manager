@@ -19,8 +19,6 @@ type Client interface {
 	UpdateGatewaySecret(ctx context.Context, secret *apicorev1.Secret) error
 }
 
-type TimeParserFunc func(secret *apicorev1.Secret, annotation, fallbackAnnotation string) (time.Time, error)
-
 type Handler interface {
 	ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1.Secret) error
 }
