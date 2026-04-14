@@ -2,6 +2,8 @@ package watch
 
 import (
 	"context"
+	"math/rand"
+	"time"
 
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
@@ -18,6 +20,11 @@ type ModuleReleaseMetaEventHandler = TypedModuleReleaseMetaEventHandler[client.O
 type TypedModuleReleaseMetaEventHandler[object any, request comparable] struct {
 	client.Reader
 
+	// updateRequeueMaxDelay is the upper bound for the random delay applied when requeueing Kymas on
+	// ModuleReleaseMeta update events. Spreading reconciliations over this window avoids rate-limiting
+	// bursts when a new module version is rolled out to many clusters simultaneously.
+	updateRequeueMaxDelay time.Duration
+
 	CreateFunc func(context.Context, event.TypedCreateEvent[object], workqueue.TypedRateLimitingInterface[request])
 
 	UpdateFunc func(context.Context, event.TypedUpdateEvent[object], workqueue.TypedRateLimitingInterface[request])
@@ -27,8 +34,13 @@ type TypedModuleReleaseMetaEventHandler[object any, request comparable] struct {
 	GenericFunc func(context.Context, event.TypedGenericEvent[object], workqueue.TypedRateLimitingInterface[request])
 }
 
-func NewModuleReleaseMetaEventHandler(handlerClient ChangeHandlerClient) *ModuleReleaseMetaEventHandler {
-	return &ModuleReleaseMetaEventHandler{Reader: handlerClient}
+// NewModuleReleaseMetaEventHandler creates a handler that, on update events, spreads Kyma reconciliations
+// over a random delay of up to updateRequeueMaxDelay to avoid rate-limiting bursts.
+func NewModuleReleaseMetaEventHandler(handlerClient ChangeHandlerClient, updateRequeueMaxDelay time.Duration) *ModuleReleaseMetaEventHandler {
+	return &ModuleReleaseMetaEventHandler{
+		Reader:                handlerClient,
+		updateRequeueMaxDelay: updateRequeueMaxDelay,
+	}
 }
 
 // Create handles Create events.
@@ -52,7 +64,8 @@ func (m TypedModuleReleaseMetaEventHandler[object, request]) Generic(ctx context
 	handleEvent(ctx, event, rli, m.Reader)
 }
 
-// Update handles Update events.
+// Update handles Update events. Affected Kymas are requeued with a random delay in [0, updateRequeueMaxDelay]
+// to spread reconciliations and avoid rate-limiting bursts when a new module version is released.
 func (m TypedModuleReleaseMetaEventHandler[object, request]) Update(ctx context.Context, event event.UpdateEvent,
 	rli workqueue.TypedRateLimitingInterface[reconcile.Request],
 ) {
@@ -73,7 +86,7 @@ func (m TypedModuleReleaseMetaEventHandler[object, request]) Update(ctx context.
 
 	affectedKymas := GetAffectedKymas(kymaList, newModuleReleaseMeta.Spec.ModuleName, diff)
 
-	requeueKymas(rli, affectedKymas)
+	requeueKymasWithRandomDelay(rli, affectedKymas, m.updateRequeueMaxDelay)
 }
 
 // DiffModuleReleaseMetaChannels determines the difference between the old and new ModuleReleaseMeta channels.
@@ -177,6 +190,29 @@ func requeueKymas(rli workqueue.TypedRateLimitingInterface[reconcile.Request], k
 				Namespace: kyma.Namespace,
 			},
 		})
+	}
+}
+
+// requeueKymasWithRandomDelay enqueues each Kyma with a uniformly random delay in [0, maxDelay].
+// When maxDelay is zero the items are added immediately (same behaviour as requeueKymas).
+func requeueKymasWithRandomDelay(
+	rli workqueue.TypedRateLimitingInterface[reconcile.Request],
+	kymas []*types.NamespacedName,
+	maxDelay time.Duration,
+) {
+	for _, kyma := range kymas {
+		req := reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      kyma.Name,
+				Namespace: kyma.Namespace,
+			},
+		}
+		if maxDelay <= 0 {
+			rli.Add(req)
+			continue
+		}
+		delay := time.Duration(rand.Int63n(int64(maxDelay))) //nolint:gosec // non-cryptographic jitter
+		rli.AddAfter(req, delay)
 	}
 }
 
