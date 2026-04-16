@@ -168,10 +168,12 @@ type ModuleStatus struct {
 	// It can be any kind of Reference format supported by Module.Name.
 	Name string `json:"name"`
 
-	// FQDN is the fully qualified domain name of the module.
-	// In the ModuleTemplate it is located in .spec.descriptor.component.name of the ModuleTemplate
-	// FQDN is used to calculate Namespace and Name of the Manifest for tracking.
+	// Deprecated: This field is deprecated and will be removed in the upcoming API version.
+	// Use the `ComponentName` field instead to track the OCM component name of the module.
 	FQDN string `json:"fqdn,omitempty"`
+
+	// ComponentName represent the OCM (Open Component Model) component name of the module.
+	OCMComponentName string `json:"ocmComponentName,omitempty"`
 
 	// Channel tracks the active Channel of the Module. In Case it changes, the new Channel will have caused
 	// a new lookup to be necessary that maybe picks a different ModuleTemplate, which is why we need to reconcile.

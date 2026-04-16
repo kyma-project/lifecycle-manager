@@ -259,7 +259,7 @@ var _ = Describe("Modules can only be referenced via module name", Ordered, func
 	moduleReferencedWithLabel := NewTestModule("random-module", v1beta2.DefaultChannel)
 	moduleReferencedWithNamespacedName := NewTestModule(
 		v1beta2.DefaultChannel+shared.Separator+"random-module", v1beta2.DefaultChannel)
-	moduleReferencedWithFQDN := NewTestModuleWithFixName("kyma-project.io/module/"+"random-module",
+	moduleReferencedWithComponentName := NewTestModuleWithFixName("kyma-project.io/module/"+"random-module",
 		v1beta2.DefaultChannel, "")
 	kyma.Spec.Modules = append(kyma.Spec.Modules, moduleReferencedWithLabel)
 	RegisterDefaultLifecycleForKyma(kyma)
@@ -273,11 +273,11 @@ var _ = Describe("Modules can only be referenced via module name", Ordered, func
 		})
 	})
 
-	Context("When operator is referenced by FQDN", func() {
+	Context("When operator is referenced by Component Name", func() {
 		It("cannot find the operator", func() {
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(kcpClient, moduleReferencedWithFQDN, kyma).
+				WithArguments(kcpClient, moduleReferencedWithComponentName, kyma).
 				Should(Equal(ErrNotFound))
 		})
 	})

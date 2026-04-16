@@ -100,8 +100,8 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 		})
 		return modules
 	}
-	fqdn := descriptor.GetName()
-	name := modulecommon.CreateModuleName(fqdn, kyma.Name, module.Name)
+	componentName := descriptor.GetName()
+	name := modulecommon.CreateModuleName(componentName, kyma.Name, module.Name)
 	setNameAndNamespaceIfEmpty(template, name, p.remoteSyncNamespace)
 	var manifest *v1beta2.Manifest
 	if manifest, err = newManifestFromTemplate(module.Module,
@@ -120,12 +120,12 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 	// to have correct owner references, the manifest must always have the same namespace as kyma
 	manifest.SetNamespace(kyma.GetNamespace())
 	modules = append(modules, &modulecommon.Module{
-		ModuleName:   module.Name,
-		FQDN:         fqdn,
-		TemplateInfo: template,
-		Manifest:     manifest,
-		Enabled:      module.Enabled,
-		IsUnmanaged:  module.Unmanaged,
+		ModuleName:       module.Name,
+		OCMComponentName: componentName,
+		TemplateInfo:     template,
+		Manifest:         manifest,
+		Enabled:          module.Enabled,
+		IsUnmanaged:      module.Unmanaged,
 	})
 	return modules
 }

@@ -86,15 +86,15 @@ func TestApplyDefaultMetaToManifest_WhenCalled_SetsManagedByLabel(t *testing.T) 
 	assert.Equal(t, "lifecycle-manager", resultLabels["operator.kyma-project.io/managed-by"])
 }
 
-func TestApplyDefaultMetaToManifest_WhenCalled_SetsFQDNAnnotation(t *testing.T) {
+func TestApplyDefaultMetaToManifest_WhenCalled_SetsOCMAnnotation(t *testing.T) {
 	module := createModule()
-	module.FQDN = "some-fqdn"
+	module.OCMComponentName = "example.org/some-module/backend"
 	kyma := &v1beta2.Kyma{}
 
 	module.ApplyDefaultMetaToManifest(kyma)
 
 	resultAnnotations := module.Manifest.GetAnnotations()
-	assert.Equal(t, "some-fqdn", resultAnnotations["operator.kyma-project.io/fqdn"])
+	assert.Equal(t, "example.org/some-module/backend", resultAnnotations["operator.kyma-project.io/ocm-component-name"])
 }
 
 func TestApplyDefaultMetaToManifest_WhenCalledWithUnmanaged_SetsUnmanagedAnnotation(t *testing.T) {
@@ -118,5 +118,46 @@ func createModule() *modulecommon.Module {
 				ObjectMeta: apimetav1.ObjectMeta{},
 			},
 		},
+	}
+}
+
+func TestCreateModuleName(t *testing.T) {
+	tests := []struct {
+		componentName string
+		prefix        string
+		moduleName    string
+		expected      string
+	}{
+		{
+			componentName: "kyma-project.io/module/some-module",
+			prefix:        "default-id",
+			moduleName:    "module1",
+			expected:      "default-id-some-module-1831772875",
+		},
+		{
+			componentName: "example.org/some-module",
+			prefix:        "default-id",
+			moduleName:    "module1",
+			expected:      "default-id-some-module-1457091198",
+		},
+		{
+			componentName: "example.org/this-is-a-very-long-component-name-that-exceeds-the-maximum-length",
+			prefix:        "default-id",
+			moduleName:    "module1",
+			expected:      "default-id-this-is-a-very-long-component-name-that-exceeds-the",
+		},
+		{
+			componentName: "simple-component",
+			prefix:        "default-id",
+			moduleName:    "module1",
+			expected:      "default-id-simple-component-3590401810",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.moduleName, func(t *testing.T) {
+			result := modulecommon.CreateModuleName(tt.componentName, tt.prefix, tt.moduleName)
+			assert.Equal(t, tt.expected, result)
+		})
 	}
 }

@@ -171,7 +171,7 @@ func markInvalidSkewUpdate(ctx context.Context, moduleTemplateInfo *ModuleTempla
 	}
 
 	logger := logf.FromContext(ctx)
-	checkLog := logger.WithValues("module", moduleStatus.FQDN,
+	checkLog := logger.WithValues("module", moduleStatus.OCMComponentName,
 		"template", moduleTemplateInfo.Name,
 		"newTemplateGeneration", moduleTemplateInfo.GetGeneration(),
 		"previousTemplateGeneration", moduleStatus.Template.GetGeneration(),

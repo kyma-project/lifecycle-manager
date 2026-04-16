@@ -149,7 +149,7 @@ kind: Kyma
 status:
   modules:
   - channel: regular
-    fqdn: kyma.project.io/module/btp-operator
+    ocmComponentName: kyma.project.io/module/btp-operator
     manifest:
       apiVersion: operator.kyma-project.io/v1beta2
       kind: Manifest
@@ -169,7 +169,7 @@ status:
     version: 1.2.10
 ```
 
-The above example shows that not only is the module name resolved to a unique `fqdn`, it also represents the active `channel`, `version`, and `state`, which is a direct tracking to the **.status.state** in the Manifest CR. The Kyma CR `Ready` state can only be achieved if all tracked modules are `Ready` themselves.
+The above example shows that not only is the module name resolved to a unique `ocmComponentName`, it also represents the active `channel`, `version`, and `state`, which is a direct tracking to the **.status.state** in the Manifest CR. The Kyma CR `Ready` state can only be achieved if all tracked modules are `Ready` themselves.
 
 The Manifest CR can be directly observed by looking at the **metadata**, **apiVersion**, and **kind**, which can be used to dynamically resolve the module.
 

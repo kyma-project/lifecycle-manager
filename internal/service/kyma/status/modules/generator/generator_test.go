@@ -115,7 +115,7 @@ func TestGenerateModuleStatus_WhenCalledWithTemplateAndManifest_CreatesMinimalMo
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, module.ModuleName, result.Name)
-	assert.Equal(t, module.FQDN, result.FQDN)
+	assert.Equal(t, module.OCMComponentName, result.OCMComponentName)
 	assert.Equal(t, shared.State("test-state"), result.State)
 	assert.Equal(t, "test-channel", result.Channel)
 
@@ -190,8 +190,8 @@ func TestGenerateModuleStatus_WhenModuleIsUnmanaged_StateIsUnmanagedAndTrackingO
 
 func createModule() *modulecommon.Module {
 	return &modulecommon.Module{
-		ModuleName: "test-module",
-		FQDN:       "test-fqdn",
+		ModuleName:       "test-module",
+		OCMComponentName: "example.org/some-module",
 		TemplateInfo: &templatelookup.ModuleTemplateInfo{
 			DesiredChannel: "test-channel",
 			ModuleTemplate: createModuleTemplate(),
