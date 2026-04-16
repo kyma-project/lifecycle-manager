@@ -26,7 +26,6 @@ on:
         required: false
         default: ""
 
-# No permissions at workflow level — all permissions are granted at job level only.
 permissions: {}
 
 jobs:
@@ -34,10 +33,6 @@ jobs:
     runs-on: ubuntu-latest
     # Skip draft PRs — only build when the PR is ready for review.
     if: github.event.pull_request.draft == false
-
-    # Minimal permissions scoped to this job only.
-    # packages:write is required to push to ghcr.io/kyma-project.
-    # contents:read is required for actions/checkout.
     permissions:
       contents: read
       packages: write
@@ -46,9 +41,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          # For pull_request_target, explicitly check out the PR head commit so
-          # the Docker build uses the contributor's code, not the base branch.
-          # This is safe because the build runs inside Docker (sandboxed).
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       # QEMU provides arm64 emulation on the amd64 GitHub-hosted runner.
@@ -86,8 +78,6 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          # Single buildx invocation for both arches → one OCI manifest list push,
-          # no tag-collision between arch-specific jobs.
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
