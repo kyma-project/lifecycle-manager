@@ -134,7 +134,7 @@ jobs:
     needs: draft-release
     # the always() is needed so that the job is not skipped if previous jobs were skipped due to skip_sec_scanners_bump
     if: always() && needs.draft-release.result == 'success'
-    uses: ./.github/workflows/build-image.yml
+    uses: ./.github/workflows/image-builder.yml
     with:
       tag: "${{ github.event.inputs.name }}"
     permissions:
