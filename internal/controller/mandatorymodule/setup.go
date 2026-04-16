@@ -13,8 +13,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldindex"
-	"github.com/kyma-project/lifecycle-manager/internal/watch"
 )
 
 const (
@@ -33,15 +33,14 @@ func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlrun
 		return err
 	}
 
+	mandatoryMrmChangeHandlerMapFunc := watch.ComposeMandatoryMrmChangeHandlerMapFunc(mgr.GetClient())
+
 	if err := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Kyma{}).
 		Named(installationControllerName).
 		WithOptions(opts).
 		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})).
-		Watches(
-			&v1beta2.ModuleReleaseMeta{},
-			handler.EnqueueRequestsFromMapFunc(watch.NewMandatoryMrmChangeHandler(mgr.GetClient()).Watch()),
-		).
+		Watches(&v1beta2.ModuleReleaseMeta{}, handler.EnqueueRequestsFromMapFunc(mandatoryMrmChangeHandlerMapFunc)).
 		Watches(&apicorev1.Secret{}, handler.Funcs{}).
 		Complete(reconcile.AsReconciler[*v1beta2.Kyma](mgr.GetClient(), r)); err != nil {
 		return fmt.Errorf("failed to setup manager for mandatory module installation controller: %w", err)

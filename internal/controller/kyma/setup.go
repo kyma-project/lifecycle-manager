@@ -15,8 +15,8 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
-	"github.com/kyma-project/lifecycle-manager/internal/watch"
 )
 
 type SetupOptions struct {
@@ -36,13 +36,16 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 		return fmt.Errorf("KymaReconciler %w", err)
 	}
 
+	mtEventHandlerMapFunc := watch.ComposeTemplateChangeHandlerMapFunc(r.Client)
+	mrmEventHandler := watch.ComposeMrmEventHandler(r.Client,
+		r.Success) // re-using the success interval as the max delay for jittered requeues
+
 	if err := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
 		Named(controllerName).
 		WithOptions(opts).
 		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})).
-		Watches(&v1beta2.ModuleTemplate{},
-			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch())).
-		Watches(&v1beta2.ModuleReleaseMeta{}, watch.NewModuleReleaseMetaEventHandler(r, r.Success)).
+		Watches(&v1beta2.ModuleTemplate{}, handler.EnqueueRequestsFromMapFunc(mtEventHandlerMapFunc)).
+		Watches(&v1beta2.ModuleReleaseMeta{}, mrmEventHandler).
 		Watches(&apicorev1.Secret{}, handler.Funcs{}).
 		Watches(&v1beta2.Manifest{},
 			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1beta2.Kyma{},

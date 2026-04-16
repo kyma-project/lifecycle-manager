@@ -10,38 +10,56 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-type TemplateChangeHandler struct {
-	client.Reader
+type templateRepository interface {
+	Get(ctx context.Context, name string) (*v1beta2.ModuleTemplate, error)
 }
 
-func NewTemplateChangeHandler(handlerClient ChangeHandlerClient) *TemplateChangeHandler {
-	return &TemplateChangeHandler{Reader: handlerClient}
+type kymaRepository interface {
+	GetAll(ctx context.Context) (*v1beta2.KymaList, error)
+}
+
+// TemplateChangeHandler handles changes to ModuleTemplate objects.
+// Uses handler.MapFunc instead of a typed EventHandler: any change (create/update/delete)
+// requeues all Kymas referencing the template with no per-event distinction, so the typed machinery adds no value.
+type TemplateChangeHandler struct {
+	templateRepository templateRepository
+	kymaRepository     kymaRepository
+}
+
+func NewTemplateChangeHandler(templateRepo templateRepository, kymaRepo kymaRepository) *TemplateChangeHandler {
+	return &TemplateChangeHandler{
+		templateRepository: templateRepo,
+		kymaRepository:     kymaRepo,
+	}
 }
 
 func (h *TemplateChangeHandler) Watch() handler.MapFunc {
 	return func(ctx context.Context, o client.Object) []reconcile.Request {
-		emptyRequest := make([]reconcile.Request, 0)
-		template := &v1beta2.ModuleTemplate{}
-
-		if err := h.Get(ctx, client.ObjectKeyFromObject(o), template); err != nil {
-			return emptyRequest
-		}
-
-		kymas, err := getKymaList(ctx, h)
+		template, err := h.templateRepository.Get(ctx, o.GetName())
 		if err != nil {
-			return emptyRequest
+			return nil
 		}
 
-		filteredKymas := filterKymasWithTemplate(kymas, template)
+		kymas, err := h.kymaRepository.GetAll(ctx)
+		if err != nil {
+			return nil
+		}
 
-		return getRequestItems(filteredKymas)
+		return getRequestItems(filterKymasWithTemplate(kymas, template))
 	}
+}
+
+func getRequestItems(kymas []v1beta2.Kyma) []reconcile.Request {
+	requests := make([]reconcile.Request, 0, len(kymas))
+	for _, kyma := range kymas {
+		requests = append(requests, reconcile.Request{NamespacedName: kyma.GetNamespacedName()})
+	}
+	return requests
 }
 
 func filterKymasWithTemplate(kymas *v1beta2.KymaList, template *v1beta2.ModuleTemplate) []v1beta2.Kyma {
 	items := make([]v1beta2.Kyma, 0, len(kymas.Items))
 	for _, kyma := range kymas.Items {
-		templateUsed := false
 		for _, moduleStatus := range kyma.Status.Modules {
 			if moduleStatus.Template == nil {
 				continue
@@ -49,15 +67,10 @@ func filterKymasWithTemplate(kymas *v1beta2.KymaList, template *v1beta2.ModuleTe
 			if moduleStatus.Template.GetName() == template.GetName() &&
 				moduleStatus.Template.GetNamespace() == template.GetNamespace() &&
 				moduleStatus.Channel != "" {
-				templateUsed = true
+				items = append(items, kyma)
 				break
 			}
 		}
-		if !templateUsed {
-			continue
-		}
-		items = append(items, kyma)
 	}
-
 	return items
 }
