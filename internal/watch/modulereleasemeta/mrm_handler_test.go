@@ -50,11 +50,11 @@ func (q *fakeQueue) all() []reconcile.Request {
 
 var _ workqueue.TypedRateLimitingInterface[reconcile.Request] = (*fakeQueue)(nil)
 
-func newMRM(channel, version string) *v1beta2.ModuleReleaseMeta {
+func newMrmWithRegularChannel(version string) *v1beta2.ModuleReleaseMeta {
 	return &v1beta2.ModuleReleaseMeta{
 		Spec: v1beta2.ModuleReleaseMetaSpec{
 			ModuleName: "module",
-			Channels:   []v1beta2.ChannelVersionAssignment{{Channel: channel, Version: version}},
+			Channels:   []v1beta2.ChannelVersionAssignment{{Channel: "regular", Version: version}},
 		},
 	}
 }
@@ -83,7 +83,7 @@ func TestTypedEventHandler_Delete(t *testing.T) {
 	}{
 		{
 			name:      "mrm deleted with matching kyma - kyma enqueued",
-			mrm:       newMRM("regular", "1.0.0"),
+			mrm:       newMrmWithRegularChannel("1.0.0"),
 			kymaRepo:  &stubKymaRepo{kymaList: kymaListWith("kyma-1")},
 			wantCount: 1,
 		},
@@ -103,7 +103,7 @@ func TestTypedEventHandler_Delete(t *testing.T) {
 		},
 		{
 			name:      "repo error - nothing enqueued",
-			mrm:       newMRM("regular", "1.0.0"),
+			mrm:       newMrmWithRegularChannel("1.0.0"),
 			kymaRepo:  &stubKymaRepo{err: errRepo},
 			wantCount: 0,
 		},
@@ -138,22 +138,22 @@ func TestTypedEventHandler_Update(t *testing.T) {
 	}{
 		{
 			name:      "version changed - kyma enqueued",
-			oldMRM:    newMRM("regular", "1.0.0"),
-			newMRM:    newMRM("regular", "1.1.0"),
+			oldMRM:    newMrmWithRegularChannel("1.0.0"),
+			newMRM:    newMrmWithRegularChannel("1.1.0"),
 			kymaRepo:  &stubKymaRepo{kymaList: kymaListWith("kyma-1")},
 			wantCount: 1,
 		},
 		{
 			name:      "no version change - nothing enqueued",
-			oldMRM:    newMRM("regular", "1.0.0"),
-			newMRM:    newMRM("regular", "1.0.0"),
+			oldMRM:    newMrmWithRegularChannel("1.0.0"),
+			newMRM:    newMrmWithRegularChannel("1.0.0"),
 			kymaRepo:  &stubKymaRepo{kymaList: kymaListWith("kyma-1")},
 			wantCount: 0,
 		},
 		{
 			name:      "repo error - nothing enqueued",
-			oldMRM:    newMRM("regular", "1.0.0"),
-			newMRM:    newMRM("regular", "1.1.0"),
+			oldMRM:    newMrmWithRegularChannel("1.0.0"),
+			newMRM:    newMrmWithRegularChannel("1.1.0"),
 			kymaRepo:  &stubKymaRepo{err: errRepo},
 			wantCount: 0,
 		},
@@ -174,7 +174,7 @@ func TestTypedEventHandler_Update_NonMRMObject_IsNoop(t *testing.T) {
 	q := &fakeQueue{}
 	h.Update(t.Context(), event.UpdateEvent{
 		ObjectOld: &v1beta2.Kyma{ObjectMeta: apimetav1.ObjectMeta{Name: "kyma"}},
-		ObjectNew: newMRM("regular", "1.1.0"),
+		ObjectNew: newMrmWithRegularChannel("1.1.0"),
 	}, q)
 	require.Empty(t, q.all())
 }
@@ -183,8 +183,8 @@ func TestTypedEventHandler_Update_WithDelay_UsesAddAfter(t *testing.T) {
 	h := mrmwatch.NewEventHandler(&stubKymaRepo{kymaList: kymaListWith("kyma-1")}, 10*time.Second)
 	q := &fakeQueue{}
 	h.Update(t.Context(), event.UpdateEvent{
-		ObjectOld: newMRM("regular", "1.0.0"),
-		ObjectNew: newMRM("regular", "1.1.0"),
+		ObjectOld: newMrmWithRegularChannel("1.0.0"),
+		ObjectNew: newMrmWithRegularChannel("1.1.0"),
 	}, q)
 	require.Len(t, q.afterItems, 1)
 	require.Empty(t, q.items)
@@ -193,13 +193,13 @@ func TestTypedEventHandler_Update_WithDelay_UsesAddAfter(t *testing.T) {
 func TestTypedEventHandler_Create_IsNoop(t *testing.T) {
 	h := mrmwatch.NewEventHandler(&stubKymaRepo{kymaList: kymaListWith("kyma-1")}, 0)
 	q := &fakeQueue{}
-	h.Create(t.Context(), event.CreateEvent{Object: newMRM("regular", "1.0.0")}, q)
+	h.Create(t.Context(), event.CreateEvent{Object: newMrmWithRegularChannel("1.0.0")}, q)
 	require.Empty(t, q.all())
 }
 
 func TestTypedEventHandler_Generic_IsNoop(t *testing.T) {
 	h := mrmwatch.NewEventHandler(&stubKymaRepo{kymaList: kymaListWith("kyma-1")}, 0)
 	q := &fakeQueue{}
-	h.Generic(t.Context(), event.GenericEvent{Object: newMRM("regular", "1.0.0")}, q)
+	h.Generic(t.Context(), event.GenericEvent{Object: newMrmWithRegularChannel("1.0.0")}, q)
 	require.Empty(t, q.all())
 }
