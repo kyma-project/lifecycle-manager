@@ -169,7 +169,7 @@ status:
     version: 1.2.10
 ```
 
-The above example shows that not only is the module name resolved to a unique `ocmComponentName`, it also represents the active `channel`, `version`, and `state`, which is a direct tracking to the **.status.state** in the Manifest CR. The Kyma CR `Ready` state can only be achieved if all tracked modules are `Ready` themselves.
+The above example shows that not only is the module name resolved to a unique `ocmComponentName`, it also represents the active `channel`, `version`, and `state`, which is a direct tracking to the **.status.state** in the Manifest CR. During migration, the API may also still expose the deprecated `fqdn` field for backward compatibility, but `ocmComponentName` is the preferred field to use. The Kyma CR `Ready` state can only be achieved if all tracked modules are `Ready` themselves.
 
 The Manifest CR can be directly observed by looking at the **metadata**, **apiVersion**, and **kind**, which can be used to dynamically resolve the module.
 
