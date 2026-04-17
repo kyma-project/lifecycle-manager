@@ -74,7 +74,7 @@ func newDefaultErrorStatus(moduleName, desiredChannel, componentName string, err
 	return &v1beta2.ModuleStatus{
 		Name:             moduleName,
 		Channel:          desiredChannel,
-		FQDN:             componentName, // Deprecated in favor of ComponentName, but set for backward compatibility
+		FQDN:             componentName, // Deprecated in favor of OCMComponentName, but set for backward compatibility
 		OCMComponentName: componentName,
 		State:            shared.StateError,
 		Message:          err.Error(),
