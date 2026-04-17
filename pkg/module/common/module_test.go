@@ -95,6 +95,7 @@ func TestApplyDefaultMetaToManifest_WhenCalled_SetsOCMAnnotation(t *testing.T) {
 
 	resultAnnotations := module.Manifest.GetAnnotations()
 	assert.Equal(t, "example.org/some-module/backend", resultAnnotations["operator.kyma-project.io/ocm-component-name"])
+	assert.Equal(t, "example.org/some-module/backend", resultAnnotations["operator.kyma-project.io/fqdn"])
 }
 
 func TestApplyDefaultMetaToManifest_WhenCalledWithUnmanaged_SetsUnmanagedAnnotation(t *testing.T) {
