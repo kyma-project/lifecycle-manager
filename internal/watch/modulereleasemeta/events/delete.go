@@ -1,37 +1,46 @@
 package events
 
 import (
+	"slices"
+
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/util/workqueue"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-func HandleDelete(
-	evt event.DeleteEvent,
-	rli workqueue.TypedRateLimitingInterface[reconcile.Request],
-	kymaList *v1beta2.KymaList,
-) {
-	moduleReleaseMeta, ok := evt.Object.(*v1beta2.ModuleReleaseMeta)
-	if !ok {
-		return
-	}
-	affectedModule := moduleReleaseMeta.Spec.ModuleName
-	affectedChannels := moduleReleaseMeta.GetAllChannels() // all channels are affected because MRM is being deleted
-
-	affectedKymas := GetAffectedKymas(kymaList, affectedModule, affectedChannels)
-	requeueKymas(rli, affectedKymas)
+// AffectedKymasOnDelete returns the Kymas that should be requeued when an MRM is deleted.
+// All channels are affected because the entire MRM is going away.
+func AffectedKymasOnDelete(mrm *v1beta2.ModuleReleaseMeta, kymaList *v1beta2.KymaList) []*types.NamespacedName {
+	return GetAffectedKymas(kymaList, mrm.Spec.ModuleName, mrm.GetAllChannels())
 }
 
-func requeueKymas(rli workqueue.TypedRateLimitingInterface[reconcile.Request], kymas []*types.NamespacedName) {
-	for _, kyma := range kymas {
-		rli.Add(reconcile.Request{
-			NamespacedName: types.NamespacedName{
-				Name:      kyma.Name,
-				Namespace: kyma.Namespace,
-			},
-		})
+// GetAffectedKymas determines which Kymas are affected by the update. It returns a list of Kymas that have modules
+// assigned to the updated channels.
+func GetAffectedKymas(
+	kymaList *v1beta2.KymaList,
+	affectedModule string,
+	affectedChannels []string,
+) []*types.NamespacedName {
+	affectedKymas := make([]*types.NamespacedName, 0)
+	for _, kyma := range kymaList.Items {
+		for _, module := range kyma.Status.Modules {
+			if module.Name != affectedModule {
+				continue
+			}
+			moduleChannel := getModuleChannel(module.Channel, kyma.Spec.Channel)
+			if slices.Contains(affectedChannels, moduleChannel) {
+				affectedKymas = append(affectedKymas,
+					&types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()})
+				break
+			}
+		}
 	}
+	return affectedKymas
+}
+
+func getModuleChannel(moduleChannel, kymaChannel string) string {
+	if moduleChannel == "" {
+		return kymaChannel
+	}
+	return moduleChannel
 }

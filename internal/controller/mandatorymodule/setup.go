@@ -13,7 +13,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldindex"
 )
 
@@ -22,7 +21,9 @@ const (
 	deletionControllerName     = "mandatory-module-deletion"
 )
 
-func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options) error {
+func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options,
+	mandatoryMrmChangeHandlerMapFunc handler.MapFunc,
+) error {
 	err := setupFieldIndexForMandatoryMrm(mgr)
 	if err != nil {
 		return err
@@ -32,8 +33,6 @@ func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlrun
 	if err != nil {
 		return err
 	}
-
-	mandatoryMrmChangeHandlerMapFunc := watch.ComposeMandatoryMrmChangeHandlerMapFunc(mgr.GetClient())
 
 	if err := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Kyma{}).

@@ -14,19 +14,15 @@ type mrmRepository interface {
 	Get(ctx context.Context, name string) (*v1beta2.ModuleReleaseMeta, error)
 }
 
-type mandatoryKymaRepository interface {
-	GetAll(ctx context.Context) (*v1beta2.KymaList, error)
-}
-
 // MandatoryMrmChangeHandler handles changes to mandatory ModuleReleaseMeta objects.
 // Uses handler.MapFunc instead of a typed EventHandler: any change (create/update/delete)
 // requeues all managed Kymas with no per-event distinction, so the typed machinery adds no value.
 type MandatoryMrmChangeHandler struct {
 	mrmRepository  mrmRepository
-	kymaRepository mandatoryKymaRepository
+	kymaRepository kymaRepository
 }
 
-func NewMandatoryMrmChangeHandler(mrmRepo mrmRepository, kymaRepo mandatoryKymaRepository) *MandatoryMrmChangeHandler {
+func NewMandatoryMrmChangeHandler(mrmRepo mrmRepository, kymaRepo kymaRepository) *MandatoryMrmChangeHandler {
 	return &MandatoryMrmChangeHandler{
 		mrmRepository:  mrmRepo,
 		kymaRepository: kymaRepo,

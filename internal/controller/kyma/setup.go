@@ -15,8 +15,8 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	mrmwatch "github.com/kyma-project/lifecycle-manager/internal/watch/modulereleasemeta"
 )
 
 type SetupOptions struct {
@@ -26,7 +26,12 @@ type SetupOptions struct {
 
 const controllerName = "kyma"
 
-func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options, settings SetupOptions) error {
+func (r *Reconciler) SetupWithManager(mgr ctrl.Manager,
+	opts ctrlruntime.Options,
+	settings SetupOptions,
+	mtEventHandlerMapFunc handler.MapFunc,
+	mrmEventHandler *mrmwatch.EventHandler,
+) error {
 	runnableListener := watcherevent.NewSKREventListener(
 		settings.ListenerAddr,
 		shared.OperatorName,
@@ -35,10 +40,6 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 	if err := mgr.Add(runnableListener); err != nil {
 		return fmt.Errorf("KymaReconciler %w", err)
 	}
-
-	mtEventHandlerMapFunc := watch.ComposeTemplateChangeHandlerMapFunc(r.Client)
-	mrmEventHandler := watch.ComposeMrmEventHandler(r.Client,
-		r.Success) // re-using the success interval as the max delay for jittered requeues
 
 	if err := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
 		Named(controllerName).

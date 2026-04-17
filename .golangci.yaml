@@ -151,6 +151,12 @@ linters:
           alias: manifestrepo
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/secret
           alias: secretrepo
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/modulereleasemeta
+          alias: mrmrepo
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/moduletemplate
+          alias: mtrepo
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/watch/modulereleasemeta
+          alias: mrmwatch
         - pkg: github.com/kyma-project/lifecycle-manager/internal/result/event
           alias: resultevent
         - pkg: k8s.io/api/networking/v1

@@ -2,8 +2,10 @@ package modulereleasemeta
 
 import (
 	"context"
+	"math/rand"
 	"time"
 
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -16,6 +18,7 @@ import (
 
 type kymaRepository interface {
 	LookupByLabel(ctx context.Context, labelKey, labelValue string) (*v1beta2.KymaList, error)
+	GetAll(ctx context.Context) (*v1beta2.KymaList, error)
 }
 
 type EventHandler = TypedEventHandler[client.Object, reconcile.Request]
@@ -28,14 +31,6 @@ type TypedEventHandler[object any, request comparable] struct {
 	// ModuleReleaseMeta update events. Spreading reconciliations over this window avoids rate-limiting
 	// bursts when a new module version is rolled out to many clusters simultaneously.
 	updateRequeueMaxDelay time.Duration
-
-	CreateFunc func(context.Context, event.TypedCreateEvent[object], workqueue.TypedRateLimitingInterface[request])
-
-	UpdateFunc func(context.Context, event.TypedUpdateEvent[object], workqueue.TypedRateLimitingInterface[request])
-
-	DeleteFunc func(context.Context, event.TypedDeleteEvent[object], workqueue.TypedRateLimitingInterface[request])
-
-	GenericFunc func(context.Context, event.TypedGenericEvent[object], workqueue.TypedRateLimitingInterface[request])
 }
 
 // NewEventHandler creates a handler that, on update events, spreads Kyma reconciliations
@@ -65,11 +60,17 @@ func (m TypedEventHandler[object, request]) Generic(_ context.Context, _ event.G
 func (m TypedEventHandler[object, request]) Delete(ctx context.Context, evt event.DeleteEvent,
 	rli workqueue.TypedRateLimitingInterface[reconcile.Request],
 ) {
+	mrm, ok := evt.Object.(*v1beta2.ModuleReleaseMeta)
+	if !ok {
+		return
+	}
+
 	kymaList, err := m.kymaRepository.LookupByLabel(ctx, shared.ManagedBy, shared.OperatorName)
 	if err != nil {
 		return
 	}
-	events.HandleDelete(evt, rli, kymaList)
+
+	requeueKymas(rli, events.AffectedKymasOnDelete(mrm, kymaList))
 }
 
 // Update handles Update events. Affected Kymas are requeued with a random delay in [0, updateRequeueMaxDelay]
@@ -77,9 +78,43 @@ func (m TypedEventHandler[object, request]) Delete(ctx context.Context, evt even
 func (m TypedEventHandler[object, request]) Update(ctx context.Context, evt event.UpdateEvent,
 	rli workqueue.TypedRateLimitingInterface[reconcile.Request],
 ) {
+	oldMRM, ok := evt.ObjectOld.(*v1beta2.ModuleReleaseMeta)
+	if !ok {
+		return
+	}
+	newMRM, ok := evt.ObjectNew.(*v1beta2.ModuleReleaseMeta)
+	if !ok {
+		return
+	}
+
 	kymaList, err := m.kymaRepository.LookupByLabel(ctx, shared.ManagedBy, shared.OperatorName)
 	if err != nil {
 		return
 	}
-	events.HandleUpdate(evt, rli, kymaList, m.updateRequeueMaxDelay)
+
+	requeueKymasWithRandomDelay(rli, events.AffectedKymasOnUpdate(oldMRM, newMRM, kymaList), m.updateRequeueMaxDelay)
+}
+
+func requeueKymas(rli workqueue.TypedRateLimitingInterface[reconcile.Request], kymas []*types.NamespacedName) {
+	for _, kyma := range kymas {
+		rli.Add(reconcile.Request{NamespacedName: *kyma})
+	}
+}
+
+// requeueKymasWithRandomDelay enqueues each Kyma with a uniformly random delay in [0, maxDelay].
+// When maxDelay is zero the items are added immediately (same behaviour as requeueKymas).
+func requeueKymasWithRandomDelay(
+	rli workqueue.TypedRateLimitingInterface[reconcile.Request],
+	kymas []*types.NamespacedName,
+	maxDelay time.Duration,
+) {
+	for _, kyma := range kymas {
+		req := reconcile.Request{NamespacedName: *kyma}
+		if maxDelay <= 0 {
+			rli.Add(req)
+			continue
+		}
+		delay := time.Duration(rand.Int63n(int64(maxDelay))) //nolint:gosec // non-cryptographic jitter
+		rli.AddAfter(req, delay)
+	}
 }

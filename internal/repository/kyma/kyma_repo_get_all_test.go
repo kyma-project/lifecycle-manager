@@ -39,17 +39,14 @@ func Test_GetAll_WhenSingleKymaExists_ReturnsList(t *testing.T) {
 }
 
 func Test_GetAll_WhenMultipleKymasExist_ReturnsList(t *testing.T) {
-	// given
 	expectedKymas := []client.Object{
 		testKyma(kymaName+"-1", kymaNamespace),
 		testKyma(kymaName+"-2", kymaNamespace),
 	}
 	repo := kymarepo.NewRepository(&readerStubValidKyma{listItems: expectedKymas}, kymaNamespace)
 
-	// when
 	foundKymas, err := repo.GetAll(t.Context())
 
-	// then
 	require.NoError(t, err)
 	require.Len(t, foundKymas.Items, 2)
 	require.Equal(t, kymaName+"-1", foundKymas.Items[0].GetName())
