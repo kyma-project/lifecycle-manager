@@ -169,10 +169,10 @@ type ModuleStatus struct {
 	Name string `json:"name"`
 
 	// Deprecated: This field is deprecated and will be removed in the upcoming API version.
-	// Use the `ComponentName` field instead to track the OCM component name of the module.
+	// Use the `OCMComponentName` field instead to track the OCM component name of the module.
 	FQDN string `json:"fqdn,omitempty"`
 
-	// ComponentName represent the OCM (Open Component Model) component name of the module.
+	// OCMComponentName represents the OCM (Open Component Model) component name of the module.
 	OCMComponentName string `json:"ocmComponentName,omitempty"`
 
 	// Channel tracks the active Channel of the Module. In Case it changes, the new Channel will have caused
