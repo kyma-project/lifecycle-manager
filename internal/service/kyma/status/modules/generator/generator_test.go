@@ -116,6 +116,7 @@ func TestGenerateModuleStatus_WhenCalledWithTemplateAndManifest_CreatesMinimalMo
 	assert.NotNil(t, result)
 	assert.Equal(t, module.ModuleName, result.Name)
 	assert.Equal(t, module.OCMComponentName, result.OCMComponentName)
+	assert.Equal(t, module.OCMComponentName, result.FQDN)
 	assert.Equal(t, shared.State("test-state"), result.State)
 	assert.Equal(t, "test-channel", result.Channel)
 
