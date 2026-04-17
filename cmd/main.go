@@ -270,7 +270,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	mrmEventHandler := watchcmpse.ComposeMrmEventHandler(kymaRepo,
 		flagVar.KymaRequeueSuccessInterval) // re-using the success interval as the max delay for spreading out requeues
-	mtEventHandlerMapFunc := watchcmpse.ComposeTemplateChangeHandlerMapFunc(mtRepo, kymaRepo)
+	mtEventHandlerMapFunc := watchcmpse.ComposeTemplateChangeHandlerMapFunc(kymaRepo)
 	mandatoryMrmHandlerMapFunc := watchcmpse.ComposeMandatoryMrmChangeHandlerMapFunc(mrmRepo, kymaRepo)
 
 	kymaDeletionSvc := kymadeletioncmpse.ComposeKymaDeletionService(

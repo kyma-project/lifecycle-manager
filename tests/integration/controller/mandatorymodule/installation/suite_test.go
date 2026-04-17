@@ -141,7 +141,11 @@ var _ = BeforeSuite(func() {
 		flags.DefaultRemoteSyncNamespace, metrics.NewMandatoryModulesMetrics())
 	installationReconciler := mandatorymodule.NewInstallationReconciler(installationService, intervals)
 
-	err = installationReconciler.SetupWithManager(mgr, ctrlruntime.Options{}, func(_ context.Context, _ client.Object) []reconcile.Request { return nil })
+	err = installationReconciler.SetupWithManager(mgr, ctrlruntime.Options{}, func(_ context.Context,
+		_ client.Object,
+	) []reconcile.Request {
+		return nil
+	})
 	Expect(err).ToNot(HaveOccurred())
 
 	kcpClient = mgr.GetClient()

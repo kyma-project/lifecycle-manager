@@ -8,6 +8,8 @@ import (
 	mrmwatch "github.com/kyma-project/lifecycle-manager/internal/watch/modulereleasemeta"
 )
 
-func ComposeMandatoryMrmChangeHandlerMapFunc(mrmRepo *mrmrepo.Repository, kymaRepo *kymarepo.Repository) handler.MapFunc {
+func ComposeMandatoryMrmChangeHandlerMapFunc(mrmRepo *mrmrepo.Repository,
+	kymaRepo *kymarepo.Repository,
+) handler.MapFunc {
 	return mrmwatch.NewMandatoryMrmChangeHandler(mrmRepo, kymaRepo).Watch()
 }

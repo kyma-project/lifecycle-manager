@@ -43,7 +43,6 @@ import (
 	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
-	mtrepo "github.com/kyma-project/lifecycle-manager/internal/repository/moduletemplate"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
@@ -244,7 +243,6 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: UseRandomPort},
 		watchcmpse.ComposeTemplateChangeHandlerMapFunc(
-			mtrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
 			kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
 		),
 		watchcmpse.ComposeMrmEventHandler(

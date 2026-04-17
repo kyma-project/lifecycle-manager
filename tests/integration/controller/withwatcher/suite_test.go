@@ -50,7 +50,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
-	mtrepo "github.com/kyma-project/lifecycle-manager/internal/repository/moduletemplate"
 	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
@@ -219,7 +218,6 @@ var _ = BeforeSuite(func() {
 		DeletionService: deletionService,
 	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr},
 		watchcmpse.ComposeTemplateChangeHandlerMapFunc(
-			mtrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
 			kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
 		),
 		watchcmpse.ComposeMrmEventHandler(

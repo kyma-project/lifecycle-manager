@@ -16,10 +16,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/watch/modulereleasemeta/events"
 )
 
-type kymaRepository interface {
-	LookupByLabel(ctx context.Context, labelKey, labelValue string) (*v1beta2.KymaList, error)
-}
-
 type EventHandler = TypedEventHandler[client.Object, reconcile.Request]
 
 // TypedEventHandler implements handler.EventHandler for ModuleReleaseMeta objects.

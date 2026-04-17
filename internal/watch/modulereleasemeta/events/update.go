@@ -10,13 +10,11 @@ import (
 func AffectedKymasOnUpdate(oldMRM, newMRM *v1beta2.ModuleReleaseMeta,
 	kymaList *v1beta2.KymaList,
 ) []*types.NamespacedName {
-	affectedChannels := DiffModuleReleaseMetaChannels(oldMRM, newMRM)
-	return GetAffectedKymas(kymaList, newMRM.Spec.ModuleName, affectedChannels)
+	affectedChannels := diffModuleReleaseMetaChannels(oldMRM, newMRM)
+	return getAffectedKymas(kymaList, newMRM.Spec.ModuleName, affectedChannels)
 }
 
-// DiffModuleReleaseMetaChannels returns the names of channels whose version changed or that were added/removed
-// between the old and new ModuleReleaseMeta.
-func DiffModuleReleaseMetaChannels(
+func diffModuleReleaseMetaChannels(
 	oldModuleReleaseMeta, newModuleReleaseMeta *v1beta2.ModuleReleaseMeta,
 ) []string {
 	oldChannelVersions := make(map[string]string) // channel → version

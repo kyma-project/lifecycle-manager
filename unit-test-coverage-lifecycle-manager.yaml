@@ -55,7 +55,8 @@ packages:
   internal/setup: 71
   internal/util/collections: 87
 
-  internal/watch/modulereleasemeta/events: 88.6
+  internal/watch/modulereleasemeta: 97.6
+  internal/watch/modulereleasemeta/events: 100
 
   pkg/module/sync: 10
   pkg/status: 16
