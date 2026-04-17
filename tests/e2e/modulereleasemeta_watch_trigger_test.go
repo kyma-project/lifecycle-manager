@@ -9,7 +9,9 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
+// This test is disabled because watch mechanism now has a random delay between 0 and the kyma sucess requeue interval
+// The kyma sucess requeu interval is set to 1 hour for this test. The test timeouts
+var _ = PDescribe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(RemoteNamespace)

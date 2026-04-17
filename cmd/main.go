@@ -269,7 +269,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	manifestRepo := manifestrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
 
 	mrmEventHandler := watchcmpse.ComposeMrmEventHandler(kymaRepo,
-		1*time.Second) // re-using the success interval as the max delay for spreading out requeues
+		flagVar.KymaRequeueSuccessInterval) // re-using the success interval as the max delay for spreading out requeues
 	mtEventHandlerMapFunc := watchcmpse.ComposeTemplateChangeHandlerMapFunc(kymaRepo)
 	mandatoryMrmHandlerMapFunc := watchcmpse.ComposeMandatoryMrmChangeHandlerMapFunc(mrmRepo, kymaRepo)
 

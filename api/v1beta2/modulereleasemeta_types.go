@@ -106,7 +106,7 @@ func (m *ModuleReleaseMeta) IsInternal() bool {
 }
 
 func (m *ModuleReleaseMeta) GetAllChannels() []string {
-	var allChannels []string
+	allChannels := make([]string, 0, len(m.Spec.Channels))
 	for _, channelVersionAssignment := range m.Spec.Channels {
 		allChannels = append(allChannels, channelVersionAssignment.Channel)
 	}
