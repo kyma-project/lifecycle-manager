@@ -27,7 +27,7 @@ func Test_GetAll_WhenClientReturnsError_ReturnsError(t *testing.T) {
 }
 
 func Test_GetAll_WhenSingleKymaExists_ReturnsList(t *testing.T) {
-	expectedKymas := []client.Object{testKyma(kymaName+"-1", kymaNamespace)}
+	expectedKymas := []client.Object{testKyma(kymaName + "-1")}
 	repo := kymarepo.NewRepository(&readerStubValidKyma{listItems: expectedKymas}, kymaNamespace)
 
 	foundKymas, err := repo.GetAll(t.Context())
@@ -40,8 +40,8 @@ func Test_GetAll_WhenSingleKymaExists_ReturnsList(t *testing.T) {
 
 func Test_GetAll_WhenMultipleKymasExist_ReturnsList(t *testing.T) {
 	expectedKymas := []client.Object{
-		testKyma(kymaName+"-1", kymaNamespace),
-		testKyma(kymaName+"-2", kymaNamespace),
+		testKyma(kymaName + "-1"),
+		testKyma(kymaName + "-2"),
 	}
 	repo := kymarepo.NewRepository(&readerStubValidKyma{listItems: expectedKymas}, kymaNamespace)
 

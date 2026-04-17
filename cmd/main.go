@@ -57,7 +57,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/deletion"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/installation"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
-	watchcompose "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
+	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/istiogatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
@@ -268,10 +268,10 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	mtRepo := mtrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
 	manifestRepo := manifestrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
 
-	mrmEventHandler := watchcompose.ComposeMrmEventHandler(kymaRepo,
+	mrmEventHandler := watchcmpse.ComposeMrmEventHandler(kymaRepo,
 		flagVar.KymaRequeueSuccessInterval) // re-using the success interval as the max delay for spreading out requeues
-	mtEventHandlerMapFunc := watchcompose.ComposeTemplateChangeHandlerMapFunc(mtRepo, kymaRepo)
-	mandatoryMrmHandlerMapFunc := watchcompose.ComposeMandatoryMrmChangeHandlerMapFunc(mrmRepo, kymaRepo)
+	mtEventHandlerMapFunc := watchcmpse.ComposeTemplateChangeHandlerMapFunc(mtRepo, kymaRepo)
+	mandatoryMrmHandlerMapFunc := watchcmpse.ComposeMandatoryMrmChangeHandlerMapFunc(mrmRepo, kymaRepo)
 
 	kymaDeletionSvc := kymadeletioncmpse.ComposeKymaDeletionService(
 		kcpClient,

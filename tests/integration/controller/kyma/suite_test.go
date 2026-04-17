@@ -39,7 +39,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
-	watchcompose "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
+	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 	mtrepo "github.com/kyma-project/lifecycle-manager/internal/repository/moduletemplate"
@@ -243,11 +243,11 @@ var _ = BeforeSuite(func() {
 		DeletionService: deletionService,
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: randomPort},
-		watchcompose.ComposeTemplateChangeHandlerMapFunc(
+		watchcmpse.ComposeTemplateChangeHandlerMapFunc(
 			mtrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
 			kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
 		),
-		watchcompose.ComposeMrmEventHandler(
+		watchcmpse.ComposeMrmEventHandler(
 			kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
 			0,
 		),

@@ -32,7 +32,7 @@ func Test_List_WhenReaderReturnsError_ReturnError(t *testing.T) {
 
 func Test_Get_WhenSingleKymaFound_ReturnsList(t *testing.T) {
 	expectedKymas := make([]client.Object, 0, 1)
-	expectedKymas = append(expectedKymas, testKyma(kymaName+"-1", kymaNamespace))
+	expectedKymas = append(expectedKymas, testKyma(kymaName+"-1"))
 	kymaClient := kymarepo.NewRepository(&readerStubValidKyma{listItems: expectedKymas}, kymaNamespace)
 	foundKymas, err := kymaClient.LookupByLabel(t.Context(), "some-label", "some-value")
 
@@ -45,8 +45,8 @@ func Test_Get_WhenSingleKymaFound_ReturnsList(t *testing.T) {
 func Test_Get_WhenTwoKymasFound_ReturnsList(t *testing.T) {
 	// given
 	expectedKymas := make([]client.Object, 0, 2)
-	expectedKymas = append(expectedKymas, testKyma(kymaName+"-1", kymaNamespace))
-	expectedKymas = append(expectedKymas, testKyma(kymaName+"-2", kymaNamespace))
+	expectedKymas = append(expectedKymas, testKyma(kymaName+"-1"))
+	expectedKymas = append(expectedKymas, testKyma(kymaName+"-2"))
 	kymaClient := kymarepo.NewRepository(&readerStubValidKyma{listItems: expectedKymas}, kymaNamespace)
 
 	// when
@@ -61,11 +61,11 @@ func Test_Get_WhenTwoKymasFound_ReturnsList(t *testing.T) {
 	require.Equal(t, kymaNamespace, foundKymas.Items[1].GetNamespace())
 }
 
-func testKyma(name, namespace string) *v1beta2.Kyma {
+func testKyma(name string) *v1beta2.Kyma {
 	return &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      name,
-			Namespace: namespace,
+			Namespace: kymaNamespace,
 		},
 	}
 }

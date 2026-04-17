@@ -40,7 +40,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
-	watchcompose "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
+	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	kymadeletionctrl "github.com/kyma-project/lifecycle-manager/internal/controller/kyma/deletion"
 	watcherctrl "github.com/kyma-project/lifecycle-manager/internal/controller/watcher"
@@ -218,11 +218,11 @@ var _ = BeforeSuite(func() {
 		DeletionEvents:  deletionEvents,
 		DeletionService: deletionService,
 	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr},
-		watchcompose.ComposeTemplateChangeHandlerMapFunc(
+		watchcmpse.ComposeTemplateChangeHandlerMapFunc(
 			mtrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
 			kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
 		),
-		watchcompose.ComposeMrmEventHandler(
+		watchcmpse.ComposeMrmEventHandler(
 			kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
 			0,
 		),

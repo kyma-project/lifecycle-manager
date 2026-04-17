@@ -17,13 +17,16 @@ packages:
   internal/manifest/modulecr: 50
   internal/manifest/skrresources: 20
   internal/manifest/statecheck: 71
+  internal/manifest/status: 73.8
   internal/maintenancewindows: 87
+  internal/pkg/metrics: 39.3
   internal/pkg/resources: 91
   internal/remote: 30
 
-  internal/repository/kyma: 93
+  internal/repository/kyma: 95.8
   internal/repository/ocm: 100
   internal/repository/ocm/oci: 100
+  internal/repository/skr/crd: 100
   internal/repository/watcher/certificate: 100
   internal/repository/watcher/certificate/certmanager/certificate: 100
   internal/repository/watcher/certificate/gcm/certificate: 98
@@ -33,6 +36,7 @@ packages:
   internal/repository/modulereleasemeta: 100
 
   internal/service/componentdescriptor: 100
+  internal/service/kyma/status/modules: 83.7
   internal/service/kyma/status/modules/generator: 100
   internal/service/kyma/status/modules/generator/fromerror: 100
   internal/service/kyma/lookup: 100
@@ -50,6 +54,9 @@ packages:
 
   internal/setup: 71
   internal/util/collections: 87
+
+  internal/watch/modulereleasemeta/events: 88.6
+
   pkg/module/sync: 10
   pkg/status: 16
   pkg/templatelookup: 76
