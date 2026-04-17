@@ -113,16 +113,7 @@ runs:
         echo \
         "- op: replace
           path: /spec/template/spec/containers/0/args/16
-          value: --kyma-requeue-success-interval=1h
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --kyma-requeue-warning-interval=1h
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --kyma-requeue-error-interval=1h
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --kyma-requeue-busy-interval=1s" >> requeue-interval-patch.yaml
+          value: --kyma-requeue-success-interval=30s" >> requeue-interval-patch.yaml
         cat requeue-interval-patch.yaml
         kustomize edit add patch --path requeue-interval-patch.yaml --kind Deployment
         popd
