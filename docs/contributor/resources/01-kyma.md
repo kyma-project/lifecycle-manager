@@ -149,7 +149,7 @@ kind: Kyma
 status:
   modules:
   - channel: regular
-    ocmComponentName: kyma.project.io/module/btp-operator
+    ocmComponentName: kyma-project.io/module/btp-operator
     manifest:
       apiVersion: operator.kyma-project.io/v1beta2
       kind: Manifest
