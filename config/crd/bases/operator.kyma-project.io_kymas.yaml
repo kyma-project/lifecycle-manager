@@ -638,7 +638,7 @@ spec:
                     fqdn:
                       description: |-
                         Deprecated: This field is deprecated and will be removed in the upcoming API version.
-                        Use the `ComponentName` field instead to track the OCM component name of the module.
+                        Use the `OCMComponentName` field instead to track the OCM component name of the module.
                       type: string
                     maintenance:
                       default: false
@@ -707,7 +707,7 @@ spec:
                         It can be any kind of Reference format supported by Module.Name.
                       type: string
                     ocmComponentName:
-                      description: ComponentName represent the OCM (Open Component
+                      description: OCMComponentName represents the OCM (Open Component
                         Model) component name of the module.
                       type: string
                     resource:
