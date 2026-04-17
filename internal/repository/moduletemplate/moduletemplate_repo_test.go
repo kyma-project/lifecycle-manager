@@ -12,7 +12,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/moduletemplate"
+	mtrepo "github.com/kyma-project/lifecycle-manager/internal/repository/moduletemplate"
 )
 
 type clientStub struct {
@@ -88,7 +88,7 @@ func TestRepository_EnsureFinalizer(t *testing.T) {
 		}
 
 		stub := &clientStub{moduleTemplate: moduleTemplate}
-		repo := moduletemplate.NewRepository(stub, testNamespace)
+		repo := mtrepo.NewRepository(stub, testNamespace)
 
 		err := repo.EnsureFinalizer(ctx, testModuleTemplateName, testFinalizer)
 
@@ -107,7 +107,7 @@ func TestRepository_EnsureFinalizer(t *testing.T) {
 		}
 
 		stub := &clientStub{moduleTemplate: moduleTemplate}
-		repo := moduletemplate.NewRepository(stub, testNamespace)
+		repo := mtrepo.NewRepository(stub, testNamespace)
 
 		err := repo.EnsureFinalizer(ctx, testModuleTemplateName, testFinalizer)
 
@@ -119,7 +119,7 @@ func TestRepository_EnsureFinalizer(t *testing.T) {
 	t.Run("returns error when get fails", func(t *testing.T) {
 		expectedErr := errors.New("get error")
 		stub := &clientStub{getErr: expectedErr}
-		repo := moduletemplate.NewRepository(stub, testNamespace)
+		repo := mtrepo.NewRepository(stub, testNamespace)
 
 		err := repo.EnsureFinalizer(ctx, testModuleTemplateName, testFinalizer)
 
@@ -139,7 +139,7 @@ func TestRepository_EnsureFinalizer(t *testing.T) {
 
 		expectedErr := errors.New("update error")
 		stub := &clientStub{moduleTemplate: moduleTemplate, updateErr: expectedErr}
-		repo := moduletemplate.NewRepository(stub, testNamespace)
+		repo := mtrepo.NewRepository(stub, testNamespace)
 
 		err := repo.EnsureFinalizer(ctx, testModuleTemplateName, testFinalizer)
 
@@ -166,7 +166,7 @@ func TestRepository_RemoveFinalizer(t *testing.T) {
 		}
 
 		stub := &clientStub{moduleTemplate: moduleTemplate}
-		repo := moduletemplate.NewRepository(stub, testNamespace)
+		repo := mtrepo.NewRepository(stub, testNamespace)
 
 		err := repo.RemoveFinalizer(ctx, testModuleTemplateName, testFinalizer)
 
@@ -185,7 +185,7 @@ func TestRepository_RemoveFinalizer(t *testing.T) {
 		}
 
 		stub := &clientStub{moduleTemplate: moduleTemplate}
-		repo := moduletemplate.NewRepository(stub, testNamespace)
+		repo := mtrepo.NewRepository(stub, testNamespace)
 
 		err := repo.RemoveFinalizer(ctx, testModuleTemplateName, testFinalizer)
 
@@ -197,7 +197,7 @@ func TestRepository_RemoveFinalizer(t *testing.T) {
 	t.Run("returns error when get fails", func(t *testing.T) {
 		expectedErr := errors.New("get error")
 		stub := &clientStub{getErr: expectedErr}
-		repo := moduletemplate.NewRepository(stub, testNamespace)
+		repo := mtrepo.NewRepository(stub, testNamespace)
 
 		err := repo.RemoveFinalizer(ctx, testModuleTemplateName, testFinalizer)
 
@@ -217,7 +217,7 @@ func TestRepository_RemoveFinalizer(t *testing.T) {
 
 		expectedErr := errors.New("update error")
 		stub := &clientStub{moduleTemplate: moduleTemplate, updateErr: expectedErr}
-		repo := moduletemplate.NewRepository(stub, testNamespace)
+		repo := mtrepo.NewRepository(stub, testNamespace)
 
 		err := repo.RemoveFinalizer(ctx, testModuleTemplateName, testFinalizer)
 
@@ -242,7 +242,7 @@ func TestRepository_Get(t *testing.T) {
 		}
 
 		stub := &clientStub{moduleTemplate: expectedModuleTemplate}
-		repo := moduletemplate.NewRepository(stub, testNamespace)
+		repo := mtrepo.NewRepository(stub, testNamespace)
 
 		result, err := repo.Get(ctx, testModuleTemplateName)
 
@@ -256,7 +256,7 @@ func TestRepository_Get(t *testing.T) {
 	t.Run("returns error when client get fails", func(t *testing.T) {
 		expectedErr := errors.New("client get error")
 		stub := &clientStub{getErr: expectedErr}
-		repo := moduletemplate.NewRepository(stub, testNamespace)
+		repo := mtrepo.NewRepository(stub, testNamespace)
 
 		result, err := repo.Get(ctx, testModuleTemplateName)
 
@@ -293,7 +293,7 @@ func TestRepository_ListAllForModule(t *testing.T) {
 		}
 
 		stub := &clientStub{moduleTemplates: expectedModuleTemplates}
-		repo := moduletemplate.NewRepository(stub, testNamespace)
+		repo := mtrepo.NewRepository(stub, testNamespace)
 
 		result, err := repo.ListAllForModule(ctx, testModuleName)
 
@@ -307,7 +307,7 @@ func TestRepository_ListAllForModule(t *testing.T) {
 
 	t.Run("returns empty list when no ModuleTemplates found", func(t *testing.T) {
 		stub := &clientStub{moduleTemplates: []v1beta2.ModuleTemplate{}}
-		repo := moduletemplate.NewRepository(stub, testNamespace)
+		repo := mtrepo.NewRepository(stub, testNamespace)
 
 		result, err := repo.ListAllForModule(ctx, testModuleName)
 
@@ -321,7 +321,7 @@ func TestRepository_ListAllForModule(t *testing.T) {
 	t.Run("returns error when list fails", func(t *testing.T) {
 		expectedErr := errors.New("list error")
 		stub := &clientStub{listErr: expectedErr}
-		repo := moduletemplate.NewRepository(stub, testNamespace)
+		repo := mtrepo.NewRepository(stub, testNamespace)
 
 		result, err := repo.ListAllForModule(ctx, testModuleName)
 
@@ -337,7 +337,7 @@ func TestRepository_ListAllForModule(t *testing.T) {
 	t.Run("uses correct module name in label selector", func(t *testing.T) {
 		differentModuleName := "different-module-name"
 		stub := &clientStub{moduleTemplates: []v1beta2.ModuleTemplate{}}
-		repo := moduletemplate.NewRepository(stub, testNamespace)
+		repo := mtrepo.NewRepository(stub, testNamespace)
 
 		_, err := repo.ListAllForModule(ctx, differentModuleName)
 
@@ -363,7 +363,7 @@ func TestRepository_GetSpecificVersionForModule(t *testing.T) {
 		}
 
 		stub := &clientStub{moduleTemplate: &expected}
-		repo := moduletemplate.NewRepository(stub, testNamespace)
+		repo := mtrepo.NewRepository(stub, testNamespace)
 
 		result, err := repo.GetSpecificVersionForModule(ctx, testModuleName, testVersion)
 
@@ -376,7 +376,7 @@ func TestRepository_GetSpecificVersionForModule(t *testing.T) {
 	t.Run("get error", func(t *testing.T) {
 		expectedErr := errors.New("get error")
 		stub := &clientStub{getErr: expectedErr}
-		repo := moduletemplate.NewRepository(stub, testNamespace)
+		repo := mtrepo.NewRepository(stub, testNamespace)
 
 		result, err := repo.GetSpecificVersionForModule(ctx, testModuleName, testVersion)
 

@@ -97,10 +97,18 @@ func init() {
 	SchemeBuilder.Register(&ModuleReleaseMeta{}, &ModuleReleaseMetaList{})
 }
 
-func (m ModuleReleaseMeta) IsBeta() bool {
+func (m *ModuleReleaseMeta) IsBeta() bool {
 	return m.Spec.Beta
 }
 
-func (m ModuleReleaseMeta) IsInternal() bool {
+func (m *ModuleReleaseMeta) IsInternal() bool {
 	return m.Spec.Internal
+}
+
+func (m *ModuleReleaseMeta) GetAllChannels() []string {
+	allChannels := make([]string, 0, len(m.Spec.Channels))
+	for _, channelVersionAssignment := range m.Spec.Channels {
+		allChannels = append(allChannels, channelVersionAssignment.Channel)
+	}
+	return allChannels
 }

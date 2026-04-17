@@ -40,7 +40,9 @@ import (
 	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
+	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
+	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
@@ -239,7 +241,15 @@ var _ = BeforeSuite(func() {
 		DeletionEvents:  deletionEvents,
 		DeletionService: deletionService,
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
-		kyma.SetupOptions{ListenerAddr: UseRandomPort})
+		kyma.SetupOptions{ListenerAddr: UseRandomPort},
+		watchcmpse.ComposeTemplateChangeHandlerMapFunc(
+			kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+		),
+		watchcmpse.ComposeMrmEventHandler(
+			kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+			0,
+		),
+	)
 	Expect(err).ToNot(HaveOccurred())
 	Eventually(CreateNamespace, Timeout, Interval).
 		WithContext(ctx).
