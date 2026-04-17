@@ -18,7 +18,6 @@ import (
 
 type kymaRepository interface {
 	LookupByLabel(ctx context.Context, labelKey, labelValue string) (*v1beta2.KymaList, error)
-	GetAll(ctx context.Context) (*v1beta2.KymaList, error)
 }
 
 type EventHandler = TypedEventHandler[client.Object, reconcile.Request]
@@ -73,7 +72,7 @@ func (m TypedEventHandler[object, request]) Delete(ctx context.Context, evt even
 	requeueKymas(rli, events.AffectedKymasOnDelete(mrm, kymaList))
 }
 
-// Update handles Update events. Affected Kymas are requeued with a random delay in [0, updateRequeueMaxDelay]
+// Update handles Update events. Affected Kymas are requeued with a random delay in [0, updateRequeueMaxDelay)
 // to spread reconciliations and avoid rate-limiting bursts when a new module version is released.
 func (m TypedEventHandler[object, request]) Update(ctx context.Context, evt event.UpdateEvent,
 	rli workqueue.TypedRateLimitingInterface[reconcile.Request],

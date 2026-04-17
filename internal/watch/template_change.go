@@ -3,6 +3,7 @@ package watch
 import (
 	"context"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -15,7 +16,7 @@ type templateRepository interface {
 }
 
 type kymaRepository interface {
-	GetAll(ctx context.Context) (*v1beta2.KymaList, error)
+	LookupByLabel(ctx context.Context, labelName, labelValue string) (*v1beta2.KymaList, error)
 }
 
 // TemplateChangeHandler handles changes to ModuleTemplate objects.
@@ -40,7 +41,7 @@ func (h *TemplateChangeHandler) Watch() handler.MapFunc {
 			return nil
 		}
 
-		kymas, err := h.kymaRepository.GetAll(ctx)
+		kymas, err := h.kymaRepository.LookupByLabel(ctx, shared.ManagedBy, shared.OperatorName)
 		if err != nil {
 			return nil
 		}

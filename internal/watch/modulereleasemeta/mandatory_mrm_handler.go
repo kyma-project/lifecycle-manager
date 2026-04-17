@@ -3,6 +3,7 @@ package modulereleasemeta
 import (
 	"context"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -40,7 +41,7 @@ func (h *MandatoryMrmChangeHandler) Watch() handler.MapFunc {
 			return nil
 		}
 
-		kymas, err := h.kymaRepository.GetAll(ctx)
+		kymas, err := h.kymaRepository.LookupByLabel(ctx, shared.ManagedBy, shared.OperatorName)
 		if err != nil {
 			return nil
 		}
