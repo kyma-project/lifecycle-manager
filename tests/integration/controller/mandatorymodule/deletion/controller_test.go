@@ -39,6 +39,10 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 					WithContext(ctx).
 					WithArguments(kcpClient, shared.FQDN, FullOCMName(mandatoryModuleName)).
 					Should(Succeed())
+				Eventually(MandatoryManifestExistsWithLabelAndAnnotation).
+					WithContext(ctx).
+					WithArguments(kcpClient, shared.OCMComponentName, FullOCMName(mandatoryModuleName)).
+					Should(Succeed())
 				By("And mandatory finalizer is added to the mandatory ModuleReleaseMeta", func() {
 					Eventually(mandatoryMrmFinalizerExists).
 						WithContext(ctx).
@@ -59,7 +63,11 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 		It("Then mandatory Manifest is deleted", func() {
 			Eventually(MandatoryManifestExistsWithLabelAndAnnotation).
 				WithContext(ctx).
-				WithArguments(kcpClient, shared.FQDN, DefaultFQDN).
+				WithArguments(kcpClient, shared.FQDN, DefaultComponentName).
+				Should(Not(Succeed()))
+			Eventually(MandatoryManifestExistsWithLabelAndAnnotation).
+				WithContext(ctx).
+				WithArguments(kcpClient, shared.OCMComponentName, DefaultComponentName).
 				Should(Not(Succeed()))
 			By("And finalizer is removed from mandatory ModuleReleaseMeta", func() {
 				Eventually(mandatoryMrmFinalizerExists).
@@ -87,7 +95,10 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma, mandatoryModuleNam
 
 	mandatoryManifest := NewTestManifest("mandatory-module")
 	mandatoryManifest.Labels[shared.IsMandatoryModule] = "true"
-	mandatoryManifest.Annotations = map[string]string{shared.FQDN: moduleReleaseMeta.Spec.OcmComponentName}
+	mandatoryManifest.Annotations = map[string]string{
+		shared.FQDN:             moduleReleaseMeta.Spec.OcmComponentName,
+		shared.OCMComponentName: moduleReleaseMeta.Spec.OcmComponentName,
+	}
 	mandatoryManifest.Spec.Version = mandatoryModuleVersion
 
 	BeforeAll(func() {

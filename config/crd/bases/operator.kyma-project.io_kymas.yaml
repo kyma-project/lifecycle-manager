@@ -637,9 +637,8 @@ spec:
                       type: string
                     fqdn:
                       description: |-
-                        FQDN is the fully qualified domain name of the module.
-                        In the ModuleTemplate it is located in .spec.descriptor.component.name of the ModuleTemplate
-                        FQDN is used to calculate Namespace and Name of the Manifest for tracking.
+                        Deprecated: This field is deprecated and will be removed in the upcoming API version.
+                        Use the `OCMComponentName` field instead to track the OCM component name of the module.
                       type: string
                     maintenance:
                       default: false
@@ -706,6 +705,10 @@ spec:
                       description: |-
                         Name defines the name of the Module in the Spec that the status is used for.
                         It can be any kind of Reference format supported by Module.Name.
+                      type: string
+                    ocmComponentName:
+                      description: OCMComponentName represents the OCM (Open Component
+                        Model) component name of the module.
                       type: string
                     resource:
                       description: Resource contains information about the created

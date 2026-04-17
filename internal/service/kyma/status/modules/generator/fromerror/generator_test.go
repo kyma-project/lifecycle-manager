@@ -19,11 +19,12 @@ import (
 func TestGenerateModuleStatusFromError_WhenCalledWithAnyOtherError_ReturnsDefaultNewStatusWithStateError(t *testing.T) {
 	someModuleName := "some-module"
 	someChannel := "some-channel"
-	someFQDN := "some-fqdn"
+	someComponentName := "example.org/some-module/backend"
 	status := createStatus()
 	templateError := errors.New("some error")
 
-	result, err := fromerror.GenerateModuleStatusFromError(templateError, someModuleName, someChannel, someFQDN, status)
+	result, err := fromerror.GenerateModuleStatusFromError(templateError, someModuleName, someChannel,
+		someComponentName, status)
 
 	assert.NotNil(t, result)
 	require.NoError(t, err)
@@ -32,7 +33,8 @@ func TestGenerateModuleStatusFromError_WhenCalledWithAnyOtherError_ReturnsDefaul
 	// Module info is used for creating a new status
 	assert.Equal(t, someModuleName, result.Name)
 	assert.Equal(t, someChannel, result.Channel)
-	assert.Equal(t, someFQDN, result.FQDN)
+	assert.Equal(t, someComponentName, result.FQDN) //nolint:staticcheck // Ensure backward compatibility
+	assert.Equal(t, someComponentName, result.OCMComponentName)
 
 	assert.Equal(t, shared.StateError, result.State)
 	assert.Equal(t, templateError.Error(), result.Message)
@@ -48,11 +50,12 @@ func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowActiveErro
 ) {
 	someModuleName := "some-module"
 	someChannel := "some-channel"
-	someFQDN := "some-fqdn"
+	someComponentName := "example.org/some-module/backend"
 	status := createStatus()
 	templateError := moduletemplateinfolookup.ErrWaitingForNextMaintenanceWindow
 
-	result, err := fromerror.GenerateModuleStatusFromError(templateError, someModuleName, someChannel, someFQDN, status)
+	result, err := fromerror.GenerateModuleStatusFromError(templateError, someModuleName, someChannel,
+		someComponentName, status)
 
 	assert.NotNil(t, result)
 	require.NoError(t, err)
@@ -65,7 +68,8 @@ func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowActiveErro
 	// Passed module info is not used for new status, but the deep-copied object
 	assert.NotEqual(t, someModuleName, result.Name)
 	assert.NotEqual(t, someChannel, result.Channel)
-	assert.NotEqual(t, someFQDN, result.FQDN)
+	assert.NotEqual(t, someComponentName, result.FQDN) //nolint:staticcheck // Ensure backward compatibility
+	assert.NotEqual(t, someComponentName, result.OCMComponentName)
 }
 
 func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowUnknownError_ReturnsDeepCopyAndStateError(
@@ -73,11 +77,12 @@ func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowUnknownErr
 ) {
 	someModuleName := "some-module"
 	someChannel := "some-channel"
-	someFQDN := "some-fqdn"
+	someComponentName := "example.org/some-module/backend"
 	status := createStatus()
 	templateError := moduletemplateinfolookup.ErrFailedToDetermineIfMaintenanceWindowIsActive
 
-	result, err := fromerror.GenerateModuleStatusFromError(templateError, someModuleName, someChannel, someFQDN, status)
+	result, err := fromerror.GenerateModuleStatusFromError(templateError, someModuleName, someChannel,
+		someComponentName, status)
 
 	assert.NotNil(t, result)
 	require.NoError(t, err)
@@ -90,7 +95,8 @@ func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowUnknownErr
 	// Passed module info is not used for new status, but the deep-copied object
 	assert.NotEqual(t, someModuleName, result.Name)
 	assert.NotEqual(t, someChannel, result.Channel)
-	assert.NotEqual(t, someFQDN, result.FQDN)
+	assert.NotEqual(t, someComponentName, result.FQDN) //nolint:staticcheck // Ensure backward compatibility
+	assert.NotEqual(t, someComponentName, result.OCMComponentName)
 }
 
 func TestGenerateModuleStatusFromError_WhenCalledWithTemplateUpdateNotAllowedError_ReturnsDeepCopyAndStateWarning(
@@ -98,11 +104,12 @@ func TestGenerateModuleStatusFromError_WhenCalledWithTemplateUpdateNotAllowedErr
 ) {
 	someModuleName := "some-module"
 	someChannel := "some-channel"
-	someFQDN := "some-fqdn"
+	someComponentName := "example.org/some-module/backend"
 	status := createStatus()
 	templateError := templatelookup.ErrTemplateUpdateNotAllowed
 
-	result, err := fromerror.GenerateModuleStatusFromError(templateError, someModuleName, someChannel, someFQDN, status)
+	result, err := fromerror.GenerateModuleStatusFromError(templateError, someModuleName, someChannel,
+		someComponentName, status)
 
 	assert.NotNil(t, result)
 	require.NoError(t, err)
@@ -115,7 +122,8 @@ func TestGenerateModuleStatusFromError_WhenCalledWithTemplateUpdateNotAllowedErr
 	// Passed module info is not used for new status, but the deep-copied object
 	assert.NotEqual(t, someModuleName, result.Name)
 	assert.NotEqual(t, someChannel, result.Channel)
-	assert.NotEqual(t, someFQDN, result.FQDN)
+	assert.NotEqual(t, someComponentName, result.FQDN) //nolint:staticcheck // Ensure backward compatibility
+	assert.NotEqual(t, someComponentName, result.OCMComponentName)
 }
 
 func TestGenerateModuleStatusFromError_WhenCalledWithErrNoModuleReleaseMeta_ReturnsDeepCopyAndStateWarning(
@@ -123,11 +131,12 @@ func TestGenerateModuleStatusFromError_WhenCalledWithErrNoModuleReleaseMeta_Retu
 ) {
 	someModuleName := "some-module"
 	someChannel := "some-channel"
-	someFQDN := "some-fqdn"
+	someComponentName := "example.org/some-module/backend"
 	status := createStatus()
 	templateError := templatelookup.ErrNoModuleReleaseMeta
 
-	result, err := fromerror.GenerateModuleStatusFromError(templateError, someModuleName, someChannel, someFQDN, status)
+	result, err := fromerror.GenerateModuleStatusFromError(templateError, someModuleName, someChannel,
+		someComponentName, status)
 
 	assert.NotNil(t, result)
 	require.NoError(t, err)
@@ -140,7 +149,8 @@ func TestGenerateModuleStatusFromError_WhenCalledWithErrNoModuleReleaseMeta_Retu
 	// Passed module info is not used for new status, but the deep-copied object
 	assert.NotEqual(t, someModuleName, result.Name)
 	assert.NotEqual(t, someChannel, result.Channel)
-	assert.NotEqual(t, someFQDN, result.FQDN)
+	assert.NotEqual(t, someComponentName, result.FQDN) //nolint:staticcheck // Ensure backward compatibility
+	assert.NotEqual(t, someComponentName, result.OCMComponentName)
 }
 
 func TestGenerateModuleStatusFromError_WhenCalledWithNoTemplatesInListResultError_ReturnsNewStatusWithStateWarning(
@@ -148,12 +158,12 @@ func TestGenerateModuleStatusFromError_WhenCalledWithNoTemplatesInListResultErro
 ) {
 	expectedModuleName := "some-module"
 	expectedChannel := "some-channel"
-	expectedFQDN := "some-fqdn"
+	expectedComponentName := "example.org/some-module/backend"
 	status := createStatus()
 	templateError := common.ErrNoTemplatesInListResult
 
 	result, err := fromerror.GenerateModuleStatusFromError(templateError, expectedModuleName, expectedChannel,
-		expectedFQDN, status)
+		expectedComponentName, status)
 
 	assert.NotNil(t, result)
 	require.NoError(t, err)
@@ -162,7 +172,8 @@ func TestGenerateModuleStatusFromError_WhenCalledWithNoTemplatesInListResultErro
 	// Module info is used for creating a new status
 	assert.Equal(t, expectedModuleName, result.Name)
 	assert.Equal(t, expectedChannel, result.Channel)
-	assert.Equal(t, expectedFQDN, result.FQDN)
+	assert.Equal(t, expectedComponentName, result.FQDN) //nolint:staticcheck // Ensure backward compatibility
+	assert.Equal(t, expectedComponentName, result.OCMComponentName)
 
 	assert.Equal(t, shared.StateWarning, result.State)
 	assert.Equal(t, templateError.Error(), result.Message)
@@ -181,32 +192,34 @@ func TestGenerateModuleStatusFromError_WhenCalledWithoutTemplateError_ReturnsErr
 func TestGenerateModuleStatusFromError_WhenCalledWithNilStatus_ReturnsNewDefaultModuleStatus(t *testing.T) {
 	expectedName := "some-module"
 	expectedChannel := "some-channel"
-	expectedFQDN := "some-fqdn"
+	expectedComponentName := "example.org/some-module/backend"
 	templateError := errors.New("some-error")
 
-	result, err := fromerror.GenerateModuleStatusFromError(templateError, expectedName, expectedChannel, expectedFQDN,
-		nil)
+	result, err := fromerror.GenerateModuleStatusFromError(templateError, expectedName, expectedChannel,
+		expectedComponentName, nil)
 
 	assert.NotNil(t, result)
 	require.NoError(t, err)
 	assert.Equal(t, expectedName, result.Name)
 	assert.Equal(t, expectedChannel, result.Channel)
-	assert.Equal(t, expectedFQDN, result.FQDN)
+	assert.Equal(t, expectedComponentName, result.FQDN) //nolint:staticcheck // Ensure backward compatibility
+	assert.Equal(t, expectedComponentName, result.OCMComponentName)
 }
 
 // Resource creator helper functions
 
 func createStatus() *v1beta2.ModuleStatus {
 	return &v1beta2.ModuleStatus{
-		Name:     "test-module",
-		Channel:  "test-channel",
-		FQDN:     "test-fqdn",
-		Version:  "test-version",
-		Message:  "test-message",
-		State:    shared.StateReady,
-		Manifest: createTrackingObject(),
-		Template: createTrackingObject(),
-		Resource: createTrackingObject(),
+		Name:             "test-module",
+		Channel:          "test-channel",
+		FQDN:             "example.org/default-module/backend", // Ensure backward compatibility
+		OCMComponentName: "example.org/default-module/backend",
+		Version:          "test-version",
+		Message:          "test-message",
+		State:            shared.StateReady,
+		Manifest:         createTrackingObject(),
+		Template:         createTrackingObject(),
+		Resource:         createTrackingObject(),
 	}
 }
 

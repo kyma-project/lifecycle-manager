@@ -8,7 +8,7 @@ import (
 var ErrValueNotProvided = errors.New("value not provided")
 
 // ComponentId uniquely identifies an OCM ComponentId.
-// See: https://ocm.software/docs/overview/important-terms/#component-identity
+// See: https://ocm.software/docs/concepts/component-identity/
 type ComponentId struct {
 	componentName    string
 	componentVersion string
