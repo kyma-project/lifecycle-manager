@@ -14,8 +14,8 @@ func AffectedKymasOnDelete(mrm *v1beta2.ModuleReleaseMeta, kymaList *v1beta2.Kym
 	return GetAffectedKymas(kymaList, mrm.Spec.ModuleName, mrm.GetAllChannels())
 }
 
-// GetAffectedKymas determines which Kymas are affected by the update. It returns a list of Kymas that have modules
-// assigned to the updated channels.
+// GetAffectedKymas determines which Kymas are affected by the update. It returns a list of Kymas that have the affected
+// modules installed from the affected channels.
 func GetAffectedKymas(
 	kymaList *v1beta2.KymaList,
 	affectedModule string,
