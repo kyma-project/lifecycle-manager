@@ -37,15 +37,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/installation"
 
 	"github.com/kyma-project/lifecycle-manager/api"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
 	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	mrmrepo "github.com/kyma-project/lifecycle-manager/internal/repository/modulereleasemeta"
+	mtrepo "github.com/kyma-project/lifecycle-manager/internal/repository/moduletemplate"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -130,11 +134,14 @@ var _ = BeforeSuite(func() {
 		return nil
 	}
 
-	installationService := installation.ComposeInstallationService(mgr.GetClient(), descriptorProvider, "",
+	installationService := installation.ComposeInstallationService(mgr.GetClient(),
+		mrmrepo.NewRepository(mgr.GetClient(), shared.DefaultControlPlaneNamespace),
+		mtrepo.NewRepository(mgr.GetClient(), shared.DefaultControlPlaneNamespace),
+		descriptorProvider, "",
 		flags.DefaultRemoteSyncNamespace, metrics.NewMandatoryModulesMetrics())
 	installationReconciler := mandatorymodule.NewInstallationReconciler(installationService, intervals)
 
-	err = installationReconciler.SetupWithManager(mgr, ctrlruntime.Options{})
+	err = installationReconciler.SetupWithManager(mgr, ctrlruntime.Options{}, func(_ context.Context, _ client.Object) []reconcile.Request { return nil })
 	Expect(err).ToNot(HaveOccurred())
 
 	kcpClient = mgr.GetClient()

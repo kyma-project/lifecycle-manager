@@ -40,6 +40,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
+	watchcompose "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	kymadeletionctrl "github.com/kyma-project/lifecycle-manager/internal/controller/kyma/deletion"
 	watcherctrl "github.com/kyma-project/lifecycle-manager/internal/controller/watcher"
@@ -48,6 +49,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
+	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
+	mtrepo "github.com/kyma-project/lifecycle-manager/internal/repository/moduletemplate"
 	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
@@ -214,7 +217,16 @@ var _ = BeforeSuite(func() {
 		DeletionMetrics: deletionMetrics,
 		DeletionEvents:  deletionEvents,
 		DeletionService: deletionService,
-	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
+	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr},
+		watchcompose.ComposeTemplateChangeHandlerMapFunc(
+			mtrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+			kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+		),
+		watchcompose.ComposeMrmEventHandler(
+			kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+			0,
+		),
+	)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&watcherctrl.Reconciler{
