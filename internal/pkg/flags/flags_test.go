@@ -84,8 +84,8 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: (1 * time.Minute).String(),
 		},
 		{
-			constName:     "DefaultModuleUpdateRolloutMaxDelay",
-			constValue:    DefaultModuleUpdateRolloutMaxDelay.String(),
+			constName:     "DefaultModuleUpgradeRolloutMaxDelay",
+			constValue:    DefaultModuleUpgradeRolloutMaxDelay.String(),
 			expectedValue: (5 * time.Minute).String(),
 		},
 		{
