@@ -250,7 +250,7 @@ var _ = Describe("Channel switch", Ordered, func() {
 		}, Timeout, Interval).Should(Succeed())
 	})
 	AfterAll(func() {
-		CleanupModuleTemplateSetsForKyma(ctx, kyma)
+		CleanupModuleTemplateSetsForKyma(ctx, kyma)()
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())

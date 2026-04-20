@@ -58,10 +58,11 @@ func (m *StatusHandler) UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.
 		newModuleStatus, err := m.statusGenerator.GenerateModuleStatus(module, moduleStatus)
 		if err != nil {
 			newModuleStatus = &v1beta2.ModuleStatus{
-				Name:    module.ModuleName,
-				FQDN:    module.FQDN,
-				State:   shared.StateError,
-				Message: err.Error(),
+				Name:             module.ModuleName,
+				FQDN:             module.OCMComponentName, // Set for backward compatibility
+				OCMComponentName: module.OCMComponentName,
+				State:            shared.StateError,
+				Message:          err.Error(),
 			}
 		}
 		if exists {

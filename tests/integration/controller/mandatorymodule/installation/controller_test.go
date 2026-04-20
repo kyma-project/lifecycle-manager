@@ -69,7 +69,7 @@ var _ = Describe("Skipping Mandatory Module Installation", Ordered, func() {
 		It("When Kyma has 'skip-reconciliation' label, then no Mandatory Module Manifest should be created", func() {
 			Eventually(checkMandatoryManifestForKyma).
 				WithContext(ctx).
-				WithArguments(kyma, DefaultFQDN).
+				WithArguments(kyma, DefaultComponentName).
 				Should(Equal(ErrNoMandatoryManifest))
 		})
 	})
@@ -126,7 +126,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma, mandatoryModuleNam
 	})
 }
 
-func checkMandatoryManifestForKyma(ctx context.Context, kyma *v1beta2.Kyma, fqdn string) error {
+func checkMandatoryManifestForKyma(ctx context.Context, kyma *v1beta2.Kyma, componentName string) error {
 	manifestList := v1beta2.ManifestList{}
 	if err := kcpClient.List(ctx, &manifestList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kyma.Name}),
@@ -135,7 +135,8 @@ func checkMandatoryManifestForKyma(ctx context.Context, kyma *v1beta2.Kyma, fqdn
 	}
 	for _, manifest := range manifestList.Items {
 		if manifest.OwnerReferences[0].Name == kyma.Name &&
-			manifest.Annotations[shared.FQDN] == fqdn {
+			manifest.Annotations[shared.FQDN] == componentName &&
+			manifest.Annotations[shared.OCMComponentName] == componentName {
 			return nil
 		}
 	}
