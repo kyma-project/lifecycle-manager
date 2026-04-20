@@ -28,6 +28,7 @@ const (
 	DefaultMandatoryModuleRequeueSuccessInterval                        = 30 * time.Second
 	DefaultMandatoryModuleDeletionRequeueSuccessInterval                = 30 * time.Second
 	DefaultWatcherRequeueSuccessInterval                                = 1 * time.Minute
+	DefaultModuleUpdateRolloutMaxDelay                                  = 5 * time.Minute
 	DefaultClientQPS                                                    = 1000
 	DefaultClientBurst                                                  = 2000
 	DefaultSkrClientQPS                                                 = 50
@@ -148,6 +149,10 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.KymaRequeueBusyInterval, "kyma-requeue-busy-interval",
 		DefaultKymaRequeueBusyInterval,
 		"Duration after which a Kyma in Processing state is enqueued for reconciliation.")
+	flag.DurationVar(&flagVar.ModuleUpdateRolloutMaxDelay, "module-update-rollout-max-delay",
+		DefaultModuleUpdateRolloutMaxDelay,
+		"Upper bound for the random delay applied when requeueing Kymas after a ModuleReleaseMeta channel update,"+
+			" to spread reconciliations and avoid rate-limiting bursts. Set to 0 to disable spreading.")
 	flag.DurationVar(&flagVar.MandatoryModuleRequeueSuccessInterval, "mandatory-module-requeue-success-interval",
 		DefaultMandatoryModuleRequeueSuccessInterval,
 		"Duration after which a Kyma in Ready state is enqueued for mandatory module installation reconciliation.")
@@ -322,6 +327,7 @@ type FlagVar struct {
 	KymaRequeueErrInterval                         time.Duration
 	KymaRequeueBusyInterval                        time.Duration
 	KymaRequeueWarningInterval                     time.Duration
+	ModuleUpdateRolloutMaxDelay                    time.Duration
 	ManifestRequeueSuccessInterval                 time.Duration
 	ManifestRequeueErrInterval                     time.Duration
 	ManifestRequeueBusyInterval                    time.Duration

@@ -84,6 +84,11 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: (1 * time.Minute).String(),
 		},
 		{
+			constName:     "DefaultModuleUpdateRolloutMaxDelay",
+			constValue:    DefaultModuleUpdateRolloutMaxDelay.String(),
+			expectedValue: (5 * time.Minute).String(),
+		},
+		{
 			constName:     "DefaultClientQPS",
 			constValue:    strconv.Itoa(DefaultClientQPS),
 			expectedValue: "1000",
