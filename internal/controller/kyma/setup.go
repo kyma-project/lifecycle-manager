@@ -16,7 +16,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
-	"github.com/kyma-project/lifecycle-manager/internal/watch"
+	mrmwatch "github.com/kyma-project/lifecycle-manager/internal/watch/modulereleasemeta"
 )
 
 type SetupOptions struct {
@@ -26,7 +26,12 @@ type SetupOptions struct {
 
 const controllerName = "kyma"
 
-func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options, settings SetupOptions) error {
+func (r *Reconciler) SetupWithManager(mgr ctrl.Manager,
+	opts ctrlruntime.Options,
+	settings SetupOptions,
+	mtEventHandlerMapFunc handler.MapFunc,
+	mrmEventHandler *mrmwatch.EventHandler,
+) error {
 	runnableListener := watcherevent.NewSKREventListener(
 		settings.ListenerAddr,
 		shared.OperatorName,
@@ -40,9 +45,8 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 		Named(controllerName).
 		WithOptions(opts).
 		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})).
-		Watches(&v1beta2.ModuleTemplate{},
-			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch())).
-		Watches(&v1beta2.ModuleReleaseMeta{}, watch.NewModuleReleaseMetaEventHandler(r)).
+		Watches(&v1beta2.ModuleTemplate{}, handler.EnqueueRequestsFromMapFunc(mtEventHandlerMapFunc)).
+		Watches(&v1beta2.ModuleReleaseMeta{}, mrmEventHandler).
 		Watches(&apicorev1.Secret{}, handler.Funcs{}).
 		Watches(&v1beta2.Manifest{},
 			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1beta2.Kyma{},

@@ -16,18 +16,18 @@ import (
 type (
 	Modules []*Module
 	Module  struct {
-		ModuleName   string
-		FQDN         string
-		TemplateInfo *templatelookup.ModuleTemplateInfo
-		Manifest     *v1beta2.Manifest
-		Enabled      bool
-		IsUnmanaged  bool
+		ModuleName       string
+		OCMComponentName string
+		TemplateInfo     *templatelookup.ModuleTemplateInfo
+		Manifest         *v1beta2.Manifest
+		Enabled          bool
+		IsUnmanaged      bool
 	}
 )
 
 func (m *Module) Logger(base logr.Logger) logr.Logger {
 	return base.WithValues(
-		"fqdn", m.FQDN,
+		"componentName", m.OCMComponentName,
 		"module", m.Manifest.GetName(),
 		"channel", m.TemplateInfo.Spec.Channel, //nolint:staticcheck // legacy Channel field
 		"templateGeneration", m.TemplateInfo.GetGeneration(),
@@ -60,7 +60,8 @@ func (m *Module) ApplyDefaultMetaToManifest(kyma *v1beta2.Kyma) {
 	if anns == nil {
 		anns = make(map[string]string)
 	}
-	anns[shared.FQDN] = m.FQDN
+	anns[shared.FQDN] = m.OCMComponentName
+	anns[shared.OCMComponentName] = m.OCMComponentName
 	if m.IsUnmanaged {
 		anns[shared.UnmanagedAnnotation] = shared.EnableLabelValue
 	}
@@ -81,17 +82,22 @@ func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
 
 const maxModuleNameLength = validation.DNS1035LabelMaxLength
 
-// CreateModuleName takes a FQDN and a prefix and generates a human-readable unique interpretation of
+// CreateModuleName takes an OCM Component Name and a prefix and generates a human-readable unique interpretation of
 // a name combination.
 // e.g. kyma-project.io/module/some-module and default-id => "default-id-some-module-34180237"
 // e.g. domain.com/some-module and default-id => "default-id-some-module-1238916".
-func CreateModuleName(fqdn, prefix, moduleName string) string {
-	splitFQDN := strings.Split(fqdn, "/")
-	lastPartOfFQDN := splitFQDN[len(splitFQDN)-1]
+func CreateModuleName(compName, prefix, moduleName string) string {
+	lastSeparatorIdx := strings.LastIndexByte(compName, '/')
+	var lastPart string
+	if lastSeparatorIdx != -1 {
+		lastPart = compName[lastSeparatorIdx+1:]
+	} else {
+		lastPart = compName
+	}
 	hash := fnv.New32()
-	_, _ = hash.Write([]byte(fqdn + moduleName))
-	hashedFQDN := hash.Sum32()
-	name := fmt.Sprintf("%s-%s-%v", prefix, lastPartOfFQDN, hashedFQDN)
+	_, _ = hash.Write([]byte(compName + moduleName))
+	hashed := hash.Sum32()
+	name := fmt.Sprintf("%s-%s-%v", prefix, lastPart, hashed)
 	if len(name) >= maxModuleNameLength {
 		name = name[:maxModuleNameLength-1]
 	}

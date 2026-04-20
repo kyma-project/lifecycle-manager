@@ -34,6 +34,14 @@ func (r *Repository) Get(ctx context.Context, kymaName string) (*v1beta2.Kyma, e
 	return kyma, nil
 }
 
+func (r *Repository) GetAll(ctx context.Context) (*v1beta2.KymaList, error) {
+	kymaList := &v1beta2.KymaList{}
+	if err := r.client.List(ctx, kymaList, client.InNamespace(r.namespace)); err != nil {
+		return nil, fmt.Errorf("failed to list all Kymas in namespace %s: %w", r.namespace, err)
+	}
+	return kymaList, nil
+}
+
 func (r *Repository) LookupByLabel(ctx context.Context, labelKey, labelValue string) (*v1beta2.KymaList, error) {
 	kymaList := &v1beta2.KymaList{}
 	if err := r.client.List(ctx, kymaList, client.InNamespace(r.namespace),
@@ -41,7 +49,6 @@ func (r *Repository) LookupByLabel(ctx context.Context, labelKey, labelValue str
 		return nil, fmt.Errorf("failed to list Kymas in namespace %s with label %s=%s: %w",
 			r.namespace, labelKey, labelValue, err)
 	}
-
 	return kymaList, nil
 }
 
