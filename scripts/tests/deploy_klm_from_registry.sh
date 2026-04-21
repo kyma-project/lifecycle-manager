@@ -29,7 +29,7 @@ done
 
 # Resolve the full image reference based on the registry.
 # - dev/prod: SAP/Kyma image-builder registry (europe-docker.pkg.dev), used by E2E CI.
-# - ghcr:     GitHub Container Registry (ghcr.io/kyma-project), built by image-builder-local.yml
+# - ghcr:     GitHub Container Registry (ghcr.io/kyma-project), built by build-image-local.yml
 #             for fast local testing on arm64/amd64 machines.
 case "${KLM_IMAGE_REGISTRY}" in
   dev|prod)
