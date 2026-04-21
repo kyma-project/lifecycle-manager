@@ -17,6 +17,7 @@
 * [Lifecycle Manager Components](11-components.md)
 * [Lifecycle Manager Flags](12-klm-arguments.md)
 * [Creating ModuleTemplate(using modulectl & ocm cli)](14-creating-moduletemplate.md)
+* [Notable Changes](15-notable-changes.md)
 
 ## Contributing to Documentation for Private and Partner-Managed Landscapes Operators
 
