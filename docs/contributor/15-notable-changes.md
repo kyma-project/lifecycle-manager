@@ -21,9 +21,9 @@ Notable changes are Kyma Lifecycle Manager (KLM) updates that require operator a
 
 When introducing a KLM change that requires operator action:
 
-1. In the [`notable-changes`](../../notable-changes) directory, create a folder named with the next KLM version number (for example, `1.17.0`).
+1. In the notable-changes directory, create a folder named with the next KLM version number (for example, `1.17.0`).
 
-2. In that folder, create a `notable-change.md` file using the [Notable Change Template](../assets/notable-change-template.md).
+2. In that folder, create a `notable-change.md` file using the [Notable Change Template](./assets/notable-change-template.md).
 
 3. Fill in the JSON metadata block at the top of the file:
 
