@@ -149,7 +149,7 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.KymaRequeueBusyInterval, "kyma-requeue-busy-interval",
 		DefaultKymaRequeueBusyInterval,
 		"Duration after which a Kyma in Processing state is enqueued for reconciliation.")
-	flag.DurationVar(&flagVar.ModuleUpgradeRolloutMaxDelay, "module-update-rollout-max-delay",
+	flag.DurationVar(&flagVar.ModuleUpgradeRolloutMaxDelay, "module-upgrade-rollout-max-delay",
 		DefaultModuleUpgradeRolloutMaxDelay,
 		"Upper bound for the random delay applied when requeueing Kymas after a"+
 			" ModuleReleaseMeta channel update, to spread reconciliations and avoid"+
