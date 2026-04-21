@@ -12,7 +12,7 @@ import (
 
 var errFunctionCalledWitNilError = errors.New("can not generate a modulestatus without error")
 
-func GenerateModuleStatusFromError(err error, moduleName, desiredChannel, fqdn string,
+func GenerateModuleStatusFromError(err error, moduleName, desiredChannel, ocmComponentName string,
 	status *v1beta2.ModuleStatus,
 ) (*v1beta2.ModuleStatus, error) {
 	if err == nil {
@@ -20,7 +20,7 @@ func GenerateModuleStatusFromError(err error, moduleName, desiredChannel, fqdn s
 	}
 
 	if status == nil {
-		return newDefaultErrorStatus(moduleName, desiredChannel, fqdn, err), nil
+		return newDefaultErrorStatus(moduleName, desiredChannel, ocmComponentName, err), nil
 	}
 
 	if errorIsWaitingForMaintenanceWindow(err) {
@@ -44,7 +44,7 @@ func GenerateModuleStatusFromError(err error, moduleName, desiredChannel, fqdn s
 		return newModuleStatus, nil
 	}
 
-	newStatus := newDefaultErrorStatus(moduleName, desiredChannel, fqdn, err)
+	newStatus := newDefaultErrorStatus(moduleName, desiredChannel, ocmComponentName, err)
 
 	if errorIsTemplateNotFound(err) {
 		newStatus.State = shared.StateWarning
@@ -70,12 +70,13 @@ func errorIsTemplateNotFound(err error) bool {
 	return errors.Is(err, common.ErrNoTemplatesInListResult)
 }
 
-func newDefaultErrorStatus(moduleName, desiredChannel, fqdn string, err error) *v1beta2.ModuleStatus {
+func newDefaultErrorStatus(moduleName, desiredChannel, componentName string, err error) *v1beta2.ModuleStatus {
 	return &v1beta2.ModuleStatus{
-		Name:    moduleName,
-		Channel: desiredChannel,
-		FQDN:    fqdn,
-		State:   shared.StateError,
-		Message: err.Error(),
+		Name:             moduleName,
+		Channel:          desiredChannel,
+		FQDN:             componentName, // Deprecated in favor of OCMComponentName, but set for backward compatibility
+		OCMComponentName: componentName,
+		State:            shared.StateError,
+		Message:          err.Error(),
 	}
 }

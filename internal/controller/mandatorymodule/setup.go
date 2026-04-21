@@ -14,7 +14,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldindex"
-	"github.com/kyma-project/lifecycle-manager/internal/watch"
 )
 
 const (
@@ -22,7 +21,9 @@ const (
 	deletionControllerName     = "mandatory-module-deletion"
 )
 
-func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options) error {
+func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options,
+	mandatoryMrmChangeHandlerMapFunc handler.MapFunc,
+) error {
 	err := setupFieldIndexForMandatoryMrm(mgr)
 	if err != nil {
 		return err
@@ -38,10 +39,7 @@ func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlrun
 		Named(installationControllerName).
 		WithOptions(opts).
 		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})).
-		Watches(
-			&v1beta2.ModuleReleaseMeta{},
-			handler.EnqueueRequestsFromMapFunc(watch.NewMandatoryMrmChangeHandler(mgr.GetClient()).Watch()),
-		).
+		Watches(&v1beta2.ModuleReleaseMeta{}, handler.EnqueueRequestsFromMapFunc(mandatoryMrmChangeHandlerMapFunc)).
 		Watches(&apicorev1.Secret{}, handler.Funcs{}).
 		Complete(reconcile.AsReconciler[*v1beta2.Kyma](mgr.GetClient(), r)); err != nil {
 		return fmt.Errorf("failed to setup manager for mandatory module installation controller: %w", err)

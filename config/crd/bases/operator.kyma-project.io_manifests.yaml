@@ -257,6 +257,8 @@ spec:
                   All resources that are synced are considered for orphan removal on configuration changes,
                   and it is used to determine effective differences from one state to the next.
                 items:
+                  description: Resource identifies a Kubernetes object by GroupVersionKind,
+                    name and namespace.
                   properties:
                     group:
                       type: string
@@ -560,6 +562,8 @@ spec:
                   All resources that are synced are considered for orphan removal on configuration changes,
                   and it is used to determine effective differences from one state to the next.
                 items:
+                  description: Resource identifies a Kubernetes object by GroupVersionKind,
+                    name and namespace.
                   properties:
                     group:
                       type: string

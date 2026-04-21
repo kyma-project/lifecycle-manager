@@ -56,6 +56,12 @@ var _ = Describe("RBAC Privileges", func() {
 					Resources: []string{"events"},
 					Verbs:     []string{"create", "patch"},
 				},
+				{
+					APIGroups: []string{"events.k8s.io"},
+					Resources: []string{"events"},
+					Verbs:     []string{"create", "patch"},
+				},
+
 			}
 			Expect(GetRoleBindingRolePolicyRules(ctx,
 				kcpClient,
@@ -72,6 +78,11 @@ var _ = Describe("RBAC Privileges", func() {
 				},
 				{
 					APIGroups: []string{""},
+					Resources: []string{"events"},
+					Verbs:     []string{"create", "get", "list", "patch", "watch"},
+				},
+				{
+					APIGroups: []string{"events.k8s.io"},
 					Resources: []string{"events"},
 					Verbs:     []string{"create", "get", "list", "patch", "watch"},
 				},
