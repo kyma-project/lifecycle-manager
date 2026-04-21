@@ -1,11 +1,11 @@
-name: Image Builder (Local / ghcr.io)
+name: Build Image (Local testing / ghcr.io)
 
 # Builds and publishes lifecycle-manager images to ghcr.io/kyma-project for fast
 # local testing, especially on Apple M-series (arm64) machines.
 
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths-ignore:
       - "docs/**"
       - "**/*.md"
@@ -31,8 +31,6 @@ permissions: {}
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    # Skip draft PRs — only build when the PR is ready for review.
-    if: github.event.pull_request.draft == false
     permissions:
       contents: read
       packages: write
