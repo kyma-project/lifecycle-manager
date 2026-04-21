@@ -8,11 +8,10 @@
 }
 -->
 
-# Updating KLM: `<Name of the update>`
+# KLM: `<Name of the update>`
 
-## Note
-
-<!-- Brief summary of what changed and why -->
+> ### Note: <!-- In case of a mandatory update that will cause unwanted/severe impact if not performed, use ### Caution: instead of ### Note:.-->
+> <!--State whether the notable change is mandatory or recommended. Briefly explain what will happen without the update or why it's mandatory/recommended.-->
 
 ## Prerequisites
 
