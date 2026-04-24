@@ -1,8 +1,6 @@
 package e2e_test
 
 import (
-	"os/exec"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -120,12 +118,8 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 			})
 		})
 
-		It("When new version of ModuleTemplate is applied", func() {
-			cmd := exec.Command("kubectl", "apply", "-f",
-				"mandatory_template_v2.yaml")
-			_, err := cmd.CombinedOutput()
-			Expect(err).NotTo(HaveOccurred())
-			err = SetMandatoryModuleReleaseMetaVersion(ctx, kcpClient, "template-operator", ControlPlaneNamespace,
+		It("When new module version is assigned to the ModuleReleaseMeta", func() {
+			err := SetMandatoryModuleReleaseMetaVersion(ctx, kcpClient, "template-operator", ControlPlaneNamespace,
 				"2.4.1-smoke-test")
 			Expect(err).NotTo(HaveOccurred())
 		})

@@ -3,8 +3,6 @@
 
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))e2e.common.mk
 
-MANDATORY_TEMPLATE_V2 := $(E2E_TESTS_DIR)/mandatory_template_v2.yaml
-
 .PHONY: klm-patch
 klm-patch:
 	@echo "::group::KLM patch"
@@ -15,12 +13,10 @@ klm-patch:
 module-setup:
 	@echo "::group::Test-specific module metadata setup"
 	@export PATH=$(LOCALBIN):$$PATH
-	if [ -f $(MANDATORY_TEMPLATE_V2) ]; then echo "ERROR: $(MANDATORY_TEMPLATE_V2) already exists. Run 'make clean-test-artifacts' first."; exit 1; fi
 	@pushd $(TEMPLATE_OPERATOR_DIR) > /dev/null
 	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh --module-name $(MODULE_NAME) --version $(MODULE_OLDER_VERSION) --deployment-name $(MODULE_DEPLOYMENT_OLDER_VERSION) --deployable-version $(MODULE_DEPLOYABLE_VERSION) --mandatory
+	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh --module-name $(MODULE_NAME) --version $(MODULE_NEWER_VERSION) --deployment-name $(MODULE_DEPLOYMENT_NEWER_VERSION) --deployable-version $(MODULE_DEPLOYABLE_VERSION) --mandatory
 	$(SCRIPTS_DIR)/deploy_mandatory_modulereleasemeta.sh $(MODULE_NAME) $(MODULE_OLDER_VERSION)
-	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh --module-name $(MODULE_NAME) --version $(MODULE_NEWER_VERSION) --deployment-name $(MODULE_DEPLOYMENT_NEWER_VERSION) --deployable-version $(MODULE_DEPLOYABLE_VERSION) --mandatory --skip-apply
-	cp template.yaml $(MANDATORY_TEMPLATE_V2)
 	@popd > /dev/null
 	@echo "::endgroup::"
 
@@ -39,9 +35,6 @@ test-run: log-tool-versions
 	@echo "::endgroup::"
 	exit $${status}
 
-.PHONY: clean-test-artifacts
-clean-test-artifacts:
-	rm -f $(MANDATORY_TEMPLATE_V2)
 
 .PHONY: test
-test: clean-test-artifacts create-clusters klm-patch deploy-klm module-setup test-run
+test: create-clusters klm-patch deploy-klm module-setup test-run
