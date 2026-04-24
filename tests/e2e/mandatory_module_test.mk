@@ -35,9 +35,6 @@ test-run: log-tool-versions
 	@echo "::endgroup::"
 	exit $${status}
 
-.PHONY: clean-test-artifacts
-clean-test-artifacts:
-	rm -f $(MANDATORY_TEMPLATE_V2)
 
 .PHONY: test
-test: clean-test-artifacts create-clusters klm-patch deploy-klm module-setup test-run
+test: create-clusters klm-patch deploy-klm module-setup test-run
