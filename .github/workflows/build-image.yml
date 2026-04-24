@@ -1,4 +1,4 @@
-name: Image Builder (GH / europe-docker.pkg.dev)
+name: Build Image
 
 on:
   push:
