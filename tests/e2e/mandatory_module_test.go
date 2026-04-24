@@ -10,7 +10,10 @@ import (
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var mandatoryModuleLabelSelector = map[string]string{"foo": "bar", "baz": "cux"}
 
 var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
@@ -156,6 +159,79 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 					WithArguments(kcpClient, "template-operator", "2.4.1-smoke-test").
 					Should(Succeed())
 			})
+		})
+
+		It("When a non-matching KymaLabelSelector is added to the mandatory ModuleReleaseMeta", func() {
+			Eventually(func() error {
+				return SetMandatoryModuleReleaseMetaKymaLabelSelector(ctx, kcpClient,
+					"template-operator", ControlPlaneNamespace,
+					&apimetav1.LabelSelector{
+						MatchLabels: mandatoryModuleLabelSelector,
+					})
+			}).Should(Succeed())
+		})
+		It("Then the mandatory module is uninstalled from the SKR cluster", func() {
+			Eventually(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion,
+					TestModuleResourceNamespace).
+				Should(Equal(ErrNotFound))
+			By("And the mandatory module manifest is not present in the KCP cluster", func() {
+				Eventually(MandatoryModuleManifestExistWithCorrectVersion).
+					WithContext(ctx).
+					WithArguments(kcpClient, "template-operator", "2.4.1-smoke-test").
+					Should(Equal(ErrManifestNotFound))
+			})
+			By("And the KCP Kyma CR is in a \"Ready\" State", func() {
+				Eventually(KymaIsInState).
+					WithContext(ctx).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+					Should(Succeed())
+			})
+		})
+
+		It("When the matching labels are added to the Kyma CR", func() {
+			Eventually(func() error {
+				for key, value := range mandatoryModuleLabelSelector {
+					if err := UpdateKymaLabel(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), key, value); err != nil {
+						return err
+					}
+				}
+				return nil
+			}).Should(Succeed())
+		})
+		It("Then the mandatory module is installed again on the SKR cluster", func() {
+			Eventually(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion,
+					TestModuleResourceNamespace).
+				Should(Succeed())
+			By("And the mandatory module manifest is present in the KCP cluster", func() {
+				Eventually(MandatoryModuleManifestExistWithCorrectVersion).
+					WithContext(ctx).
+					WithArguments(kcpClient, "template-operator", "2.4.1-smoke-test").
+					Should(Succeed())
+			})
+			By("And the KCP Kyma CR is in a \"Ready\" State", func() {
+				Eventually(KymaIsInState).
+					WithContext(ctx).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+					Should(Succeed())
+			})
+		})
+
+		It("When the KymaLabelSelector is removed from the mandatory ModuleReleaseMeta", func() {
+			Eventually(func() error {
+				return SetMandatoryModuleReleaseMetaKymaLabelSelector(ctx, kcpClient,
+					"template-operator", ControlPlaneNamespace, nil)
+			}).Should(Succeed())
+		})
+		It("Then the mandatory module remains installed on the SKR cluster", func() {
+			Consistently(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion,
+					TestModuleResourceNamespace).
+				Should(Succeed())
 		})
 
 		It("When the mandatory ModuleReleaseMeta is deleted", func() {
