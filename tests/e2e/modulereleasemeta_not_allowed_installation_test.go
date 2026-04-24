@@ -112,7 +112,7 @@ var _ = Describe("ModuleReleaseMeta Not Allowed Installation", Ordered, func() {
 		It("Then the module is uninstalled from the SKR cluster and in error state", func() {
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion,
+				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion,
 					TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
 			By("And the module is in error state", func() {
@@ -136,7 +136,7 @@ var _ = Describe("ModuleReleaseMeta Not Allowed Installation", Ordered, func() {
 		It("Then the module is installed again on the SKR cluster", func() {
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion,
+				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion,
 					TestModuleResourceNamespace).
 				Should(Succeed())
 			By("And the module is in Ready state", func() {
@@ -162,7 +162,7 @@ var _ = Describe("ModuleReleaseMeta Not Allowed Installation", Ordered, func() {
 		It("Then the module remains installed on the SKR cluster", func() {
 			Consistently(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion,
+				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion,
 					TestModuleResourceNamespace).
 				Should(Succeed())
 		})
