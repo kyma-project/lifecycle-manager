@@ -61,7 +61,6 @@ var _ = Describe("RBAC Privileges", func() {
 					Resources: []string{"events"},
 					Verbs:     []string{"create", "patch"},
 				},
-
 			}
 			Expect(GetRoleBindingRolePolicyRules(ctx,
 				kcpClient,
