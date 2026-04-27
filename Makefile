@@ -56,8 +56,21 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 test-crd: controller-gen ## Generate crd for test
 	$(CONTROLLER_GEN) crd paths="./config/samples/component-integration-installed/crd/..." output:crd:artifacts:config=config/samples/component-integration-installed/crd
 
+.PHONY: generate-openapi-schema
+generate-openapi-schema: ## Generate OpenAPI schema from CRD YAMLs for applyconfiguration-gen.
+	$(GO) run ./hack/crd-to-openapi/main.go
+
+.PHONY: generate-applyconfiguration
+generate-applyconfiguration: applyconfiguration-gen generate-openapi-schema manifests ## Generate applyconfiguration types for ModuleReleaseMeta and ModuleTemplate.
+	cd api && $(APPLYCONFIGURATION_GEN) \
+		--output-dir ./applyconfigurations \
+		--output-pkg github.com/kyma-project/lifecycle-manager/api/applyconfigurations \
+		--go-header-file ../hack/boilerplate.go.txt \
+		--openapi-schema ../hack/crd-to-openapi/openapi.json \
+		./v1beta2
+
 .PHONY: generate
-generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+generate: controller-gen generate-applyconfiguration ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 .PHONY: vet
@@ -148,12 +161,14 @@ $(LOCALBIN):
 
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
+APPLYCONFIGURATION_GEN ?= $(LOCALBIN)/applyconfiguration-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
 GOLANG_CI_LINT = $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v$(shell yq e '.kustomize' ./versions.yaml)
 CONTROLLER_TOOLS_VERSION ?= v$(shell yq e '.controllerTools' ./versions.yaml)
+CODE_GENERATOR_VERSION ?= v$(shell yq e '.codeGenerator' ./versions.yaml)
 GOLANG_CI_LINT_VERSION ?= v$(shell yq e '.golangciLint' ./versions.yaml)
 
 ## Tool Install Targets
@@ -173,6 +188,11 @@ $(KUSTOMIZE): $(LOCALBIN)
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
 $(CONTROLLER_GEN): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) $(GO) install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
+
+.PHONY: applyconfiguration-gen
+applyconfiguration-gen: $(APPLYCONFIGURATION_GEN) ## Download applyconfiguration-gen locally if necessary.
+$(APPLYCONFIGURATION_GEN): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) $(GO) install k8s.io/code-generator/cmd/applyconfiguration-gen@$(CODE_GENERATOR_VERSION)
 
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.

@@ -161,7 +161,7 @@ func TestSetModuleCRInstallConditionTrue(t *testing.T) {
 		status.SetModuleCRInstallConditionTrue(manifest)
 
 		require.Empty(t, manifest.GetStatus().Conditions)
-		require.Empty(t, manifest.GetStatus().Operation)
+		require.Empty(t, manifest.GetStatus().LastOperation.Operation)
 	})
 
 	t.Run("condition already true - no-op", func(t *testing.T) {
@@ -183,7 +183,7 @@ func TestSetModuleCRInstallConditionTrue(t *testing.T) {
 		moduleCR = meta.FindStatusCondition(manifest.GetStatus().Conditions, string(status.ConditionTypeModuleCR))
 		require.NotNil(t, moduleCR)
 		require.Equal(t, apimetav1.ConditionTrue, moduleCR.Status)
-		require.Empty(t, manifest.GetStatus().Operation)
+		require.Empty(t, manifest.GetStatus().LastOperation.Operation)
 	})
 
 	t.Run("condition false - becomes true and sets operation", func(t *testing.T) {
@@ -199,7 +199,7 @@ func TestSetModuleCRInstallConditionTrue(t *testing.T) {
 		require.NotNil(t, moduleCR)
 		require.Equal(t, apimetav1.ConditionTrue, moduleCR.Status)
 		require.Equal(t, manifest.GetGeneration(), moduleCR.ObservedGeneration)
-		require.Equal(t, "module CR was created", manifest.GetStatus().Operation)
+		require.Equal(t, "module CR was created", manifest.GetStatus().LastOperation.Operation)
 	})
 }
 
@@ -237,7 +237,7 @@ func testSetConditionTrue(
 		setConditionTrue(manifest)
 
 		require.Empty(t, manifest.GetStatus().Conditions)
-		require.Empty(t, manifest.GetStatus().Operation)
+		require.Empty(t, manifest.GetStatus().LastOperation.Operation)
 	})
 
 	t.Run("condition already true - no-op", func(t *testing.T) {
@@ -258,7 +258,7 @@ func testSetConditionTrue(
 		cond = meta.FindStatusCondition(manifest.GetStatus().Conditions, string(conditionType))
 		require.NotNil(t, cond)
 		require.Equal(t, apimetav1.ConditionTrue, cond.Status)
-		require.Empty(t, manifest.GetStatus().Operation)
+		require.Empty(t, manifest.GetStatus().LastOperation.Operation)
 	})
 
 	t.Run("condition false - becomes true and sets operation", func(t *testing.T) {
@@ -272,6 +272,6 @@ func testSetConditionTrue(
 		cond := meta.FindStatusCondition(manifest.GetStatus().Conditions, string(conditionType))
 		require.NotNil(t, cond)
 		require.Equal(t, apimetav1.ConditionTrue, cond.Status)
-		require.Equal(t, expectedOperation, manifest.GetStatus().Operation)
+		require.Equal(t, expectedOperation, manifest.GetStatus().LastOperation.Operation)
 	})
 }

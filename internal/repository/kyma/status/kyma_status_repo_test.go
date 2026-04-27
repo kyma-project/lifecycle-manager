@@ -42,8 +42,8 @@ func TestRepository_UpdateStatusDeleting_WhenPatchSucceeds_ReturnNoError(t *test
 	require.NoError(t, err)
 	require.True(t, statusWriter.PatchCalled)
 	require.Equal(t, shared.StateDeleting, kyma.Status.State)
-	require.Equal(t, expectedDeletingMessage, kyma.Status.Operation)
-	require.NotZero(t, kyma.Status.LastUpdateTime)
+	require.Equal(t, expectedDeletingMessage, kyma.Status.LastOperation.Operation)
+	require.NotZero(t, kyma.Status.LastOperation.LastUpdateTime)
 	require.Nil(t, kyma.ManagedFields)
 }
 
@@ -73,7 +73,7 @@ func TestRepository_UpdateStatusDeleting_NoActiveChannelModification(t *testing.
 
 	require.NoError(t, err)
 	require.Equal(t, shared.StateDeleting, kyma.Status.State)
-	require.Equal(t, expectedDeletingMessage, kyma.Status.Operation)
+	require.Equal(t, expectedDeletingMessage, kyma.Status.LastOperation.Operation)
 	// Active channel should remain unchanged for deleting state
 	require.Equal(t, originalChannel, kyma.Status.ActiveChannel)
 }
@@ -91,7 +91,7 @@ func TestRepository_UpdateStatusDeleting_TimestampIsSet(t *testing.T) {
 	require.NoError(t, err)
 	afterUpdate := time.Now()
 
-	lastUpdateTime := kyma.Status.LastUpdateTime.Time
+	lastUpdateTime := kyma.Status.LastOperation.LastUpdateTime.Time
 	require.True(t, lastUpdateTime.After(beforeUpdate) || lastUpdateTime.Equal(beforeUpdate))
 	require.True(t, lastUpdateTime.Before(afterUpdate) || lastUpdateTime.Equal(afterUpdate))
 }
@@ -112,7 +112,7 @@ func TestRepository_UpdateStatusDeleting_ManagedFieldsCleared(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, shared.StateDeleting, kyma.Status.State)
-	require.Equal(t, expectedDeletingMessage, kyma.Status.Operation)
+	require.Equal(t, expectedDeletingMessage, kyma.Status.LastOperation.Operation)
 	require.Nil(t, kyma.ManagedFields)
 }
 

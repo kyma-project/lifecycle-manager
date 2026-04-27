@@ -55,7 +55,7 @@ func (i InstallInfo) Raw() []byte {
 // ManifestSpec defines the desired state of Manifest.
 type ManifestSpec struct {
 	// +kubebuilder:default:=CreateAndDelete
-	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
+	CustomResourcePolicy CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
 
 	// Remote indicates if Manifest should be installed on a remote cluster
 	Remote bool `json:"remote"`
@@ -118,6 +118,7 @@ const (
 	OciDirType RefTypeMetadata = "oci-dir"
 )
 
+// +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"

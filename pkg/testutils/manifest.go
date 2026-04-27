@@ -455,7 +455,7 @@ func ManifestStatusLastUpdateTimeIsNotChanged(ctx context.Context,
 		return err
 	}
 
-	if manifest.Status.LastUpdateTime != oldStatus.LastUpdateTime {
+	if manifest.Status.LastOperation.LastUpdateTime != oldStatus.LastOperation.LastUpdateTime {
 		return errManifestLastUpdateTimeChangedWithoutStatusDiff
 	}
 
@@ -470,7 +470,7 @@ func ManifestStatusOperationContainsMessage(ctx context.Context, clnt client.Cli
 		return err
 	}
 
-	if !strings.Contains(manifest.Status.Operation, msg) {
+	if !strings.Contains(manifest.Status.LastOperation.Operation, msg) {
 		return errManifestOperationNotContainMessage
 	}
 
@@ -716,7 +716,7 @@ func ExpectManifestLastOperationMessageContains(ctx context.Context, clnt client
 		return err
 	}
 
-	if !strings.Contains(manifest.Status.Operation, message) {
+	if !strings.Contains(manifest.Status.LastOperation.Operation, message) {
 		return errManifestOperationNotContainMessage
 	}
 

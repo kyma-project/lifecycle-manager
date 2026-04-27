@@ -67,7 +67,7 @@ func (s *DetectionService) getParentKyma(ctx context.Context, manifest *v1beta2.
 
 func isManifestReferencedInKymaStatus(kyma *v1beta2.Kyma, targetManifestName string) bool {
 	for _, module := range kyma.Status.Modules {
-		if module.Manifest != nil && module.Manifest.Name == targetManifestName {
+		if module.Manifest != nil && module.Manifest.PartialMeta.Name == targetManifestName {
 			return true
 		}
 	}

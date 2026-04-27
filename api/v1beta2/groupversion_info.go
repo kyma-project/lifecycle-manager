@@ -35,6 +35,9 @@ var (
 		Version: "v1beta2",
 	}
 
+	// SchemeGroupVersion is an alias for GroupVersion for compatibility with generated code.
+	SchemeGroupVersion = GroupVersion
+
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme.
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion} //nolint:staticcheck // See #3239
 

@@ -314,14 +314,14 @@ func Test_syncStatus_AssignsRemoteNamespace(t *testing.T) {
 		if module.Template == nil {
 			continue
 		}
-		assert.Equal(t, shared.DefaultRemoteNamespace, module.Template.Namespace)
+		assert.Equal(t, shared.DefaultRemoteNamespace, module.Template.PartialMeta.Namespace)
 	}
 
 	for _, module := range kcpStatus.Modules {
 		if module.Template == nil {
 			continue
 		}
-		assert.Equal(t, "kcp-system", module.Template.Namespace)
+		assert.Equal(t, "kcp-system", module.Template.PartialMeta.Namespace)
 	}
 }
 

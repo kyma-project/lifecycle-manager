@@ -43,10 +43,10 @@ func TestSetStateDeleting_ClientCallSucceeds(t *testing.T) {
 	assert.Equal(t, shared.DefaultRemoteNamespace, statusClientStub.patchedObject.Namespace)
 	// correct state set
 	assert.Equal(t, shared.StateDeleting, statusClientStub.patchedObject.Status.State)
-	assert.Equal(t, ".status.State set to Deleting", statusClientStub.patchedObject.Status.Operation)
+	assert.Equal(t, ".status.State set to Deleting", statusClientStub.patchedObject.Status.LastOperation.Operation)
 	assert.WithinDuration(t,
 		time.Now(),
-		statusClientStub.patchedObject.Status.LastUpdateTime.Time,
+		statusClientStub.patchedObject.Status.LastOperation.LastUpdateTime.Time,
 		time.Second)
 	// correct options used
 	assert.Contains(t, statusClientStub.opts, fieldowners.LifecycleManager)

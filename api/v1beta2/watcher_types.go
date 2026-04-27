@@ -101,6 +101,7 @@ type WatcherStatus struct {
 	ObservedGeneration int64 `json:"observedGeneration"`
 }
 
+// +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:subresource:status

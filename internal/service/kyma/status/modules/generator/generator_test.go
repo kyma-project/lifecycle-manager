@@ -121,15 +121,15 @@ func TestGenerateModuleStatus_WhenCalledWithTemplateAndManifest_CreatesMinimalMo
 	assert.Equal(t, "test-channel", result.Channel)
 
 	assert.NotNil(t, result.Manifest)
-	assert.Equal(t, "test-manifest", result.Manifest.Name)
-	assert.Equal(t, "test-namespace", result.Manifest.Namespace)
-	assert.Equal(t, int64(123), result.Manifest.Generation)
+	assert.Equal(t, "test-manifest", result.Manifest.PartialMeta.Name)
+	assert.Equal(t, "test-namespace", result.Manifest.PartialMeta.Namespace)
+	assert.Equal(t, int64(123), result.Manifest.PartialMeta.Generation)
 	assert.Equal(t, "Manifest", result.Manifest.Kind)
 	assert.Equal(t, "operator.kyma-project.io/v1beta2", result.Manifest.APIVersion)
 
-	assert.Equal(t, "test-template", result.Template.Name)
-	assert.Equal(t, "test-namespace", result.Template.Namespace)
-	assert.Equal(t, int64(123), result.Template.Generation)
+	assert.Equal(t, "test-template", result.Template.PartialMeta.Name)
+	assert.Equal(t, "test-namespace", result.Template.PartialMeta.Namespace)
+	assert.Equal(t, int64(123), result.Template.PartialMeta.Generation)
 	assert.Equal(t, "ModuleTemplate", result.Template.Kind)
 	assert.Equal(t, "operator.kyma-project.io/v1beta2", result.Template.APIVersion)
 }
@@ -149,9 +149,9 @@ func TestGenerateModuleStatus_WhenCalledWithManifestResource_CreatesTrackingObje
 	assert.NotNil(t, result.Resource)
 	assert.Equal(t, "test-kind", result.Resource.Kind)
 	assert.Equal(t, "test-version", result.Resource.APIVersion)
-	assert.Equal(t, "test-manifest-resource", result.Resource.Name)
-	assert.Equal(t, "test-namespace", result.Resource.Namespace)
-	assert.Equal(t, int64(123), result.Resource.Generation)
+	assert.Equal(t, "test-manifest-resource", result.Resource.PartialMeta.Name)
+	assert.Equal(t, "test-namespace", result.Resource.PartialMeta.Namespace)
+	assert.Equal(t, int64(123), result.Resource.PartialMeta.Generation)
 }
 
 func TestGenerateModuleStatus_WhenCalledWithIsClusterScopedAnnotation_RemovesResourceNamespace(t *testing.T) {
@@ -168,7 +168,7 @@ func TestGenerateModuleStatus_WhenCalledWithIsClusterScopedAnnotation_RemovesRes
 	assert.NotNil(t, result)
 	assert.NotNil(t, result.Resource)
 
-	assert.Empty(t, result.Resource.Namespace)
+	assert.Empty(t, result.Resource.PartialMeta.Namespace)
 }
 
 func TestGenerateModuleStatus_WhenModuleIsUnmanaged_StateIsUnmanagedAndTrackingObjectsNil(t *testing.T) {

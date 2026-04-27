@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -124,11 +123,9 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvDoesntExist_AddsEnv(t *testing
 			Manager: &v1beta2.Manager{
 				Name:      "manager-deployment",
 				Namespace: "default",
-				GroupVersionKind: apimetav1.GroupVersionKind{
-					Kind:    "Deployment",
-					Version: "v1",
-					Group:   "apps",
-				},
+				Kind:      "Deployment",
+				Version:   "v1",
+				Group:     "apps",
 			},
 		},
 	}
@@ -276,11 +273,9 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvExists_ReturnsError(t *testing
 			Manager: &v1beta2.Manager{
 				Name:      "manager-deployment",
 				Namespace: "default",
-				GroupVersionKind: apimetav1.GroupVersionKind{
-					Kind:    "Deployment",
-					Version: "v1",
-					Group:   "apps",
-				},
+				Kind:      "Deployment",
+				Version:   "v1",
+				Group:     "apps",
 			},
 		},
 	}
@@ -329,11 +324,9 @@ func TestCreateSkrImagePullSecretTransform_DoesntAddEnvVarToNonManagerDeployment
 			Manager: &v1beta2.Manager{
 				Name:      "manager-deployment",
 				Namespace: "default",
-				GroupVersionKind: apimetav1.GroupVersionKind{
-					Kind:    "Deployment",
-					Version: "v1",
-					Group:   "apps",
-				},
+				Kind:      "Deployment",
+				Version:   "v1",
+				Group:     "apps",
 			},
 		},
 	}
