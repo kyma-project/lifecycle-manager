@@ -56,8 +56,12 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 test-crd: controller-gen ## Generate crd for test
 	$(CONTROLLER_GEN) crd paths="./config/samples/component-integration-installed/crd/..." output:crd:artifacts:config=config/samples/component-integration-installed/crd
 
+.PHONY: generate-applyconfiguration
+generate-applyconfiguration: controller-gen ## Generate applyconfiguration types for ModuleReleaseMeta and ModuleTemplate.
+	$(CONTROLLER_GEN) applyconfiguration:headerFile="hack/boilerplate.go.txt" paths="./api/v1beta2/..."
+
 .PHONY: generate
-generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+generate: controller-gen generate-applyconfiguration ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 .PHONY: vet

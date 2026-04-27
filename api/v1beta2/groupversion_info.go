@@ -17,6 +17,8 @@ limitations under the License.
 // Package v1beta2 contains API Schema definitions for the operator v1beta2 API group
 // +kubebuilder:object:generate=true
 // +groupName=operator.kyma-project.io
+// +kubebuilder:ac:generate=true
+// +kubebuilder:ac:output:package="../applyconfigurations"
 //
 //nolint:gochecknoglobals // required for utilizing the API
 package v1beta2
@@ -34,6 +36,9 @@ var (
 		Group:   shared.OperatorGroup,
 		Version: "v1beta2",
 	}
+
+	// SchemeGroupVersion is an alias for GroupVersion for compatibility with generated code.
+	SchemeGroupVersion = GroupVersion
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme.
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
