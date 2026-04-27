@@ -16,8 +16,8 @@ var (
 	ErrModuleNeedsManifest                = errors.New("module needs either manifest or template error")
 )
 
-type GenerateFromErrorFunc func(err error, moduleName, desiredChannel, fqdn string,
-	status *v1beta2.ModuleStatus) (*v1beta2.ModuleStatus, error)
+type GenerateFromErrorFunc func(err error, moduleName, desiredChannel,
+	ocmComponentName string, status *v1beta2.ModuleStatus) (*v1beta2.ModuleStatus, error)
 
 type ModuleStatusGenerator struct {
 	generateFromErrorFunc GenerateFromErrorFunc
@@ -43,7 +43,7 @@ func (m *ModuleStatusGenerator) GenerateModuleStatus(module *modulecommon.Module
 
 	if module.TemplateInfo.Err != nil {
 		return m.generateFromErrorFunc(module.TemplateInfo.Err, module.ModuleName, module.TemplateInfo.DesiredChannel,
-			module.FQDN, currentStatus)
+			module.OCMComponentName, currentStatus)
 	}
 
 	// This nil pointer check is for defensive programming and should never occur in a production environment.
@@ -56,11 +56,12 @@ func (m *ModuleStatusGenerator) GenerateModuleStatus(module *modulecommon.Module
 	manifestAPIVersion, manifestKind := manifest.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	templateAPIVersion, templateKind := module.TemplateInfo.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	moduleStatus := &v1beta2.ModuleStatus{
-		Name:    module.ModuleName,
-		FQDN:    module.FQDN,
-		State:   manifest.Status.State,
-		Channel: module.TemplateInfo.DesiredChannel,
-		Version: manifest.Spec.Version,
+		Name:             module.ModuleName,
+		FQDN:             module.OCMComponentName, // Set for backwards compatibility
+		OCMComponentName: module.OCMComponentName,
+		State:            manifest.Status.State,
+		Channel:          module.TemplateInfo.DesiredChannel,
+		Version:          manifest.Spec.Version,
 		Manifest: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMeta{
 				Name:       manifest.GetName(),

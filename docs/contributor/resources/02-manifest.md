@@ -160,7 +160,8 @@ spec:
 
 ## Annotations
 
-* `operator.kyma-project.io/fqdn`: The fully-qualified domain name of the module.
+* `operator.kyma-project.io/ocm-component-name`: The OCM-compliant (Open Component Model) name of the module.
+* `operator.kyma-project.io/fqdn`: Deprecated. Still supported during migration for backward compatibility; use `operator.kyma-project.io/ocm-component-name` instead.
 * `sync-oci-ref`: A reference to the OCM installation resource that is installed in the Kyma runtime instance. 
 
 ## Finalizers

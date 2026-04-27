@@ -11,7 +11,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldindex"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/modulereleasemeta"
+	mrmrepo "github.com/kyma-project/lifecycle-manager/internal/repository/modulereleasemeta"
 )
 
 type clientStub struct {
@@ -69,7 +69,7 @@ func TestRepository_EnsureFinalizer(t *testing.T) {
 		}
 
 		stub := &clientStub{mrm: mrm}
-		repo := modulereleasemeta.NewRepository(stub, testNamespace)
+		repo := mrmrepo.NewRepository(stub, testNamespace)
 
 		err := repo.EnsureFinalizer(ctx, testMRMName, testFinalizer)
 
@@ -88,7 +88,7 @@ func TestRepository_EnsureFinalizer(t *testing.T) {
 		}
 
 		stub := &clientStub{mrm: mrm}
-		repo := modulereleasemeta.NewRepository(stub, testNamespace)
+		repo := mrmrepo.NewRepository(stub, testNamespace)
 
 		err := repo.EnsureFinalizer(ctx, testMRMName, testFinalizer)
 
@@ -100,7 +100,7 @@ func TestRepository_EnsureFinalizer(t *testing.T) {
 	t.Run("returns error when get fails", func(t *testing.T) {
 		expectedErr := errors.New("get error")
 		stub := &clientStub{getErr: expectedErr}
-		repo := modulereleasemeta.NewRepository(stub, testNamespace)
+		repo := mrmrepo.NewRepository(stub, testNamespace)
 
 		err := repo.EnsureFinalizer(ctx, testMRMName, testFinalizer)
 
@@ -120,7 +120,7 @@ func TestRepository_EnsureFinalizer(t *testing.T) {
 
 		expectedErr := errors.New("update error")
 		stub := &clientStub{mrm: mrm, updateErr: expectedErr}
-		repo := modulereleasemeta.NewRepository(stub, testNamespace)
+		repo := mrmrepo.NewRepository(stub, testNamespace)
 
 		err := repo.EnsureFinalizer(ctx, testMRMName, testFinalizer)
 
@@ -147,7 +147,7 @@ func TestRepository_RemoveFinalizer(t *testing.T) {
 		}
 
 		stub := &clientStub{mrm: mrm}
-		repo := modulereleasemeta.NewRepository(stub, testNamespace)
+		repo := mrmrepo.NewRepository(stub, testNamespace)
 
 		err := repo.RemoveFinalizer(ctx, testMRMName, testFinalizer)
 
@@ -166,7 +166,7 @@ func TestRepository_RemoveFinalizer(t *testing.T) {
 		}
 
 		stub := &clientStub{mrm: mrm}
-		repo := modulereleasemeta.NewRepository(stub, testNamespace)
+		repo := mrmrepo.NewRepository(stub, testNamespace)
 
 		err := repo.RemoveFinalizer(ctx, testMRMName, testFinalizer)
 
@@ -178,7 +178,7 @@ func TestRepository_RemoveFinalizer(t *testing.T) {
 	t.Run("returns error when get fails", func(t *testing.T) {
 		expectedErr := errors.New("get error")
 		stub := &clientStub{getErr: expectedErr}
-		repo := modulereleasemeta.NewRepository(stub, testNamespace)
+		repo := mrmrepo.NewRepository(stub, testNamespace)
 
 		err := repo.RemoveFinalizer(ctx, testMRMName, testFinalizer)
 
@@ -198,7 +198,7 @@ func TestRepository_RemoveFinalizer(t *testing.T) {
 
 		expectedErr := errors.New("update error")
 		stub := &clientStub{mrm: mrm, updateErr: expectedErr}
-		repo := modulereleasemeta.NewRepository(stub, testNamespace)
+		repo := mrmrepo.NewRepository(stub, testNamespace)
 
 		err := repo.RemoveFinalizer(ctx, testMRMName, testFinalizer)
 
@@ -223,7 +223,7 @@ func TestRepository_Get(t *testing.T) {
 		}
 
 		stub := &clientStub{mrm: expectedMRM}
-		repo := modulereleasemeta.NewRepository(stub, testNamespace)
+		repo := mrmrepo.NewRepository(stub, testNamespace)
 
 		result, err := repo.Get(ctx, testMRMName)
 
@@ -237,7 +237,7 @@ func TestRepository_Get(t *testing.T) {
 	t.Run("returns error when client get fails", func(t *testing.T) {
 		expectedErr := errors.New("client get error")
 		stub := &clientStub{getErr: expectedErr}
-		repo := modulereleasemeta.NewRepository(stub, testNamespace)
+		repo := mrmrepo.NewRepository(stub, testNamespace)
 
 		result, err := repo.Get(ctx, testMRMName)
 
@@ -256,7 +256,7 @@ func TestRepository_ListMandatory(t *testing.T) {
 
 	t.Run("lists mandatory MRMs successfully", func(t *testing.T) {
 		stub := &clientStub{}
-		repo := modulereleasemeta.NewRepository(stub, testNamespace)
+		repo := mrmrepo.NewRepository(stub, testNamespace)
 
 		_, err := repo.ListMandatory(ctx)
 
@@ -270,7 +270,7 @@ func TestRepository_ListMandatory(t *testing.T) {
 	t.Run("returns error when client list fails", func(t *testing.T) {
 		expectedErr := errors.New("client list error")
 		stub := &clientStub{listErr: expectedErr}
-		repo := modulereleasemeta.NewRepository(stub, testNamespace)
+		repo := mrmrepo.NewRepository(stub, testNamespace)
 
 		_, err := repo.ListMandatory(ctx)
 

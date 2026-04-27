@@ -214,49 +214,11 @@ func getGatewaySecretWithCaAddedToBundleAtAnnotation(rfc3339Value string) *apico
 	}
 }
 
-// To be removed along with fallback logic, issue: #3105.
-func getGatewaySecretWithOldAnnotation(rfc3339Value string) *apicorev1.Secret {
-	return &apicorev1.Secret{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      gatewaySecretName,
-			Namespace: testutils.IstioNamespace,
-			Annotations: map[string]string{
-				shared.LastModifiedAtAnnotation: rfc3339Value,
-			},
-		},
-	}
-}
-
 func TestIsSkrCertificateRenewalOverdue_WhenClientCertificateMoreRecentThanCA_ReturnsFalse(t *testing.T) {
 	caRotationTime := time.Now().Add(-time.Second)
 	clientCertRotationTime := time.Now()
 
 	gatewaySecret := getGatewaySecretWithCaAddedToBundleAtAnnotation(caRotationTime.Format(time.RFC3339))
-	secretRepo := &secretRepoStub{
-		getSecrets: []*apicorev1.Secret{gatewaySecret, gatewaySecret},
-	}
-	certRepo := &certRepoStub{
-		getValidityStart: clientCertRotationTime,
-		getValidityEnd:   clientCertRotationTime.Add(time.Hour),
-	}
-	certService := certificate.NewService(certRepo, secretRepo, certificate.Config{
-		RenewBuffer: renewBuffer,
-	})
-
-	overdue, err := certService.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
-
-	require.NoError(t, err)
-	require.False(t, overdue)
-	require.True(t, certRepo.getValidityCalled)
-	require.True(t, secretRepo.getCalled)
-}
-
-// To be removed along with fallback logic, issue: #3105.
-func TestIsSkrCertificateRenewalOverdue_WhenCertHasOldAnnotation_ReturnsFalse(t *testing.T) {
-	caRotationTime := time.Now().Add(-time.Second)
-	clientCertRotationTime := time.Now()
-
-	gatewaySecret := getGatewaySecretWithOldAnnotation(caRotationTime.Format(time.RFC3339))
 	secretRepo := &secretRepoStub{
 		getSecrets: []*apicorev1.Secret{gatewaySecret, gatewaySecret},
 	}
@@ -585,29 +547,29 @@ type certRepoStub struct {
 	receivedCertName     string
 }
 
-func (c *certRepoStub) Create(_ context.Context, name, commonName string,
+func (r *certRepoStub) Create(_ context.Context, name, commonName string,
 	dnsNames []string,
 ) error {
-	c.createCalled = true
-	c.createName = name
-	c.createCommonName = commonName
-	c.createDNSNames = dnsNames
-	return c.createErr
+	r.createCalled = true
+	r.createName = name
+	r.createCommonName = commonName
+	r.createDNSNames = dnsNames
+	return r.createErr
 }
 
-func (c *certRepoStub) Delete(_ context.Context, name string) error {
-	c.deleteCalled = true
-	c.deleteName = name
-	return c.deleteErr
+func (r *certRepoStub) Delete(_ context.Context, name string) error {
+	r.deleteCalled = true
+	r.deleteName = name
+	return r.deleteErr
 }
 
-func (c *certRepoStub) Exists(_ context.Context, _ string) (bool, error) {
+func (r *certRepoStub) Exists(_ context.Context, _ string) (bool, error) {
 	return false, nil
 }
 
-func (c *certRepoStub) GetRenewalTime(_ context.Context, _ string) (time.Time, error) {
-	c.getRenewalTimeCalled = true
-	return c.renewalTime, c.getRenewalTimeErr
+func (r *certRepoStub) GetRenewalTime(_ context.Context, _ string) (time.Time, error) {
+	r.getRenewalTimeCalled = true
+	return r.renewalTime, r.getRenewalTimeErr
 }
 
 type secretRepoStub struct {

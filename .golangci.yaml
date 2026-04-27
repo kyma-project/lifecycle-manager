@@ -123,6 +123,8 @@ linters:
           alias: kymadeletioncmpse
         - pkg: github.com/kyma-project/lifecycle-manager/cmd/composition/service/kyma/lookup
           alias: kymalookupcmpse
+        - pkg: github.com/kyma-project/lifecycle-manager/cmd/composition/watch
+          alias: watchcmpse
         - pkg: github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl
           alias: testskrcontext
         - pkg: github.com/kyma-project/lifecycle-manager/internal/errors
@@ -151,6 +153,12 @@ linters:
           alias: manifestrepo
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/secret
           alias: secretrepo
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/modulereleasemeta
+          alias: mrmrepo
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/moduletemplate
+          alias: mtrepo
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/watch/modulereleasemeta
+          alias: mrmwatch
         - pkg: github.com/kyma-project/lifecycle-manager/internal/result/event
           alias: resultevent
         - pkg: k8s.io/api/networking/v1
@@ -171,6 +179,10 @@ linters:
           alias: gcmcertificate
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache
           alias: skrclientcache
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/installation
+          alias: installerrors
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule/installation
+          alias: installservice
       no-unaliased: true
       no-extra-aliases: true
     ireturn:
@@ -246,6 +258,7 @@ linters:
           - maintidx
           - nilnil
           - wrapcheck
+          - varnamelen
         path: _test\.go
       - linters:
           - err113

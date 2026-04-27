@@ -6,7 +6,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
-	"github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/installation"
+	installerrors "github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/installation"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
@@ -64,8 +64,12 @@ func NewService(mrmRepo ModuleReleaseMetaRepository,
 }
 
 func (s *Service) HandleInstallation(ctx context.Context, kyma *v1beta2.Kyma) error {
+	if !kyma.DeletionTimestamp.IsZero() {
+		return installerrors.ErrKymaBeingDeleted
+	}
+
 	if kyma.SkipReconciliation() {
-		return installation.ErrSkippingReconciliationKyma
+		return installerrors.ErrSkipReconcileKyma
 	}
 
 	mandatoryMrms, err := s.mrmRepo.ListMandatory(ctx)

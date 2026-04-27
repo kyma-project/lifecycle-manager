@@ -2,9 +2,7 @@ package istiogatewaysecret
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"time"
 
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -15,11 +13,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/cabundle"
 	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/legacy"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
@@ -28,8 +25,6 @@ const (
 	controllerName    = "istio-controller"
 	kcpRootSecretName = "klm-watcher"
 )
-
-var errCouldNotGetTimeFromAnnotation = errors.New("getting time from annotation failed")
 
 func SetupReconciler(mgr ctrl.Manager,
 	certificateInterface gatewaysecretclient.CertificateInterface,
@@ -40,15 +35,13 @@ func SetupReconciler(mgr ctrl.Manager,
 
 	clnt := gatewaysecretclient.NewGatewaySecretRotationClient(mgr.GetConfig(), certificateInterface)
 
-	var handler gatewaysecret.Handler
-	if flagVar.UseLegacyStrategyForIstioGatewaySecret {
-		handler = legacy.NewGatewaySecretHandler(clnt, legacyHandlerParseAnnotationTime)
-	} else {
-		handler = cabundle.NewGatewaySecretHandler(clnt,
-			flagVar.IstioGatewayServerCertSwitchGracePeriod,
-			certificate.NewBundler(),
-		)
-	}
+	gatewaySecretMetrics := metrics.NewGatewaySecret()
+	handler := cabundle.NewGatewaySecretHandler(clnt,
+		flagVar.IstioGatewayServerCertSwitchGracePeriod,
+		flagVar.IstioGatewayServerCertExpiryWindow,
+		certificate.NewBundler(),
+		gatewaySecretMetrics,
+	)
 
 	var getSecretFunc GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
 		secret := &apicorev1.Secret{}
@@ -92,25 +85,4 @@ func (r *Reconciler) setupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 
 func isRootSecret(object client.Object) bool {
 	return object.GetNamespace() == shared.IstioNamespace && object.GetName() == kcpRootSecretName
-}
-
-func legacyHandlerParseAnnotationTime(secret *apicorev1.Secret,
-	annotation, fallbackAnnotation string,
-) (time.Time, error) {
-	if strValue, ok := secret.Annotations[annotation]; ok {
-		if time, err := time.Parse(time.RFC3339, strValue); err == nil {
-			return time, nil
-		}
-
-		return time.Time{}, fmt.Errorf("%w: %s", errCouldNotGetTimeFromAnnotation, annotation)
-	}
-	if strValue, ok := secret.Annotations[fallbackAnnotation]; ok {
-		if time, err := time.Parse(time.RFC3339, strValue); err == nil {
-			return time, nil
-		}
-
-		return time.Time{}, fmt.Errorf("%w: %s", errCouldNotGetTimeFromAnnotation, fallbackAnnotation)
-	}
-
-	return time.Time{}, fmt.Errorf("%w: %s or %s", errCouldNotGetTimeFromAnnotation, annotation, fallbackAnnotation)
 }

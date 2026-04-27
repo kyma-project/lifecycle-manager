@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Deploy KLM from registry" type="ShConfigurationType">
-    <option name="SCRIPT_TEXT" value="echo &quot;Enter KLM image registry (dev, prod):&quot;; read input_img_reg; echo &quot;Enter KLM image tag (e.g.: latest):&quot;; read input_img_tag; $PROJECT_DIR$/scripts/tests/deploy_klm_from_registry.sh --image-registry $input_img_reg --image-tag $input_img_tag" />
+    <option name="SCRIPT_TEXT" value="echo &quot;Enter KLM image registry (dev, prod, ghcr):&quot;; read input_img_reg; echo &quot;Enter KLM image tag (e.g.: latest, pr-42, sha-abc1234):&quot;; read input_img_tag; $PROJECT_DIR$/scripts/tests/deploy_klm_from_registry.sh --image-registry $input_img_reg --image-tag $input_img_tag" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="SCRIPT_PATH" value="" />
     <option name="SCRIPT_OPTIONS" value="" />

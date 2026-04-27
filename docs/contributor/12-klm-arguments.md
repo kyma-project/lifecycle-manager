@@ -29,6 +29,7 @@ This document provides a list of flags that can be set to control some specific 
 | `manifest-requeue-jitter-percentage`                 | float    | 0.02          | Percentage range for the jitter applied to the requeue interval e.g. 0.1 means +/- 10% of the interval         |
 | `mandatory-module-deletion-requeue-success-interval` | duration | 30s           | Duration after which a Kyma CR in the Ready state is enqueued for mandatory module deletion reconciliation     |
 | `watcher-requeue-success-interval`                   | duration | 30s           | Duration after which a Watcher CR in the Ready state is enqueued for reconciliation                            |
+| `module-upgrade-rollout-max-delay`                    | duration | 5m            | Maximum random delay added when requeueing Kyma CRs after a new module version is assigned to a channel in a ModuleReleaseMeta. Spreads reconciliations over time to avoid rate-limiting bursts. Set to `0` to disable spreading. |
 | `istio-gateway-secret-requeue-success-interval`      | duration | 5m            | Duration after which the Istio Gateway Secret is enqueued after successful reconciliation                      |
 | `istio-gateway-secret-requeue-error-interval`        | duration | 2s            | Duration after which the Istio Gateway Secret is enqueued after unsuccessful reconciliation                    |
 
@@ -73,7 +74,6 @@ This document provides a list of flags that can be set to control some specific 
 | `istio-namespace`                                  | string   | istio-system  | Namespace for Istio resources in a cluster                                                                               |
 | `istio-gateway-name`                               | string   | klm-watcher   | Name of the Istio Gateway resource in a cluster                                                                          |
 | `istio-gateway-namespace`                          | string   | kcp-system    | Namespace for the Istio Gateway resource in a cluster                                                                    |
-| `legacy-strategy-for-istio-gateway-secret`         | bool     | false         | Use the legacy strategy (with downtime) for the Istio Gateway Secret                                                     |
 
 ## Metrics and Health Configuration
 

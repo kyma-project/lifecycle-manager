@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -56,6 +57,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/deletion"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/installation"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
+	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/istiogatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
@@ -80,6 +82,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
+	manifestrepo "github.com/kyma-project/lifecycle-manager/internal/repository/manifest"
+	mrmrepo "github.com/kyma-project/lifecycle-manager/internal/repository/modulereleasemeta"
+	mtrepo "github.com/kyma-project/lifecycle-manager/internal/repository/moduletemplate"
 	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
@@ -93,6 +98,7 @@ import (
 	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
+	mrmwatch "github.com/kyma-project/lifecycle-manager/internal/watch/modulereleasemeta"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -258,6 +264,13 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	metrics.NewFipsMetrics().Update()
 
 	kymaRepo := kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
+	mrmRepo := mrmrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
+	mtRepo := mtrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
+	manifestRepo := manifestrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
+
+	mrmEventHandler := watchcmpse.ComposeMrmEventHandler(kymaRepo, flagVar.ModuleUpgradeRolloutMaxDelay)
+	mtEventHandlerMapFunc := watchcmpse.ComposeTemplateChangeHandlerMapFunc(kymaRepo)
+	mandatoryMrmHandlerMapFunc := watchcmpse.ComposeMandatoryMrmChangeHandlerMapFunc(mrmRepo, kymaRepo)
 
 	kymaDeletionSvc := kymadeletioncmpse.ComposeKymaDeletionService(
 		kcpClient,
@@ -272,12 +285,13 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	kymaLookupSvc := kymalookupcmpse.ComposeKymaLookupService(kymaRepo)
 
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
-		kymaMetrics, logger, maintenanceWindow, ociRegistry.GetReference(), kymaDeletionSvc, kymaLookupSvc)
+		kymaMetrics, logger, maintenanceWindow, ociRegistry.GetReference(), kymaDeletionSvc, kymaLookupSvc,
+		mtEventHandlerMapFunc, mrmEventHandler)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
 		eventRecorder, kymaRepo)
-	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, logger,
-		ociRegistry.GetReference())
-	setupMandatoryModuleDeletionReconciler(mgr, eventRecorder, flagVar, options, logger)
+	setupMandatoryModuleReconciler(mgr, descriptorProvider, mrmRepo, mtRepo, flagVar, options, mandatoryModulesMetrics,
+		logger, ociRegistry.GetReference(), mandatoryMrmHandlerMapFunc)
+	setupMandatoryModuleDeletionReconciler(mgr, eventRecorder, mrmRepo, manifestRepo, flagVar, options, logger)
 
 	setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, logger)
 
@@ -399,6 +413,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	skrWebhookManager *watcher.SkrWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
 	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, ociRegistry string,
 	kymaDeletionSvc *kymadeletionsvc.Service, kymaLookupSvc *kymalookupsvc.Service,
+	mtEventHandlerMapFunc handler.MapFunc, mrmEventHandler *mrmwatch.EventHandler,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -458,6 +473,8 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			ListenerAddr:   flagVar.KymaListenerAddr,
 			IstioNamespace: flagVar.IstioNamespace,
 		},
+		mtEventHandlerMapFunc,
+		mrmEventHandler,
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
@@ -576,19 +593,22 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, ev
 
 func setupMandatoryModuleReconciler(mgr ctrl.Manager,
 	descriptorProvider *provider.CachedDescriptorProvider,
+	mrmRepo *mrmrepo.Repository,
+	mtRepo *mtrepo.Repository,
 	flagVar *flags.FlagVar,
 	options ctrlruntime.Options,
 	metrics *metrics.MandatoryModulesMetrics,
 	setupLog logr.Logger,
 	ociRegistry string,
+	mandatoryMrmHandlerMapFunc handler.MapFunc,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
 
-	installationService := installation.ComposeInstallationService(mgr.GetClient(), descriptorProvider, ociRegistry,
-		flagVar.RemoteSyncNamespace, metrics)
+	installationService := installation.ComposeInstallationService(mgr.GetClient(), mrmRepo, mtRepo, descriptorProvider,
+		ociRegistry, flagVar.RemoteSyncNamespace, metrics)
 	installationReconciler := mandatorymodule.NewInstallationReconciler(installationService,
 		queue.RequeueIntervals{
 			Success: flagVar.MandatoryModuleRequeueSuccessInterval,
@@ -597,7 +617,7 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager,
 			Warning: flagVar.KymaRequeueWarningInterval,
 		})
 
-	if err := installationReconciler.SetupWithManager(mgr, options); err != nil {
+	if err := installationReconciler.SetupWithManager(mgr, options, mandatoryMrmHandlerMapFunc); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(bootstrapFailedExitCode)
 	}
@@ -605,6 +625,8 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager,
 
 func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 	event event.Event,
+	mrmRepo *mrmrepo.Repository,
+	manifestRepo *manifestrepo.Repository,
 	flagVar *flags.FlagVar,
 	options ctrlruntime.Options,
 	setupLog logr.Logger,
@@ -614,7 +636,7 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleDeletionReconciles
 
-	deletionService := deletion.ComposeDeletionService(mgr.GetClient(), event)
+	deletionService := deletion.ComposeDeletionService(mrmRepo, manifestRepo, event)
 	deletionReconciler := mandatorymodule.NewDeletionReconciler(deletionService, queue.RequeueIntervals{
 		Success: flagVar.MandatoryModuleDeletionRequeueSuccessInterval,
 		Busy:    flagVar.KymaRequeueBusyInterval,

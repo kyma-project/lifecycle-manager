@@ -134,8 +134,6 @@ type Reconciler struct {
 // Reconcile reconciles Kyma resources.
 //
 // See https://github.com/kyma-project/lifecycle-manager/issues/2943.
-//
-//nolint:funlen // disable for kyma controller until we remove legacy deletion with above issue
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("Kyma reconciliation started")
@@ -151,10 +149,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return ctrl.Result{}, nil
 		}
 		r.Metrics.RecordRequeueReason(metrics.KymaRetrieval, queue.UnexpectedRequeue)
-		return ctrl.Result{}, fmt.Errorf("KymaController: %w", err)
-	}
-
-	if err := r.UpdateModuleTemplatesIfNeeded(ctx); err != nil {
 		return ctrl.Result{}, fmt.Errorf("KymaController: %w", err)
 	}
 
@@ -245,32 +239,6 @@ func (r *Reconciler) WatcherEnabled() bool {
 
 func (r *Reconciler) SkrImagePullSecretSyncEnabled() bool {
 	return r.Config.SkrImagePullSecretName != ""
-}
-
-func (r *Reconciler) GetModuleTemplateList(ctx context.Context) (*v1beta2.ModuleTemplateList, error) {
-	moduleTemplateList := &v1beta2.ModuleTemplateList{}
-	if err := r.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
-		return nil, fmt.Errorf("could not aggregate module templates for module catalog sync: %w", err)
-	}
-
-	return moduleTemplateList, nil
-}
-
-func (r *Reconciler) UpdateModuleTemplatesIfNeeded(ctx context.Context) error {
-	moduleTemplateList, err := r.GetModuleTemplateList(ctx)
-	if err != nil {
-		return err
-	}
-
-	for _, mt := range moduleTemplateList.Items {
-		if needUpdateForMandatoryModuleLabel(mt) {
-			if err = r.Update(ctx, &mt); err != nil {
-				return fmt.Errorf("failed to update ModuleTemplate, %w", err)
-			}
-		}
-	}
-
-	return nil
 }
 
 func (r *Reconciler) processDeletion(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
@@ -746,30 +714,6 @@ func (r *Reconciler) deleteOrphanedCertificate(ctx context.Context, kymaName str
 		}
 	}
 	return nil
-}
-
-func needUpdateForMandatoryModuleLabel(moduleTemplate v1beta2.ModuleTemplate) bool {
-	if moduleTemplate.Labels == nil {
-		moduleTemplate.Labels = make(map[string]string)
-	}
-
-	if moduleTemplate.Spec.Mandatory {
-		if moduleTemplate.Labels[shared.IsMandatoryModule] == shared.EnableLabelValue {
-			return false
-		}
-
-		moduleTemplate.Labels[shared.IsMandatoryModule] = shared.EnableLabelValue
-		return true
-	}
-
-	if !moduleTemplate.Spec.Mandatory {
-		if moduleTemplate.Labels[shared.IsMandatoryModule] == shared.EnableLabelValue {
-			delete(moduleTemplate.Labels, shared.IsMandatoryModule)
-			return true
-		}
-	}
-
-	return false
 }
 
 func setModuleStatusesToError(kyma *v1beta2.Kyma, message string) {

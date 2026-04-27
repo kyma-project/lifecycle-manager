@@ -1,12 +1,11 @@
 packages:
   internal/controller: 100
-  internal/controller/istiogatewaysecret: 26
+  internal/controller/istiogatewaysecret: 25.6
   internal/crd: 92
   internal/descriptor/cache: 90
   internal/descriptor/provider: 100
   internal/event: 100
-  internal/gatewaysecret/cabundle: 100
-  internal/gatewaysecret/legacy: 100
+  internal/gatewaysecret/cabundle: 98.6
   internal/imagerewrite: 82
   internal/istio: 63
   internal/manifest/filemutex: 100
@@ -18,13 +17,16 @@ packages:
   internal/manifest/modulecr: 50
   internal/manifest/skrresources: 20
   internal/manifest/statecheck: 71
+  internal/manifest/status: 73.8
   internal/maintenancewindows: 87
+  internal/pkg/metrics: 39.3
   internal/pkg/resources: 91
   internal/remote: 30
 
-  internal/repository/kyma: 93
+  internal/repository/kyma: 95.8
   internal/repository/ocm: 100
   internal/repository/ocm/oci: 100
+  internal/repository/skr/crd: 100
   internal/repository/watcher/certificate: 100
   internal/repository/watcher/certificate/certmanager/certificate: 100
   internal/repository/watcher/certificate/gcm/certificate: 98
@@ -34,6 +36,7 @@ packages:
   internal/repository/modulereleasemeta: 100
 
   internal/service/componentdescriptor: 100
+  internal/service/kyma/status/modules: 83.7
   internal/service/kyma/status/modules/generator: 100
   internal/service/kyma/status/modules/generator/fromerror: 100
   internal/service/kyma/lookup: 100
@@ -43,13 +46,18 @@ packages:
   internal/service/watcher/chartreader: 100
   internal/service/watcher/gateway: 94
   internal/service/watcher/resources: 82
-  internal/service/skrclient: 35
+  internal/service/skrclient: 34
+  internal/service/mandatorymodule/installation: 100
   internal/service/mandatorymodule/deletion: 100
   internal/service/mandatorymodule/deletion/usecases: 100
   internal/service/skrsync: 100
 
   internal/setup: 71
   internal/util/collections: 87
+
+  internal/watch/modulereleasemeta: 97.6
+  internal/watch/modulereleasemeta/events: 100
+
   pkg/module/sync: 10
   pkg/status: 16
   pkg/templatelookup: 76

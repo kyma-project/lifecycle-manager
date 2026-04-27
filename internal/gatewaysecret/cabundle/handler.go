@@ -2,6 +2,8 @@ package cabundle
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"time"
@@ -16,10 +18,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-var ErrCACertificateNotReady = errors.New("watcher-serving ca certificate is not ready")
-
-const (
-	caBundleTempCertKey = "temp.ca.crt"
+var (
+	ErrCACertificateNotReady           = errors.New("watcher-serving ca certificate is not ready")
+	ErrServerCertificateParsingFailure = errors.New("failed to parse server certificate from gateway secret")
 )
 
 type Bundler interface {
@@ -27,20 +28,30 @@ type Bundler interface {
 	DropExpiredCerts(bundle *[]byte) (bool, error)
 }
 
+type GatewaySecretMetrics interface {
+	ServerCertificateCloseToExpiry(set bool)
+}
+
 type Handler struct {
 	client                      gatewaysecret.Client
 	serverCertSwitchGracePeriod time.Duration
+	serverCertExpiryWindow      time.Duration
 	bundler                     Bundler
+	metrics                     GatewaySecretMetrics
 }
 
 func NewGatewaySecretHandler(client gatewaysecret.Client,
 	serverCertSwitchGracePeriod time.Duration,
+	serverCertExpiryWindow time.Duration,
 	bundler Bundler,
+	metrics GatewaySecretMetrics,
 ) *Handler {
 	return &Handler{
 		client:                      client,
 		serverCertSwitchGracePeriod: serverCertSwitchGracePeriod,
+		serverCertExpiryWindow:      serverCertExpiryWindow,
 		bundler:                     bundler,
+		metrics:                     metrics,
 	}
 }
 
@@ -59,9 +70,6 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 	} else if err != nil {
 		return err
 	}
-
-	// this is for the case when we switch existing secret from legacy to new rotation mechanism
-	bootstrapLegacyGatewaySecret(gwSecret, rootSecret)
 
 	bundled, err := h.bundleCACerts(gwSecret, rootSecret)
 	if err != nil {
@@ -86,6 +94,11 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 			)
 		switchCertificate(gwSecret, rootSecret)
 	}
+
+	if err := h.updateServerCertExpiryMetric(gwSecret); err != nil {
+		return err
+	}
+
 	return h.client.UpdateGatewaySecret(ctx, gwSecret)
 }
 
@@ -118,22 +131,11 @@ func (h *Handler) requiresCertSwitching(caCertNotBefore time.Time) bool {
 	return time.Now().After(caCertNotBefore.Add(h.serverCertSwitchGracePeriod))
 }
 
-func bootstrapLegacyGatewaySecret(gwSecret *apicorev1.Secret,
-	rootSecret *apicorev1.Secret,
-) {
-	if _, ok := gwSecret.Data[caBundleTempCertKey]; !ok {
-		gwSecret.Data[caBundleTempCertKey] = rootSecret.Data[gatewaysecret.CACrt]
-	}
-}
-
 func setCaBundleTimeAnnotationToNow(secret *apicorev1.Secret) {
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)
 	}
 	secret.Annotations[shared.CaAddedToBundleAtAnnotation] = apimetav1.Now().Format(time.RFC3339)
-	//nolint:godox // valid TODO
-	//TODO: drop in the second release after 1.14.0, issue: 3105.
-	delete(secret.Annotations, shared.LastModifiedAtAnnotation)
 }
 
 func (h *Handler) bundleCACerts(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) (bool, error) {
@@ -165,6 +167,32 @@ func (h *Handler) dropExpiredCertsFromBundle(gatewaySecret *apicorev1.Secret) er
 	}
 
 	return nil
+}
+
+func (h *Handler) updateServerCertExpiryMetric(gwSecret *apicorev1.Secret) error {
+	isCloseToExpiry, err := serverCertCloseToExpiry(gwSecret, h.serverCertExpiryWindow)
+	if err != nil {
+		return err
+	}
+
+	h.metrics.ServerCertificateCloseToExpiry(isCloseToExpiry)
+	return nil
+}
+
+func serverCertCloseToExpiry(gatewaySecret *apicorev1.Secret, expiryWindow time.Duration) (bool, error) {
+	serverCertBytes := gatewaySecret.Data[apicorev1.TLSCertKey]
+	block, _ := pem.Decode(serverCertBytes)
+	if block == nil {
+		return false, ErrServerCertificateParsingFailure
+	}
+	serverCert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return false, fmt.Errorf("%w: %w", ErrServerCertificateParsingFailure, err)
+	}
+	if time.Now().Add(expiryWindow).After(serverCert.NotAfter) {
+		return true, nil
+	}
+	return false, nil
 }
 
 func switchCertificate(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) {

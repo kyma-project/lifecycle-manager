@@ -81,7 +81,7 @@ func TestPathExtractor_FetchLayerToFile(t *testing.T) {
 				LayerRepresentation: &img.OCI{
 					Repo: "normally-determined-by-OCM-component-descriptor-but-" +
 						"in-our-code-is-overridden-with-an-explicit-value",
-					Name: testutils.DefaultFQDN,
+					Name: testutils.DefaultComponentName,
 					Ref:  "sha256:d2cc278224a71384b04963a83e784da311a268a2b3fa8732bc31e70ca0c5bc52",
 					Type: "oci-dir",
 				},
@@ -95,7 +95,7 @@ func TestPathExtractor_FetchLayerToFile(t *testing.T) {
 				LayerRepresentation: &img.OCI{
 					Repo: "normally-determined-by-OCM-component-descriptor-but-" +
 						"in-our-code-is-overridden-with-an-explicit-value",
-					Name: testutils.DefaultFQDN,
+					Name: testutils.DefaultComponentName,
 					Ref:  "sha256:1ea2baf45791beafabfee533031b715af8f7a4ffdfbbf30d318f52f7652c36ca",
 					Type: "oci-ref",
 				},

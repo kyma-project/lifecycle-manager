@@ -141,8 +141,8 @@
     {
       "id": "klmImageRegistry",
       "type": "pickString",
-      "description": "Registry of KLM image",
-      "options": ["dev", "prod"]
+      "description": "Registry of KLM image: 'dev'/'prod' → europe-docker.pkg.dev (CI builds), 'ghcr' → ghcr.io/kyma-project (local/PR builds, arm64 support)",
+      "options": ["dev", "prod", "ghcr"]
     },
     {
       "id": "klmImageTag",

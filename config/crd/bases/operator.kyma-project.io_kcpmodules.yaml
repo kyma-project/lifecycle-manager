@@ -52,7 +52,7 @@ spec:
                 type: string
             type: object
           status:
-            description: ManifestStatus defines the observed state of Manifest.
+            description: KCPModuleStatus defines the observed state of KCPModule.
             properties:
               state:
                 allOf:
@@ -68,6 +68,7 @@ spec:
                   - Error
                   - Deleting
                   - Warning
+                description: KCPModuleState is the state of a KCPModule.
                 type: string
             required:
             - state
@@ -114,7 +115,7 @@ spec:
                 type: string
             type: object
           status:
-            description: ManifestStatus defines the observed state of Manifest.
+            description: KCPModuleStatus defines the observed state of KCPModule.
             properties:
               state:
                 allOf:
@@ -130,6 +131,7 @@ spec:
                   - Error
                   - Deleting
                   - Warning
+                description: KCPModuleState is the state of a KCPModule.
                 type: string
             required:
             - state
