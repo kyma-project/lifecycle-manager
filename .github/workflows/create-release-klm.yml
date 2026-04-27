@@ -58,10 +58,20 @@ jobs:
             ${{ github.event.inputs.name }} \
             europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager \
             sec-scanners-config.yaml
+
+      - name: Generate token from GitHub App
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.COMPLIANCY_APP_ID }}
+          private-key: ${{ secrets.COMPLIANCY_APP_PRIVATE_KEY }}
+          owner: kyma
+          repositories: compliancy
+
       - name: Push version bump branch and open PR
         id: open-pr
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
           # Configure git
           git config --local user.email "jellyfish-bot@users.noreply.github.com"
@@ -96,73 +106,73 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./.github/scripts/release/delete_sec_scanners_config_pr_branch.sh ${{ github.event.inputs.name }}
 
-  draft-release:
-    name: Create draft release
-    runs-on: ubuntu-latest
-    needs: [validate-release, await-bump-images-pr-merge]
-    if: |
-      always() &&
-      needs.validate-release.result == 'success' &&
-      (needs.await-bump-images-pr-merge.result == 'success' || needs.await-bump-images-pr-merge.result == 'skipped')
-    permissions:
-      contents: write
-      id-token: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-        with:
-          fetch-depth: 0
-      - name: Create changelog
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./.github/scripts/release/create_changelog.sh ${{ github.event.inputs.name }} ${{ env.IMAGE_REPO }}:${{ github.event.inputs.name }} ${{ github.event.inputs.since }}
-      - name: Draft release
-        id: draft-release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          RELEASE_ID=$(./.github/scripts/release/draft_release.sh ${{ github.event.inputs.name }})
-          echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
-      - name: Create tag
-        run: |
-          git tag ${{ github.event.inputs.name }}
-          git push origin ${{ github.event.inputs.name }} --tags
-    outputs:
-      release_id: ${{ steps.draft-release.outputs.release_id }}
+  # draft-release:
+  #   name: Create draft release
+  #   runs-on: ubuntu-latest
+  #   needs: [validate-release, await-bump-images-pr-merge]
+  #   if: |
+  #     always() &&
+  #     needs.validate-release.result == 'success' &&
+  #     (needs.await-bump-images-pr-merge.result == 'success' || needs.await-bump-images-pr-merge.result == 'skipped')
+  #   permissions:
+  #     contents: write
+  #     id-token: write
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+  #       with:
+  #         fetch-depth: 0
+  #     - name: Create changelog
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       run: ./.github/scripts/release/create_changelog.sh ${{ github.event.inputs.name }} ${{ env.IMAGE_REPO }}:${{ github.event.inputs.name }} ${{ github.event.inputs.since }}
+  #     - name: Draft release
+  #       id: draft-release
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       run: |
+  #         RELEASE_ID=$(./.github/scripts/release/draft_release.sh ${{ github.event.inputs.name }})
+  #         echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
+  #     - name: Create tag
+  #       run: |
+  #         git tag ${{ github.event.inputs.name }}
+  #         git push origin ${{ github.event.inputs.name }} --tags
+  #   outputs:
+  #     release_id: ${{ steps.draft-release.outputs.release_id }}
 
-  builds:
-    needs: draft-release
-    # the always() is needed so that the job is not skipped if previous jobs were skipped due to skip_sec_scanners_bump
-    if: always() && needs.draft-release.result == 'success'
-    uses: ./.github/workflows/build-image.yml
-    with:
-      tag: "${{ github.event.inputs.name }}"
-    permissions:
-      contents: read
-      id-token: write
+  # builds:
+  #   needs: draft-release
+  #   # the always() is needed so that the job is not skipped if previous jobs were skipped due to skip_sec_scanners_bump
+  #   if: always() && needs.draft-release.result == 'success'
+  #   uses: ./.github/workflows/build-image.yml
+  #   with:
+  #     tag: "${{ github.event.inputs.name }}"
+  #   permissions:
+  #     contents: read
+  #     id-token: write
 
-  publish_release:
-    name: Publish release
-    needs: [draft-release, builds]
-    # the always() is needed so that the job is not skipped if previous jobs were skipped due to skip_sec_scanners_bump
-    # draft-release is needed as we use needs.draft-release.outputs.release_id below
-    if: always() && needs.builds.result == 'success' && needs.draft-release.result == 'success'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-        with:
-          fetch-depth: 0
-      - name: Wait for the Docker image
-        timeout-minutes: 20
-        env:
-          ITERATIONS: 40
-          SLEEP_SECONDS: 30
-        run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE_REPO }}:${{ github.event.inputs.name }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS }}
-      - name: Publish release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./.github/scripts/release/publish_release.sh ${{ needs.draft-release.outputs.release_id }}
+  # publish_release:
+  #   name: Publish release
+  #   needs: [draft-release, builds]
+  #   # the always() is needed so that the job is not skipped if previous jobs were skipped due to skip_sec_scanners_bump
+  #   # draft-release is needed as we use needs.draft-release.outputs.release_id below
+  #   if: always() && needs.builds.result == 'success' && needs.draft-release.result == 'success'
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #     id-token: write
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+  #       with:
+  #         fetch-depth: 0
+  #     - name: Wait for the Docker image
+  #       timeout-minutes: 20
+  #       env:
+  #         ITERATIONS: 40
+  #         SLEEP_SECONDS: 30
+  #       run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE_REPO }}:${{ github.event.inputs.name }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS }}
+  #     - name: Publish release
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       run: ./.github/scripts/release/publish_release.sh ${{ needs.draft-release.outputs.release_id }}
