@@ -22,8 +22,11 @@ To run, Lifecycle Manager requires a set of Kubernetes components that must exis
 | `Service`                  | `klm-controller-manager-metrics`              | `kcp-system`   | Exposes controller metrics.                                                                            |
 | `Certificate`              | `klm-watcher-serving`                         | `istio-system` | Self-signed watcher CA certificate.                                                                       |
 | `Certificate`              | `klm-controller-manager-webhook-serving`      | `kcp-system`   | Lifecycle manager webhook certificate.                                                                 |
-| `Issuer`                   | `klm-watcher-root`                            | `istio-system` | Issues the self-signed watcher certificates.                                                           |
+| `Issuer`                   | `klm-watcher-root`                            | `istio-system` | Self-signed Issuer used to bootstrap the watcher CA certificate.                                          |
+| `Issuer`                   | `klm-watcher-selfsigned`                      | `istio-system` | CA-signed Issuer used to issue SKR client certificates.                                                   |
 | `Issuer`                   | `klm-controller-manager-selfsigned`           | `kcp-system`   | Issues the webhook serving certificates.                                                               |
+| `Secret`                   | `klm-watcher`                                 | `istio-system` | Stores the current self-signed CA certificate managed by Cert-Manager. Root of the watcher PKI.           |
+| `Secret`                   | `klm-istio-gateway`                           | `istio-system` | Stores the server certificate and the CA bundle (all unexpired CA certs) used by the Istio Gateway.       |
 | `Authorization Policy`     | `klm-controller-manager`                      | `kcp-system`   | Policy to allow access to metrics and webhooks.                                                        |
 
 Additionally, deploy the following `Config Maps to expose metrics on a Grafana dashboard:
