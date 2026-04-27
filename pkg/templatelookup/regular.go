@@ -159,15 +159,17 @@ func validateTemplateMode(template ModuleTemplateInfo,
 		return template
 	}
 
+	selector := labels.Nothing()
+	var err error = nil
 	if moduleReleaseMeta.Spec.KymaLabelSelector != nil {
-		selector, err := apimetav1.LabelSelectorAsSelector(moduleReleaseMeta.Spec.KymaLabelSelector)
+		selector, err = apimetav1.LabelSelectorAsSelector(moduleReleaseMeta.Spec.KymaLabelSelector)
 		if err != nil {
 			// don't know what to do here
 		}
+	}
 
-		if !selector.Matches(labels.Set(kyma.ObjectMeta.Labels)) {
-			template.Err = ErrTemplateNotAllowed
-		}
+	if !selector.Matches(labels.Set(kyma.ObjectMeta.Labels)) {
+		template.Err = ErrTemplateNotAllowed
 	}
 
 	return template

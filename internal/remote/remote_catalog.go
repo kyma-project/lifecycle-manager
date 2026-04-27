@@ -148,15 +148,17 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 			continue
 		}
 
+		selector := labels.Nothing()
+		var err error = nil
 		if moduleReleaseMeta.Spec.KymaLabelSelector != nil {
-			selector, err := apimetav1.LabelSelectorAsSelector(moduleReleaseMeta.Spec.KymaLabelSelector)
+			selector, err = apimetav1.LabelSelectorAsSelector(moduleReleaseMeta.Spec.KymaLabelSelector)
 			if err != nil {
 				continue
 			}
+		}
 
-			if !selector.Matches(labels.Set(kyma.ObjectMeta.Labels)) {
-				continue
-			}
+		if !selector.Matches(labels.Set(kyma.ObjectMeta.Labels)) {
+			continue
 		}
 
 		allowedModuleReleaseMeta := moduleReleaseMeta

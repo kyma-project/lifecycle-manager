@@ -286,7 +286,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
 		kymaMetrics, logger, maintenanceWindow, ociRegistry.GetReference(), kymaDeletionSvc, kymaLookupSvc,
-		mtEventHandlerMapFunc, mrmEventHandler)
+		mtEventHandlerMapFunc, mrmEventHandler, kymaRepo, mrmRepo)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
 		eventRecorder, kymaRepo)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, mrmRepo, mtRepo, flagVar, options, mandatoryModulesMetrics,
@@ -414,6 +414,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, ociRegistry string,
 	kymaDeletionSvc *kymadeletionsvc.Service, kymaLookupSvc *kymalookupsvc.Service,
 	mtEventHandlerMapFunc handler.MapFunc, mrmEventHandler *mrmwatch.EventHandler,
+	kymaRepo *kymarepo.Repository, mrmRepo *mrmrepo.Repository,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -463,11 +464,14 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			flagVar.RemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
 			moduleTemplateInfoLookup),
-		Config:          kymaReconcilerConfig,
-		DeletionMetrics: deletionMetricsWriter,
-		DeletionEvents:  resultEventRecorder,
-		DeletionService: kymaDeletionSvc,
-		LookupService:   kymaLookupSvc,
+		Config:                    kymaReconcilerConfig,
+		DeletionMetrics:           deletionMetricsWriter,
+		DeletionEvents:            resultEventRecorder,
+		DeletionService:           kymaDeletionSvc,
+		LookupService:             kymaLookupSvc,
+		KymaRepo:                  kymaRepo,
+		MrmRepo:                   mrmRepo,
+		DeployerServiceModuleName: "template-operator",
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:   flagVar.KymaListenerAddr,
