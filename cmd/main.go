@@ -123,6 +123,7 @@ var (
 	buildVersion                         = "not_provided" //nolint:gochecknoglobals,revive // used to embed static binary version during release builds
 	errFailedToDropStoredVersions        = errors.New("failed to drop stored versions")
 	errFailedToScheduleMetricsCleanupJob = errors.New("failed to schedule metrics cleanup job")
+	errModuleReleaseMetaDoesNotExist     = errors.New("ModuleReleaseMeta does not exist")
 )
 
 func registerSchemas(scheme *machineryruntime.Scheme) {
@@ -196,6 +197,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 	remoteClientCache := remote.NewClientCache()
 	kcpClient := mgr.GetClient()
+
 	eventRecorder := event.NewRecorderWrapper(mgr.GetEventRecorder(shared.OperatorName))
 
 	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
@@ -203,6 +205,14 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		logger.Error(err, "can't create kcpClient")
 		os.Exit(bootstrapFailedExitCode)
 	}
+
+	if err := verifyModuleReleaseMetasForRestrictedDefaultModules(context.Background(),
+		kcpClientWithoutCache,
+		flagVar.GetRestrictedDefaultModules(),
+	); err != nil {
+		logger.Error(err, "failed to verify ModuleReleaseMetas for restricted default modules")
+	}
+
 	gatewayRepository := istiogateway.NewRepository(kcpClientWithoutCache)
 	secretRepo := secretrepo.NewRepository(kcpClientWithoutCache, shared.DefaultControlPlaneNamespace)
 	accessManagerService := accessmanager.NewService(secretRepo)
@@ -648,4 +658,23 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(bootstrapFailedExitCode)
 	}
+}
+
+func verifyModuleReleaseMetasForRestrictedDefaultModules(ctx context.Context,
+	kcpClientWithoutCache client.Client,
+	restrictedDefaultModules []string,
+) error {
+	// cannot re-use the existing repo as we need to use the uncached client before the manager starts
+	mrmRepo := mrmrepo.NewRepository(kcpClientWithoutCache, shared.DefaultControlPlaneNamespace)
+
+	for _, moduleName := range restrictedDefaultModules {
+		exists, err := mrmRepo.Exists(ctx, moduleName)
+		if err != nil {
+			return fmt.Errorf("failed checking existence of ModuleReleaseMeta for module %s: %w", moduleName, err)
+		}
+		if !exists {
+			return fmt.Errorf("%w for module %s", errModuleReleaseMetaDoesNotExist, moduleName)
+		}
+	}
+	return nil
 }
