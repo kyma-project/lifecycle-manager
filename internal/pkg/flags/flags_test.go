@@ -316,6 +316,69 @@ func Test_ConstantFlags(t *testing.T) {
 	}
 }
 
+func Test_Flags_GetRestrictedDefaultModules(t *testing.T) {
+	tests := []struct {
+		name            string
+		flags           FlagVar
+		expectedModules []string
+	}{
+		{
+			name:            "Empty", // regex should prevent this, but saver to keep
+			flags:           newFlagVarBuilder().withRestrictedDefaultModules("").build(),
+			expectedModules: []string{},
+		},
+		{
+			name:            "One Module",
+			flags:           newFlagVarBuilder().withRestrictedDefaultModules("test-module").build(),
+			expectedModules: []string{"test-module"},
+		},
+		{
+			name:            "Two Modules",
+			flags:           newFlagVarBuilder().withRestrictedDefaultModules("first-module,second-module").build(),
+			expectedModules: []string{"first-module", "second-module"},
+		},
+		{
+			name:            "Comma only", // regex should prevent this, but saver to keep
+			flags:           newFlagVarBuilder().withRestrictedDefaultModules(",").build(),
+			expectedModules: []string{},
+		},
+		{
+			name:            "Double comma", // regex should prevent this, but saver to keep
+			flags:           newFlagVarBuilder().withRestrictedDefaultModules("first-module,,second-module").build(),
+			expectedModules: []string{"first-module", "second-module"},
+		},
+		{
+			name:            "Leading comma", // regex should prevent this, but saver to keep
+			flags:           newFlagVarBuilder().withRestrictedDefaultModules(",first-module,second-module").build(),
+			expectedModules: []string{"first-module", "second-module"},
+		},
+		{
+			name:            "Trailing comma", // regex should prevent this, but saver to keep
+			flags:           newFlagVarBuilder().withRestrictedDefaultModules("first-module,second-module,").build(),
+			expectedModules: []string{"first-module", "second-module"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			modules := tt.flags.GetRestrictedDefaultModules()
+			require.NotNil(t, modules)
+			require.ElementsMatch(t, tt.expectedModules, modules)
+		})
+	}
+}
+
+func Test_Flags_GetRestrictedDefaultModules_ParsesFlagsOnlyOnce(t *testing.T) {
+	flags := newFlagVarBuilder().withRestrictedDefaultModules("first-module").build()
+
+	modules := flags.GetRestrictedDefaultModules()
+	require.ElementsMatch(t, []string{"first-module"}, modules)
+
+	flags.RestrictedDefaultModules = "first-module,second-module"
+	modules = flags.GetRestrictedDefaultModules()
+	require.ElementsMatch(t, []string{"first-module"}, modules)
+}
+
 func Test_Flags_Validate(t *testing.T) {
 	tests := []struct {
 		name  string

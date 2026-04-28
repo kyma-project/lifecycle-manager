@@ -486,7 +486,7 @@ func splitCommaSeparatedList(input string) []string {
 	if input == "" {
 		return []string{}
 	}
-	var result []string
+	result := []string{}
 	for item := range strings.SplitSeq(input, ",") {
 		if item != "" {
 			result = append(result, item)
