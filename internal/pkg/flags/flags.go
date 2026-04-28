@@ -321,7 +321,7 @@ func DefineFlagVar() *FlagVar {
 	flag.StringVar(&flagVar.RestrictedDefaultModules,
 		"restricted-default-modules",
 		"",
-		"EXPERIMENTAL FEATURE - LIKELY TO BE REMOVED IN THE FUTURE")
+		"EXPERIMENTAL FEATURE - DO NOT USE THIS FLAG - WILL BE REMOVED IN THE FUTURE")
 
 	return flagVar
 }
