@@ -218,6 +218,7 @@ func (m *ModuleStatus) GetManifestCR() *unstructured.Unstructured {
 // the generation fields even when embedding ObjectMeta.
 type TrackingObject struct {
 	apimetav1.TypeMeta `json:",inline"`
+
 	PartialMeta        PartialMeta `json:"metadata,omitempty"`
 }
 
