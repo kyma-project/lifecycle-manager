@@ -438,7 +438,7 @@ func Test_Flags_Validate(t *testing.T) {
 			err:   nil,
 		},
 		{
-			name:  "RestrictedDefaultModules with with multiple modules",
+			name:  "RestrictedDefaultModules with multiple modules",
 			flags: newFlagVarBuilder().withRestrictedDefaultModules("first-module,second-module,third-module").build(),
 			err:   nil,
 		},

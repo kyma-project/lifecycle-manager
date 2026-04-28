@@ -488,9 +488,8 @@ func splitCommaSeparatedList(input string) []string {
 	}
 	var result []string
 	for item := range strings.SplitSeq(input, ",") {
-		trimmedItem := strings.TrimSpace(item)
-		if trimmedItem != "" {
-			result = append(result, trimmedItem)
+		if item != "" {
+			result = append(result, item)
 		}
 	}
 	return result
