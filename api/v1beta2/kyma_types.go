@@ -221,9 +221,9 @@ type TrackingObject struct {
 	PartialMeta        PartialMeta `json:"metadata,omitempty"`
 }
 
-func (t *TrackingObject) GetName() string       { return t.PartialMeta.GetName() }
-func (t *TrackingObject) GetNamespace() string   { return t.PartialMeta.GetNamespace() }
-func (t *TrackingObject) GetGeneration() int64   { return t.PartialMeta.GetGeneration() }
+func (t *TrackingObject) GetName() string      { return t.PartialMeta.GetName() }
+func (t *TrackingObject) GetNamespace() string { return t.PartialMeta.GetNamespace() }
+func (t *TrackingObject) GetGeneration() int64 { return t.PartialMeta.GetGeneration() }
 
 // PartialMeta is a subset of ObjectMeta that contains relevant information to track an Object.
 // see https://github.com/kubernetes/apimachinery/blob/v0.26.1/pkg/apis/meta/v1/types.go#L111
