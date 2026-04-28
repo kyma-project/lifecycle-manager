@@ -85,7 +85,8 @@ spec:
                   Deprecated: This field is deprecated and will be removed in the upcoming API version.
                 type: boolean
               kymaSelector:
-                description: EXPERIMENTAL FEATURE - LIKELY TO BE REMOVED IN THE FUTURE
+                description: EXPERIMENTAL FEATURE - DO NOT USE - LIKELY TO BE REMOVED
+                  IN THE FUTURE
                 properties:
                   matchExpressions:
                     description: matchExpressions is a list of label selector requirements.

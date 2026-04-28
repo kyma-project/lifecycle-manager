@@ -59,7 +59,7 @@ type ModuleReleaseMetaSpec struct {
 	// +kubebuilder:default:=false
 	Internal bool `json:"internal"`
 
-	// EXPERIMENTAL FEATURE - LIKELY TO BE REMOVED IN THE FUTURE
+	// EXPERIMENTAL FEATURE - DO NOT USE - LIKELY TO BE REMOVED IN THE FUTURE
 	// +optional
 	KymaSelector *apimetav1.LabelSelector `json:"kymaSelector,omitempty"`
 }
