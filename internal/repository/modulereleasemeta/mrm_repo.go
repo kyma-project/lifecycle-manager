@@ -64,7 +64,11 @@ func (r *Repository) Exists(ctx context.Context, mrmName string) (bool, error) {
 		if client.IgnoreNotFound(err) == nil {
 			return false, nil
 		}
-		return false, fmt.Errorf("failed to check existence of ModuleReleaseMeta %s in namespace %s: %w", mrmName, r.namespace, err)
+		return false, fmt.Errorf("failed to check existence of ModuleReleaseMeta %s in namespace %s: %w",
+			mrmName,
+			r.namespace,
+			err,
+		)
 	}
 	return true, nil
 }

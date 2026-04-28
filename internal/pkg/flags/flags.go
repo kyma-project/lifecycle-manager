@@ -78,7 +78,7 @@ const (
 	DefaultLeaderElectionRetryPeriod                                    = 3 * time.Second
 )
 
-// variation of the regex defined in api/v1beta2/moduletemplate_types.go
+// variation of the regex defined in api/v1beta2/moduletemplate_types.go.
 var restrictedDefaultModulesRegex = regexp.MustCompile(
 	`^([a-z]{3,}(-[a-z]{3,})*(,[a-z]{3,}(-[a-z]{3,})*)*)?$`,
 )
@@ -487,7 +487,7 @@ func splitCommaSeparatedList(input string) []string {
 		return []string{}
 	}
 	var result []string
-	for _, item := range strings.Split(input, ",") {
+	for item := range strings.SplitSeq(input, ",") {
 		trimmedItem := strings.TrimSpace(item)
 		if trimmedItem != "" {
 			result = append(result, trimmedItem)

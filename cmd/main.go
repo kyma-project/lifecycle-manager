@@ -123,6 +123,7 @@ var (
 	buildVersion                         = "not_provided" //nolint:gochecknoglobals,revive // used to embed static binary version during release builds
 	errFailedToDropStoredVersions        = errors.New("failed to drop stored versions")
 	errFailedToScheduleMetricsCleanupJob = errors.New("failed to schedule metrics cleanup job")
+	errModuleReleaseMetaDoesNotExist     = errors.New("ModuleReleaseMeta does not exist")
 )
 
 func registerSchemas(scheme *machineryruntime.Scheme) {
@@ -672,7 +673,7 @@ func verifyModuleReleaseMetasForRestrictedDefaultModules(ctx context.Context,
 			return fmt.Errorf("failed checking existence of ModuleReleaseMeta for module %s: %w", moduleName, err)
 		}
 		if !exists {
-			return fmt.Errorf("ModuleReleaseMeta for module %s does not exist", moduleName)
+			return fmt.Errorf("%w for module %s", errModuleReleaseMetaDoesNotExist, moduleName)
 		}
 	}
 	return nil
