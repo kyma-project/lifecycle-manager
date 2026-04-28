@@ -427,6 +427,46 @@ func Test_Flags_Validate(t *testing.T) {
 			flags: newFlagVarBuilder().withModulesRepositorySubPath("some/sub/path").build(),
 			err:   nil,
 		},
+		{
+			name:  "RestrictedDefaultModules with one module",
+			flags: newFlagVarBuilder().withRestrictedDefaultModules("first-module").build(),
+			err:   nil,
+		},
+		{
+			name:  "RestrictedDefaultModules with no module",
+			flags: newFlagVarBuilder().withRestrictedDefaultModules("").build(),
+			err:   nil,
+		},
+		{
+			name:  "RestrictedDefaultModules with with multiple modules",
+			flags: newFlagVarBuilder().withRestrictedDefaultModules("first-module,second-module,third-module").build(),
+			err:   nil,
+		},
+		{
+			name:  "RestrictedDefaultModules with invalid chars",
+			flags: newFlagVarBuilder().withRestrictedDefaultModules("first-mod;ule").build(),
+			err:   ErrInvalidRestrictedDefaultModules,
+		},
+		{
+			name:  "RestrictedDefaultModules with double comma",
+			flags: newFlagVarBuilder().withRestrictedDefaultModules("first-module,,second-module").build(),
+			err:   ErrInvalidRestrictedDefaultModules,
+		},
+		{
+			name:  "RestrictedDefaultModules with starting comma",
+			flags: newFlagVarBuilder().withRestrictedDefaultModules(",first-module,second-module").build(),
+			err:   ErrInvalidRestrictedDefaultModules,
+		},
+		{
+			name:  "RestrictedDefaultModules with trailing comma",
+			flags: newFlagVarBuilder().withRestrictedDefaultModules("first-module,second-module,").build(),
+			err:   ErrInvalidRestrictedDefaultModules,
+		},
+		{
+			name:  "RestrictedDefaultModules with only comma",
+			flags: newFlagVarBuilder().withRestrictedDefaultModules(",").build(),
+			err:   ErrInvalidRestrictedDefaultModules,
+		},
 	}
 
 	for _, tt := range tests {
@@ -526,5 +566,10 @@ func (b *flagVarBuilder) withOciRegistryCredSecretName(secretName string) *flagV
 
 func (b *flagVarBuilder) withModulesRepositorySubPath(subPath string) *flagVarBuilder {
 	b.flags.ModulesRepositorySubPath = subPath
+	return b
+}
+
+func (b *flagVarBuilder) withRestrictedDefaultModules(modules string) *flagVarBuilder {
+	b.flags.RestrictedDefaultModules = modules
 	return b
 }

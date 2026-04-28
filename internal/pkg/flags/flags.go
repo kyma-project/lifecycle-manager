@@ -4,6 +4,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -74,6 +76,16 @@ const (
 	DefaultLeaderElectionLeaseDuration                                  = 180 * time.Second
 	DefaultLeaderElectionRenewDeadline                                  = 120 * time.Second
 	DefaultLeaderElectionRetryPeriod                                    = 3 * time.Second
+)
+
+// variation of the regex defined in api/v1beta2/moduletemplate_types.go
+var restrictedDefaultModulesRegex = regexp.MustCompile(
+	`^([a-z]{3,}(-[a-z]{3,})*(,[a-z]{3,}(-[a-z]{3,})*)*)?$`,
+)
+
+var ErrInvalidRestrictedDefaultModules = errors.New(
+	"invalid restricted-default-modules: must be a comma-separated list of module names " +
+		"matching '^[a-z]{3,}(-[a-z]{3,})*$'",
 )
 
 var (
@@ -306,10 +318,17 @@ func DefineFlagVar() *FlagVar {
 	flag.StringVar(&flagVar.SkrImagePullSecret, "skr-image-pull-secret", "",
 		"Allows to reference a secret for the SKR clusters to pull images from private registries.")
 
+	flag.StringVar(&flagVar.RestrictedDefaultModules,
+		"restricted-default-modules",
+		"",
+		"EXPERIMENTAL FEATURE - LIKELY TO BE REMOVED IN THE FUTURE")
+
 	return flagVar
 }
 
 type FlagVar struct {
+	restrictedDefaultModules []string
+
 	CertificateManagement                          string
 	MetricsAddr                                    string
 	EnableLeaderElection                           bool
@@ -384,6 +403,7 @@ type FlagVar struct {
 	OciRegistryHost                            string
 	ModulesRepositorySubPath                   string
 	SkrImagePullSecret                         string
+	RestrictedDefaultModules                   string
 }
 
 func (f FlagVar) Validate() error {
@@ -425,6 +445,10 @@ func (f FlagVar) Validate() error {
 		return err
 	}
 
+	if err := validateRestrictedDefaultModules(f.RestrictedDefaultModules); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -438,6 +462,36 @@ func validateOciRegistryConfig(host, credSecretName string) error {
 	return nil
 }
 
+func validateRestrictedDefaultModules(input string) error {
+	if !restrictedDefaultModulesRegex.MatchString(input) {
+		return ErrInvalidRestrictedDefaultModules
+	}
+	return nil
+}
+
 func (f FlagVar) GetWatcherImage() string {
 	return fmt.Sprintf("%s/%s:%s", f.WatcherImageRegistry, f.WatcherImageName, f.WatcherImageTag)
+}
+
+func (f FlagVar) GetRestrictedDefaultModules() []string {
+	if f.restrictedDefaultModules != nil {
+		return f.restrictedDefaultModules
+	}
+
+	f.restrictedDefaultModules = splitCommaSeparatedList(f.RestrictedDefaultModules)
+	return f.restrictedDefaultModules
+}
+
+func splitCommaSeparatedList(input string) []string {
+	if input == "" {
+		return []string{}
+	}
+	var result []string
+	for _, item := range strings.Split(input, ",") {
+		trimmedItem := strings.TrimSpace(item)
+		if trimmedItem != "" {
+			result = append(result, trimmedItem)
+		}
+	}
+	return result
 }
