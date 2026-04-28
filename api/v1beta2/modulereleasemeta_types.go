@@ -58,6 +58,10 @@ type ModuleReleaseMetaSpec struct {
 	// +optional
 	// +kubebuilder:default:=false
 	Internal bool `json:"internal"`
+
+	// EXPERIMENTAL FEATURE - LIKELY TO BE REMOVED IN THE FUTURE
+	// +optional
+	KymaSelector *apimetav1.LabelSelector `json:"kymaSelector,omitempty"`
 }
 
 // Mandatory defines a mandatory module with a specific version.
