@@ -9,6 +9,8 @@ import (
 	installerrors "github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/installation"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 type ModuleReleaseMetaRepository interface {
@@ -79,7 +81,9 @@ func (s *Service) HandleInstallation(ctx context.Context, kyma *v1beta2.Kyma) er
 
 	s.mandatoryModuleMetrics.RecordMandatoryModulesCount(len(mandatoryMrms))
 	mandatoryTemplatesByName := make(templatelookup.ModuleTemplatesByModuleName)
+	matchesKyma := make(map[string]bool)
 	for _, mrm := range mandatoryMrms {
+
 		if !mrm.DeletionTimestamp.IsZero() {
 			continue
 		}
@@ -98,8 +102,26 @@ func (s *Service) HandleInstallation(ctx context.Context, kyma *v1beta2.Kyma) er
 		}
 		mandatoryTemplatesByName[moduleTemplate.Spec.ModuleName] = createMandatoryModuleTemplateInfo(moduleTemplate,
 			nil, ocmId)
+
+		if mrm.Spec.KymaLabelSelector == nil {
+			// nil selector means match all Kymas
+			matchesKyma[moduleTemplate.Spec.ModuleName] = true
+		} else {
+			selector, err := apimetav1.LabelSelectorAsSelector(mrm.Spec.KymaLabelSelector)
+			if err != nil {
+				continue
+			}
+			matchesKyma[moduleTemplate.Spec.ModuleName] = selector.Matches(labels.Set(kyma.ObjectMeta.Labels))
+		}
 	}
 	modules := s.moduleParser.GenerateMandatoryModulesFromTemplates(ctx, kyma, mandatoryTemplatesByName)
+
+	for _, module := range modules {
+		if !matchesKyma[module.TemplateInfo.ModuleTemplate.Spec.ModuleName] {
+			module.TemplateInfo.Err = templatelookup.ErrTemplateNotAllowed
+		}
+	}
+
 	if err := s.manifestCreator.ReconcileManifests(ctx, kyma, modules); err != nil {
 		return fmt.Errorf("reconcile manifests for mandatory modules failed: %w", err)
 	}

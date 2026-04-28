@@ -23,6 +23,13 @@ type ModuleReleaseMeta struct {
 // ModuleReleaseMetaSpec defines the channel-version assignments for a module.
 // +kubebuilder:validation:XValidation:rule="(has(self.mandatory) && !has(self.channels)) || (!has(self.mandatory) && has(self.channels))",message="exactly one of 'mandatory' or 'channels' must be specified"
 type ModuleReleaseMetaSpec struct {
+	// KymaLabelSelector is considered ONLY when the Mandatory field ist set.
+	// KymaLabelSelector restricts the mandatory module installation to Kyma CRs
+	// matching the given label selector. If not set or empty, the module is
+	// installed on all Kyma runtimes.
+	// +optional
+	KymaLabelSelector *apimetav1.LabelSelector `json:"kymaLabelSelector,omitempty"`
+
 	// ModuleName is the name of the Module.
 	// +kubebuilder:validation:Pattern:=`^([a-z]{3,}(-[a-z]{3,})*)?$`
 	// +kubebuilder:validation:MaxLength:=64

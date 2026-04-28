@@ -10,6 +10,8 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 type Settings struct {
@@ -142,11 +144,26 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 			}
 		}
 
-		if len(allowedChannels) > 0 {
-			allowedModuleReleaseMeta := moduleReleaseMeta
-			allowedModuleReleaseMeta.Spec.Channels = allowedChannels
-			moduleReleaseMetas = append(moduleReleaseMetas, allowedModuleReleaseMeta)
+		if len(allowedChannels) == 0 {
+			continue
 		}
+
+		selector := labels.Nothing()
+		var err error = nil
+		if moduleReleaseMeta.Spec.KymaLabelSelector != nil {
+			selector, err = apimetav1.LabelSelectorAsSelector(moduleReleaseMeta.Spec.KymaLabelSelector)
+			if err != nil {
+				continue
+			}
+		}
+
+		if !selector.Matches(labels.Set(kyma.ObjectMeta.Labels)) {
+			continue
+		}
+
+		allowedModuleReleaseMeta := moduleReleaseMeta
+		allowedModuleReleaseMeta.Spec.Channels = allowedChannels
+		moduleReleaseMetas = append(moduleReleaseMetas, allowedModuleReleaseMeta)
 	}
 
 	return moduleReleaseMetas, nil

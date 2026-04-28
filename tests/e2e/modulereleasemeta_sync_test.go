@@ -5,12 +5,15 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
+
+var moduleReleaseMetaSyncLabelSelector = map[string]string{"foo": "bar", "baz": "cux"}
 
 var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
@@ -305,6 +308,72 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			Eventually(ModuleReleaseMetaContainsCorrectChannelVersion).
 				WithContext(ctx).
 				WithArguments(module.Name, RemoteNamespace, v1beta2.DefaultChannel, v2Version, skrClient).
+				Should(Succeed())
+		})
+
+		It("When a non-matching KymaLabelSelector is added to the ModuleReleaseMeta", func() {
+			Eventually(func() error {
+				return SetMandatoryModuleReleaseMetaKymaLabelSelector(ctx, kcpClient,
+					module.Name, ControlPlaneNamespace,
+					&apimetav1.LabelSelector{
+						MatchLabels: moduleReleaseMetaSyncLabelSelector,
+					})
+			}).Should(Succeed())
+			Eventually(ImmediatelyRequeueKyma).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace).
+				Should(Succeed())
+		})
+		It("Then the ModuleReleaseMeta is no longer synced to the SKR cluster", func() {
+			Eventually(ModuleReleaseMetaExists).
+				WithContext(ctx).
+				WithArguments(module.Name, RemoteNamespace, skrClient).
+				Should(Equal(ErrNotFound))
+			By("And the ModuleTemplate is no longer synced to the SKR cluster", func() {
+				Eventually(ModuleTemplateExists).
+					WithContext(ctx).
+					WithArguments(skrClient, module, skrKyma).
+					Should(Equal(ErrNotFound))
+			})
+		})
+
+		It("When the matching labels are added to the Kyma CR", func() {
+			Eventually(func() error {
+				for key, value := range moduleReleaseMetaSyncLabelSelector {
+					if err := UpdateKymaLabel(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), key, value); err != nil {
+						return err
+					}
+				}
+				return nil
+			}).Should(Succeed())
+		})
+		It("Then the ModuleReleaseMeta is synced again to the SKR cluster", func() {
+			Eventually(ModuleReleaseMetaExists).
+				WithContext(ctx).
+				WithArguments(module.Name, RemoteNamespace, skrClient).
+				Should(Succeed())
+			By("And the ModuleTemplate is synced again to the SKR cluster", func() {
+				Eventually(ModuleTemplateExists).
+					WithContext(ctx).
+					WithArguments(skrClient, module, skrKyma).
+					Should(Succeed())
+			})
+		})
+
+		It("When the KymaLabelSelector is removed from the ModuleReleaseMeta", func() {
+			Eventually(func() error {
+				return SetMandatoryModuleReleaseMetaKymaLabelSelector(ctx, kcpClient,
+					module.Name, ControlPlaneNamespace, nil)
+			}).Should(Succeed())
+			Eventually(ImmediatelyRequeueKyma).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace).
+				Should(Succeed())
+		})
+		It("Then the ModuleReleaseMeta remains synced to the SKR cluster", func() {
+			Consistently(ModuleReleaseMetaExists).
+				WithContext(ctx).
+				WithArguments(module.Name, RemoteNamespace, skrClient).
 				Should(Succeed())
 		})
 

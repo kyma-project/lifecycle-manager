@@ -26,6 +26,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -99,6 +100,14 @@ type SkrSyncService interface {
 	SyncImagePullSecret(ctx context.Context, kyma types.NamespacedName) error
 }
 
+type MrmRepository interface {
+	Get(ctx context.Context, mrmName string) (*v1beta2.ModuleReleaseMeta, error)
+}
+
+type KymaRepository interface {
+	Update(ctx context.Context, kyma *v1beta2.Kyma) error
+}
+
 // ReconcilerConfig holds configuration values for the Kyma Reconciler.
 // Usually read from flags or environment variables.
 type ReconcilerConfig struct {
@@ -129,6 +138,61 @@ type Reconciler struct {
 	DeletionEvents  DeletionEventRecorder
 	DeletionService DeletionService
 	LookupService   LookupService
+
+	DeployerServiceModuleName string
+	MrmRepo                   MrmRepository
+	KymaRepo                  KymaRepository
+}
+
+func (r *Reconciler) configureDeployerServiceModule(ctx context.Context, kyma *v1beta2.Kyma) error {
+	if r.DeployerServiceModuleName == "" {
+		return nil
+	}
+
+	logf.FromContext(ctx).Info("DeployerService module is available", "kyma", kyma.Name)
+
+	mrm, err := r.MrmRepo.Get(ctx, r.DeployerServiceModuleName)
+	if err != nil {
+		return fmt.Errorf("failed to get ModuleReleaseMeta for deployer service module: %w", err)
+	}
+
+	selector := labels.Nothing()
+	if mrm.Spec.KymaLabelSelector != nil {
+		selector, err = apimetav1.LabelSelectorAsSelector(mrm.Spec.KymaLabelSelector)
+		if err != nil {
+			return fmt.Errorf("invalid KymaLabelSelector in ModuleReleaseMeta: %w", err)
+		}
+	}
+
+	if !selector.Matches(labels.Set(kyma.ObjectMeta.Labels)) {
+		logf.
+			FromContext(ctx).
+			Info("Kyma not eligible for DeployerService module, skipping configuration", "kyma", kyma.Name)
+		return nil
+	}
+
+	for _, m := range kyma.Spec.Modules {
+		if m.Name == r.DeployerServiceModuleName {
+			logf.
+				FromContext(ctx).
+				Info("Kyma already has DeployerService module enabled, skipping configuration", "kyma", kyma.Name)
+			return nil
+		}
+	}
+
+	kyma.Spec.Modules = append(kyma.Spec.Modules, v1beta2.Module{
+		Name:                 r.DeployerServiceModuleName,
+		CustomResourcePolicy: v1beta2.CustomResourcePolicyCreateAndDelete,
+	})
+
+	err = r.KymaRepo.Update(ctx, kyma)
+	if err != nil {
+		return fmt.Errorf("failed to update Kyma spec with deployer service module: %w", err)
+	}
+
+	logf.FromContext(ctx).Info("Configured DeployerService module for Kyma", "kyma", kyma.Name)
+
+	return nil
 }
 
 // Reconcile reconciles Kyma resources.
@@ -150,6 +214,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 		r.Metrics.RecordRequeueReason(metrics.KymaRetrieval, queue.UnexpectedRequeue)
 		return ctrl.Result{}, fmt.Errorf("KymaController: %w", err)
+	}
+
+	if err := r.configureDeployerServiceModule(ctx, kyma); err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to configure deployer service module: %w", err)
 	}
 
 	status.InitConditions(kyma, r.WatcherEnabled(), r.SkrImagePullSecretSyncEnabled())

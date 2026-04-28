@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/Masterminds/semver/v3"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -99,7 +101,7 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 			kyma,
 			moduleReleaseMeta)
 
-		templateInfo = ValidateTemplateMode(templateInfo, kyma)
+		templateInfo = ValidateTemplateMode(templateInfo, moduleReleaseMeta, kyma)
 		if templateInfo.Err != nil {
 			templates[moduleInfo.Name] = &templateInfo
 			continue
@@ -129,16 +131,20 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 }
 
 func ValidateTemplateMode(template ModuleTemplateInfo,
+	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
 	kyma *v1beta2.Kyma,
 ) ModuleTemplateInfo {
 	if template.Err != nil {
 		return template
 	}
 
-	return validateTemplateMode(template, kyma)
+	return validateTemplateMode(template, moduleReleaseMeta, kyma)
 }
 
-func validateTemplateMode(template ModuleTemplateInfo, kyma *v1beta2.Kyma) ModuleTemplateInfo {
+func validateTemplateMode(template ModuleTemplateInfo,
+	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
+	kyma *v1beta2.Kyma,
+) ModuleTemplateInfo {
 	if template.IsInternal() && !kyma.IsInternal() {
 		template.Err = fmt.Errorf("%w: internal module", ErrTemplateNotAllowed)
 		return template
@@ -152,6 +158,20 @@ func validateTemplateMode(template ModuleTemplateInfo, kyma *v1beta2.Kyma) Modul
 			common.ErrNoTemplatesInListResult, template.Name, template.DesiredChannel)
 		return template
 	}
+
+	selector := labels.Nothing()
+	var err error = nil
+	if moduleReleaseMeta.Spec.KymaLabelSelector != nil {
+		selector, err = apimetav1.LabelSelectorAsSelector(moduleReleaseMeta.Spec.KymaLabelSelector)
+		if err != nil {
+			// don't know what to do here
+		}
+	}
+
+	if !selector.Matches(labels.Set(kyma.ObjectMeta.Labels)) {
+		template.Err = ErrTemplateNotAllowed
+	}
+
 	return template
 }
 
