@@ -219,7 +219,7 @@ func (m *ModuleStatus) GetManifestCR() *unstructured.Unstructured {
 type TrackingObject struct {
 	apimetav1.TypeMeta `json:",inline"`
 
-	PartialMeta        PartialMeta `json:"metadata,omitempty"`
+	PartialMeta PartialMeta `json:"metadata,omitempty"`
 }
 
 func (t *TrackingObject) GetName() string      { return t.PartialMeta.GetName() }
