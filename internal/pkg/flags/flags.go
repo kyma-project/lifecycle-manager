@@ -406,7 +406,7 @@ type FlagVar struct {
 	RestrictedDefaultModules                   string
 }
 
-func (f FlagVar) Validate() error {
+func (f *FlagVar) Validate() error {
 	if f.WatcherImageTag == "" {
 		return ErrMissingWatcherImageTag
 	}
@@ -469,11 +469,11 @@ func validateRestrictedDefaultModules(input string) error {
 	return nil
 }
 
-func (f FlagVar) GetWatcherImage() string {
+func (f *FlagVar) GetWatcherImage() string {
 	return fmt.Sprintf("%s/%s:%s", f.WatcherImageRegistry, f.WatcherImageName, f.WatcherImageTag)
 }
 
-func (f FlagVar) GetRestrictedDefaultModules() []string {
+func (f *FlagVar) GetRestrictedDefaultModules() []string {
 	if f.restrictedDefaultModules != nil {
 		return f.restrictedDefaultModules
 	}
