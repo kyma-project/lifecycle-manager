@@ -35,10 +35,28 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1beta2.ChannelVersionAssignmentApplyConfiguration{}
 	case v1beta2.SchemeGroupVersion.WithKind("CustomStateCheck"):
 		return &apiv1beta2.CustomStateCheckApplyConfiguration{}
+	case v1beta2.SchemeGroupVersion.WithKind("GatewayConfig"):
+		return &apiv1beta2.GatewayConfigApplyConfiguration{}
+	case v1beta2.SchemeGroupVersion.WithKind("ImageSpec"):
+		return &apiv1beta2.ImageSpecApplyConfiguration{}
+	case v1beta2.SchemeGroupVersion.WithKind("InstallInfo"):
+		return &apiv1beta2.InstallInfoApplyConfiguration{}
+	case v1beta2.SchemeGroupVersion.WithKind("Kyma"):
+		return &apiv1beta2.KymaApplyConfiguration{}
+	case v1beta2.SchemeGroupVersion.WithKind("KymaSpec"):
+		return &apiv1beta2.KymaSpecApplyConfiguration{}
+	case v1beta2.SchemeGroupVersion.WithKind("KymaStatus"):
+		return &apiv1beta2.KymaStatusApplyConfiguration{}
 	case v1beta2.SchemeGroupVersion.WithKind("Manager"):
 		return &apiv1beta2.ManagerApplyConfiguration{}
 	case v1beta2.SchemeGroupVersion.WithKind("Mandatory"):
 		return &apiv1beta2.MandatoryApplyConfiguration{}
+	case v1beta2.SchemeGroupVersion.WithKind("Manifest"):
+		return &apiv1beta2.ManifestApplyConfiguration{}
+	case v1beta2.SchemeGroupVersion.WithKind("ManifestSpec"):
+		return &apiv1beta2.ManifestSpecApplyConfiguration{}
+	case v1beta2.SchemeGroupVersion.WithKind("Module"):
+		return &apiv1beta2.ModuleApplyConfiguration{}
 	case v1beta2.SchemeGroupVersion.WithKind("ModuleIcon"):
 		return &apiv1beta2.ModuleIconApplyConfiguration{}
 	case v1beta2.SchemeGroupVersion.WithKind("ModuleInfo"):
@@ -47,12 +65,28 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1beta2.ModuleReleaseMetaApplyConfiguration{}
 	case v1beta2.SchemeGroupVersion.WithKind("ModuleReleaseMetaSpec"):
 		return &apiv1beta2.ModuleReleaseMetaSpecApplyConfiguration{}
+	case v1beta2.SchemeGroupVersion.WithKind("ModuleStatus"):
+		return &apiv1beta2.ModuleStatusApplyConfiguration{}
 	case v1beta2.SchemeGroupVersion.WithKind("ModuleTemplate"):
 		return &apiv1beta2.ModuleTemplateApplyConfiguration{}
 	case v1beta2.SchemeGroupVersion.WithKind("ModuleTemplateSpec"):
 		return &apiv1beta2.ModuleTemplateSpecApplyConfiguration{}
+	case v1beta2.SchemeGroupVersion.WithKind("PartialMeta"):
+		return &apiv1beta2.PartialMetaApplyConfiguration{}
 	case v1beta2.SchemeGroupVersion.WithKind("Resource"):
 		return &apiv1beta2.ResourceApplyConfiguration{}
+	case v1beta2.SchemeGroupVersion.WithKind("Service"):
+		return &apiv1beta2.ServiceApplyConfiguration{}
+	case v1beta2.SchemeGroupVersion.WithKind("TrackingObject"):
+		return &apiv1beta2.TrackingObjectApplyConfiguration{}
+	case v1beta2.SchemeGroupVersion.WithKind("WatchableGVR"):
+		return &apiv1beta2.WatchableGVRApplyConfiguration{}
+	case v1beta2.SchemeGroupVersion.WithKind("Watcher"):
+		return &apiv1beta2.WatcherApplyConfiguration{}
+	case v1beta2.SchemeGroupVersion.WithKind("WatcherSpec"):
+		return &apiv1beta2.WatcherSpecApplyConfiguration{}
+	case v1beta2.SchemeGroupVersion.WithKind("WatcherStatus"):
+		return &apiv1beta2.WatcherStatusApplyConfiguration{}
 
 	}
 	return nil

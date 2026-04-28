@@ -44,6 +44,18 @@ func main() {
 
 	entries := []crdEntry{
 		{
+			crdFile: "config/crd/bases/operator.kyma-project.io_kymas.yaml",
+			version: "v1beta2",
+			kind:    "Kyma",
+			goPkg:   "github.com/kyma-project/lifecycle-manager/api/v1beta2",
+		},
+		{
+			crdFile: "config/crd/bases/operator.kyma-project.io_manifests.yaml",
+			version: "v1beta2",
+			kind:    "Manifest",
+			goPkg:   "github.com/kyma-project/lifecycle-manager/api/v1beta2",
+		},
+		{
 			crdFile: "config/crd/bases/operator.kyma-project.io_modulereleasemetas.yaml",
 			version: "v1beta2",
 			kind:    "ModuleReleaseMeta",
@@ -53,6 +65,12 @@ func main() {
 			crdFile: "config/crd/bases/operator.kyma-project.io_moduletemplates.yaml",
 			version: "v1beta2",
 			kind:    "ModuleTemplate",
+			goPkg:   "github.com/kyma-project/lifecycle-manager/api/v1beta2",
+		},
+		{
+			crdFile: "config/crd/bases/operator.kyma-project.io_watchers.yaml",
+			version: "v1beta2",
+			kind:    "Watcher",
 			goPkg:   "github.com/kyma-project/lifecycle-manager/api/v1beta2",
 		},
 	}
@@ -132,10 +150,40 @@ func extractSchema(crdFile, version string) (map[string]any, error) {
 		if !ok {
 			return nil, fmt.Errorf("no openAPIV3Schema for version %s in %s", version, crdFile)
 		}
+		stripSwaggerV2Incompatible(openAPIV3Schema)
 		return openAPIV3Schema, nil
 	}
 
 	return nil, fmt.Errorf("version %s not found in %s", version, crdFile)
+}
+
+// stripSwaggerV2Incompatible recursively removes properties that are valid in
+// OpenAPI v3 but not accepted by the Swagger v2 parser used by applyconfiguration-gen.
+func stripSwaggerV2Incompatible(schema map[string]any) {
+	delete(schema, "nullable")
+	for _, key := range []string{"properties", "additionalProperties"} {
+		if sub, ok := schema[key].(map[string]any); ok {
+			for _, v := range sub {
+				if m, ok := v.(map[string]any); ok {
+					stripSwaggerV2Incompatible(m)
+				}
+			}
+		}
+	}
+	for _, key := range []string{"items", "not"} {
+		if sub, ok := schema[key].(map[string]any); ok {
+			stripSwaggerV2Incompatible(sub)
+		}
+	}
+	for _, key := range []string{"allOf", "anyOf", "oneOf"} {
+		if arr, ok := schema[key].([]any); ok {
+			for _, v := range arr {
+				if m, ok := v.(map[string]any); ok {
+					stripSwaggerV2Incompatible(m)
+				}
+			}
+		}
+	}
 }
 
 // restFriendlyName converts a Go package path + type name to a Swagger definition key.

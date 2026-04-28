@@ -38,6 +38,420 @@ func Parser() *typed.Parser {
 var parserOnce sync.Once
 var parser *typed.Parser
 var schemaYAML = typed.YAMLObject(`types:
+- name: com.github.kyma-project.lifecycle-manager.api.v1beta2.Kyma
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        map:
+          elementType:
+            scalar: untyped
+            list:
+              elementType:
+                namedType: __untyped_atomic_
+              elementRelationship: atomic
+            map:
+              elementType:
+                namedType: __untyped_deduced_
+              elementRelationship: separable
+    - name: spec
+      type:
+        map:
+          fields:
+          - name: channel
+            type:
+              scalar: string
+          - name: modules
+            type:
+              list:
+                elementType:
+                  map:
+                    fields:
+                    - name: channel
+                      type:
+                        scalar: string
+                    - name: controller
+                      type:
+                        scalar: string
+                    - name: customResourcePolicy
+                      type:
+                        scalar: string
+                      default: CreateAndDelete
+                    - name: managed
+                      type:
+                        scalar: boolean
+                      default: true
+                    - name: name
+                      type:
+                        scalar: string
+                    - name: remoteModuleTemplateRef
+                      type:
+                        scalar: string
+                elementRelationship: associative
+                keys:
+                - name
+          - name: skipMaintenanceWindows
+            type:
+              scalar: boolean
+    - name: status
+      type:
+        map:
+          fields:
+          - name: activeChannel
+            type:
+              scalar: string
+          - name: conditions
+            type:
+              list:
+                elementType:
+                  map:
+                    fields:
+                    - name: lastTransitionTime
+                      type:
+                        scalar: untyped
+                    - name: message
+                      type:
+                        scalar: string
+                    - name: observedGeneration
+                      type:
+                        scalar: numeric
+                    - name: reason
+                      type:
+                        scalar: string
+                    - name: status
+                      type:
+                        scalar: string
+                    - name: type
+                      type:
+                        scalar: string
+                elementRelationship: associative
+                keys:
+                - type
+          - name: lastOperation
+            type:
+              map:
+                fields:
+                - name: lastUpdateTime
+                  type:
+                    scalar: untyped
+                - name: operation
+                  type:
+                    scalar: string
+          - name: modules
+            type:
+              list:
+                elementType:
+                  map:
+                    fields:
+                    - name: channel
+                      type:
+                        scalar: string
+                    - name: fqdn
+                      type:
+                        scalar: string
+                    - name: maintenance
+                      type:
+                        scalar: boolean
+                      default: false
+                    - name: manifest
+                      type:
+                        map:
+                          fields:
+                          - name: apiVersion
+                            type:
+                              scalar: string
+                          - name: kind
+                            type:
+                              scalar: string
+                          - name: metadata
+                            type:
+                              map:
+                                fields:
+                                - name: generation
+                                  type:
+                                    scalar: numeric
+                                - name: name
+                                  type:
+                                    scalar: string
+                                - name: namespace
+                                  type:
+                                    scalar: string
+                    - name: message
+                      type:
+                        scalar: string
+                    - name: name
+                      type:
+                        scalar: string
+                    - name: ocmComponentName
+                      type:
+                        scalar: string
+                    - name: resource
+                      type:
+                        map:
+                          fields:
+                          - name: apiVersion
+                            type:
+                              scalar: string
+                          - name: kind
+                            type:
+                              scalar: string
+                          - name: metadata
+                            type:
+                              map:
+                                fields:
+                                - name: generation
+                                  type:
+                                    scalar: numeric
+                                - name: name
+                                  type:
+                                    scalar: string
+                                - name: namespace
+                                  type:
+                                    scalar: string
+                    - name: state
+                      type:
+                        scalar: string
+                    - name: template
+                      type:
+                        map:
+                          fields:
+                          - name: apiVersion
+                            type:
+                              scalar: string
+                          - name: kind
+                            type:
+                              scalar: string
+                          - name: metadata
+                            type:
+                              map:
+                                fields:
+                                - name: generation
+                                  type:
+                                    scalar: numeric
+                                - name: name
+                                  type:
+                                    scalar: string
+                                - name: namespace
+                                  type:
+                                    scalar: string
+                    - name: version
+                      type:
+                        scalar: string
+                elementRelationship: atomic
+          - name: state
+            type:
+              scalar: string
+- name: com.github.kyma-project.lifecycle-manager.api.v1beta2.Manifest
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        map:
+          elementType:
+            scalar: untyped
+            list:
+              elementType:
+                namedType: __untyped_atomic_
+              elementRelationship: atomic
+            map:
+              elementType:
+                namedType: __untyped_deduced_
+              elementRelationship: separable
+    - name: spec
+      type:
+        map:
+          fields:
+          - name: config
+            type:
+              map:
+                fields:
+                - name: credSecretSelector
+                  type:
+                    map:
+                      fields:
+                      - name: matchExpressions
+                        type:
+                          list:
+                            elementType:
+                              map:
+                                fields:
+                                - name: key
+                                  type:
+                                    scalar: string
+                                - name: operator
+                                  type:
+                                    scalar: string
+                                - name: values
+                                  type:
+                                    list:
+                                      elementType:
+                                        scalar: string
+                                      elementRelationship: atomic
+                            elementRelationship: atomic
+                      - name: matchLabels
+                        type:
+                          map:
+                            elementType:
+                              scalar: string
+                      elementRelationship: atomic
+                - name: name
+                  type:
+                    scalar: string
+                - name: ref
+                  type:
+                    scalar: string
+                - name: repo
+                  type:
+                    scalar: string
+                - name: type
+                  type:
+                    scalar: string
+          - name: customResourcePolicy
+            type:
+              scalar: string
+            default: CreateAndDelete
+          - name: install
+            type:
+              map:
+                fields:
+                - name: name
+                  type:
+                    scalar: string
+                - name: source
+                  type:
+                    map:
+                      elementType:
+                        scalar: untyped
+                        list:
+                          elementType:
+                            namedType: __untyped_atomic_
+                          elementRelationship: atomic
+                        map:
+                          elementType:
+                            namedType: __untyped_deduced_
+                          elementRelationship: separable
+          - name: localizedImages
+            type:
+              list:
+                elementType:
+                  scalar: string
+                elementRelationship: atomic
+          - name: manager
+            type:
+              map:
+                fields:
+                - name: group
+                  type:
+                    scalar: string
+                - name: kind
+                  type:
+                    scalar: string
+                - name: name
+                  type:
+                    scalar: string
+                - name: namespace
+                  type:
+                    scalar: string
+                - name: version
+                  type:
+                    scalar: string
+          - name: remote
+            type:
+              scalar: boolean
+          - name: resource
+            type:
+              map:
+                elementType:
+                  scalar: untyped
+                  list:
+                    elementType:
+                      namedType: __untyped_atomic_
+                    elementRelationship: atomic
+                  map:
+                    elementType:
+                      namedType: __untyped_deduced_
+                    elementRelationship: separable
+          - name: version
+            type:
+              scalar: string
+    - name: status
+      type:
+        map:
+          fields:
+          - name: conditions
+            type:
+              list:
+                elementType:
+                  map:
+                    fields:
+                    - name: lastTransitionTime
+                      type:
+                        scalar: untyped
+                    - name: message
+                      type:
+                        scalar: string
+                    - name: observedGeneration
+                      type:
+                        scalar: numeric
+                    - name: reason
+                      type:
+                        scalar: string
+                    - name: status
+                      type:
+                        scalar: string
+                    - name: type
+                      type:
+                        scalar: string
+                elementRelationship: associative
+                keys:
+                - type
+          - name: lastOperation
+            type:
+              map:
+                fields:
+                - name: lastUpdateTime
+                  type:
+                    scalar: untyped
+                - name: operation
+                  type:
+                    scalar: string
+          - name: state
+            type:
+              scalar: string
+          - name: synced
+            type:
+              list:
+                elementType:
+                  map:
+                    fields:
+                    - name: group
+                      type:
+                        scalar: string
+                    - name: kind
+                      type:
+                        scalar: string
+                    - name: name
+                      type:
+                        scalar: string
+                    - name: namespace
+                      type:
+                        scalar: string
+                    - name: version
+                      type:
+                        scalar: string
+                elementRelationship: atomic
 - name: com.github.kyma-project.lifecycle-manager.api.v1beta2.ModuleReleaseMeta
   map:
     fields:
@@ -256,6 +670,139 @@ var schemaYAML = typed.YAMLObject(`types:
                 keys:
                 - name
           - name: version
+            type:
+              scalar: string
+- name: com.github.kyma-project.lifecycle-manager.api.v1beta2.Watcher
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        map:
+          elementType:
+            scalar: untyped
+            list:
+              elementType:
+                namedType: __untyped_atomic_
+              elementRelationship: atomic
+            map:
+              elementType:
+                namedType: __untyped_deduced_
+              elementRelationship: separable
+    - name: spec
+      type:
+        map:
+          fields:
+          - name: field
+            type:
+              scalar: string
+          - name: gateway
+            type:
+              map:
+                fields:
+                - name: selector
+                  type:
+                    map:
+                      fields:
+                      - name: matchExpressions
+                        type:
+                          list:
+                            elementType:
+                              map:
+                                fields:
+                                - name: key
+                                  type:
+                                    scalar: string
+                                - name: operator
+                                  type:
+                                    scalar: string
+                                - name: values
+                                  type:
+                                    list:
+                                      elementType:
+                                        scalar: string
+                                      elementRelationship: atomic
+                            elementRelationship: atomic
+                      - name: matchLabels
+                        type:
+                          map:
+                            elementType:
+                              scalar: string
+                      elementRelationship: atomic
+          - name: labelsToWatch
+            type:
+              map:
+                elementType:
+                  scalar: string
+          - name: manager
+            type:
+              scalar: string
+          - name: resourceToWatch
+            type:
+              map:
+                fields:
+                - name: group
+                  type:
+                    scalar: string
+                - name: resource
+                  type:
+                    scalar: string
+                - name: version
+                  type:
+                    scalar: string
+          - name: serviceInfo
+            type:
+              map:
+                fields:
+                - name: name
+                  type:
+                    scalar: string
+                - name: namespace
+                  type:
+                    scalar: string
+                - name: port
+                  type:
+                    scalar: numeric
+    - name: status
+      type:
+        map:
+          fields:
+          - name: conditions
+            type:
+              list:
+                elementType:
+                  map:
+                    fields:
+                    - name: lastTransitionTime
+                      type:
+                        scalar: untyped
+                    - name: message
+                      type:
+                        scalar: string
+                    - name: observedGeneration
+                      type:
+                        scalar: numeric
+                    - name: reason
+                      type:
+                        scalar: string
+                    - name: status
+                      type:
+                        scalar: string
+                    - name: type
+                      type:
+                        scalar: string
+                elementRelationship: associative
+                keys:
+                - type
+          - name: observedGeneration
+            type:
+              scalar: numeric
+          - name: state
             type:
               scalar: string
 - name: __untyped_atomic_
