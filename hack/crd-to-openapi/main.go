@@ -20,6 +20,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,11 +29,24 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+const (
+	apiPkg          = "github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	crdVersion      = "v1beta2"
+	outputFilePerms = 0o600
+)
+
+var (
+	errNoSpec          = errors.New("no spec")
+	errNoSpecVersions  = errors.New("no spec.versions")
+	errNoSchema        = errors.New("no schema for version")
+	errNoOpenAPISchema = errors.New("no openAPIV3Schema for version")
+	errVersionNotFound = errors.New("version not found")
+	errNoRepoRoot      = errors.New("could not find repo root (no go.mod found)")
+)
+
 type crdEntry struct {
 	crdFile string
-	version string
 	kind    string
-	goPkg   string
 }
 
 func main() {
@@ -43,55 +57,29 @@ func main() {
 	}
 
 	entries := []crdEntry{
-		{
-			crdFile: "config/crd/bases/operator.kyma-project.io_kymas.yaml",
-			version: "v1beta2",
-			kind:    "Kyma",
-			goPkg:   "github.com/kyma-project/lifecycle-manager/api/v1beta2",
-		},
-		{
-			crdFile: "config/crd/bases/operator.kyma-project.io_manifests.yaml",
-			version: "v1beta2",
-			kind:    "Manifest",
-			goPkg:   "github.com/kyma-project/lifecycle-manager/api/v1beta2",
-		},
-		{
-			crdFile: "config/crd/bases/operator.kyma-project.io_modulereleasemetas.yaml",
-			version: "v1beta2",
-			kind:    "ModuleReleaseMeta",
-			goPkg:   "github.com/kyma-project/lifecycle-manager/api/v1beta2",
-		},
-		{
-			crdFile: "config/crd/bases/operator.kyma-project.io_moduletemplates.yaml",
-			version: "v1beta2",
-			kind:    "ModuleTemplate",
-			goPkg:   "github.com/kyma-project/lifecycle-manager/api/v1beta2",
-		},
-		{
-			crdFile: "config/crd/bases/operator.kyma-project.io_watchers.yaml",
-			version: "v1beta2",
-			kind:    "Watcher",
-			goPkg:   "github.com/kyma-project/lifecycle-manager/api/v1beta2",
-		},
+		{crdFile: "config/crd/bases/operator.kyma-project.io_kymas.yaml", kind: "Kyma"},
+		{crdFile: "config/crd/bases/operator.kyma-project.io_manifests.yaml", kind: "Manifest"},
+		{crdFile: "config/crd/bases/operator.kyma-project.io_modulereleasemetas.yaml", kind: "ModuleReleaseMeta"},
+		{crdFile: "config/crd/bases/operator.kyma-project.io_moduletemplates.yaml", kind: "ModuleTemplate"},
+		{crdFile: "config/crd/bases/operator.kyma-project.io_watchers.yaml", kind: "Watcher"},
 	}
 
 	definitions := map[string]any{}
 
-	for _, e := range entries {
-		schema, err := extractSchema(filepath.Join(repoRoot, e.crdFile), e.version)
+	for _, entry := range entries {
+		schema, err := extractSchema(filepath.Join(repoRoot, entry.crdFile), crdVersion)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error extracting schema from %s: %v\n", e.crdFile, err)
+			fmt.Fprintf(os.Stderr, "error extracting schema from %s: %v\n", entry.crdFile, err)
 			os.Exit(1)
 		}
-		key := restFriendlyName(e.goPkg, e.kind)
-		definitions[key] = schema
+		definitions[restFriendlyName(apiPkg, entry.kind)] = schema
 	}
 
 	swagger := map[string]any{
 		"swagger": "2.0",
 		"info": map[string]any{
 			"title":   "lifecycle-manager",
-			"version": "v1beta2",
+			"version": crdVersion,
 		},
 		"paths":       map[string]any{},
 		"definitions": definitions,
@@ -104,17 +92,17 @@ func main() {
 	}
 
 	outFile := filepath.Join(repoRoot, "hack", "crd-to-openapi", "openapi.json")
-	if err := os.WriteFile(outFile, append(out, '\n'), 0o600); err != nil {
+	if err := os.WriteFile(outFile, append(out, '\n'), outputFilePerms); err != nil {
 		fmt.Fprintf(os.Stderr, "error writing %s: %v\n", outFile, err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("wrote %s\n", outFile)
+	fmt.Fprintln(os.Stdout, "wrote", outFile)
 }
 
 // extractSchema reads a CRD YAML and returns the openAPIV3Schema for the given version.
 func extractSchema(crdFile, version string) (map[string]any, error) {
-	data, err := os.ReadFile(crdFile) //nolint:gosec // path is constructed from known static values
+	data, err := os.ReadFile(crdFile)
 	if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", crdFile, err)
 	}
@@ -126,16 +114,16 @@ func extractSchema(crdFile, version string) (map[string]any, error) {
 
 	spec, ok := crd["spec"].(map[string]any)
 	if !ok {
-		return nil, fmt.Errorf("no spec in %s", crdFile)
+		return nil, fmt.Errorf("%w in %s", errNoSpec, crdFile)
 	}
 
 	versions, ok := spec["versions"].([]any)
 	if !ok {
-		return nil, fmt.Errorf("no spec.versions in %s", crdFile)
+		return nil, fmt.Errorf("%w in %s", errNoSpecVersions, crdFile)
 	}
 
-	for _, v := range versions {
-		ver, ok := v.(map[string]any)
+	for _, raw := range versions {
+		ver, ok := raw.(map[string]any)
 		if !ok {
 			continue
 		}
@@ -144,28 +132,28 @@ func extractSchema(crdFile, version string) (map[string]any, error) {
 		}
 		schema, ok := ver["schema"].(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("no schema for version %s in %s", version, crdFile)
+			return nil, fmt.Errorf("%w %s in %s", errNoSchema, version, crdFile)
 		}
 		openAPIV3Schema, ok := schema["openAPIV3Schema"].(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("no openAPIV3Schema for version %s in %s", version, crdFile)
+			return nil, fmt.Errorf("%w %s in %s", errNoOpenAPISchema, version, crdFile)
 		}
 		stripSwaggerV2Incompatible(openAPIV3Schema)
 		return openAPIV3Schema, nil
 	}
 
-	return nil, fmt.Errorf("version %s not found in %s", version, crdFile)
+	return nil, fmt.Errorf("%w %s in %s", errVersionNotFound, version, crdFile)
 }
 
-// stripSwaggerV2Incompatible recursively removes properties that are valid in
-// OpenAPI v3 but not accepted by the Swagger v2 parser used by applyconfiguration-gen.
+// stripSwaggerV2Incompatible recursively removes properties that are valid in OpenAPI v3
+// but not accepted by the Swagger v2 parser used by applyconfiguration-gen.
 func stripSwaggerV2Incompatible(schema map[string]any) {
 	delete(schema, "nullable")
 	for _, key := range []string{"properties", "additionalProperties"} {
 		if sub, ok := schema[key].(map[string]any); ok {
-			for _, v := range sub {
-				if m, ok := v.(map[string]any); ok {
-					stripSwaggerV2Incompatible(m)
+			for _, val := range sub {
+				if nested, ok := val.(map[string]any); ok {
+					stripSwaggerV2Incompatible(nested)
 				}
 			}
 		}
@@ -177,25 +165,23 @@ func stripSwaggerV2Incompatible(schema map[string]any) {
 	}
 	for _, key := range []string{"allOf", "anyOf", "oneOf"} {
 		if arr, ok := schema[key].([]any); ok {
-			for _, v := range arr {
-				if m, ok := v.(map[string]any); ok {
-					stripSwaggerV2Incompatible(m)
+			for _, val := range arr {
+				if nested, ok := val.(map[string]any); ok {
+					stripSwaggerV2Incompatible(nested)
 				}
 			}
 		}
 	}
 }
 
-// restFriendlyName converts a Go package path + type name to a Swagger definition key.
-// e.g. "github.com/kyma-project/lifecycle-manager/api/v1beta2" + "ModuleReleaseMeta"
-// → "io.github.kyma-project.lifecycle-manager.api.v1beta2.ModuleReleaseMeta"
-func restFriendlyName(goPkg, kind string) string {
-	// Split on "/"
-	parts := strings.Split(goPkg, "/")
-	// First part is the domain (e.g. "github.com") — reverse it
+// restFriendlyName converts a Go package path and type name to a Swagger definition key.
+// For example, "github.com/kyma-project/lifecycle-manager/api/v1beta2" and "ModuleReleaseMeta"
+// produces "com.github.kyma-project.lifecycle-manager.api.v1beta2.ModuleReleaseMeta".
+func restFriendlyName(pkg, kind string) string {
+	parts := strings.Split(pkg, "/")
 	domainParts := strings.Split(parts[0], ".")
-	for i, j := 0, len(domainParts)-1; i < j; i, j = i+1, j-1 {
-		domainParts[i], domainParts[j] = domainParts[j], domainParts[i]
+	for left, right := 0, len(domainParts)-1; left < right; left, right = left+1, right-1 {
+		domainParts[left], domainParts[right] = domainParts[right], domainParts[left]
 	}
 	reversed := strings.Join(domainParts, ".")
 	rest := strings.Join(parts[1:], ".")
@@ -206,7 +192,7 @@ func restFriendlyName(goPkg, kind string) string {
 func findRepoRoot() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("getting working directory: %w", err)
 	}
 	for {
 		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
@@ -214,7 +200,7 @@ func findRepoRoot() (string, error) {
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			return "", fmt.Errorf("could not find repo root (no go.mod found)")
+			return "", errNoRepoRoot
 		}
 		dir = parent
 	}
