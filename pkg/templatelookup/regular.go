@@ -173,8 +173,7 @@ func (t *TemplateLookup) validateTemplateMode(template ModuleTemplateInfo,
 				ErrTemplateNotAllowed)
 			return template
 		case inRestrictedList && !hasSelector:
-			template.Err = fmt.Errorf("%w: restricted module has no kymaSelector configured",
-				ErrTemplateNotAllowed)
+			template.Err = ErrTemplateNotAllowed
 			return template
 		case inRestrictedList && hasSelector:
 			matched, err := restrictedmodule.RestrictedModuleMatch(mrm, kyma)
