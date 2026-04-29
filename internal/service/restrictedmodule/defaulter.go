@@ -48,13 +48,10 @@ func (d *Defaulter) Default(ctx context.Context, kyma *v1beta2.Kyma) error {
 	)
 
 	if !kyma.GetDeletionTimestamp().IsZero() {
-		log.Info("Skipping as Kyma is Deleting")
 		return nil
 	}
 
-	// nothing to do
 	if len(d.restrictedDefaultModules) == 0 {
-		log.Info("Skipping as there are no restriced default modules configured")
 		return nil
 	}
 
@@ -65,8 +62,7 @@ func (d *Defaulter) Default(ctx context.Context, kyma *v1beta2.Kyma) error {
 	for _, moduleName := range d.restrictedDefaultModules {
 		moduleLog := log.WithValues("module", moduleName)
 
-		if skipAlreadyEnabled(kyma, moduleName) {
-			moduleLog.Info("Skipping as module is already enabled")
+		if isAlreadyEnabled(kyma, moduleName) {
 			continue
 		}
 
@@ -83,7 +79,6 @@ func (d *Defaulter) Default(ctx context.Context, kyma *v1beta2.Kyma) error {
 		}
 
 		if !match {
-			moduleLog.Info("Kyma does not match selector from ModuleReleaseMeta")
 			continue
 		}
 
@@ -108,7 +103,7 @@ func (d *Defaulter) Default(ctx context.Context, kyma *v1beta2.Kyma) error {
 	return nil
 }
 
-func skipAlreadyEnabled(kyma *v1beta2.Kyma, moduleName string) bool {
+func isAlreadyEnabled(kyma *v1beta2.Kyma, moduleName string) bool {
 	for _, module := range kyma.Spec.Modules {
 		if module.Name == moduleName {
 			return true
