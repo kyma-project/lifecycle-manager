@@ -227,7 +227,7 @@ func TestValidateTemplateMode_RestrictedModules(t *testing.T) {
 			wantErr: templatelookup.ErrTemplateNotAllowed,
 		},
 		{
-			name: "When module NOT in restricted list and no selector, Then allowed",
+			name:              "When module NOT in restricted list and no selector, Then allowed",
 			restrictedModules: []string{"other-module"},
 			mrm: builder.NewModuleReleaseMetaBuilder().
 				WithModuleName(restrictedModuleName).
