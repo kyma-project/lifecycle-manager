@@ -30,9 +30,8 @@ var _ = Describe("Restricted Default Modules", Ordered, func() {
 			By("And Module Operator Deployment is ready")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(skrClient, ModuleResourceName, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
 				Should(Succeed())
-
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
