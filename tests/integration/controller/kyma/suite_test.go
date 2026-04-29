@@ -239,7 +239,7 @@ var _ = BeforeSuite(func() {
 			flags.DefaultRemoteSyncNamespace),
 		Metrics: kymaMetrics,
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
-			moduletemplateinfolookup.NewLookup(kcpClient)),
+			moduletemplateinfolookup.NewLookup(kcpClient), nil),
 		Config:            kymaReconcilerConfig,
 		DeletionMetrics:   deletionMetrics,
 		DeletionEvents:    deletionEvents,
