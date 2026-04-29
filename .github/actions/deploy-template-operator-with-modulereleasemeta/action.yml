@@ -24,7 +24,8 @@ runs:
       if: ${{ matrix.e2e-test != 'mandatory-module' &&
         matrix.e2e-test != 'mandatory-module-metrics' &&
         matrix.e2e-test != 'watcher-zero-downtime' &&
-        matrix.e2e-test != 'oci-reg-cred-secret'
+        matrix.e2e-test != 'oci-reg-cred-secret' &&
+        matrix.e2e-test != 'restricted-default-module'
         }}
       shell: bash
       run: |
@@ -44,7 +45,8 @@ runs:
       if: ${{ matrix.e2e-test != 'mandatory-module' &&
         matrix.e2e-test != 'mandatory-module-metrics' &&
         matrix.e2e-test != 'watcher-zero-downtime' &&
-        matrix.e2e-test != 'oci-reg-cred-secret'
+        matrix.e2e-test != 'oci-reg-cred-secret' &&
+        matrix.e2e-test != 'restricted-default-module'
         }}
       shell: bash
       run: |
@@ -65,7 +67,8 @@ runs:
       if: ${{ matrix.e2e-test != 'mandatory-module' &&
         matrix.e2e-test != 'mandatory-module-metrics' &&
         matrix.e2e-test != 'watcher-zero-downtime' &&
-        matrix.e2e-test != 'oci-reg-cred-secret'
+        matrix.e2e-test != 'oci-reg-cred-secret' &&
+        matrix.e2e-test != 'restricted-default-module'
         }}
       shell: bash
       run: |
