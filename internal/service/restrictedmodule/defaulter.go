@@ -68,7 +68,7 @@ func (d *Defaulter) Default(ctx context.Context, kyma *v1beta2.Kyma) error {
 
 		match, err := d.matchFunc(mrm, kyma)
 		if err != nil {
-			log.Error(err, "Failed to match ModuleReleaseMeta")
+			log.Error(err, "Kyma does not match ModuleReleaseMeta")
 			continue
 		}
 
@@ -79,16 +79,21 @@ func (d *Defaulter) Default(ctx context.Context, kyma *v1beta2.Kyma) error {
 		addModule(kyma, moduleName)
 	}
 
-	// only if updating the Kyma with the defaulted modules fails, we return an error.
-	if numEnabledModules != len(kyma.Spec.Modules) {
-		if err := d.kymaRepo.Update(ctx, kyma); err != nil {
-			logf.FromContext(ctx).Error(err, "Failed to update Kyma with defaulted restricted module")
-			return fmt.Errorf("Failed to update Kyma %s with defaulted restricted modules %s: %w",
-				kyma.Name,
-				d.restrictedDefaultModules,
-				err,
-			)
-		}
+	// nothing to do
+	if numEnabledModules == len(kyma.Spec.Modules) {
+		return nil
+	}
+
+	// only if updating the Kyma with the restricted default modules fails, we return an error.
+	if err := d.kymaRepo.Update(ctx, kyma); err != nil {
+		logf.FromContext(ctx).
+			WithValues("kyma", kyma.Name, "modules", d.restrictedDefaultModules).
+			Error(err, "Failed to update Kyma with restricted default modules")
+		return fmt.Errorf("Failed to update Kyma %s with restricted default modules modules %s: %w",
+			kyma.Name,
+			d.restrictedDefaultModules,
+			err,
+		)
 	}
 
 	return nil
