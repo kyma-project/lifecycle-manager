@@ -123,7 +123,8 @@ jobs:
       - name: Setup test clusters
         if: ${{ matrix.e2e-test != 'mandatory-module' &&
                 matrix.e2e-test != 'mandatory-module-metrics' &&
-                matrix.e2e-test != 'restricted-default-module' }}
+                matrix.e2e-test != 'restricted-default-module' &&
+                matrix.e2e-test != 'restricted-default-module-catalog-sync' }}
         uses: ./lifecycle-manager/.github/actions/setup-test-clusters
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}

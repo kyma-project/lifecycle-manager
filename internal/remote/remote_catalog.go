@@ -8,6 +8,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
@@ -124,7 +125,7 @@ func (c *RemoteCatalog) Delete(
 // A ModuleReleaseMeta is synced if it has at least
 // one channel-version pair whose ModuleTemplate is allowed to be synced.
 // Restricted modules (in the restrictedModules list) are only synced if the MRM's kymaSelector matches the Kyma.
-// Non-restricted modules with a kymaSelector set are also checked against the Kyma labels.
+// Non-restricted modules with a kymaSelector are skipped.
 func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 	ctx context.Context,
 	kyma *v1beta2.Kyma,
@@ -152,7 +153,8 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 				continue
 			}
 		} else if moduleReleaseMeta.Spec.KymaSelector != nil {
-			// this shouldn't happen. MRM should not have a label selector if it is not a restricted module.
+			logf.FromContext(ctx).Info("WARNING: skipping catalog sync: MRM has kymaSelector but is not a restricted module",
+				"moduleName", moduleReleaseMeta.Spec.ModuleName)
 			continue
 		}
 
