@@ -359,7 +359,7 @@ func expectKymaModuleStatusWithNamespace(ctx context.Context, clnt client.Client
 	if modulesStatus[0].Resource == nil {
 		return fmt.Errorf("Status.Modules.Resource not initialized %w ", ErrWrongResourceNamespace)
 	}
-	if modulesStatus[0].Resource.Namespace != expectedNamespace {
+	if modulesStatus[0].Resource.PartialMeta.Namespace != expectedNamespace {
 		return ErrWrongResourceNamespace
 	}
 
