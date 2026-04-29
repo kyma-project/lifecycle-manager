@@ -11,7 +11,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
-	"github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
+	restrictedmodulesvc "github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
 )
 
 type Settings struct {
@@ -143,7 +143,7 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 		}
 
 		if c.isRestrictedModule(moduleReleaseMeta.Spec.ModuleName) {
-			matched, err := restrictedmodule.RestrictedModuleMatch(&moduleReleaseMeta, kyma)
+			matched, err := restrictedmodulesvc.RestrictedModuleMatch(&moduleReleaseMeta, kyma)
 			if err != nil {
 				return nil, fmt.Errorf("failed to evaluate restricted module match for %s: %w",
 					moduleReleaseMeta.Spec.ModuleName, err)
