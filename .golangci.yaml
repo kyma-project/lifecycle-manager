@@ -125,6 +125,8 @@ linters:
           alias: kymalookupcmpse
         - pkg: github.com/kyma-project/lifecycle-manager/cmd/composition/watch
           alias: watchcmpse
+        - pkg: github.com/kyma-project/lifecycle-manager/cmd/composition/service/restrictedmodule
+          alias: restrictedmodulecmpse
         - pkg: github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl
           alias: testskrcontext
         - pkg: github.com/kyma-project/lifecycle-manager/internal/errors
@@ -171,6 +173,8 @@ linters:
           alias: kymadeletionsvc
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/kyma/lookup
           alias: kymalookupsvc
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule
+          alias: restrictedmodulesvc
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/errors
           alias: certerror
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate

@@ -90,6 +90,7 @@ jobs:
           - simulate-skr-secret-rotation-evict-client-cache
           - skr-image-pull-secret-sync
           - gateway-secret-server-cert-metric
+          - restricted-default-module
           - restricted-default-module-catalog-sync
 
     runs-on: ubuntu-latest
@@ -121,7 +122,8 @@ jobs:
           cache-dependency-path: lifecycle-manager/go.sum
       - name: Setup test clusters
         if: ${{ matrix.e2e-test != 'mandatory-module' &&
-                matrix.e2e-test != 'mandatory-module-metrics' }}
+                matrix.e2e-test != 'mandatory-module-metrics' &&
+                matrix.e2e-test != 'restricted-default-module' }}
         uses: ./lifecycle-manager/.github/actions/setup-test-clusters
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
@@ -135,6 +137,7 @@ jobs:
         if: ${{ matrix.e2e-test != 'mandatory-module' &&
                 matrix.e2e-test != 'mandatory-module-metrics'&&
                 matrix.e2e-test != 'gateway-secret-server-cert-metric'&&
+                matrix.e2e-test != 'restricted-default-module'&&
                 matrix.e2e-test != 'restricted-default-module-catalog-sync' }}
         uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
         with:
@@ -144,7 +147,8 @@ jobs:
         if: ${{ matrix.e2e-test != 'mandatory-module' &&
                 matrix.e2e-test != 'mandatory-module-metrics'&&
                 matrix.e2e-test != 'gateway-secret-server-cert-metric'&&
-                matrix.e2e-test != 'restricted-default-module-catalog-sync'   }}
+                matrix.e2e-test != 'restricted-default-module'&&
+                matrix.e2e-test != 'restricted-default-module-catalog-sync' }}
         uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
         with:
           module_version: ${{ steps.configuration.outputs.template_operator_version }}
