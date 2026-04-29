@@ -42,12 +42,19 @@ func NewDefaulter(restrictedDefaultModules []string,
 // Default adds restricted default modules to Kyma if they are not already enabled and
 // if the kymaSelector defined in the module's ModuleReleaseMeta matches the provided Kyma.
 func (d *Defaulter) Default(ctx context.Context, kyma *v1beta2.Kyma) error {
+	log := logf.FromContext(ctx).WithValues(
+		"kyma", kyma.Name,
+		"service", "restricted module defaulter",
+	)
+
 	if !kyma.GetDeletionTimestamp().IsZero() {
+		log.Info("Skipping as Kyma is Deleting")
 		return nil
 	}
 
 	// nothing to do
 	if len(d.restrictedDefaultModules) == 0 {
+		log.Info("Skipping as there are no restriced default modules configured")
 		return nil
 	}
 
@@ -56,34 +63,31 @@ func (d *Defaulter) Default(ctx context.Context, kyma *v1beta2.Kyma) error {
 	// First try to append all default modules and then update the Kyma if there are any changes.
 	// failing to determine if a module should be defaulted or not should not cause the whole defaulting process to fail
 	for _, moduleName := range d.restrictedDefaultModules {
-		log := logf.FromContext(ctx).WithValues(
-			"module", moduleName,
-			"kyma", kyma.Name,
-			"service", "restricted module defaulter",
-		)
+		moduleLog := log.WithValues("module", moduleName)
 
 		if skipAlreadyEnabled(kyma, moduleName) {
-			log.Info("Skipping as module is already enabled")
+			moduleLog.Info("Skipping as module is already enabled")
 			continue
 		}
 
 		mrm, err := d.moduleReleaseMetaRepo.Get(ctx, moduleName)
 		if err != nil {
-			log.Error(err, "Failed to get ModuleReleaseMeta")
+			moduleLog.Error(err, "Failed to get ModuleReleaseMeta")
 			continue
 		}
 
 		match, err := d.matchFunc(mrm, kyma)
 		if err != nil {
-			log.Error(err, "Failed to get Kyma selector from ModuleReleaseMeta")
+			moduleLog.Error(err, "Failed to get Kyma selector from ModuleReleaseMeta")
 			continue
 		}
 
 		if !match {
-			log.Info("Kyma does not match selector from ModuleReleaseMeta")
+			moduleLog.Info("Kyma does not match selector from ModuleReleaseMeta")
 			continue
 		}
 
+		moduleLog.Info("Adding restricted default module to Kyma spec")
 		addModule(kyma, moduleName)
 	}
 
@@ -94,15 +98,9 @@ func (d *Defaulter) Default(ctx context.Context, kyma *v1beta2.Kyma) error {
 
 	// only if updating the Kyma with the restricted default modules fails, we return an error.
 	if err := d.kymaRepo.Update(ctx, kyma); err != nil {
-		logf.FromContext(ctx).
-			WithValues("kyma", kyma.Name,
-				"modules", d.restrictedDefaultModules,
-				"service", "restricted module defaulter",
-			).
-			Error(err, "Failed to update Kyma")
-		return fmt.Errorf("failed to update Kyma %s with restricted default modules %v: %w",
+		log.Error(err, "Failed to update Kyma")
+		return fmt.Errorf("failed to update Kyma %s with restricted default modules: %w",
 			kyma.Name,
-			d.restrictedDefaultModules,
 			err,
 		)
 	}
