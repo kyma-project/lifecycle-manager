@@ -43,11 +43,13 @@ import (
 	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/modulereleasemeta"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	restrictedmodulecmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/restrictedmodule"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	kymadeletionctrl "github.com/kyma-project/lifecycle-manager/internal/controller/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
@@ -222,6 +224,10 @@ var _ = BeforeSuite(func() {
 		flagVar,
 	)
 
+	restrictedModuleDefaulter := restrictedmodulecmpse.ComposeDefaulter(flagVar.GetRestrictedDefaultModules(),
+		modulereleasemeta.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+		kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace))
+
 	err = (&kyma.Reconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    testSkrContextFactory,
@@ -236,10 +242,11 @@ var _ = BeforeSuite(func() {
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient,
 			descriptorProvider,
 			moduletemplateinfolookup.NewLookup(kcpClient)),
-		Config:          kymaReconcilerConfig,
-		DeletionMetrics: deletionMetrics,
-		DeletionEvents:  deletionEvents,
-		DeletionService: deletionService,
+		Config:            kymaReconcilerConfig,
+		DeletionMetrics:   deletionMetrics,
+		DeletionEvents:    deletionEvents,
+		DeletionService:   deletionService,
+		RestrictedModules: restrictedModuleDefaulter,
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: UseRandomPort},
 		watchcmpse.ComposeTemplateChangeHandlerMapFunc(

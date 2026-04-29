@@ -38,10 +38,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	restrictedmodulecmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/restrictedmodule"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/modulereleasemeta"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
@@ -223,6 +225,10 @@ var _ = BeforeSuite(func() {
 		flagVar,
 	)
 
+	restrictedModuleDefaulter := restrictedmodulecmpse.ComposeDefaulter(flagVar.GetRestrictedDefaultModules(),
+		modulereleasemeta.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+		kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace))
+
 	err = (&kyma.Reconciler{
 		Client:               kcpClient,
 		Event:                testEventRec,
@@ -236,10 +242,11 @@ var _ = BeforeSuite(func() {
 		Metrics: kymaMetrics,
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
 			moduletemplateinfolookup.NewLookup(kcpClient)),
-		Config:          kymaReconcilerConfig,
-		DeletionMetrics: deletionMetrics,
-		DeletionEvents:  deletionEvents,
-		DeletionService: deletionService,
+		Config:            kymaReconcilerConfig,
+		DeletionMetrics:   deletionMetrics,
+		DeletionEvents:    deletionEvents,
+		DeletionService:   deletionService,
+		RestrictedModules: restrictedModuleDefaulter,
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: randomPort},
 		watchcmpse.ComposeTemplateChangeHandlerMapFunc(
