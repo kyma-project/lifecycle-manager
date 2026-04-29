@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	restrictedmodulesvc "github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
 var (
@@ -22,13 +22,13 @@ var (
 
 func Test_Default_Skips_WhenKymaIsBeingDeleted(t *testing.T) {
 	kyma := &v1beta2.Kyma{}
-	now := metav1.NewTime(time.Now())
+	now := apimetav1.NewTime(time.Now())
 	kyma.SetDeletionTimestamp(&now)
 
 	mrmRepo := &mrmStub{}
 	kymaRepo := &kymaStub{}
 
-	defaulter := restrictedmodule.NewDefaulter(restrictedDefaultModules,
+	defaulter := restrictedmodulesvc.NewDefaulter(restrictedDefaultModules,
 		mrmRepo,
 		kymaRepo,
 		positiveMatchFunc)
@@ -46,7 +46,7 @@ func Test_Default_Skips_WhenNoRestrictedDefaultModules(t *testing.T) {
 	mrmRepo := &mrmStub{}
 	kymaRepo := &kymaStub{}
 
-	defaulter := restrictedmodule.NewDefaulter([]string{},
+	defaulter := restrictedmodulesvc.NewDefaulter([]string{},
 		mrmRepo,
 		kymaRepo,
 		positiveMatchFunc)
@@ -71,7 +71,7 @@ func Test_Default_Skips_WhenAlreadyEnabled(t *testing.T) {
 	mrmRepo := &mrmStub{}
 	kymaRepo := &kymaStub{}
 
-	defaulter := restrictedmodule.NewDefaulter(restrictedDefaultModules,
+	defaulter := restrictedmodulesvc.NewDefaulter(restrictedDefaultModules,
 		mrmRepo,
 		kymaRepo,
 		positiveMatchFunc)
@@ -83,7 +83,7 @@ func Test_Default_Skips_WhenAlreadyEnabled(t *testing.T) {
 	assert.False(t, kymaRepo.called)
 }
 
-func Test_Defualt_Skips_WhenFailedToGetModuleReleaseMeta(t *testing.T) {
+func Test_Default_Skips_WhenFailedToGetModuleReleaseMeta(t *testing.T) {
 	kyma := &v1beta2.Kyma{}
 
 	mrmRepo := &mrmStub{
@@ -91,7 +91,7 @@ func Test_Defualt_Skips_WhenFailedToGetModuleReleaseMeta(t *testing.T) {
 	}
 	kymaRepo := &kymaStub{}
 
-	defaulter := restrictedmodule.NewDefaulter(restrictedDefaultModules,
+	defaulter := restrictedmodulesvc.NewDefaulter(restrictedDefaultModules,
 		mrmRepo,
 		kymaRepo,
 		positiveMatchFunc)
@@ -110,7 +110,7 @@ func Test_Default_Skips_WhenMatchFuncReturnsError(t *testing.T) {
 	mrmRepo := &mrmStub{}
 	kymaRepo := &kymaStub{}
 
-	defaulter := restrictedmodule.NewDefaulter(restrictedDefaultModules,
+	defaulter := restrictedmodulesvc.NewDefaulter(restrictedDefaultModules,
 		mrmRepo,
 		kymaRepo,
 		errorMatchFunc,
@@ -130,7 +130,7 @@ func Test_Default_Skips_WhenMatchFuncReturnsFalse(t *testing.T) {
 	mrmRepo := &mrmStub{}
 	kymaRepo := &kymaStub{}
 
-	defaulter := restrictedmodule.NewDefaulter(restrictedDefaultModules,
+	defaulter := restrictedmodulesvc.NewDefaulter(restrictedDefaultModules,
 		mrmRepo,
 		kymaRepo,
 		negativeMatchFunc,
@@ -152,7 +152,7 @@ func Test_Default_ReturnsError_WhenFailedToUpdateKyma(t *testing.T) {
 		err: assert.AnError,
 	}
 
-	defaulter := restrictedmodule.NewDefaulter(restrictedDefaultModules,
+	defaulter := restrictedmodulesvc.NewDefaulter(restrictedDefaultModules,
 		mrmRepo,
 		kymaRepo,
 		positiveMatchFunc,
@@ -173,7 +173,7 @@ func Test_Default_AppendsModulesAndUpdatesKyma(t *testing.T) {
 	mrmRepo := &mrmStub{}
 	kymaRepo := &kymaStub{}
 
-	defaulter := restrictedmodule.NewDefaulter(restrictedDefaultModules,
+	defaulter := restrictedmodulesvc.NewDefaulter(restrictedDefaultModules,
 		mrmRepo,
 		kymaRepo,
 		positiveMatchFunc,
@@ -193,7 +193,7 @@ func Test_Default_AppendsModulesAndUpdatesKyma(t *testing.T) {
 	}
 }
 
-func Test_Defualt_AppendsOnlyMissingModules(t *testing.T) {
+func Test_Default_AppendsOnlyMissingModuleAndUpdatesKyma(t *testing.T) {
 	kyma := &v1beta2.Kyma{
 		Spec: v1beta2.KymaSpec{
 			Modules: []v1beta2.Module{
@@ -209,7 +209,7 @@ func Test_Defualt_AppendsOnlyMissingModules(t *testing.T) {
 	mrmRepo := &mrmStub{}
 	kymaRepo := &kymaStub{}
 
-	defaulter := restrictedmodule.NewDefaulter(restrictedDefaultModules,
+	defaulter := restrictedmodulesvc.NewDefaulter(restrictedDefaultModules,
 		mrmRepo,
 		kymaRepo,
 		positiveMatchFunc,
@@ -242,7 +242,7 @@ func errorMatchFunc(_ *v1beta2.ModuleReleaseMeta, _ *v1beta2.Kyma) (bool, error)
 }
 
 type mrmStub struct {
-	restrictedmodule.ModuleReleaseMetaRepository
+	restrictedmodulesvc.ModuleReleaseMetaRepository
 
 	called      bool
 	moduleNames []string
@@ -257,7 +257,7 @@ func (r *mrmStub) Get(_ context.Context, moduleName string) (*v1beta2.ModuleRele
 }
 
 type kymaStub struct {
-	restrictedmodule.KymaRepository
+	restrictedmodulesvc.KymaRepository
 
 	called bool
 	kyma   *v1beta2.Kyma
