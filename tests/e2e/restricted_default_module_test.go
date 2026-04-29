@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -17,7 +18,7 @@ var _ = Describe("Restricted Default Modules", Ordered, func() {
 	moduleCR := NewTestModuleCR(RemoteNamespace)
 
 	InitEmptyKymaBeforeAll(kyma)
-	CleanupKymaAfterAll(kyma)
+	//CleanupKymaAfterAll(kyma)
 
 	Context("Given SKR Cluster", func() {
 		// InitEmptyKymaBeforeAll verified that the Kyma CR is in Ready state on both SKR and KCP
@@ -40,6 +41,64 @@ var _ = Describe("Restricted Default Modules", Ordered, func() {
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
+				Should(Succeed())
+		})
+
+		It("When the restricted module is disabled on the SKR cluster", func() {
+			Eventually(DisableModule).
+				WithContext(ctx).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, TestModuleName).
+				Should(Succeed())
+
+			By("Then the Module CR is removed from the SKR cluster")
+			Eventually(ModuleCRExists).
+				WithContext(ctx).
+				WithArguments(skrClient, moduleCR).
+				Should(Equal(ErrNotFound))
+
+			By("And the Module Operator Deployment is removed from the SKR cluster")
+			Eventually(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
+				Should(Equal(ErrNotFound))
+
+			By("And KCP Kyma CR is in \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(defaultRemoteKymaName, RemoteNamespace, skrClient, shared.StateReady).
+				Should(Succeed())
+		})
+
+		It("When the restricted module is enabled again on the SKR cluster", func() {
+			Eventually(EnableModule).
+				WithContext(ctx).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace,
+					NewTemplateOperator(v1beta2.DefaultChannel)).
+				Should(Succeed())
+
+			By("And the Module CR has been installed on the SKR cluster")
+			Eventually(ModuleCRExists).
+				WithContext(ctx).
+				WithArguments(skrClient, moduleCR).
+				Should(Succeed())
+			By("And the Module Operator Deployment is ready on the SKR cluster")
+			Eventually(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
+				Should(Succeed())
+
+			By("And KCP Kyma CR is in \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(defaultRemoteKymaName, RemoteNamespace, skrClient, shared.StateReady).
 				Should(Succeed())
 		})
 	})
