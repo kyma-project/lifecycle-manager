@@ -42,12 +42,16 @@ func NewDefaulter(restrictedDefaultModules []string,
 // Default adds restricted default modules to Kyma if they are not already enabled and
 // if the kymaSelector defined in the module's ModuleReleaseMeta matches the provided Kyma.
 func (d *Defaulter) Default(ctx context.Context, kyma *v1beta2.Kyma) error {
+	if !kyma.GetDeletionTimestamp().IsZero() {
+		return nil
+	}
+
 	// nothing to do
 	if len(d.restrictedDefaultModules) == 0 {
 		return nil
 	}
 
-	numEnabledModules := len(kyma.Spec.Modules)
+	alreadyDefaultedModules := len(kyma.Spec.Modules)
 
 	// First try to append all default modules and then update the Kyma if there are any changes.
 	// failing to determine if a module should be defaulted or not should not cause the whole defaulting process to fail
@@ -81,7 +85,7 @@ func (d *Defaulter) Default(ctx context.Context, kyma *v1beta2.Kyma) error {
 	}
 
 	// nothing to do
-	if numEnabledModules == len(kyma.Spec.Modules) {
+	if alreadyDefaultedModules == len(kyma.Spec.Modules) {
 		return nil
 	}
 
