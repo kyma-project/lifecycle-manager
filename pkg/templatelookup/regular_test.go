@@ -151,6 +151,7 @@ func TestValidateTemplateMode_RestrictedModules(t *testing.T) {
 		kyma              *v1beta2.Kyma
 		template          templatelookup.ModuleTemplateInfo
 		wantErr           error
+		wantErrAlso       error
 	}{
 		{
 			name:              "When module in restricted list and nil selector, Then not allowed",
@@ -160,7 +161,7 @@ func TestValidateTemplateMode_RestrictedModules(t *testing.T) {
 				WithKymaSelector(nil).
 				Build(),
 			kyma: builder.NewKymaBuilder().
-				WithLabel("kyma-project.io/global-account-id", "account-1").
+				WithLabel(shared.GlobalAccountIDLabel, "account-1").
 				Build(),
 			template: templatelookup.ModuleTemplateInfo{
 				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
@@ -175,7 +176,7 @@ func TestValidateTemplateMode_RestrictedModules(t *testing.T) {
 				WithKymaSelector(&apimetav1.LabelSelector{}).
 				Build(),
 			kyma: builder.NewKymaBuilder().
-				WithLabel("kyma-project.io/global-account-id", "account-1").
+				WithLabel(shared.GlobalAccountIDLabel, "account-1").
 				Build(),
 			template: templatelookup.ModuleTemplateInfo{
 				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
@@ -190,7 +191,7 @@ func TestValidateTemplateMode_RestrictedModules(t *testing.T) {
 				WithGlobalAccountKymaSelector("account-1", "account-2").
 				Build(),
 			kyma: builder.NewKymaBuilder().
-				WithLabel("kyma-project.io/global-account-id", "account-1").
+				WithLabel(shared.GlobalAccountIDLabel, "account-1").
 				Build(),
 			template: templatelookup.ModuleTemplateInfo{
 				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
@@ -205,7 +206,7 @@ func TestValidateTemplateMode_RestrictedModules(t *testing.T) {
 				WithGlobalAccountKymaSelector("account-1", "account-2").
 				Build(),
 			kyma: builder.NewKymaBuilder().
-				WithLabel("kyma-project.io/global-account-id", "account-3").
+				WithLabel(shared.GlobalAccountIDLabel, "account-3").
 				Build(),
 			template: templatelookup.ModuleTemplateInfo{
 				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
@@ -246,7 +247,7 @@ func TestValidateTemplateMode_RestrictedModules(t *testing.T) {
 				WithKymaSelector(&apimetav1.LabelSelector{
 					MatchExpressions: []apimetav1.LabelSelectorRequirement{
 						{
-							Key:      "kyma-project.io/global-account-id",
+							Key:      shared.GlobalAccountIDLabel,
 							Operator: "InvalidOperator",
 							Values:   []string{"account-1"},
 						},
@@ -254,26 +255,23 @@ func TestValidateTemplateMode_RestrictedModules(t *testing.T) {
 				}).
 				Build(),
 			kyma: builder.NewKymaBuilder().
-				WithLabel("kyma-project.io/global-account-id", "account-1").
+				WithLabel(shared.GlobalAccountIDLabel, "account-1").
 				Build(),
 			template: templatelookup.ModuleTemplateInfo{
 				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
 			},
-			wantErr: restrictedmodule.ErrSelectorParse,
+			wantErr:     restrictedmodule.ErrSelectorParse,
+			wantErrAlso: templatelookup.ErrTemplateNotAllowed,
 		},
 		{
 			name:              "When module in restricted list and matching matchLabels selector, Then allowed",
 			restrictedModules: []string{restrictedModuleName},
 			mrm: builder.NewModuleReleaseMetaBuilder().
 				WithModuleName(restrictedModuleName).
-				WithKymaSelector(&apimetav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"kyma-project.io/global-account-id": "account-1",
-					},
-				}).
+				WithGlobalAccountKymaSelector("account-1").
 				Build(),
 			kyma: builder.NewKymaBuilder().
-				WithLabel("kyma-project.io/global-account-id", "account-1").
+				WithLabel(shared.GlobalAccountIDLabel, "account-1").
 				Build(),
 			template: templatelookup.ModuleTemplateInfo{
 				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
@@ -297,6 +295,9 @@ func TestValidateTemplateMode_RestrictedModules(t *testing.T) {
 			got := lookup.ValidateTemplateMode(testCase.template, testCase.kyma, testCase.mrm)
 			if testCase.wantErr != nil {
 				require.ErrorIs(t, got.Err, testCase.wantErr)
+				if testCase.wantErrAlso != nil {
+					require.ErrorIs(t, got.Err, testCase.wantErrAlso)
+				}
 			} else {
 				require.NoError(t, got.Err)
 			}
