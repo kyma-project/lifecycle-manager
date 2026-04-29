@@ -124,6 +124,7 @@ func (c *RemoteCatalog) Delete(
 // A ModuleReleaseMeta is synced if it has at least
 // one channel-version pair whose ModuleTemplate is allowed to be synced.
 // Restricted modules (in the restrictedModules list) are only synced if the MRM's kymaSelector matches the Kyma.
+// Non-restricted modules with a kymaSelector set are also checked against the Kyma labels.
 func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 	ctx context.Context,
 	kyma *v1beta2.Kyma,
@@ -150,6 +151,9 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 			if !matched {
 				continue
 			}
+		} else if moduleReleaseMeta.Spec.KymaSelector != nil {
+			// this shouldn't happen. MRM should not have a label selector if it is not a restricted module.
+			continue
 		}
 
 		allowedChannels := []v1beta2.ChannelVersionAssignment{}
@@ -167,10 +171,6 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 	}
 
 	return moduleReleaseMetas, nil
-}
-
-func (c *RemoteCatalog) isRestrictedModule(moduleName string) bool {
-	return slices.Contains(c.restrictedModules, moduleName)
 }
 
 func IsAllowedModuleVersion(kyma *v1beta2.Kyma, moduleTemplateList *v1beta2.ModuleTemplateList,
@@ -196,6 +196,10 @@ func (c *RemoteCatalog) GetModuleTemplatesToSync(
 	moduleTemplateList *v1beta2.ModuleTemplateList,
 ) ([]v1beta2.ModuleTemplate, error) {
 	return FilterAllowedModuleTemplates(moduleTemplateList.Items, moduleReleaseMetas, kyma), nil
+}
+
+func (c *RemoteCatalog) isRestrictedModule(moduleName string) bool {
+	return slices.Contains(c.restrictedModules, moduleName)
 }
 
 // FilterAllowedModuleTemplates filters out ModuleTemplates that are not allowed.
