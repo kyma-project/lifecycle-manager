@@ -63,6 +63,7 @@ func newKyma(name, namespace string) *v1beta2.Kyma {
 
 type writerStub struct {
 	client.Client
+
 	err error
 }
 

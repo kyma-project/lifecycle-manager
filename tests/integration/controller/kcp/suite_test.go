@@ -29,6 +29,7 @@ import (
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
@@ -37,19 +38,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
-
-	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
-	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
-	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/modulereleasemeta"
-	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	restrictedmodulecmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/restrictedmodule"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
+	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	kymadeletionctrl "github.com/kyma-project/lifecycle-manager/internal/controller/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
@@ -59,15 +52,20 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
+	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
+	mrmrepo "github.com/kyma-project/lifecycle-manager/internal/repository/modulereleasemeta"
 	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/service/componentdescriptor"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
@@ -75,10 +73,9 @@ import (
 
 	_ "ocm.software/ocm/api/ocm"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -225,7 +222,7 @@ var _ = BeforeSuite(func() {
 	)
 
 	restrictedModuleDefaulter := restrictedmodulecmpse.ComposeDefaulter(flagVar.GetRestrictedDefaultModules(),
-		modulereleasemeta.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+		mrmrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
 		kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace))
 
 	err = (&kyma.Reconciler{

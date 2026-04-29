@@ -51,7 +51,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/modulereleasemeta"
+	mrmrepo "github.com/kyma-project/lifecycle-manager/internal/repository/modulereleasemeta"
 	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
@@ -64,10 +64,9 @@ import (
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 	"github.com/kyma-project/lifecycle-manager/tests/integration/controller/composition"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -203,7 +202,7 @@ var _ = BeforeSuite(func() {
 	)
 
 	restrictedModuleDefaulter := restrictedmodulecmpse.ComposeDefaulter(flagVar.GetRestrictedDefaultModules(),
-		modulereleasemeta.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+		mrmrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
 		kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace))
 
 	err = (&kyma.Reconciler{

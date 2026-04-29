@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 type ModuleReleaseMetaRepository interface {
@@ -48,8 +49,8 @@ func (d *Defaulter) Default(ctx context.Context, kyma *v1beta2.Kyma) error {
 
 	numEnabledModules := len(kyma.Spec.Modules)
 
-	// we first try to append all default modules and then update the Kyma if there are any changes.
-	// failing to determine if a module should be defaulted or not should not cause the whole defaulting process to fail.
+	// First try to append all default modules and then update the Kyma if there are any changes.
+	// failing to determine if a module should be defaulted or not should not cause the whole defaulting process to fail
 	for _, moduleName := range d.restrictedDefaultModules {
 		log := logf.FromContext(ctx).WithValues("module", moduleName, "kyma", kyma.Name)
 
@@ -89,7 +90,7 @@ func (d *Defaulter) Default(ctx context.Context, kyma *v1beta2.Kyma) error {
 		logf.FromContext(ctx).
 			WithValues("kyma", kyma.Name, "modules", d.restrictedDefaultModules).
 			Error(err, "Failed to update Kyma with restricted default modules")
-		return fmt.Errorf("Failed to update Kyma %s with restricted default modules modules %s: %w",
+		return fmt.Errorf("failed to update Kyma %s with restricted default modules %s: %w",
 			kyma.Name,
 			d.restrictedDefaultModules,
 			err,

@@ -1,15 +1,15 @@
 package restrictedmodule
 
-import "github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
+import restrictedmodulesvc "github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
 
 func ComposeDefaulter(restrictedDefaultModules []string,
-	moduleReleaseMetaRepo restrictedmodule.ModuleReleaseMetaRepository,
-	kymaRepo restrictedmodule.KymaRepository,
-) *restrictedmodule.Defaulter {
-	return restrictedmodule.NewDefaulter(
+	moduleReleaseMetaRepo restrictedmodulesvc.ModuleReleaseMetaRepository,
+	kymaRepo restrictedmodulesvc.KymaRepository,
+) *restrictedmodulesvc.Defaulter {
+	return restrictedmodulesvc.NewDefaulter(
 		restrictedDefaultModules,
 		moduleReleaseMetaRepo,
 		kymaRepo,
-		restrictedmodule.RestrictedModuleMatch,
+		restrictedmodulesvc.RestrictedModuleMatch,
 	)
 }
