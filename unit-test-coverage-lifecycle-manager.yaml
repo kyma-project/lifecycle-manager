@@ -50,6 +50,7 @@ packages:
   internal/service/mandatorymodule/installation: 100
   internal/service/mandatorymodule/deletion: 100
   internal/service/mandatorymodule/deletion/usecases: 100
+  internal/service/restrictedmodule: 100
   internal/service/skrsync: 100
 
   internal/setup: 71
