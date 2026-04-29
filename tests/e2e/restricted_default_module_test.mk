@@ -3,7 +3,7 @@
 
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))e2e.common.mk
 
-RESTRICTED_DEFAULT_MODULES ?= template-operator
+RESTRICTED_DEFAULT_MODULES ?= $(MODULE_NAME),not-$(MODULE_NAME)
 GLOBAL_ACCOUNT_ID_1 ?= a1c1d2e3-4a5b-6c7d-8e9f-0a1b2c3d4e5f
 # this global account id is added to the Kyma labels in the test
 GLOBAL_ACCOUNT_ID_2 ?= f6e5d4c3-b2a1-9087-6543-210fedcba987
@@ -23,9 +23,17 @@ module-setup:
 	@echo "::group::Test-specific module metadata setup"
 	@export PATH=$(LOCALBIN):$$PATH
 	@pushd $(TEMPLATE_OPERATOR_DIR) > /dev/null
+# First module that matches on the Kyma and therefore should be defaulted
 	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh --module-name $(MODULE_NAME) --version $(MODULE_OLDER_VERSION) --deployment-name $(MODULE_DEPLOYMENT_OLDER_VERSION) --deployable-version $(MODULE_DEPLOYABLE_VERSION)
 	KEEP_FILE=true $(SCRIPTS_DIR)/deploy_modulereleasemeta.sh $(MODULE_NAME) fast:$(MODULE_OLDER_VERSION) regular:$(MODULE_OLDER_VERSION)
 	yq -i '.spec.kymaSelector.matchExpressions = [{"key": "kyma-project.io/global-account-id", "operator": "In", "values": ["$(GLOBAL_ACCOUNT_ID_1)", "$(GLOBAL_ACCOUNT_ID_2)"]}]' module-release-meta.yaml
+	kubectl apply -f module-release-meta.yaml
+	rm -f module-release-meta.yaml
+
+# Second module that won't match on the Kyma and therefore should not be defaulted
+	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh --module-name not-$(MODULE_NAME) --version $(MODULE_OLDER_VERSION) --deployment-name $(MODULE_DEPLOYMENT_OLDER_VERSION) --deployable-version $(MODULE_DEPLOYABLE_VERSION)
+	KEEP_FILE=true $(SCRIPTS_DIR)/deploy_modulereleasemeta.sh not-$(MODULE_NAME) fast:$(MODULE_OLDER_VERSION) regular:$(MODULE_OLDER_VERSION)
+	yq -i '.spec.kymaSelector.matchExpressions = [{"key": "kyma-project.io/global-account-id", "operator": "In", "values": ["DOES-NOT-MATCH"]}]' module-release-meta.yaml
 	kubectl apply -f module-release-meta.yaml
 	rm -f module-release-meta.yaml
 	@popd > /dev/null

@@ -4,7 +4,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -21,21 +20,26 @@ var _ = Describe("Restricted Default Modules", Ordered, func() {
 	CleanupKymaAfterAll(kyma)
 
 	Context("Given SKR Cluster", func() {
-		It("Then Module Resources are deployed on SKR cluster", func() {
-			By("And Module CR exists")
+		// InitEmptyKymaBeforeAll verified that the Kyma CR is in Ready state on both SKR and KCP
+		It("Then the matching restricted module is enabled on the KCP cluster", func() {
+			Eventually(ContainsModuleInSpec).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), TestModuleName).
+				Should(Succeed())
+			By("And the non-matching restricted module is not enabled on the KCP cluster")
+			Eventually(NotContainsModuleInSpec).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), "not-"+TestModuleName).
+				Should(Succeed())
+			By("And the Module CR has been installed on the SKR cluster")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(skrClient, moduleCR).
 				Should(Succeed())
-			By("And Module Operator Deployment is ready")
+			By("And the Module Operator Deployment is ready on the SKR cluster")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
-				Should(Succeed())
-			By("And KCP Kyma CR is in \"Ready\" State")
-			Eventually(KymaIsInState).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 		})
 	})
