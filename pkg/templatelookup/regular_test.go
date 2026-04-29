@@ -214,7 +214,20 @@ func TestValidateTemplateMode_RestrictedModules(t *testing.T) {
 			wantErr: templatelookup.ErrTemplateNotAllowed,
 		},
 		{
-			name:              "When module NOT in restricted list, Then allowed regardless of selector",
+			name:              "When module in restricted list with selector but Kyma has no matching label, Then not allowed",
+			restrictedModules: []string{restrictedModuleName},
+			mrm: builder.NewModuleReleaseMetaBuilder().
+				WithModuleName(restrictedModuleName).
+				WithGlobalAccountKymaSelector("account-1", "account-2").
+				Build(),
+			kyma: builder.NewKymaBuilder().Build(),
+			template: templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
+			},
+			wantErr: templatelookup.ErrTemplateNotAllowed,
+		},
+		{
+			name: "When module NOT in restricted list and no selector, Then allowed",
 			restrictedModules: []string{"other-module"},
 			mrm: builder.NewModuleReleaseMetaBuilder().
 				WithModuleName(restrictedModuleName).
@@ -225,6 +238,36 @@ func TestValidateTemplateMode_RestrictedModules(t *testing.T) {
 				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
 			},
 			wantErr: nil,
+		},
+		{
+			name:              "When module NOT in restricted list but has selector, Then not allowed",
+			restrictedModules: []string{"other-module"},
+			mrm: builder.NewModuleReleaseMetaBuilder().
+				WithModuleName(restrictedModuleName).
+				WithGlobalAccountKymaSelector("account-1").
+				Build(),
+			kyma: builder.NewKymaBuilder().
+				WithLabel(shared.GlobalAccountIDLabel, "account-1").
+				Build(),
+			template: templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
+			},
+			wantErr: templatelookup.ErrTemplateNotAllowed,
+		},
+		{
+			name:              "When module in restricted list but no selector configured, Then not allowed",
+			restrictedModules: []string{restrictedModuleName},
+			mrm: builder.NewModuleReleaseMetaBuilder().
+				WithModuleName(restrictedModuleName).
+				WithKymaSelector(nil).
+				Build(),
+			kyma: builder.NewKymaBuilder().
+				WithLabel(shared.GlobalAccountIDLabel, "account-1").
+				Build(),
+			template: templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
+			},
+			wantErr: templatelookup.ErrTemplateNotAllowed,
 		},
 		{
 			name:              "When restricted modules list is empty, Then allowed",

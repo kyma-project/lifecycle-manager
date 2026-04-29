@@ -161,15 +161,31 @@ func (t *TemplateLookup) validateTemplateMode(template ModuleTemplateInfo,
 			common.ErrNoTemplatesInListResult, template.Name, template.DesiredChannel)
 		return template
 	}
-	if mrm != nil && slices.Contains(t.restrictedModules, mrm.Spec.ModuleName) {
-		matched, err := restrictedmodule.RestrictedModuleMatch(mrm, kyma)
-		if err != nil {
-			template.Err = fmt.Errorf("%w: %w", ErrTemplateNotAllowed, err)
+	if mrm != nil {
+		inRestrictedList := slices.Contains(t.restrictedModules, mrm.Spec.ModuleName)
+		hasSelector := mrm.Spec.KymaSelector != nil
+
+		switch {
+		case !inRestrictedList && !hasSelector:
+			// normal module, allow
+		case !inRestrictedList && hasSelector:
+			template.Err = fmt.Errorf("%w: module has kymaSelector but is not in restricted modules list",
+				ErrTemplateNotAllowed)
 			return template
-		}
-		if !matched {
-			template.Err = fmt.Errorf("%w: restricted module not allowed for this Kyma", ErrTemplateNotAllowed)
+		case inRestrictedList && !hasSelector:
+			template.Err = fmt.Errorf("%w: restricted module has no kymaSelector configured",
+				ErrTemplateNotAllowed)
 			return template
+		case inRestrictedList && hasSelector:
+			matched, err := restrictedmodule.RestrictedModuleMatch(mrm, kyma)
+			if err != nil {
+				template.Err = fmt.Errorf("%w: %w", ErrTemplateNotAllowed, err)
+				return template
+			}
+			if !matched {
+				template.Err = fmt.Errorf("%w: restricted module not allowed for this Kyma", ErrTemplateNotAllowed)
+				return template
+			}
 		}
 	}
 	return template
