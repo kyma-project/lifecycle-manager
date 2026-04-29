@@ -13,7 +13,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
-	"github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
+	restrictedmodulesvc "github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 )
 
@@ -176,7 +176,7 @@ func (t *TemplateLookup) validateTemplateMode(template ModuleTemplateInfo,
 			template.Err = ErrTemplateNotAllowed
 			return template
 		case inRestrictedList && hasSelector:
-			matched, err := restrictedmodule.RestrictedModuleMatch(mrm, kyma)
+			matched, err := restrictedmodulesvc.RestrictedModuleMatch(mrm, kyma)
 			if err != nil {
 				template.Err = fmt.Errorf("%w: %w", ErrTemplateNotAllowed, err)
 				return template

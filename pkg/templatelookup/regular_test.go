@@ -18,7 +18,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
-	"github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
+	restrictedmodulesvc "github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
@@ -303,7 +303,7 @@ func TestValidateTemplateMode_RestrictedModules(t *testing.T) {
 			template: templatelookup.ModuleTemplateInfo{
 				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
 			},
-			wantErr:     restrictedmodule.ErrSelectorParse,
+			wantErr:     restrictedmodulesvc.ErrSelectorParse,
 			wantErrAlso: templatelookup.ErrTemplateNotAllowed,
 		},
 		{
