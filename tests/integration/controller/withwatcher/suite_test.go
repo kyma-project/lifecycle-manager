@@ -211,7 +211,7 @@ var _ = BeforeSuite(func() {
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
 		Metrics:              kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
-			flags.DefaultRemoteSyncNamespace),
+			flags.DefaultRemoteSyncNamespace, nil),
 		Config:          kymaReconcilerConfig,
 		DeletionMetrics: deletionMetrics,
 		DeletionEvents:  deletionEvents,

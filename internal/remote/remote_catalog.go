@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
+	"github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
 )
 
 type Settings struct {
@@ -22,6 +24,7 @@ type RemoteCatalog struct {
 	kcpClient                         client.Client
 	skrContextFactory                 SkrContextProvider
 	settings                          Settings
+	restrictedModules                 []string
 	moduleTemplateSyncAPIFactoryFn    moduleTemplateSyncAPIFactory
 	moduleReleaseMetaSyncAPIFactoryFn moduleReleaseMetaSyncAPIFactory
 }
@@ -46,7 +49,7 @@ type moduleReleaseMetaSyncAPIFactory func(kcpClient, skrClient client.Client,
 ) moduleReleaseMetaSyncAPI
 
 func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrContextProvider,
-	remoteSyncNamespace string,
+	remoteSyncNamespace string, restrictedModules []string,
 ) *RemoteCatalog {
 	force := true
 	return newRemoteCatalog(kcpClient, skrContextFactory,
@@ -54,10 +57,13 @@ func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrCont
 			SSAPatchOptions: &client.PatchOptions{FieldManager: string(fieldowners.ModuleCatalogSync), Force: &force},
 			Namespace:       remoteSyncNamespace,
 		},
+		restrictedModules,
 	)
 }
 
-func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvider, settings Settings) *RemoteCatalog {
+func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvider,
+	settings Settings, restrictedModules []string,
+) *RemoteCatalog {
 	var moduleTemplateSyncerAPIFactoryFn moduleTemplateSyncAPIFactory = func(kcpClient, skrClient client.Client,
 		settings *Settings,
 	) moduleTemplateSyncAPI {
@@ -74,6 +80,7 @@ func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvi
 		kcpClient:                         kcpClient,
 		skrContextFactory:                 skrContextFactory,
 		settings:                          settings,
+		restrictedModules:                 restrictedModules,
 		moduleTemplateSyncAPIFactoryFn:    moduleTemplateSyncerAPIFactoryFn,
 		moduleReleaseMetaSyncAPIFactoryFn: moduleReleaseMetaSyncerAPIFactoryFn,
 	}
@@ -116,6 +123,7 @@ func (c *RemoteCatalog) Delete(
 // GetModuleReleaseMetasToSync returns a list of ModuleReleaseMetas that should be synced to the SKR.
 // A ModuleReleaseMeta is synced if it has at least
 // one channel-version pair whose ModuleTemplate is allowed to be synced.
+// Restricted modules (in the restrictedModules list) are only synced if the MRM's kymaSelector matches the Kyma.
 func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 	ctx context.Context,
 	kyma *v1beta2.Kyma,
@@ -130,12 +138,21 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 
 	for _, moduleReleaseMeta := range moduleReleaseMetaList.Items {
 		if moduleReleaseMeta.Spec.Mandatory != nil {
-			// Skip mandatory ModuleReleaseMetas as they are not allowed to be synced
 			continue
 		}
 
+		if c.isRestrictedModule(moduleReleaseMeta.Spec.ModuleName) {
+			matched, err := restrictedmodule.RestrictedModuleMatch(&moduleReleaseMeta, kyma)
+			if err != nil {
+				return nil, fmt.Errorf("failed to evaluate restricted module match for %s: %w",
+					moduleReleaseMeta.Spec.ModuleName, err)
+			}
+			if !matched {
+				continue
+			}
+		}
+
 		allowedChannels := []v1beta2.ChannelVersionAssignment{}
-		// Only add channel-version pairs which have allowed ModuleTemplates to be synced
 		for _, channel := range moduleReleaseMeta.Spec.Channels {
 			if IsAllowedModuleVersion(kyma, moduleTemplateList, moduleReleaseMeta.Spec.ModuleName, channel.Version) {
 				allowedChannels = append(allowedChannels, channel)
@@ -150,6 +167,10 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 	}
 
 	return moduleReleaseMetas, nil
+}
+
+func (c *RemoteCatalog) isRestrictedModule(moduleName string) bool {
+	return slices.Contains(c.restrictedModules, moduleName)
 }
 
 func IsAllowedModuleVersion(kyma *v1beta2.Kyma, moduleTemplateList *v1beta2.ModuleTemplateList,

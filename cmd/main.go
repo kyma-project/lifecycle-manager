@@ -470,7 +470,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		},
 		Metrics: kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, skrContextFactory,
-			flagVar.RemoteSyncNamespace),
+			flagVar.RemoteSyncNamespace, flagVar.GetRestrictedDefaultModules()),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
 			moduleTemplateInfoLookup),
 		Config:          kymaReconcilerConfig,

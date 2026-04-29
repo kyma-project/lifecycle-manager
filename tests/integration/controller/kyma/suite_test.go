@@ -232,7 +232,7 @@ var _ = BeforeSuite(func() {
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
 		RequeueIntervals:     intervals,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
-			flags.DefaultRemoteSyncNamespace),
+			flags.DefaultRemoteSyncNamespace, nil),
 		Metrics: kymaMetrics,
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
 			moduletemplateinfolookup.NewLookup(kcpClient)),

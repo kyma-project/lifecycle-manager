@@ -19,7 +19,7 @@ import (
 )
 
 func Test_GetModuleReleaseMetasToSync_ReturnsError_ForErrorClient(t *testing.T) {
-	remoteCatalog := remote.NewRemoteCatalogFromKyma(newErrorClient(), nil, "kyma-system")
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(newErrorClient(), nil, "kyma-system", nil)
 	kyma := newKymaBuilder().build()
 
 	_, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, nil)
@@ -29,7 +29,7 @@ func Test_GetModuleReleaseMetasToSync_ReturnsError_ForErrorClient(t *testing.T) 
 }
 
 func Test_GetModuleReleaseMetasToSync_ReturnsNonBetaNonInternalMRM_ForNonBetaNonInternalKyma(t *testing.T) {
-	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system", nil)
 	kyma := newKymaBuilder().build()
 	mts := &v1beta2.ModuleTemplateList{}
 	err := fakeClient().List(t.Context(), mts)
@@ -50,7 +50,7 @@ func Test_GetModuleReleaseMetasToSync_ReturnsNonBetaNonInternalMRM_ForNonBetaNon
 }
 
 func Test_GetModuleReleaseMetasToSync_ReturnsBetaNonInternalMRM_ForBetaNonInternalKyma(t *testing.T) {
-	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system", nil)
 	kyma := newKymaBuilder().withBetaEnabled().build()
 	mts := &v1beta2.ModuleTemplateList{}
 	err := fakeClient().List(t.Context(), mts)
@@ -71,7 +71,7 @@ func Test_GetModuleReleaseMetasToSync_ReturnsBetaNonInternalMRM_ForBetaNonIntern
 }
 
 func Test_GetModuleReleaseMetasToSync_ReturnsNonBetaInternalMRM_ForNonBetaInternalKyma(t *testing.T) {
-	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system", nil)
 	kyma := newKymaBuilder().withInternalEnabled().build()
 	mts := &v1beta2.ModuleTemplateList{}
 	err := fakeClient().List(t.Context(), mts)
@@ -91,7 +91,7 @@ func Test_GetModuleReleaseMetasToSync_ReturnsNonBetaInternalMRM_ForNonBetaIntern
 }
 
 func Test_GetModuleReleaseMetasToSync_ReturnsBetaInternalMRM_ForBetaInternalKyma(t *testing.T) {
-	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system", nil)
 	kyma := newKymaBuilder().withBetaEnabled().withInternalEnabled().build()
 	mts := &v1beta2.ModuleTemplateList{}
 	err := fakeClient().List(t.Context(), mts)
@@ -116,7 +116,7 @@ func Test_GetModuleReleaseMetasToSync_ReturnsBetaInternalMRM_ForBetaInternalKyma
 }
 
 func Test_GetModuleReleaseMetasToSync_SkipsMandatoryMRM_ForAnyKyma(t *testing.T) {
-	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system", nil)
 	kyma := newKymaBuilder().build()
 	mts := &v1beta2.ModuleTemplateList{}
 	err := fakeClient().List(t.Context(), mts)
@@ -132,7 +132,7 @@ func Test_GetModuleReleaseMetasToSync_SkipsMandatoryMRM_ForAnyKyma(t *testing.T)
 }
 
 func Test_GetModuleTemplatesToSync_ReturnsMTsThatAreReferencedInMRMAndNotMandatoryNotSyncDisabled(t *testing.T) {
-	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system", nil)
 	kyma := newKymaBuilder().build()
 	mts := &v1beta2.ModuleTemplateList{}
 	err := fakeClient().List(t.Context(), mts)
@@ -303,6 +303,425 @@ func Test_IsAllowedModuleVersion_ForInternalKyma_InternalModule(t *testing.T) {
 
 	isAllowed := remote.IsAllowedModuleVersion(kyma, mts, "internal-module", "1.0.0")
 	require.True(t, isAllowed)
+}
+
+func Test_GetModuleReleaseMetasToSync_RestrictedModule_NotSynced_WhenNilSelector(t *testing.T) {
+	restrictedMRM := newModuleReleaseMetaBuilder().
+		withName("restricted-module").
+		withChannelVersion("regular", "1.0.0").
+		build()
+	restrictedMT := newModuleTemplateBuilder().
+		withName("restricted-module-1.0.0").
+		withModuleName("restricted-module").
+		withVersion("1.0.0").
+		build()
+	fakeKcpClient := fakeClientWith([]v1beta2.ModuleReleaseMeta{*restrictedMRM}, []v1beta2.ModuleTemplate{*restrictedMT})
+
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeKcpClient, nil, "kyma-system",
+		[]string{"restricted-module"})
+	kyma := newKymaBuilder().withLabel("kyma-project.io/global-account-id", "account-123").build()
+	mts := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{*restrictedMT}}
+
+	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
+
+	require.NoError(t, err)
+	assert.Empty(t, mrms)
+}
+
+func Test_GetModuleReleaseMetasToSync_RestrictedModule_NotSynced_WhenEmptySelector(t *testing.T) {
+	restrictedMRM := newModuleReleaseMetaBuilder().
+		withName("restricted-module").
+		withChannelVersion("regular", "1.0.0").
+		withKymaSelector(&apimetav1.LabelSelector{}).
+		build()
+	restrictedMT := newModuleTemplateBuilder().
+		withName("restricted-module-1.0.0").
+		withModuleName("restricted-module").
+		withVersion("1.0.0").
+		build()
+	fakeKcpClient := fakeClientWith([]v1beta2.ModuleReleaseMeta{*restrictedMRM}, []v1beta2.ModuleTemplate{*restrictedMT})
+
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeKcpClient, nil, "kyma-system",
+		[]string{"restricted-module"})
+	kyma := newKymaBuilder().withLabel("kyma-project.io/global-account-id", "account-123").build()
+	mts := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{*restrictedMT}}
+
+	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
+
+	require.NoError(t, err)
+	assert.Empty(t, mrms)
+}
+
+func Test_GetModuleReleaseMetasToSync_RestrictedModule_Synced_WhenKymaMatchesSelector(t *testing.T) {
+	restrictedMRM := newModuleReleaseMetaBuilder().
+		withName("restricted-module").
+		withChannelVersion("regular", "1.0.0").
+		withKymaSelector(&apimetav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"kyma-project.io/global-account-id": "account-123",
+			},
+		}).
+		build()
+	restrictedMT := newModuleTemplateBuilder().
+		withName("restricted-module-1.0.0").
+		withModuleName("restricted-module").
+		withVersion("1.0.0").
+		build()
+	fakeKcpClient := fakeClientWith([]v1beta2.ModuleReleaseMeta{*restrictedMRM}, []v1beta2.ModuleTemplate{*restrictedMT})
+
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeKcpClient, nil, "kyma-system",
+		[]string{"restricted-module"})
+	kyma := newKymaBuilder().withLabel("kyma-project.io/global-account-id", "account-123").build()
+	mts := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{*restrictedMT}}
+
+	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
+
+	require.NoError(t, err)
+	require.Len(t, mrms, 1)
+	assert.Equal(t, "restricted-module", mrms[0].Spec.ModuleName)
+}
+
+func Test_GetModuleReleaseMetasToSync_RestrictedModule_NotSynced_WhenKymaDoesNotMatchSelector(t *testing.T) {
+	restrictedMRM := newModuleReleaseMetaBuilder().
+		withName("restricted-module").
+		withChannelVersion("regular", "1.0.0").
+		withKymaSelector(&apimetav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"kyma-project.io/global-account-id": "account-123",
+			},
+		}).
+		build()
+	restrictedMT := newModuleTemplateBuilder().
+		withName("restricted-module-1.0.0").
+		withModuleName("restricted-module").
+		withVersion("1.0.0").
+		build()
+	fakeKcpClient := fakeClientWith([]v1beta2.ModuleReleaseMeta{*restrictedMRM}, []v1beta2.ModuleTemplate{*restrictedMT})
+
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeKcpClient, nil, "kyma-system",
+		[]string{"restricted-module"})
+	kyma := newKymaBuilder().withLabel("kyma-project.io/global-account-id", "different-account").build()
+	mts := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{*restrictedMT}}
+
+	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
+
+	require.NoError(t, err)
+	assert.Empty(t, mrms)
+}
+
+func Test_GetModuleReleaseMetasToSync_RestrictedModule_Synced_WhenMatchExpressionMatches(t *testing.T) {
+	restrictedMRM := newModuleReleaseMetaBuilder().
+		withName("restricted-module").
+		withChannelVersion("regular", "1.0.0").
+		withKymaSelector(&apimetav1.LabelSelector{
+			MatchExpressions: []apimetav1.LabelSelectorRequirement{
+				{
+					Key:      "kyma-project.io/global-account-id",
+					Operator: apimetav1.LabelSelectorOpIn,
+					Values:   []string{"account-111", "account-222", "account-333"},
+				},
+			},
+		}).
+		build()
+	restrictedMT := newModuleTemplateBuilder().
+		withName("restricted-module-1.0.0").
+		withModuleName("restricted-module").
+		withVersion("1.0.0").
+		build()
+	fakeKcpClient := fakeClientWith([]v1beta2.ModuleReleaseMeta{*restrictedMRM}, []v1beta2.ModuleTemplate{*restrictedMT})
+
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeKcpClient, nil, "kyma-system",
+		[]string{"restricted-module"})
+	kyma := newKymaBuilder().withLabel("kyma-project.io/global-account-id", "account-222").build()
+	mts := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{*restrictedMT}}
+
+	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
+
+	require.NoError(t, err)
+	require.Len(t, mrms, 1)
+	assert.Equal(t, "restricted-module", mrms[0].Spec.ModuleName)
+}
+
+func Test_GetModuleReleaseMetasToSync_RestrictedModule_NotSynced_WhenMatchExpressionDoesNotMatch(t *testing.T) {
+	restrictedMRM := newModuleReleaseMetaBuilder().
+		withName("restricted-module").
+		withChannelVersion("regular", "1.0.0").
+		withKymaSelector(&apimetav1.LabelSelector{
+			MatchExpressions: []apimetav1.LabelSelectorRequirement{
+				{
+					Key:      "kyma-project.io/global-account-id",
+					Operator: apimetav1.LabelSelectorOpIn,
+					Values:   []string{"account-111", "account-222"},
+				},
+			},
+		}).
+		build()
+	restrictedMT := newModuleTemplateBuilder().
+		withName("restricted-module-1.0.0").
+		withModuleName("restricted-module").
+		withVersion("1.0.0").
+		build()
+	fakeKcpClient := fakeClientWith([]v1beta2.ModuleReleaseMeta{*restrictedMRM}, []v1beta2.ModuleTemplate{*restrictedMT})
+
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeKcpClient, nil, "kyma-system",
+		[]string{"restricted-module"})
+	kyma := newKymaBuilder().withLabel("kyma-project.io/global-account-id", "account-999").build()
+	mts := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{*restrictedMT}}
+
+	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
+
+	require.NoError(t, err)
+	assert.Empty(t, mrms)
+}
+
+func Test_GetModuleReleaseMetasToSync_NonRestrictedModule_Synced_RegardlessOfSelector(t *testing.T) {
+	mrmWithSelector := newModuleReleaseMetaBuilder().
+		withName("regular-module").
+		withChannelVersion("regular", "1.0.0").
+		withKymaSelector(&apimetav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"kyma-project.io/global-account-id": "account-123",
+			},
+		}).
+		build()
+	mt := newModuleTemplateBuilder().
+		withName("regular-module-1.0.0").
+		withModuleName("regular-module").
+		withVersion("1.0.0").
+		build()
+	fakeKcpClient := fakeClientWith([]v1beta2.ModuleReleaseMeta{*mrmWithSelector}, []v1beta2.ModuleTemplate{*mt})
+
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeKcpClient, nil, "kyma-system",
+		[]string{"other-restricted-module"})
+	kyma := newKymaBuilder().withLabel("kyma-project.io/global-account-id", "different-account").build()
+	mts := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{*mt}}
+
+	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
+
+	require.NoError(t, err)
+	require.Len(t, mrms, 1)
+	assert.Equal(t, "regular-module", mrms[0].Spec.ModuleName)
+}
+
+func Test_GetModuleReleaseMetasToSync_NonRestrictedModule_Synced_WhenNoRestrictedModulesConfigured(t *testing.T) {
+	mrm := newModuleReleaseMetaBuilder().
+		withName("regular-module").
+		withChannelVersion("regular", "1.0.0").
+		withKymaSelector(&apimetav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"kyma-project.io/global-account-id": "account-123",
+			},
+		}).
+		build()
+	mt := newModuleTemplateBuilder().
+		withName("regular-module-1.0.0").
+		withModuleName("regular-module").
+		withVersion("1.0.0").
+		build()
+	fakeKcpClient := fakeClientWith([]v1beta2.ModuleReleaseMeta{*mrm}, []v1beta2.ModuleTemplate{*mt})
+
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeKcpClient, nil, "kyma-system", nil)
+	kyma := newKymaBuilder().build()
+	mts := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{*mt}}
+
+	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
+
+	require.NoError(t, err)
+	require.Len(t, mrms, 1)
+	assert.Equal(t, "regular-module", mrms[0].Spec.ModuleName)
+}
+
+func Test_GetModuleReleaseMetasToSync_RestrictedModule_OnlyMatchingChannelsIncluded(t *testing.T) {
+	restrictedMRM := newModuleReleaseMetaBuilder().
+		withName("restricted-module").
+		withChannelVersion("regular", "1.0.0").
+		withChannelVersion("fast", "2.0.0").
+		withKymaSelector(&apimetav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"kyma-project.io/global-account-id": "account-123",
+			},
+		}).
+		build()
+	mt1 := newModuleTemplateBuilder().
+		withName("restricted-module-1.0.0").
+		withModuleName("restricted-module").
+		withVersion("1.0.0").
+		build()
+	mt2 := newModuleTemplateBuilder().
+		withName("restricted-module-2.0.0").
+		withModuleName("restricted-module").
+		withVersion("2.0.0").
+		withBetaEnabled().
+		build()
+	fakeKcpClient := fakeClientWith(
+		[]v1beta2.ModuleReleaseMeta{*restrictedMRM},
+		[]v1beta2.ModuleTemplate{*mt1, *mt2},
+	)
+
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeKcpClient, nil, "kyma-system",
+		[]string{"restricted-module"})
+	kyma := newKymaBuilder().withLabel("kyma-project.io/global-account-id", "account-123").build()
+	mts := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{*mt1, *mt2}}
+
+	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
+
+	require.NoError(t, err)
+	require.Len(t, mrms, 1)
+	assert.Equal(t, "restricted-module", mrms[0].Spec.ModuleName)
+	assert.Len(t, mrms[0].Spec.Channels, 1)
+	assert.Equal(t, "regular", mrms[0].Spec.Channels[0].Channel)
+}
+
+func Test_GetModuleReleaseMetasToSync_MixedRestrictedAndNonRestricted(t *testing.T) {
+	restrictedMRM := newModuleReleaseMetaBuilder().
+		withName("restricted-module").
+		withChannelVersion("regular", "1.0.0").
+		withKymaSelector(&apimetav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"kyma-project.io/global-account-id": "account-123",
+			},
+		}).
+		build()
+	regularMRM := newModuleReleaseMetaBuilder().
+		withName("regular-module").
+		withChannelVersion("regular", "1.0.0").
+		build()
+	restrictedMT := newModuleTemplateBuilder().
+		withName("restricted-module-1.0.0").
+		withModuleName("restricted-module").
+		withVersion("1.0.0").
+		build()
+	regularMT := newModuleTemplateBuilder().
+		withName("regular-module-1.0.0").
+		withModuleName("regular-module").
+		withVersion("1.0.0").
+		build()
+	fakeKcpClient := fakeClientWith(
+		[]v1beta2.ModuleReleaseMeta{*restrictedMRM, *regularMRM},
+		[]v1beta2.ModuleTemplate{*restrictedMT, *regularMT},
+	)
+	mts := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{*restrictedMT, *regularMT}}
+
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeKcpClient, nil, "kyma-system",
+		[]string{"restricted-module"})
+	kyma := newKymaBuilder().withLabel("kyma-project.io/global-account-id", "non-matching").build()
+
+	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
+
+	require.NoError(t, err)
+	require.Len(t, mrms, 1)
+	assert.Equal(t, "regular-module", mrms[0].Spec.ModuleName)
+}
+
+func Test_GetModuleReleaseMetasToSync_MixedRestrictedAndNonRestricted_BothSynced_WhenKymaMatches(t *testing.T) {
+	restrictedMRM := newModuleReleaseMetaBuilder().
+		withName("restricted-module").
+		withChannelVersion("regular", "1.0.0").
+		withKymaSelector(&apimetav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"kyma-project.io/global-account-id": "account-123",
+			},
+		}).
+		build()
+	regularMRM := newModuleReleaseMetaBuilder().
+		withName("regular-module").
+		withChannelVersion("regular", "1.0.0").
+		build()
+	restrictedMT := newModuleTemplateBuilder().
+		withName("restricted-module-1.0.0").
+		withModuleName("restricted-module").
+		withVersion("1.0.0").
+		build()
+	regularMT := newModuleTemplateBuilder().
+		withName("regular-module-1.0.0").
+		withModuleName("regular-module").
+		withVersion("1.0.0").
+		build()
+	fakeKcpClient := fakeClientWith(
+		[]v1beta2.ModuleReleaseMeta{*restrictedMRM, *regularMRM},
+		[]v1beta2.ModuleTemplate{*restrictedMT, *regularMT},
+	)
+	mts := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{*restrictedMT, *regularMT}}
+
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeKcpClient, nil, "kyma-system",
+		[]string{"restricted-module"})
+	kyma := newKymaBuilder().withLabel("kyma-project.io/global-account-id", "account-123").build()
+
+	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
+
+	require.NoError(t, err)
+	require.Len(t, mrms, 2)
+	syncedNames := []string{mrms[0].Spec.ModuleName, mrms[1].Spec.ModuleName}
+	assert.Contains(t, syncedNames, "restricted-module")
+	assert.Contains(t, syncedNames, "regular-module")
+}
+
+func Test_GetModuleReleaseMetasToSync_MultipleRestrictedModules_OnlyMatchingSynced(t *testing.T) {
+	restrictedMRM1 := newModuleReleaseMetaBuilder().
+		withName("restricted-one").
+		withChannelVersion("regular", "1.0.0").
+		withKymaSelector(&apimetav1.LabelSelector{
+			MatchLabels: map[string]string{"kyma-project.io/global-account-id": "account-123"},
+		}).
+		build()
+	restrictedMRM2 := newModuleReleaseMetaBuilder().
+		withName("restricted-two").
+		withChannelVersion("regular", "1.0.0").
+		withKymaSelector(&apimetav1.LabelSelector{
+			MatchLabels: map[string]string{"kyma-project.io/global-account-id": "account-456"},
+		}).
+		build()
+	mt1 := newModuleTemplateBuilder().
+		withName("restricted-one-1.0.0").
+		withModuleName("restricted-one").
+		withVersion("1.0.0").
+		build()
+	mt2 := newModuleTemplateBuilder().
+		withName("restricted-two-1.0.0").
+		withModuleName("restricted-two").
+		withVersion("1.0.0").
+		build()
+	fakeKcpClient := fakeClientWith(
+		[]v1beta2.ModuleReleaseMeta{*restrictedMRM1, *restrictedMRM2},
+		[]v1beta2.ModuleTemplate{*mt1, *mt2},
+	)
+	mts := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{*mt1, *mt2}}
+
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeKcpClient, nil, "kyma-system",
+		[]string{"restricted-one", "restricted-two"})
+	kyma := newKymaBuilder().withLabel("kyma-project.io/global-account-id", "account-123").build()
+
+	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
+
+	require.NoError(t, err)
+	require.Len(t, mrms, 1)
+	assert.Equal(t, "restricted-one", mrms[0].Spec.ModuleName)
+}
+
+func Test_GetModuleReleaseMetasToSync_RestrictedModule_EmptyRestrictedList_SyncsNormally(t *testing.T) {
+	mrmWithSelector := newModuleReleaseMetaBuilder().
+		withName("some-module").
+		withChannelVersion("regular", "1.0.0").
+		withKymaSelector(&apimetav1.LabelSelector{
+			MatchLabels: map[string]string{"kyma-project.io/global-account-id": "account-123"},
+		}).
+		build()
+	mt := newModuleTemplateBuilder().
+		withName("some-module-1.0.0").
+		withModuleName("some-module").
+		withVersion("1.0.0").
+		build()
+	fakeKcpClient := fakeClientWith([]v1beta2.ModuleReleaseMeta{*mrmWithSelector}, []v1beta2.ModuleTemplate{*mt})
+
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeKcpClient, nil, "kyma-system", []string{})
+	kyma := newKymaBuilder().build()
+	mts := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{*mt}}
+
+	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
+
+	require.NoError(t, err)
+	require.Len(t, mrms, 1)
+	assert.Equal(t, "some-module", mrms[0].Spec.ModuleName)
 }
 
 func moduleReleaseMetas() v1beta2.ModuleReleaseMetaList {
@@ -504,6 +923,16 @@ func fakeClient() client.Client {
 	return fake.NewClientBuilder().WithScheme(scheme).WithLists(&mrms, &mts).Build()
 }
 
+func fakeClientWith(mrms []v1beta2.ModuleReleaseMeta, mts []v1beta2.ModuleTemplate) client.Client {
+	mrmList := v1beta2.ModuleReleaseMetaList{Items: mrms}
+	mtList := v1beta2.ModuleTemplateList{Items: mts}
+
+	scheme := machineryruntime.NewScheme()
+	machineryutilruntime.Must(api.AddToScheme(scheme))
+
+	return fake.NewClientBuilder().WithScheme(scheme).WithLists(&mrmList, &mtList).Build()
+}
+
 type moduleReleaseMetaBuilder struct {
 	moduleReleaseMeta *v1beta2.ModuleReleaseMeta
 }
@@ -542,6 +971,11 @@ func (b *moduleReleaseMetaBuilder) withMandatory(version string) *moduleReleaseM
 	}
 	// Clear channels as mandatory modules cannot have channels (per validation rule)
 	b.moduleReleaseMeta.Spec.Channels = nil
+	return b
+}
+
+func (b *moduleReleaseMetaBuilder) withKymaSelector(selector *apimetav1.LabelSelector) *moduleReleaseMetaBuilder {
+	b.moduleReleaseMeta.Spec.KymaSelector = selector
 	return b
 }
 
@@ -624,6 +1058,11 @@ func (b *kymaBuilder) withBetaEnabled() *kymaBuilder {
 
 func (b *kymaBuilder) withInternalEnabled() *kymaBuilder {
 	b.kyma.Labels[shared.InternalLabel] = shared.EnableLabelValue
+	return b
+}
+
+func (b *kymaBuilder) withLabel(key, value string) *kymaBuilder {
+	b.kyma.Labels[key] = value
 	return b
 }
 
