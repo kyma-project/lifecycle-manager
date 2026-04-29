@@ -32,6 +32,12 @@ var _ = Describe("Kyma is reconciled correctly based on the event filters", Orde
 			Should(Succeed())
 	})
 
+	AfterAll(func() {
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma).Should(Succeed())
+	})
+
 	BeforeEach(func() {
 		By("get latest kyma CR")
 		Eventually(SyncKyma, Timeout, Interval).
@@ -72,11 +78,5 @@ var _ = Describe("Kyma is reconciled correctly based on the event filters", Orde
 				WithArguments(kcpClient, kyma.Name, kyma.Namespace, labelKey, labelValue, shared.StateReady).
 				Should(Succeed())
 		})
-	})
-
-	AfterAll(func() {
-		Eventually(DeleteCR, Timeout, Interval).
-			WithContext(ctx).
-			WithArguments(kcpClient, kyma).Should(Succeed())
 	})
 })

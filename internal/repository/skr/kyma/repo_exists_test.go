@@ -63,7 +63,7 @@ func TestExists_ClientCallFailsWithNotFound_ReturnsFalse(t *testing.T) {
 			},
 		},
 		err: apierrors.NewNotFound(schema.GroupResource{
-			Group:    v1beta2.GroupVersion.Group,
+			Group:    v1beta2.SchemeGroupVersion.Group,
 			Resource: string(shared.KymaKind),
 		}, random.Name()),
 	}

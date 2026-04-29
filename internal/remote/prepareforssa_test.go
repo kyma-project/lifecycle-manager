@@ -32,31 +32,31 @@ func TestPrepareForSSA(t *testing.T) {
 		assert.Equal(t, "bar", testModule.GetLabels()["foo"])
 		assert.Equal(t, "default", testModule.GetNamespace())
 
-		prepareModuleTemplateForSSA(&testModule, "someNamespace")
+		applyConfiguration := prepareModuleTemplateForSSA(&testModule, "someNamespace")
 
-		assert.Empty(t, testModule.GetResourceVersion())
-		assert.Empty(t, testModule.GetUID())
-		assert.Empty(t, testModule.GetManagedFields())
-		assert.Len(t, testModule.GetLabels(), 2)
-		assert.Equal(t, "bar", testModule.GetLabels()["foo"])
-		assert.Equal(t, shared.ManagedByLabelValue, testModule.GetLabels()[shared.ManagedBy])
-		assert.Equal(t, "someNamespace", testModule.GetNamespace())
+		assert.Nil(t, applyConfiguration.ResourceVersion)
+		assert.Nil(t, applyConfiguration.UID)
+		assert.Len(t, applyConfiguration.Labels, 2)
+		assert.Equal(t, "bar", applyConfiguration.Labels["foo"])
+		assert.Equal(t, shared.ManagedByLabelValue, applyConfiguration.Labels[shared.ManagedBy])
+		assert.Equal(t, "someNamespace", *applyConfiguration.Namespace)
 	})
 
-	t.Run("ensure no other fields are modified", func(t *testing.T) {
+	t.Run("ensure no fields of the original object are modified except the Namespace", func(t *testing.T) {
 		// given
-		testModule := v1beta2.ModuleTemplate{}
-		prepareModuleTemplateForSSA(&testModule, "someNamespace")
-
-		afterPrepareJSON, err := json.Marshal(testModule)
-		require.NoError(t, err)
-
 		expected := v1beta2.ModuleTemplate{}
 		expected.SetNamespace("someNamespace")
-		expected.SetLabels(map[string]string{shared.ManagedBy: shared.ManagedByLabelValue})
 		expectedJSON, err := json.Marshal(expected)
 		require.NoError(t, err)
 
+		testModule := v1beta2.ModuleTemplate{}
+
+		// when
+		prepareModuleTemplateForSSA(&testModule, "someNamespace")
+
+		// then
+		afterPrepareJSON, err := json.Marshal(testModule)
+		require.NoError(t, err)
 		assert.JSONEq(t, string(expectedJSON), string(afterPrepareJSON))
 	})
 }

@@ -354,6 +354,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	moduleReleaseMetaInKCP := builder.NewModuleReleaseMetaBuilder().
 		WithName("modulereleasemeta-inkcp").
 		WithModuleName(moduleInKCP.Name).
+		WithOcmComponentName(FullOCMName(moduleInKCP.Name)).
 		WithSingleModuleChannelAndVersions(v1beta2.DefaultChannel, "0.1.0").
 		Build()
 	kyma.Spec.Modules = []v1beta2.Module{

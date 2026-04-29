@@ -1,3 +1,4 @@
+//nolint:dupl,revive // False positive. The code has identical structure as modulereleasemeta_syncer.go, but the types are different. Even if this could be handled with generics, I don't think the reduced readability would be worth it.
 package remote
 
 import (
@@ -52,15 +53,15 @@ func newModuleTemplateSyncer(kcpClient, skrClient client.Client, settings *Setti
 // 1. All ModuleTemplates that have to be created based on the ModuleTemplates existing in the  Control Plane.
 // 2. All ModuleTemplates that have to be removed as they are not existing in the Control Plane.
 // It uses Server-Side-Apply Patches to optimize the turnaround required.
-func (mts *moduleTemplateSyncer) SyncToSKR(ctx context.Context, kcpModules []v1beta2.ModuleTemplate) error {
-	worker := mts.syncWorkerFactoryFn(mts.kcpClient, mts.skrClient, mts.settings)
+func (mtSyncer *moduleTemplateSyncer) SyncToSKR(ctx context.Context, kcpModules []v1beta2.ModuleTemplate) error {
+	worker := mtSyncer.syncWorkerFactoryFn(mtSyncer.kcpClient, mtSyncer.skrClient, mtSyncer.settings)
 
 	if err := worker.SyncConcurrently(ctx, kcpModules); err != nil {
 		return err
 	}
 
 	runtimeModules := &v1beta2.ModuleTemplateList{}
-	if err := mts.skrClient.List(ctx, runtimeModules); err != nil {
+	if err := mtSyncer.skrClient.List(ctx, runtimeModules); err != nil {
 		// it can happen that the ModuleTemplate CRD is not caught during to apply if there are no modules to apply
 		// if this is the case and there is no CRD there can never be any module templates to delete
 		if meta.IsNoMatchError(err) {
@@ -75,9 +76,9 @@ func (mts *moduleTemplateSyncer) SyncToSKR(ctx context.Context, kcpModules []v1b
 }
 
 // DeleteAllManaged deletes all ModuleTemplates managed by KLM from the SKR cluster.
-func (mts *moduleTemplateSyncer) DeleteAllManaged(ctx context.Context) error {
+func (mtSyncer *moduleTemplateSyncer) DeleteAllManaged(ctx context.Context) error {
 	moduleTemplatesRuntime := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{}}
-	if err := mts.skrClient.List(ctx, moduleTemplatesRuntime); err != nil {
+	if err := mtSyncer.skrClient.List(ctx, moduleTemplatesRuntime); err != nil {
 		// if there is no CRD or no module template exists,
 		// there can never be any module templates to delete
 		if util.IsNotFound(err) {
@@ -87,7 +88,7 @@ func (mts *moduleTemplateSyncer) DeleteAllManaged(ctx context.Context) error {
 	}
 	for i := range moduleTemplatesRuntime.Items {
 		if isModuleTemplateManagedByKcp(&moduleTemplatesRuntime.Items[i]) {
-			if err := mts.skrClient.Delete(ctx, &moduleTemplatesRuntime.Items[i]); err != nil &&
+			if err := mtSyncer.skrClient.Delete(ctx, &moduleTemplatesRuntime.Items[i]); err != nil &&
 				!util.IsNotFound(err) {
 				return fmt.Errorf("failed to delete ModuleTemplate from skr: %w", err)
 			}

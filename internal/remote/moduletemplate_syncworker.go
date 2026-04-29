@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	applyconfigurationsv1beta2 "github.com/kyma-project/lifecycle-manager/api/applyconfigurations/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
@@ -22,7 +22,7 @@ var (
 // moduleTemplateConcurrentWorker performs ModuleTemplate synchronization using multiple goroutines.
 type moduleTemplateConcurrentWorker struct {
 	namespace  string
-	patchDiff  func(ctx context.Context, obj *v1beta2.ModuleTemplate) error
+	patchDiff  func(ctx context.Context, diff *applyconfigurationsv1beta2.ModuleTemplateApplyConfiguration) error
 	deleteDiff func(ctx context.Context, obj *v1beta2.ModuleTemplate) error
 	createCRD  func(ctx context.Context) error
 }
@@ -32,8 +32,8 @@ func newModuleTemplateConcurrentWorker(
 	kcpClient, skrClient client.Client,
 	settings *Settings,
 ) *moduleTemplateConcurrentWorker {
-	patchDiffFn := func(ctx context.Context, obj *v1beta2.ModuleTemplate) error {
-		return patchDiffModuleTemplate(ctx, obj, skrClient, settings.SSAPatchOptions)
+	patchDiffFn := func(ctx context.Context, diff *applyconfigurationsv1beta2.ModuleTemplateApplyConfiguration) error {
+		return patchDiffModuleTemplate(ctx, diff, skrClient, settings.SsaApplyOptions)
 	}
 
 	deleteDiffFn := func(ctx context.Context, obj *v1beta2.ModuleTemplate) error {
@@ -62,8 +62,8 @@ func (c *moduleTemplateConcurrentWorker) SyncConcurrently(
 	results := make(chan error, channelLength)
 	for kcpIndex := range kcpModules {
 		go func() {
-			prepareModuleTemplateForSSA(&kcpModules[kcpIndex], c.namespace)
-			results <- c.patchDiff(ctx, &kcpModules[kcpIndex])
+			applyConfig := prepareModuleTemplateForSSA(&kcpModules[kcpIndex], c.namespace)
+			results <- c.patchDiff(ctx, applyConfig)
 		}()
 	}
 	var errs []error
@@ -116,29 +116,97 @@ func createModuleTemplateCRDInRuntime(ctx context.Context, kcpClient client.Clie
 	return createCRDInRuntime(ctx, shared.ModuleTemplateKind, errModuleTemplateCRDNotReady, kcpClient, skrClient)
 }
 
-func prepareModuleTemplateForSSA(moduleTemplate *v1beta2.ModuleTemplate, namespace string) {
-	moduleTemplate.SetResourceVersion("")
-	moduleTemplate.SetUID("")
-	moduleTemplate.SetManagedFields([]apimetav1.ManagedFieldsEntry{})
-	moduleTemplate.SetLabels(collections.MergeMapsSilent(moduleTemplate.GetLabels(), map[string]string{
-		shared.ManagedBy: shared.ManagedByLabelValue,
-	}))
-
+func prepareModuleTemplateForSSA(moduleTemplate *v1beta2.ModuleTemplate, namespace string,
+) *applyconfigurationsv1beta2.ModuleTemplateApplyConfiguration {
+	// It would be better to not change the namespace of the moduleTemplate object here,
+	// but at this moment it is required to perform comparisons between objects
+	// later on - namespace is part of the object identity function.
+	// This can be refactored.
 	if namespace != "" {
 		moduleTemplate.SetNamespace(namespace)
 	}
+
+	labelsApplyConfig := collections.MergeMapsSilent(
+		moduleTemplate.GetLabels(),
+		map[string]string{
+			shared.ManagedBy: shared.ManagedByLabelValue,
+		},
+	)
+
+	var customStateCheckApplyConfig []**v1beta2.CustomStateCheck
+	if len(moduleTemplate.Spec.CustomStateCheck) > 0 {
+		customStateCheckApplyConfig = make([]**v1beta2.CustomStateCheck, len(moduleTemplate.Spec.CustomStateCheck))
+		for i := range moduleTemplate.Spec.CustomStateCheck {
+			customStateCheckApplyConfig[i] = &moduleTemplate.Spec.CustomStateCheck[i]
+		}
+	}
+
+	var resourcesApplyConfig []*applyconfigurationsv1beta2.ResourceApplyConfiguration
+	if len(moduleTemplate.Spec.Resources) > 0 {
+		resourcesApplyConfig = make([]*applyconfigurationsv1beta2.ResourceApplyConfiguration,
+			len(moduleTemplate.Spec.Resources))
+		for i := range moduleTemplate.Spec.Resources {
+			resourcesApplyConfig[i] = applyconfigurationsv1beta2.Resource().
+				WithName(moduleTemplate.Spec.Resources[i].Name).
+				WithLink(moduleTemplate.Spec.Resources[i].Link)
+		}
+	}
+
+	var moduleInfoApplyConfig *applyconfigurationsv1beta2.ModuleInfoApplyConfiguration
+	if moduleTemplate.Spec.Info != nil {
+		moduleInfoApplyConfig = applyconfigurationsv1beta2.ModuleInfo().
+			WithRepository(moduleTemplate.Spec.Info.Repository).
+			WithDocumentation(moduleTemplate.Spec.Info.Documentation)
+		for i := range moduleTemplate.Spec.Info.Icons {
+			moduleInfoApplyConfig.WithIcons(
+				applyconfigurationsv1beta2.ModuleIcon().
+					WithName(moduleTemplate.Spec.Info.Icons[i].Name).
+					WithLink(moduleTemplate.Spec.Info.Icons[i].Link),
+			)
+		}
+	}
+
+	var managerApplyConfig *applyconfigurationsv1beta2.ManagerApplyConfiguration
+	if moduleTemplate.Spec.Manager != nil {
+		managerApplyConfig = applyconfigurationsv1beta2.Manager().
+			WithGroup(moduleTemplate.Spec.Manager.Group).
+			WithVersion(moduleTemplate.Spec.Manager.Version).
+			WithKind(moduleTemplate.Spec.Manager.Kind).
+			WithNamespace(moduleTemplate.Spec.Manager.Namespace).
+			WithName(moduleTemplate.Spec.Manager.Name)
+	}
+
+	specApplyConfig := applyconfigurationsv1beta2.ModuleTemplateSpec().
+		WithChannel(moduleTemplate.Spec.Channel). //nolint: staticcheck // backwards compatibility
+		WithVersion(moduleTemplate.Spec.Version).
+		WithModuleName(moduleTemplate.Spec.ModuleName).
+		WithMandatory(moduleTemplate.Spec.Mandatory).
+		WithDescriptor(moduleTemplate.Spec.Descriptor).
+		WithCustomStateCheck(customStateCheckApplyConfig...).
+		WithResources(resourcesApplyConfig...).
+		WithInfo(moduleInfoApplyConfig).
+		WithAssociatedResources(moduleTemplate.Spec.AssociatedResources...).
+		WithManager(managerApplyConfig).
+		WithRequiresDowntime(moduleTemplate.Spec.RequiresDowntime)
+
+	if moduleTemplate.Spec.Data != nil {
+		specApplyConfig = specApplyConfig.WithData(*moduleTemplate.Spec.Data)
+	}
+
+	applyConfig := applyconfigurationsv1beta2.ModuleTemplate(moduleTemplate.GetName(), moduleTemplate.GetNamespace()).
+		WithLabels(labelsApplyConfig).
+		WithSpec(specApplyConfig)
+
+	return applyConfig
 }
 
 func patchDiffModuleTemplate(
 	ctx context.Context,
-	diff *v1beta2.ModuleTemplate,
+	diff *applyconfigurationsv1beta2.ModuleTemplateApplyConfiguration,
 	skrClient client.Client,
-	ssaPatchOptions *client.PatchOptions,
+	ssaPatchOptions *client.ApplyOptions,
 ) error {
-	err := skrClient.Patch(
-		//nolint: staticcheck // issues: #2706, #2707
-		ctx, diff, client.Apply, ssaPatchOptions,
-	)
+	err := skrClient.Apply(ctx, diff, ssaPatchOptions)
 	if err != nil {
 		return fmt.Errorf("could not apply ModuleTemplate diff: %w", err)
 	}

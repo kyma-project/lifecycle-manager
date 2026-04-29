@@ -15,7 +15,7 @@ import (
 type Settings struct {
 	// this namespace flag can be used to override the namespace in which all ModuleTemplates should be applied.
 	Namespace       string
-	SSAPatchOptions *client.PatchOptions
+	SsaApplyOptions *client.ApplyOptions
 }
 
 type RemoteCatalog struct {
@@ -51,7 +51,7 @@ func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrCont
 	force := true
 	return newRemoteCatalog(kcpClient, skrContextFactory,
 		Settings{
-			SSAPatchOptions: &client.PatchOptions{FieldManager: string(fieldowners.ModuleCatalogSync), Force: &force},
+			SsaApplyOptions: &client.ApplyOptions{FieldManager: string(fieldowners.ModuleCatalogSync), Force: &force},
 			Namespace:       remoteSyncNamespace,
 		},
 	)

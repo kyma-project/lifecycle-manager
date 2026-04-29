@@ -296,7 +296,7 @@ func GetKyma(ctx context.Context, clnt client.Client, name, namespace string) (*
 
 func KymaIsInState(ctx context.Context, name, namespace string, clnt client.Client, state shared.State) error {
 	return CRIsInState(ctx,
-		v1beta2.GroupVersion.Group, v1beta2.GroupVersion.Version, string(shared.KymaKind),
+		v1beta2.SchemeGroupVersion.Group, v1beta2.SchemeGroupVersion.Version, string(shared.KymaKind),
 		name, namespace,
 		[]string{"status", "state"},
 		clnt,
@@ -312,8 +312,8 @@ func SetKymaState(ctx context.Context, kyma *v1beta2.Kyma, clnt client.Client, s
 		LastOperation: shared.LastOperation{LastUpdateTime: apimetav1.NewTime(time.Now())},
 	}
 	kyma.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   v1beta2.GroupVersion.Group,
-		Version: v1beta2.GroupVersion.Version,
+		Group:   v1beta2.SchemeGroupVersion.Group,
+		Version: v1beta2.SchemeGroupVersion.Version,
 		Kind:    string(shared.KymaKind),
 	})
 	kyma.ManagedFields = nil

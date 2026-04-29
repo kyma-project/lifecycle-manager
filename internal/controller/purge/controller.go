@@ -254,7 +254,7 @@ func (r *Reconciler) performCleanup(ctx context.Context, remoteClient client.Cli
 }
 
 func shouldSkip(crd apiextensionsv1.CustomResourceDefinition, matcher matcher.CRDMatcherFunc) bool {
-	if crd.Spec.Group == v1beta2.GroupVersion.Group && crd.Spec.Names.Kind == string(shared.KymaKind) {
+	if crd.Spec.Group == v1beta2.SchemeGroupVersion.Group && crd.Spec.Names.Kind == string(shared.KymaKind) {
 		return true
 	}
 	return matcher(crd)

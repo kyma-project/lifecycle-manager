@@ -121,7 +121,7 @@ func TestRepository_DropAllFinalizers(t *testing.T) {
 		stub := &clientStub{
 			getErr: apierrors.NewNotFound(
 				schema.GroupResource{
-					Group:    v1beta2.GroupVersion.Group,
+					Group:    v1beta2.SchemeGroupVersion.Group,
 					Resource: string(shared.KymaKind),
 				},
 				random.Name(),
@@ -168,7 +168,7 @@ func TestRepository_DropAllFinalizers(t *testing.T) {
 			},
 			patchErr: apierrors.NewNotFound(
 				schema.GroupResource{
-					Group:    v1beta2.GroupVersion.Group,
+					Group:    v1beta2.SchemeGroupVersion.Group,
 					Resource: string(shared.KymaKind),
 				},
 				random.Name(),

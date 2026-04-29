@@ -15,7 +15,7 @@ func NewModuleReleaseMetaBuilder() ModuleReleaseMetaBuilder {
 	return ModuleReleaseMetaBuilder{
 		moduleReleaseMeta: &v1beta2.ModuleReleaseMeta{
 			TypeMeta: apimetav1.TypeMeta{
-				APIVersion: v1beta2.GroupVersion.String(),
+				APIVersion: v1beta2.SchemeGroupVersion.String(),
 				Kind:       string(shared.ModuleReleaseMetaKind),
 			},
 			ObjectMeta: apimetav1.ObjectMeta{

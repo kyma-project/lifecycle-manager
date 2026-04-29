@@ -39,7 +39,7 @@ func (r *Repository) ListAllForModule(ctx context.Context, moduleName string) (
 	[]apimetav1.PartialObjectMetadata, error,
 ) {
 	var manifestList apimetav1.PartialObjectMetadataList
-	manifestList.SetGroupVersionKind(v1beta2.GroupVersion.WithKind(shared.ManifestKind.List()))
+	manifestList.SetGroupVersionKind(v1beta2.SchemeGroupVersion.WithKind(shared.ManifestKind.List()))
 
 	if err := r.clnt.List(ctx,
 		&manifestList,
@@ -53,7 +53,7 @@ func (r *Repository) ListAllForModule(ctx context.Context, moduleName string) (
 
 func (r *Repository) ExistForKyma(ctx context.Context, kymaName string) (bool, error) {
 	var manifestList apimetav1.PartialObjectMetadataList
-	manifestList.SetGroupVersionKind(v1beta2.GroupVersion.WithKind(shared.ManifestKind.List()))
+	manifestList.SetGroupVersionKind(v1beta2.SchemeGroupVersion.WithKind(shared.ManifestKind.List()))
 
 	if err := r.clnt.List(ctx,
 		&manifestList,

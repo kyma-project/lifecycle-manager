@@ -229,7 +229,7 @@ func updateCRDPropertyDescription(clnt client.Client, crdKind shared.Kind,
 		return nil, err
 	}
 	crd, err = fetchCrd(clnt, crdKind)
-	crdName := fmt.Sprintf("%s.%s", crdKind.Plural(), v1beta2.GroupVersion.Group)
+	crdName := fmt.Sprintf("%s.%s", crdKind.Plural(), v1beta2.SchemeGroupVersion.Group)
 
 	// Replace the cached CRD after updating the KCP CRD to validate that
 	// the Generation values are updated correctly
@@ -250,7 +250,7 @@ func fetchCrd(clnt client.Client, crdKind shared.Kind) (*apiextensionsv1.CustomR
 	crd := &apiextensionsv1.CustomResourceDefinition{}
 	if err := clnt.Get(
 		ctx, client.ObjectKey{
-			Name: fmt.Sprintf("%s.%s", crdKind.Plural(), v1beta2.GroupVersion.Group),
+			Name: fmt.Sprintf("%s.%s", crdKind.Plural(), v1beta2.SchemeGroupVersion.Group),
 		}, crd,
 	); err != nil {
 		return nil, err

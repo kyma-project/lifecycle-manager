@@ -34,7 +34,7 @@ func (r *Repository) Exists(ctx context.Context, kymaName types.NamespacedName) 
 	pom := &v1beta1.PartialObjectMetadata{
 		TypeMeta: apimetav1.TypeMeta{
 			Kind:       string(shared.KymaKind),
-			APIVersion: v1beta2.GroupVersion.String(),
+			APIVersion: v1beta2.SchemeGroupVersion.String(),
 		},
 	}
 
