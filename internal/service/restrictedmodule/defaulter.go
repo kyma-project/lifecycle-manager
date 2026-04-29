@@ -56,14 +56,16 @@ func (d *Defaulter) Default(ctx context.Context, kyma *v1beta2.Kyma) error {
 	// First try to append all default modules and then update the Kyma if there are any changes.
 	// failing to determine if a module should be defaulted or not should not cause the whole defaulting process to fail
 	for _, moduleName := range d.restrictedDefaultModules {
-		log := logf.FromContext(ctx).WithValues("module", moduleName, "kyma", kyma.Name)
+		log := logf.FromContext(ctx).WithValues(
+			"module", moduleName,
+			"kyma", kyma.Name,
+			"service", "restricted module defaulter",
+		)
 
 		if skipAlreadyEnabled(kyma, moduleName) {
-			log.Info("Skipping defaulting as module is already enabled")
+			log.Info("Skipping as module is already enabled")
 			continue
 		}
-
-		log.Info("Defaulting restricted module")
 
 		mrm, err := d.moduleReleaseMetaRepo.Get(ctx, moduleName)
 		if err != nil {
@@ -73,18 +75,19 @@ func (d *Defaulter) Default(ctx context.Context, kyma *v1beta2.Kyma) error {
 
 		match, err := d.matchFunc(mrm, kyma)
 		if err != nil {
-			log.Error(err, "Kyma does not match ModuleReleaseMeta")
+			log.Error(err, "Failed to get Kyma selector from ModuleReleaseMeta")
 			continue
 		}
 
 		if !match {
+			log.Info("Kyma does not match selector from ModuleReleaseMeta")
 			continue
 		}
 
 		addModule(kyma, moduleName)
 	}
 
-	// nothing to do
+	// nothing updated
 	if alreadyDefaultedModules == len(kyma.Spec.Modules) {
 		return nil
 	}
@@ -92,9 +95,12 @@ func (d *Defaulter) Default(ctx context.Context, kyma *v1beta2.Kyma) error {
 	// only if updating the Kyma with the restricted default modules fails, we return an error.
 	if err := d.kymaRepo.Update(ctx, kyma); err != nil {
 		logf.FromContext(ctx).
-			WithValues("kyma", kyma.Name, "modules", d.restrictedDefaultModules).
-			Error(err, "Failed to update Kyma with restricted default modules")
-		return fmt.Errorf("failed to update Kyma %s with restricted default modules %s: %w",
+			WithValues("kyma", kyma.Name,
+				"modules", d.restrictedDefaultModules,
+				"service", "restricted module defaulter",
+			).
+			Error(err, "Failed to update Kyma")
+		return fmt.Errorf("failed to update Kyma %s with restricted default modules %v: %w",
 			kyma.Name,
 			d.restrictedDefaultModules,
 			err,
