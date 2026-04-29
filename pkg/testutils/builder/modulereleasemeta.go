@@ -79,7 +79,7 @@ func (m ModuleReleaseMetaBuilder) WithGlobalAccountKymaSelector(
 	m.moduleReleaseMeta.Spec.KymaSelector = &apimetav1.LabelSelector{
 		MatchExpressions: []apimetav1.LabelSelectorRequirement{
 			{
-				Key:      "kyma-project.io/global-account-id",
+				Key:      shared.GlobalAccountIDLabel,
 				Operator: apimetav1.LabelSelectorOpIn,
 				Values:   globalAccountIDs,
 			},
