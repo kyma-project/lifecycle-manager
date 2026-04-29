@@ -81,9 +81,6 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: Always
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
-        value: --restricted-default-modules=not-template-operator
   - target:
       kind: ConfigMap
       name: dashboard-(overview|status|watcher|mandatory-modules)
