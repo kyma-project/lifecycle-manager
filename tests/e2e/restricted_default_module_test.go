@@ -18,7 +18,7 @@ var _ = Describe("Restricted Default Modules", Ordered, func() {
 	moduleCR := NewTestModuleCR(RemoteNamespace)
 
 	InitEmptyKymaBeforeAll(kyma)
-	//CleanupKymaAfterAll(kyma)
+	CleanupKymaAfterAll(kyma)
 
 	Context("Given SKR Cluster", func() {
 		// InitEmptyKymaBeforeAll verified that the Kyma CR is in Ready state on both SKR and KCP
