@@ -127,7 +127,9 @@ type ModuleTemplateSpec struct {
 
 // Manager defines the structure for the manager field in ModuleTemplateSpec.
 type Manager struct {
-	apimetav1.GroupVersionKind `json:",inline"`
+	Group   string `json:"group"`
+	Version string `json:"version"`
+	Kind    string `json:"kind"`
 
 	// Namespace is the namespace of the manager. It is optional.
 	// +optional

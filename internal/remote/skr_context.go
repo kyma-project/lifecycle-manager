@@ -199,7 +199,7 @@ func (s *SkrContext) createOrUpdateCRD(ctx context.Context, kcpClient client.Cli
 	err = kcpClient.Get(ctx, client.ObjectKey{
 		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
 		// name changes, this also has to be adjusted here. We can think of making this configurable later
-		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
+		Name: fmt.Sprintf("%s.%s", plural, v1beta2.SchemeGroupVersion.Group),
 	}, crd,
 	)
 	if err != nil {
@@ -208,11 +208,11 @@ func (s *SkrContext) createOrUpdateCRD(ctx context.Context, kcpClient client.Cli
 
 	err = s.Get(
 		ctx, client.ObjectKey{
-			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
+			Name: fmt.Sprintf("%s.%s", plural, v1beta2.SchemeGroupVersion.Group),
 		}, crdFromRuntime,
 	)
 
-	if util.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta2.GroupVersion.Version) {
+	if util.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta2.SchemeGroupVersion.Version) {
 		return PatchCRD(ctx, s.Client, crd)
 	}
 

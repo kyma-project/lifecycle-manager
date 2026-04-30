@@ -1,7 +1,8 @@
 # defines the versions of the tools used in the project
+applyconfiguration-gen: "0.34.0"
 certManager: "1.19.3"
 gardenerCertManager: "0.18.0"
-controllerTools: "0.18.0"
+controllerTools: "0.19.0"
 docker: "27.5.1"
 go: "1.26.1"
 golangciLint: "2.9.0"

@@ -55,6 +55,8 @@ linters:
           alias: certmanagerclientv1
         - pkg: github.com/google/go-containerregistry/pkg/v1
           alias: containerregistryv1
+        - pkg: github.com/kyma-project/lifecycle-manager/api/applyconfigurations/api/v1beta2
+          alias: applyconfigurationsv1beta2
         - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics
           alias: commonmetrics
         - pkg: github.com/kyma-project/lifecycle-manager/internal/declarative/v2

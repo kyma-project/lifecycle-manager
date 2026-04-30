@@ -151,7 +151,7 @@ func moduleTemplate(name, namespace string) v1beta2.ModuleTemplate {
 				{
 					Manager:    string(fieldowners.ModuleCatalogSync),
 					Operation:  apimetav1.ManagedFieldsOperationApply,
-					APIVersion: v1beta2.GroupVersion.String(),
+					APIVersion: v1beta2.SchemeGroupVersion.String(),
 					FieldsType: "FieldsV1",
 				},
 			},
@@ -163,7 +163,7 @@ func getSettings() *Settings {
 	force := true
 	return &Settings{
 		Namespace:       "kyma-system",
-		SSAPatchOptions: &client.PatchOptions{FieldManager: string(fieldowners.ModuleCatalogSync), Force: &force},
+		SsaApplyOptions: &client.ApplyOptions{FieldManager: string(fieldowners.ModuleCatalogSync), Force: &force},
 	}
 }
 

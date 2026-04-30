@@ -18,7 +18,7 @@ import (
 
 var (
 	managedSkrResources = map[types.NamespacedName]schema.GroupVersionKind{
-		{Name: "default", Namespace: RemoteNamespace}:     v1beta2.GroupVersion.WithKind("Kyma"),
+		{Name: "default", Namespace: RemoteNamespace}:     v1beta2.SchemeGroupVersion.WithKind("Kyma"),
 		{Name: "skr-webhook", Namespace: RemoteNamespace}: apiappsv1.SchemeGroupVersion.WithKind("Deployment"),
 		{Name: "skr-webhook", Namespace: RemoteNamespace}: admissionregistrationv1.SchemeGroupVersion.WithKind(
 			"ValidatingWebhookConfiguration",
@@ -46,7 +46,7 @@ var _ = Describe("Labelling SKR resources", Ordered, func() {
 				WithArguments(
 					skrClient,
 					types.NamespacedName{Name: "default", Namespace: RemoteNamespace},
-					v1beta2.GroupVersion.WithKind("Kyma"),
+					v1beta2.SchemeGroupVersion.WithKind("Kyma"),
 					shared.WatchedByLabel,
 					shared.WatchedByLabelValue).
 				Should(Succeed())
@@ -77,7 +77,7 @@ var _ = Describe("Labelling SKR resources", Ordered, func() {
 				WithArguments(
 					skrClient,
 					types.NamespacedName{Name: "default", Namespace: RemoteNamespace},
-					v1beta2.GroupVersion.WithKind("Kyma"),
+					v1beta2.SchemeGroupVersion.WithKind("Kyma"),
 					shared.GlobalAccountIDLabel, globalAccountIDLabelValue).
 				Should(Succeed())
 			By("Sub account label being propagated")
@@ -86,7 +86,7 @@ var _ = Describe("Labelling SKR resources", Ordered, func() {
 				WithArguments(
 					skrClient,
 					types.NamespacedName{Name: "default", Namespace: RemoteNamespace},
-					v1beta2.GroupVersion.WithKind("Kyma"),
+					v1beta2.SchemeGroupVersion.WithKind("Kyma"),
 					shared.SubAccountIDLabel, subAccountIDLabelValue).
 				Should(Succeed())
 		})

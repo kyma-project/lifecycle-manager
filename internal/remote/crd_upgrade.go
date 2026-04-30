@@ -166,7 +166,7 @@ func (s *SyncCrdsUseCase) fetchCrdsAndUpdateKymaAnnotations(ctx context.Context,
 	if crdUpdated {
 		err = skrClient.Get(
 			ctx, client.ObjectKey{
-				Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
+				Name: fmt.Sprintf("%s.%s", plural, v1beta2.SchemeGroupVersion.Group),
 			}, skrCrd,
 		)
 		if err != nil {
@@ -182,7 +182,7 @@ func (s *SyncCrdsUseCase) fetchCrdsAndUpdateKymaAnnotations(ctx context.Context,
 func (s *SyncCrdsUseCase) fetchCrds(ctx context.Context, skrClient client.Client,
 	plural string,
 ) (*apiextensionsv1.CustomResourceDefinition, *apiextensionsv1.CustomResourceDefinition, error) {
-	kcpCrdName := fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group)
+	kcpCrdName := fmt.Sprintf("%s.%s", plural, v1beta2.SchemeGroupVersion.Group)
 	kcpCrd, ok := s.crdCache.Get(kcpCrdName)
 	if !ok {
 		kcpCrd = apiextensionsv1.CustomResourceDefinition{}
@@ -198,7 +198,7 @@ func (s *SyncCrdsUseCase) fetchCrds(ctx context.Context, skrClient client.Client
 	crdFromRuntime := &apiextensionsv1.CustomResourceDefinition{}
 	err := skrClient.Get(
 		ctx, client.ObjectKey{
-			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
+			Name: fmt.Sprintf("%s.%s", plural, v1beta2.SchemeGroupVersion.Group),
 		}, crdFromRuntime,
 	)
 	if err != nil {
@@ -282,7 +282,7 @@ func createCRDInRuntime(
 	kcpCrd := &apiextensionsv1.CustomResourceDefinition{}
 	skrCrd := &apiextensionsv1.CustomResourceDefinition{}
 	objKey := client.ObjectKey{
-		Name: fmt.Sprintf("%s.%s", crdKind.Plural(), v1beta2.GroupVersion.Group),
+		Name: fmt.Sprintf("%s.%s", crdKind.Plural(), v1beta2.SchemeGroupVersion.Group),
 	}
 	err := kcpClient.Get(ctx, objKey, kcpCrd)
 	if err != nil {
@@ -291,7 +291,7 @@ func createCRDInRuntime(
 
 	err = skrClient.Get(ctx, objKey, skrCrd)
 
-	if util.IsNotFound(err) || !ContainsLatestVersion(skrCrd, v1beta2.GroupVersion.Version) {
+	if util.IsNotFound(err) || !ContainsLatestVersion(skrCrd, v1beta2.SchemeGroupVersion.Version) {
 		return PatchCRD(ctx, skrClient, kcpCrd)
 	}
 
