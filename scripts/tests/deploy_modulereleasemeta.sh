@@ -4,6 +4,10 @@ set -o errexit
 set -E
 set -o pipefail
 
+# Set KEEP_FILE=true to keep the generated module-release-meta.yaml file after deployment.
+# Example: KEEP_FILE=true ./deploy_modulereleasemeta.sh my-module regular:1.0.0
+KEEP_FILE=${KEEP_FILE:-false}
+
 MODULE_NAME=$1
 shift 1
 CHANNELS=("$@")
@@ -29,7 +33,9 @@ done
 kubectl apply -f module-release-meta.yaml
 
 echo "ModuleReleaseMeta created successfully"
-rm -f module-release-meta.yaml
+if [[ "${KEEP_FILE}" != "true" ]]; then
+  rm -f module-release-meta.yaml
+fi
 
 kubectl get modulereleasemeta "${MODULE_NAME}" -n kcp-system -o yaml
 kubectl get moduletemplate -n kcp-system

@@ -78,3 +78,10 @@ func (r *Repository) DropFinalizer(ctx context.Context, kymaName string, finaliz
 		),
 	)
 }
+
+func (r *Repository) Update(ctx context.Context, kyma *v1beta2.Kyma) error {
+	if err := r.client.Update(ctx, kyma); err != nil {
+		return fmt.Errorf("failed to update Kyma %s in namespace %s: %w", kyma.Name, r.namespace, err)
+	}
+	return nil
+}

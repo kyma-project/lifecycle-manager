@@ -8,13 +8,13 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
+	restrictedmodulesvc "github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
 )
 
 func TestRestrictedModuleMatch_NilModuleReleaseMeta(t *testing.T) {
 	kyma := &v1beta2.Kyma{}
 
-	matched, err := restrictedmodule.RestrictedModuleMatch(nil, kyma)
+	matched, err := restrictedmodulesvc.RestrictedModuleMatch(nil, kyma)
 
 	require.NoError(t, err)
 	assert.False(t, matched)
@@ -23,7 +23,7 @@ func TestRestrictedModuleMatch_NilModuleReleaseMeta(t *testing.T) {
 func TestRestrictedModuleMatch_NilKyma(t *testing.T) {
 	mrm := &v1beta2.ModuleReleaseMeta{Spec: v1beta2.ModuleReleaseMetaSpec{}}
 
-	matched, err := restrictedmodule.RestrictedModuleMatch(mrm, nil)
+	matched, err := restrictedmodulesvc.RestrictedModuleMatch(mrm, nil)
 
 	require.NoError(t, err)
 	assert.False(t, matched)
@@ -33,7 +33,7 @@ func TestRestrictedModuleMatch_NilSelector(t *testing.T) {
 	mrm := &v1beta2.ModuleReleaseMeta{Spec: v1beta2.ModuleReleaseMetaSpec{KymaSelector: nil}}
 	kyma := &v1beta2.Kyma{}
 
-	matched, err := restrictedmodule.RestrictedModuleMatch(mrm, kyma)
+	matched, err := restrictedmodulesvc.RestrictedModuleMatch(mrm, kyma)
 
 	require.NoError(t, err)
 	assert.False(t, matched)
@@ -45,7 +45,7 @@ func TestRestrictedModuleMatch_EmptySelector(t *testing.T) {
 	}
 	kyma := &v1beta2.Kyma{}
 
-	matched, err := restrictedmodule.RestrictedModuleMatch(mrm, kyma)
+	matched, err := restrictedmodulesvc.RestrictedModuleMatch(mrm, kyma)
 
 	require.NoError(t, err)
 	assert.False(t, matched)
@@ -62,7 +62,7 @@ func TestRestrictedModuleMatch_NilLabelsOnKyma(t *testing.T) {
 	kyma := &v1beta2.Kyma{}
 	kyma.SetLabels(nil)
 
-	matched, err := restrictedmodule.RestrictedModuleMatch(mrm, kyma)
+	matched, err := restrictedmodulesvc.RestrictedModuleMatch(mrm, kyma)
 
 	require.NoError(t, err)
 	assert.False(t, matched)
@@ -80,7 +80,7 @@ func TestRestrictedModuleMatch_MatchLabels_Matches(t *testing.T) {
 		ObjectMeta: apimetav1.ObjectMeta{Labels: map[string]string{"foo": "val1", "env": "production"}},
 	}
 
-	matched, err := restrictedmodule.RestrictedModuleMatch(mrm, kyma)
+	matched, err := restrictedmodulesvc.RestrictedModuleMatch(mrm, kyma)
 
 	require.NoError(t, err)
 	assert.True(t, matched)
@@ -98,7 +98,7 @@ func TestRestrictedModuleMatch_MatchLabels_NoMatch(t *testing.T) {
 		ObjectMeta: apimetav1.ObjectMeta{Labels: map[string]string{"foo": "val2", "env": "staging"}},
 	}
 
-	matched, err := restrictedmodule.RestrictedModuleMatch(mrm, kyma)
+	matched, err := restrictedmodulesvc.RestrictedModuleMatch(mrm, kyma)
 
 	require.NoError(t, err)
 	assert.False(t, matched)
@@ -118,7 +118,7 @@ func TestRestrictedModuleMatch_MatchExpressions_Matches(t *testing.T) {
 		ObjectMeta: apimetav1.ObjectMeta{Labels: map[string]string{"foo": "val3", "tier": "backend"}},
 	}
 
-	matched, err := restrictedmodule.RestrictedModuleMatch(mrm, kyma)
+	matched, err := restrictedmodulesvc.RestrictedModuleMatch(mrm, kyma)
 
 	require.NoError(t, err)
 	assert.True(t, matched)
@@ -138,7 +138,7 @@ func TestRestrictedModuleMatch_MatchExpressions_NoMatch(t *testing.T) {
 		ObjectMeta: apimetav1.ObjectMeta{Labels: map[string]string{"tier": "database"}},
 	}
 
-	matched, err := restrictedmodule.RestrictedModuleMatch(mrm, kyma)
+	matched, err := restrictedmodulesvc.RestrictedModuleMatch(mrm, kyma)
 
 	require.NoError(t, err)
 	assert.False(t, matched)
@@ -163,7 +163,7 @@ func TestRestrictedModuleMatch_MatchLabelsAndExpressions_BothMatch(t *testing.T)
 		}},
 	}
 
-	matched, err := restrictedmodule.RestrictedModuleMatch(mrm, kyma)
+	matched, err := restrictedmodulesvc.RestrictedModuleMatch(mrm, kyma)
 
 	require.NoError(t, err)
 	assert.True(t, matched)
@@ -184,7 +184,7 @@ func TestRestrictedModuleMatch_MatchLabelsAndExpressions_LabelMatchesExpressionD
 		ObjectMeta: apimetav1.ObjectMeta{Labels: map[string]string{"env": "production", "tier": "database"}},
 	}
 
-	matched, err := restrictedmodule.RestrictedModuleMatch(mrm, kyma)
+	matched, err := restrictedmodulesvc.RestrictedModuleMatch(mrm, kyma)
 
 	require.NoError(t, err)
 	assert.False(t, matched)
@@ -205,7 +205,7 @@ func TestRestrictedModuleMatch_MatchLabelsAndExpressions_ExpressionMatchesLabels
 		ObjectMeta: apimetav1.ObjectMeta{Labels: map[string]string{"env": "staging", "tier": "backend"}},
 	}
 
-	matched, err := restrictedmodule.RestrictedModuleMatch(mrm, kyma)
+	matched, err := restrictedmodulesvc.RestrictedModuleMatch(mrm, kyma)
 
 	require.NoError(t, err)
 	assert.False(t, matched)
@@ -225,11 +225,11 @@ func TestRestrictedModuleMatch_MatchLabelsAndExpressions_ParseError(t *testing.T
 		ObjectMeta: apimetav1.ObjectMeta{Labels: map[string]string{"env": "production", "tier": "backend"}},
 	}
 
-	matched, err := restrictedmodule.RestrictedModuleMatch(mrm, kyma)
+	matched, err := restrictedmodulesvc.RestrictedModuleMatch(mrm, kyma)
 
 	assert.False(t, matched)
 	require.Error(t, err)
-	require.ErrorIs(t, err, restrictedmodule.ErrSelectorParse)
+	require.ErrorIs(t, err, restrictedmodulesvc.ErrSelectorParse)
 	require.ErrorContains(t, err, "InvalidOperator")
 	require.ErrorContains(t, err, "operator")
 }

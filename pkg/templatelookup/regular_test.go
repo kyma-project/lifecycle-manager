@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"ocm.software/ocm/api/ocm/compdesc"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -17,6 +18,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	restrictedmodulesvc "github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
@@ -130,9 +132,218 @@ func TestValidateTemplateMode_ForOldModuleTemplates(t *testing.T) {
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			if got := templatelookup.ValidateTemplateMode(testCase.template, testCase.kyma); !errors.Is(
+			lookup := templatelookup.NewTemplateLookup(nil, nil, nil, nil)
+			if got := lookup.ValidateTemplateMode(testCase.template, testCase.kyma, nil); !errors.Is(
 				got.Err, testCase.wantErr) {
 				t.Errorf("ValidateTemplateMode() = %v, want %v", got, testCase.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateTemplateMode_RestrictedModules(t *testing.T) {
+	const restrictedModuleName = "restricted-module"
+
+	tests := []struct {
+		name              string
+		restrictedModules []string
+		mrm               *v1beta2.ModuleReleaseMeta
+		kyma              *v1beta2.Kyma
+		template          templatelookup.ModuleTemplateInfo
+		wantErr           error
+		wantErrAlso       error
+	}{
+		{
+			name:              "When module in restricted list and nil selector, Then not allowed",
+			restrictedModules: []string{restrictedModuleName},
+			mrm: builder.NewModuleReleaseMetaBuilder().
+				WithModuleName(restrictedModuleName).
+				WithKymaSelector(nil).
+				Build(),
+			kyma: builder.NewKymaBuilder().
+				WithLabel(shared.GlobalAccountIDLabel, "account-1").
+				Build(),
+			template: templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
+			},
+			wantErr: templatelookup.ErrTemplateNotAllowed,
+		},
+		{
+			name:              "When module in restricted list and empty selector, Then not allowed",
+			restrictedModules: []string{restrictedModuleName},
+			mrm: builder.NewModuleReleaseMetaBuilder().
+				WithModuleName(restrictedModuleName).
+				WithKymaSelector(&apimetav1.LabelSelector{}).
+				Build(),
+			kyma: builder.NewKymaBuilder().
+				WithLabel(shared.GlobalAccountIDLabel, "account-1").
+				Build(),
+			template: templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
+			},
+			wantErr: templatelookup.ErrTemplateNotAllowed,
+		},
+		{
+			name:              "When module in restricted list and matching selector, Then allowed",
+			restrictedModules: []string{restrictedModuleName},
+			mrm: builder.NewModuleReleaseMetaBuilder().
+				WithModuleName(restrictedModuleName).
+				WithGlobalAccountKymaSelector("account-1", "account-2").
+				Build(),
+			kyma: builder.NewKymaBuilder().
+				WithLabel(shared.GlobalAccountIDLabel, "account-1").
+				Build(),
+			template: templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
+			},
+			wantErr: nil,
+		},
+		{
+			name:              "When module in restricted list and non-matching selector, Then not allowed",
+			restrictedModules: []string{restrictedModuleName},
+			mrm: builder.NewModuleReleaseMetaBuilder().
+				WithModuleName(restrictedModuleName).
+				WithGlobalAccountKymaSelector("account-1", "account-2").
+				Build(),
+			kyma: builder.NewKymaBuilder().
+				WithLabel(shared.GlobalAccountIDLabel, "account-3").
+				Build(),
+			template: templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
+			},
+			wantErr: templatelookup.ErrTemplateNotAllowed,
+		},
+		{
+			name: "When module in restricted list with selector but Kyma has no matching label, " +
+				"Then not allowed",
+			restrictedModules: []string{restrictedModuleName},
+			mrm: builder.NewModuleReleaseMetaBuilder().
+				WithModuleName(restrictedModuleName).
+				WithGlobalAccountKymaSelector("account-1", "account-2").
+				Build(),
+			kyma: builder.NewKymaBuilder().Build(),
+			template: templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
+			},
+			wantErr: templatelookup.ErrTemplateNotAllowed,
+		},
+		{
+			name:              "When module NOT in restricted list and no selector, Then allowed",
+			restrictedModules: []string{"other-module"},
+			mrm: builder.NewModuleReleaseMetaBuilder().
+				WithModuleName(restrictedModuleName).
+				WithKymaSelector(nil).
+				Build(),
+			kyma: builder.NewKymaBuilder().Build(),
+			template: templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
+			},
+			wantErr: nil,
+		},
+		{
+			name:              "When module NOT in restricted list but has selector, Then not allowed",
+			restrictedModules: []string{"other-module"},
+			mrm: builder.NewModuleReleaseMetaBuilder().
+				WithModuleName(restrictedModuleName).
+				WithGlobalAccountKymaSelector("account-1").
+				Build(),
+			kyma: builder.NewKymaBuilder().
+				WithLabel(shared.GlobalAccountIDLabel, "account-1").
+				Build(),
+			template: templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
+			},
+			wantErr: templatelookup.ErrTemplateNotAllowed,
+		},
+		{
+			name:              "When restricted modules list is empty, Then allowed",
+			restrictedModules: nil,
+			mrm: builder.NewModuleReleaseMetaBuilder().
+				WithModuleName(restrictedModuleName).
+				WithKymaSelector(nil).
+				Build(),
+			kyma: builder.NewKymaBuilder().Build(),
+			template: templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
+			},
+			wantErr: nil,
+		},
+		{
+			name:              "When restricted modules list is empty and has selector, Then not allowed",
+			restrictedModules: nil,
+			mrm: builder.NewModuleReleaseMetaBuilder().
+				WithModuleName(restrictedModuleName).
+				WithGlobalAccountKymaSelector("account-1").
+				Build(),
+			kyma: builder.NewKymaBuilder().
+				WithLabel(shared.GlobalAccountIDLabel, "account-1").
+				Build(),
+			template: templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
+			},
+			wantErr: templatelookup.ErrTemplateNotAllowed,
+		},
+		{
+			name:              "When module in restricted list and selector parse error, Then not allowed",
+			restrictedModules: []string{restrictedModuleName},
+			mrm: builder.NewModuleReleaseMetaBuilder().
+				WithModuleName(restrictedModuleName).
+				WithKymaSelector(&apimetav1.LabelSelector{
+					MatchExpressions: []apimetav1.LabelSelectorRequirement{
+						{
+							Key:      shared.GlobalAccountIDLabel,
+							Operator: "InvalidOperator",
+							Values:   []string{"account-1"},
+						},
+					},
+				}).
+				Build(),
+			kyma: builder.NewKymaBuilder().
+				WithLabel(shared.GlobalAccountIDLabel, "account-1").
+				Build(),
+			template: templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
+			},
+			wantErr:     restrictedmodulesvc.ErrSelectorParse,
+			wantErrAlso: templatelookup.ErrTemplateNotAllowed,
+		},
+		{
+			name:              "When module in restricted list and matching matchLabels selector, Then allowed",
+			restrictedModules: []string{restrictedModuleName},
+			mrm: builder.NewModuleReleaseMetaBuilder().
+				WithModuleName(restrictedModuleName).
+				WithGlobalAccountKymaSelector("account-1").
+				Build(),
+			kyma: builder.NewKymaBuilder().
+				WithLabel(shared.GlobalAccountIDLabel, "account-1").
+				Build(),
+			template: templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
+			},
+			wantErr: nil,
+		},
+		{
+			name:              "When MRM is nil, Then allowed",
+			restrictedModules: []string{restrictedModuleName},
+			mrm:               nil,
+			kyma:              builder.NewKymaBuilder().Build(),
+			template: templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
+			},
+			wantErr: nil,
+		},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			lookup := templatelookup.NewTemplateLookup(nil, nil, nil, testCase.restrictedModules)
+			got := lookup.ValidateTemplateMode(testCase.template, testCase.kyma, testCase.mrm)
+			if testCase.wantErr != nil {
+				require.ErrorIs(t, got.Err, testCase.wantErr)
+				if testCase.wantErrAlso != nil {
+					require.ErrorIs(t, got.Err, testCase.wantErrAlso)
+				}
+			} else {
+				require.NoError(t, got.Err)
 			}
 		})
 	}
@@ -177,6 +388,7 @@ func Test_GetRegularTemplates_WhenInvalidModuleProvided(t *testing.T) {
 				nil,
 				nil, // not used in tests
 				moduletemplateinfolookup.NewLookup(nil),
+				nil,
 			)
 			kyma := &v1beta2.Kyma{
 				Spec:   test.KymaSpec,
@@ -280,6 +492,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 				reader,
 				descriptorProvider,
 				moduletemplateinfolookup.NewLookup(reader),
+				nil,
 			)
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
 			expected := len(testCase.want)
@@ -592,6 +805,7 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 			lookup := templatelookup.NewTemplateLookup(reader,
 				nil, // not used in tests
 				moduletemplateinfolookup.NewLookup(reader),
+				nil,
 			)
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
 			expected := len(testCase.want)
@@ -668,6 +882,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateNotFound(t *testin
 				reader,
 				descriptorProvider,
 				moduletemplateinfolookup.NewLookup(reader),
+				nil,
 			)
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
 			expected := len(testCase.want)
@@ -777,6 +992,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 				reader,
 				descriptorProvider,
 				moduletemplateinfolookup.NewLookup(reader),
+				nil,
 			)
 			expected := len(testCase.want)
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
@@ -867,6 +1083,7 @@ func executeGetRegularTemplatesTestCases(t *testing.T,
 				reader,
 				descriptorProvider,
 				moduletemplateinfolookup.NewLookup(reader),
+				nil,
 			)
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
 			assert.Len(t, got, 1)

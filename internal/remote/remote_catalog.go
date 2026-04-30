@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
+	restrictedmodulesvc "github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
 )
 
 type Settings struct {
@@ -22,6 +25,7 @@ type RemoteCatalog struct {
 	kcpClient                         client.Client
 	skrContextFactory                 SkrContextProvider
 	settings                          Settings
+	restrictedModules                 []string
 	moduleTemplateSyncAPIFactoryFn    moduleTemplateSyncAPIFactory
 	moduleReleaseMetaSyncAPIFactoryFn moduleReleaseMetaSyncAPIFactory
 }
@@ -46,7 +50,7 @@ type moduleReleaseMetaSyncAPIFactory func(kcpClient, skrClient client.Client,
 ) moduleReleaseMetaSyncAPI
 
 func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrContextProvider,
-	remoteSyncNamespace string,
+	remoteSyncNamespace string, restrictedModules []string,
 ) *RemoteCatalog {
 	force := true
 	return newRemoteCatalog(kcpClient, skrContextFactory,
@@ -54,10 +58,13 @@ func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrCont
 			SSAPatchOptions: &client.PatchOptions{FieldManager: string(fieldowners.ModuleCatalogSync), Force: &force},
 			Namespace:       remoteSyncNamespace,
 		},
+		restrictedModules,
 	)
 }
 
-func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvider, settings Settings) *RemoteCatalog {
+func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvider,
+	settings Settings, restrictedModules []string,
+) *RemoteCatalog {
 	var moduleTemplateSyncerAPIFactoryFn moduleTemplateSyncAPIFactory = func(kcpClient, skrClient client.Client,
 		settings *Settings,
 	) moduleTemplateSyncAPI {
@@ -74,6 +81,7 @@ func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvi
 		kcpClient:                         kcpClient,
 		skrContextFactory:                 skrContextFactory,
 		settings:                          settings,
+		restrictedModules:                 restrictedModules,
 		moduleTemplateSyncAPIFactoryFn:    moduleTemplateSyncerAPIFactoryFn,
 		moduleReleaseMetaSyncAPIFactoryFn: moduleReleaseMetaSyncerAPIFactoryFn,
 	}
@@ -116,6 +124,8 @@ func (c *RemoteCatalog) Delete(
 // GetModuleReleaseMetasToSync returns a list of ModuleReleaseMetas that should be synced to the SKR.
 // A ModuleReleaseMeta is synced if it has at least
 // one channel-version pair whose ModuleTemplate is allowed to be synced.
+// Restricted modules (in the restrictedModules list) are only synced if the MRM's kymaSelector matches the Kyma.
+// Non-restricted modules with a kymaSelector are skipped.
 func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 	ctx context.Context,
 	kyma *v1beta2.Kyma,
@@ -130,12 +140,27 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 
 	for _, moduleReleaseMeta := range moduleReleaseMetaList.Items {
 		if moduleReleaseMeta.Spec.Mandatory != nil {
-			// Skip mandatory ModuleReleaseMetas as they are not allowed to be synced
+			continue
+		}
+
+		if c.isRestrictedModule(moduleReleaseMeta.Spec.ModuleName) {
+			matched, err := restrictedmodulesvc.RestrictedModuleMatch(&moduleReleaseMeta, kyma)
+			if err != nil {
+				logf.FromContext(ctx).Error(err, "failed to evaluate restricted module match, skipping sync",
+					"moduleName", moduleReleaseMeta.Spec.ModuleName)
+				continue
+			}
+			if !matched {
+				continue
+			}
+		} else if moduleReleaseMeta.Spec.KymaSelector != nil {
+			logf.FromContext(ctx).Info(
+				"WARNING: skipping catalog sync: MRM has kymaSelector but is not a restricted module",
+				"moduleName", moduleReleaseMeta.Spec.ModuleName)
 			continue
 		}
 
 		allowedChannels := []v1beta2.ChannelVersionAssignment{}
-		// Only add channel-version pairs which have allowed ModuleTemplates to be synced
 		for _, channel := range moduleReleaseMeta.Spec.Channels {
 			if IsAllowedModuleVersion(kyma, moduleTemplateList, moduleReleaseMeta.Spec.ModuleName, channel.Version) {
 				allowedChannels = append(allowedChannels, channel)
@@ -175,6 +200,10 @@ func (c *RemoteCatalog) GetModuleTemplatesToSync(
 	moduleTemplateList *v1beta2.ModuleTemplateList,
 ) ([]v1beta2.ModuleTemplate, error) {
 	return FilterAllowedModuleTemplates(moduleTemplateList.Items, moduleReleaseMetas, kyma), nil
+}
+
+func (c *RemoteCatalog) isRestrictedModule(moduleName string) bool {
+	return slices.Contains(c.restrictedModules, moduleName)
 }
 
 // FilterAllowedModuleTemplates filters out ModuleTemplates that are not allowed.

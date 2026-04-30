@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -174,6 +175,20 @@ func SetMandatoryModuleReleaseMetaVersion(ctx context.Context, clnt client.Clien
 		return fmt.Errorf("update module release meta: %w", err)
 	}
 
+	return nil
+}
+
+func UpdateModuleReleaseMetaKymaSelector(ctx context.Context, clnt client.Client,
+	moduleName, namespace string, selector *apimetav1.LabelSelector,
+) error {
+	mrm, err := GetModuleReleaseMeta(ctx, moduleName, namespace, clnt)
+	if err != nil {
+		return fmt.Errorf("get module release meta: %w", err)
+	}
+	mrm.Spec.KymaSelector = selector
+	if err = clnt.Update(ctx, mrm); err != nil {
+		return fmt.Errorf("update module release meta kyma selector: %w", err)
+	}
 	return nil
 }
 
