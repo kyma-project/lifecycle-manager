@@ -91,6 +91,7 @@ jobs:
           - skr-image-pull-secret-sync
           - gateway-secret-server-cert-metric
           - restricted-default-module
+          - restricted-default-module-catalog-sync
 
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -122,7 +123,8 @@ jobs:
       - name: Setup test clusters
         if: ${{ matrix.e2e-test != 'mandatory-module' &&
                 matrix.e2e-test != 'mandatory-module-metrics' &&
-                matrix.e2e-test != 'restricted-default-module' }}
+                matrix.e2e-test != 'restricted-default-module' &&
+                matrix.e2e-test != 'restricted-default-module-catalog-sync' }}
         uses: ./lifecycle-manager/.github/actions/setup-test-clusters
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
@@ -135,8 +137,9 @@ jobs:
       - name: Deploy lifecycle-manager
         if: ${{ matrix.e2e-test != 'mandatory-module' &&
                 matrix.e2e-test != 'mandatory-module-metrics'&&
-                matrix.e2e-test != 'gateway-secret-server-cert-metric' &&
-                matrix.e2e-test != 'restricted-default-module' }}
+                matrix.e2e-test != 'gateway-secret-server-cert-metric'&&
+                matrix.e2e-test != 'restricted-default-module'&&
+                matrix.e2e-test != 'restricted-default-module-catalog-sync' }}
         uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
         with:
           klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
@@ -144,8 +147,9 @@ jobs:
       - name: Deploy template-operator
         if: ${{ matrix.e2e-test != 'mandatory-module' &&
                 matrix.e2e-test != 'mandatory-module-metrics'&&
-                matrix.e2e-test != 'gateway-secret-server-cert-metric' &&
-                matrix.e2e-test != 'restricted-default-module' }}
+                matrix.e2e-test != 'gateway-secret-server-cert-metric'&&
+                matrix.e2e-test != 'restricted-default-module'&&
+                matrix.e2e-test != 'restricted-default-module-catalog-sync' }}
         uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
         with:
           module_version: ${{ steps.configuration.outputs.template_operator_version }}
