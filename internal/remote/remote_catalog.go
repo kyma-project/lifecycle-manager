@@ -146,8 +146,9 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 		if c.isRestrictedModule(moduleReleaseMeta.Spec.ModuleName) {
 			matched, err := restrictedmodulesvc.RestrictedModuleMatch(&moduleReleaseMeta, kyma)
 			if err != nil {
-				return nil, fmt.Errorf("failed to evaluate restricted module match for %s: %w",
-					moduleReleaseMeta.Spec.ModuleName, err)
+				logf.FromContext(ctx).Error(err, "failed to evaluate restricted module match, skipping sync",
+					"moduleName", moduleReleaseMeta.Spec.ModuleName)
+				continue
 			}
 			if !matched {
 				continue
