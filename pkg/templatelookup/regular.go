@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/Masterminds/semver/v3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -12,6 +13,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
+	restrictedmodulesvc "github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 )
 
@@ -54,16 +56,19 @@ type TemplateLookup struct {
 
 	descriptorProvider               *provider.CachedDescriptorProvider
 	moduleTemplateInfoLookupStrategy ModuleTemplateInfoLookupStrategy
+	restrictedModules                []string
 }
 
 func NewTemplateLookup(reader client.Reader,
 	descriptorProvider *provider.CachedDescriptorProvider,
 	moduleTemplateInfoLookupStrategy ModuleTemplateInfoLookupStrategy,
+	restrictedModules []string,
 ) *TemplateLookup {
 	return &TemplateLookup{
 		Reader:                           reader,
 		descriptorProvider:               descriptorProvider,
 		moduleTemplateInfoLookupStrategy: moduleTemplateInfoLookupStrategy,
+		restrictedModules:                restrictedModules,
 	}
 }
 
@@ -99,7 +104,7 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 			kyma,
 			moduleReleaseMeta)
 
-		templateInfo = ValidateTemplateMode(templateInfo, kyma)
+		templateInfo = t.ValidateTemplateMode(templateInfo, kyma, moduleReleaseMeta)
 		if templateInfo.Err != nil {
 			templates[moduleInfo.Name] = &templateInfo
 			continue
@@ -128,17 +133,21 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 	return templates
 }
 
-func ValidateTemplateMode(template ModuleTemplateInfo,
+func (t *TemplateLookup) ValidateTemplateMode(template ModuleTemplateInfo,
 	kyma *v1beta2.Kyma,
+	mrm *v1beta2.ModuleReleaseMeta,
 ) ModuleTemplateInfo {
 	if template.Err != nil {
 		return template
 	}
 
-	return validateTemplateMode(template, kyma)
+	return t.validateTemplateMode(template, kyma, mrm)
 }
 
-func validateTemplateMode(template ModuleTemplateInfo, kyma *v1beta2.Kyma) ModuleTemplateInfo {
+func (t *TemplateLookup) validateTemplateMode(template ModuleTemplateInfo,
+	kyma *v1beta2.Kyma,
+	mrm *v1beta2.ModuleReleaseMeta,
+) ModuleTemplateInfo {
 	if template.IsInternal() && !kyma.IsInternal() {
 		template.Err = fmt.Errorf("%w: internal module", ErrTemplateNotAllowed)
 		return template
@@ -151,6 +160,32 @@ func validateTemplateMode(template ModuleTemplateInfo, kyma *v1beta2.Kyma) Modul
 		template.Err = fmt.Errorf("%w: for module %s in channel %s ",
 			common.ErrNoTemplatesInListResult, template.Name, template.DesiredChannel)
 		return template
+	}
+	if mrm != nil {
+		inRestrictedList := slices.Contains(t.restrictedModules, mrm.Spec.ModuleName)
+		hasSelector := mrm.Spec.KymaSelector != nil
+
+		switch {
+		case !inRestrictedList && !hasSelector:
+			// normal module, allow
+		case !inRestrictedList && hasSelector:
+			template.Err = fmt.Errorf("%w: module has kymaSelector but is not in restricted modules list",
+				ErrTemplateNotAllowed)
+			return template
+		case inRestrictedList && !hasSelector:
+			template.Err = ErrTemplateNotAllowed
+			return template
+		case inRestrictedList && hasSelector:
+			matched, err := restrictedmodulesvc.RestrictedModuleMatch(mrm, kyma)
+			if err != nil {
+				template.Err = fmt.Errorf("%w: %w", ErrTemplateNotAllowed, err)
+				return template
+			}
+			if !matched {
+				template.Err = fmt.Errorf("%w: restricted module not allowed for this Kyma", ErrTemplateNotAllowed)
+				return template
+			}
+		}
 	}
 	return template
 }

@@ -219,3 +219,6 @@ restricted-default-module:
 
 restricted-default-module-catalog-sync:
 	$(MAKE) -f $(MAKEFILE_DIR)/restricted_default_module_catalog_sync_test.mk test
+
+restricted-module-normal-installation:
+	$(MAKE) -f $(MAKEFILE_DIR)/restricted_module_normal_module_installation_test.mk test
