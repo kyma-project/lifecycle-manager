@@ -154,7 +154,8 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 				continue
 			}
 		} else if moduleReleaseMeta.Spec.KymaSelector != nil {
-			logf.FromContext(ctx).Info("WARNING: skipping catalog sync: MRM has kymaSelector but is not a restricted module",
+			logf.FromContext(ctx).Info(
+				"WARNING: skipping catalog sync: MRM has kymaSelector but is not a restricted module",
 				"moduleName", moduleReleaseMeta.Spec.ModuleName)
 			continue
 		}
