@@ -92,6 +92,7 @@ jobs:
           - gateway-secret-server-cert-metric
           - restricted-default-module
           - restricted-default-module-catalog-sync
+          - restricted-module-normal-installation
 
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -124,6 +125,7 @@ jobs:
         if: ${{ matrix.e2e-test != 'mandatory-module' &&
                 matrix.e2e-test != 'mandatory-module-metrics' &&
                 matrix.e2e-test != 'restricted-default-module' &&
+                matrix.e2e-test != 'restricted-module-normal-installation' &&
                 matrix.e2e-test != 'restricted-default-module-catalog-sync' }}
         uses: ./lifecycle-manager/.github/actions/setup-test-clusters
         with:
@@ -139,6 +141,7 @@ jobs:
                 matrix.e2e-test != 'mandatory-module-metrics'&&
                 matrix.e2e-test != 'gateway-secret-server-cert-metric'&&
                 matrix.e2e-test != 'restricted-default-module'&&
+                matrix.e2e-test != 'restricted-module-normal-installation' &&
                 matrix.e2e-test != 'restricted-default-module-catalog-sync' }}
         uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
         with:
@@ -149,6 +152,7 @@ jobs:
                 matrix.e2e-test != 'mandatory-module-metrics'&&
                 matrix.e2e-test != 'gateway-secret-server-cert-metric'&&
                 matrix.e2e-test != 'restricted-default-module'&&
+                matrix.e2e-test != 'restricted-module-normal-installation' &&
                 matrix.e2e-test != 'restricted-default-module-catalog-sync' }}
         uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
         with:
