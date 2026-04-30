@@ -214,7 +214,8 @@ func TestValidateTemplateMode_RestrictedModules(t *testing.T) {
 			wantErr: templatelookup.ErrTemplateNotAllowed,
 		},
 		{
-			name:              "When module in restricted list with selector but Kyma has no matching label, Then not allowed",
+			name: "When module in restricted list with selector but Kyma has no matching label, " +
+				"Then not allowed",
 			restrictedModules: []string{restrictedModuleName},
 			mrm: builder.NewModuleReleaseMetaBuilder().
 				WithModuleName(restrictedModuleName).
