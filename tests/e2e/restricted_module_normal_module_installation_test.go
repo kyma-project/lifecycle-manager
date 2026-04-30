@@ -102,5 +102,4 @@ var _ = Describe("Restricted Modules - Normal Module Installation", Ordered, fun
 				Should(Succeed())
 		})
 	})
-
 })

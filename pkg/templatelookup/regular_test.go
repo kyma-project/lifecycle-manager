@@ -255,21 +255,6 @@ func TestValidateTemplateMode_RestrictedModules(t *testing.T) {
 			wantErr: templatelookup.ErrTemplateNotAllowed,
 		},
 		{
-			name:              "When module in restricted list but no selector configured, Then not allowed",
-			restrictedModules: []string{restrictedModuleName},
-			mrm: builder.NewModuleReleaseMetaBuilder().
-				WithModuleName(restrictedModuleName).
-				WithKymaSelector(nil).
-				Build(),
-			kyma: builder.NewKymaBuilder().
-				WithLabel(shared.GlobalAccountIDLabel, "account-1").
-				Build(),
-			template: templatelookup.ModuleTemplateInfo{
-				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
-			},
-			wantErr: templatelookup.ErrTemplateNotAllowed,
-		},
-		{
 			name:              "When restricted modules list is empty, Then allowed",
 			restrictedModules: nil,
 			mrm: builder.NewModuleReleaseMetaBuilder().
@@ -281,6 +266,21 @@ func TestValidateTemplateMode_RestrictedModules(t *testing.T) {
 				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
 			},
 			wantErr: nil,
+		},
+		{
+			name:              "When restricted modules list is empty and has selector, Then not allowed",
+			restrictedModules: nil,
+			mrm: builder.NewModuleReleaseMetaBuilder().
+				WithModuleName(restrictedModuleName).
+				WithGlobalAccountKymaSelector("account-1").
+				Build(),
+			kyma: builder.NewKymaBuilder().
+				WithLabel(shared.GlobalAccountIDLabel, "account-1").
+				Build(),
+			template: templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().Build(),
+			},
+			wantErr: templatelookup.ErrTemplateNotAllowed,
 		},
 		{
 			name:              "When module in restricted list and selector parse error, Then not allowed",
