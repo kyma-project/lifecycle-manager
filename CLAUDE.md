@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Common make targets
 
-Run from `lifecycle-manager/`:
+Run from `lifecycle-manager/`. All `go` commands use `GOFIPS140=v1.0.0 go` (FIPS-enabled builds) — the Makefile sets this automatically, but use it explicitly when running `go` commands directly.
 
 | Target | What it does |
 |---|---|
@@ -32,13 +32,13 @@ A CI workflow (`check-generated-code.yml`) blocks PRs where generated files are 
 
 Unit test:
 ```sh
-go test -run TestFoo ./internal/...
+GOFIPS140=v1.0.0 go test -run TestFoo ./internal/...
 ```
 
 Single controller's integration tests (requires envtest assets):
 ```sh
 KUBEBUILDER_ASSETS=$(./bin/setup-envtest use 1.32.0 -p path) \
-  go test ./tests/integration/controller/kyma/... -v -ginkgo.focus "some spec description"
+  GOFIPS140=v1.0.0 go test ./tests/integration/controller/kyma/... -v -ginkgo.focus "some spec description"
 ```
 
 Replace `kyma` with `manifest`, `watcher`, `modulereleasemeta`, or `moduletemplate`. Run `make envtest` once after checkout to populate `bin/setup-envtest`.
@@ -79,6 +79,38 @@ Forcefully removes all module resources from a remote cluster when a `Kyma` CR h
 
 6. **Error wrapping**: always use `fmt.Errorf("context: %w", err)`. For deletion use cases, return `result.Result{UseCase: usecase.X, Err: err}` and let the caller decide on requeue/metrics.
 
+## Code conventions
+
+### Import aliases
+
+The `importas` linter enforces strict aliases — violations fail CI. Key ones you will use in almost every file:
+
+| Package | Alias |
+|---|---|
+| `k8s.io/apimachinery/pkg/apis/meta/v1` | `apimetav1` |
+| `k8s.io/apimachinery/pkg/api/errors` | `apierrors` |
+| `k8s.io/apimachinery/pkg/runtime` | `machineryruntime` |
+| `k8s.io/apimachinery/pkg/labels` | `k8slabels` |
+| `k8s.io/api/core/v1` | `apicorev1` |
+| `k8s.io/api/apps/v1` | `apiappsv1` |
+| `k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1` | `apiextensionsv1` |
+| `sigs.k8s.io/controller-runtime` | `ctrl` |
+| `sigs.k8s.io/controller-runtime/pkg/controller` | `ctrlruntime` |
+| `sigs.k8s.io/controller-runtime/pkg/log` | `logf` |
+
+Full alias list is in `.golangci.yaml` under `linters-settings.importas.alias`.
+
+### Import ordering
+
+Enforced by `gci`: **standard → third-party → project** (`github.com/kyma-project/lifecycle-manager`) **→ blank → dot**.
+
+### Lint limits
+
+- Line length: **120 characters** (revive `line-length-limit`)
+- Function length: **80 lines** (`funlen`) — use `//nolint:funlen // <reason>` only for composition root wiring
+- Cyclomatic complexity: **20** (`cyclop`)
+- All linters enabled by default; check `.golangci.yaml` before adding `//nolint`. Every `//nolint` directive **must** include an explanation comment.
+
 ## Where to look for more context
 
 | Topic | File |
@@ -90,3 +122,4 @@ Forcefully removes all module resources from a remote cluster when a `Kyma` CR h
 | Code generation, when to run it, troubleshooting drift | [`agent_docs/codegen.md`](agent_docs/codegen.md) |
 | Controller responsibilities in depth | [`docs/contributor/02-controllers.md`](docs/contributor/02-controllers.md) |
 | KCP↔SKR synchronization protocol | [`docs/contributor/08-kcp-skr-synchronization.md`](docs/contributor/08-kcp-skr-synchronization.md) |
+| Documentation writing style and templates | [`docs/CLAUDE.md`](docs/CLAUDE.md) |
