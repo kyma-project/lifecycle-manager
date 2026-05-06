@@ -63,6 +63,10 @@ jobs:
             fi
           fi
 
+          if [[ -z "$tags" ]]; then
+            echo "::error::No tags computed for event '$event_name'" && exit 1
+          fi
+
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
           echo "Computed tags: $tags"
 
@@ -78,21 +82,18 @@ jobs:
       - name: Push image to ghcr.io
         run: |
           IFS=',' read -ra TAG_ARRAY <<< "${{ steps.tags.outputs.tags }}"
-          first_tag="${TAG_ARRAY[0]}"
-
-          # Push with the first tag
-          skopeo copy --all oci-archive:/tmp/artifacts/image.tar "docker://${first_tag}"
-
-          # Add additional tags by copying from the first
-          for tag in "${TAG_ARRAY[@]:1}"; do
-            skopeo copy --all "docker://${first_tag}" "docker://${tag}"
+          for tag in "${TAG_ARRAY[@]}"; do
+            skopeo copy --all oci-archive:/tmp/artifacts/image.tar "docker://${tag}"
           done
 
       - name: Print published image
         run: |
           echo "### Published image" >> "$GITHUB_STEP_SUMMARY"
-          echo "Tags:" >> "$GITHUB_STEP_SUMMARY"
           IFS=',' read -ra TAG_ARRAY <<< "${{ steps.tags.outputs.tags }}"
+          first_tag="${TAG_ARRAY[0]}"
+          digest=$(skopeo inspect --raw "docker://${first_tag}" | jq -r '.manifests[0].digest // .Digest')
+          echo "Digest: \`${digest}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Tags:" >> "$GITHUB_STEP_SUMMARY"
           for tag in "${TAG_ARRAY[@]}"; do
             echo "- \`${tag}\`" >> "$GITHUB_STEP_SUMMARY"
           done
