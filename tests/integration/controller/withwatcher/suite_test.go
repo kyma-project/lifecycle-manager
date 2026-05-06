@@ -39,6 +39,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	restrictedmodulecmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/restrictedmodule"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
@@ -50,6 +51,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
+	mrmrepo "github.com/kyma-project/lifecycle-manager/internal/repository/modulereleasemeta"
 	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
@@ -62,10 +64,9 @@ import (
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 	"github.com/kyma-project/lifecycle-manager/tests/integration/controller/composition"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -200,6 +201,10 @@ var _ = BeforeSuite(func() {
 		flagVar,
 	)
 
+	restrictedModuleDefaulter := restrictedmodulecmpse.ComposeDefaulter(flagVar.GetRestrictedDefaultModules(),
+		mrmrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+		kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace))
+
 	err = (&kyma.Reconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    testSkrContextFactory,
@@ -211,11 +216,12 @@ var _ = BeforeSuite(func() {
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
 		Metrics:              kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
-			flags.DefaultRemoteSyncNamespace),
-		Config:          kymaReconcilerConfig,
-		DeletionMetrics: deletionMetrics,
-		DeletionEvents:  deletionEvents,
-		DeletionService: deletionService,
+			flags.DefaultRemoteSyncNamespace, nil),
+		Config:            kymaReconcilerConfig,
+		DeletionMetrics:   deletionMetrics,
+		DeletionEvents:    deletionEvents,
+		DeletionService:   deletionService,
+		RestrictedModules: restrictedModuleDefaulter,
 	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr},
 		watchcmpse.ComposeTemplateChangeHandlerMapFunc(
 			kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),

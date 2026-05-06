@@ -68,6 +68,26 @@ func (m ModuleReleaseMetaBuilder) WithMandatory(version string) ModuleReleaseMet
 	return m
 }
 
+func (m ModuleReleaseMetaBuilder) WithKymaSelector(selector *apimetav1.LabelSelector) ModuleReleaseMetaBuilder {
+	m.moduleReleaseMeta.Spec.KymaSelector = selector
+	return m
+}
+
+func (m ModuleReleaseMetaBuilder) WithGlobalAccountKymaSelector(
+	globalAccountIDs ...string,
+) ModuleReleaseMetaBuilder {
+	m.moduleReleaseMeta.Spec.KymaSelector = &apimetav1.LabelSelector{
+		MatchExpressions: []apimetav1.LabelSelectorRequirement{
+			{
+				Key:      shared.GlobalAccountIDLabel,
+				Operator: apimetav1.LabelSelectorOpIn,
+				Values:   globalAccountIDs,
+			},
+		},
+	}
+	return m
+}
+
 func (m ModuleReleaseMetaBuilder) Build() *v1beta2.ModuleReleaseMeta {
 	return m.moduleReleaseMeta
 }

@@ -58,6 +58,21 @@ func (r *Repository) Get(ctx context.Context, mrmName string) (*v1beta2.ModuleRe
 	return mrm, nil
 }
 
+func (r *Repository) Exists(ctx context.Context, mrmName string) (bool, error) {
+	_, err := r.Get(ctx, mrmName)
+	if err != nil {
+		if client.IgnoreNotFound(err) == nil {
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to check existence of ModuleReleaseMeta %s in namespace %s: %w",
+			mrmName,
+			r.namespace,
+			err,
+		)
+	}
+	return true, nil
+}
+
 func (r *Repository) ListMandatory(ctx context.Context) ([]v1beta2.ModuleReleaseMeta, error) {
 	mandatoryMrmList := &v1beta2.ModuleReleaseMetaList{}
 	err := r.clnt.List(ctx, mandatoryMrmList, client.InNamespace(r.namespace),

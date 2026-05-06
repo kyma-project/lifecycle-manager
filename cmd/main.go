@@ -56,6 +56,7 @@ import (
 	kymalookupcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/kyma/lookup"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/deletion"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/installation"
+	restrictedmodulecmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/restrictedmodule"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal"
@@ -94,6 +95,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
+	restrictedmodulesvc "github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
@@ -123,6 +125,7 @@ var (
 	buildVersion                         = "not_provided" //nolint:gochecknoglobals,revive // used to embed static binary version during release builds
 	errFailedToDropStoredVersions        = errors.New("failed to drop stored versions")
 	errFailedToScheduleMetricsCleanupJob = errors.New("failed to schedule metrics cleanup job")
+	errModuleReleaseMetaDoesNotExist     = errors.New("ModuleReleaseMeta does not exist")
 )
 
 func registerSchemas(scheme *machineryruntime.Scheme) {
@@ -196,6 +199,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 	remoteClientCache := remote.NewClientCache()
 	kcpClient := mgr.GetClient()
+
 	eventRecorder := event.NewRecorderWrapper(mgr.GetEventRecorder(shared.OperatorName))
 
 	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
@@ -203,6 +207,14 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		logger.Error(err, "can't create kcpClient")
 		os.Exit(bootstrapFailedExitCode)
 	}
+
+	if err := verifyModuleReleaseMetasForRestrictedDefaultModules(context.Background(),
+		kcpClientWithoutCache,
+		flagVar.GetRestrictedDefaultModules(),
+	); err != nil {
+		logger.Error(err, "failed to verify ModuleReleaseMetas for restricted default modules")
+	}
+
 	gatewayRepository := istiogateway.NewRepository(kcpClientWithoutCache)
 	secretRepo := secretrepo.NewRepository(kcpClientWithoutCache, shared.DefaultControlPlaneNamespace)
 	accessManagerService := accessmanager.NewService(secretRepo)
@@ -284,9 +296,15 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	kymaLookupSvc := kymalookupcmpse.ComposeKymaLookupService(kymaRepo)
 
+	restrictedModuleDefaulter := restrictedmodulecmpse.ComposeDefaulter(
+		flagVar.GetRestrictedDefaultModules(),
+		mrmRepo,
+		kymaRepo,
+	)
+
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
 		kymaMetrics, logger, maintenanceWindow, ociRegistry.GetReference(), kymaDeletionSvc, kymaLookupSvc,
-		mtEventHandlerMapFunc, mrmEventHandler)
+		mtEventHandlerMapFunc, mrmEventHandler, restrictedModuleDefaulter)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
 		eventRecorder, kymaRepo)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, mrmRepo, mtRepo, flagVar, options, mandatoryModulesMetrics,
@@ -414,6 +432,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, ociRegistry string,
 	kymaDeletionSvc *kymadeletionsvc.Service, kymaLookupSvc *kymalookupsvc.Service,
 	mtEventHandlerMapFunc handler.MapFunc, mrmEventHandler *mrmwatch.EventHandler,
+	restrictedModuleDefaulter *restrictedmodulesvc.Defaulter,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -460,14 +479,15 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		},
 		Metrics: kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, skrContextFactory,
-			flagVar.RemoteSyncNamespace),
+			flagVar.RemoteSyncNamespace, flagVar.GetRestrictedDefaultModules()),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
-			moduleTemplateInfoLookup),
-		Config:          kymaReconcilerConfig,
-		DeletionMetrics: deletionMetricsWriter,
-		DeletionEvents:  resultEventRecorder,
-		DeletionService: kymaDeletionSvc,
-		LookupService:   kymaLookupSvc,
+			moduleTemplateInfoLookup, flagVar.GetRestrictedDefaultModules()),
+		Config:            kymaReconcilerConfig,
+		DeletionMetrics:   deletionMetricsWriter,
+		DeletionEvents:    resultEventRecorder,
+		DeletionService:   kymaDeletionSvc,
+		LookupService:     kymaLookupSvc,
+		RestrictedModules: restrictedModuleDefaulter,
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:   flagVar.KymaListenerAddr,
@@ -648,4 +668,23 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(bootstrapFailedExitCode)
 	}
+}
+
+func verifyModuleReleaseMetasForRestrictedDefaultModules(ctx context.Context,
+	kcpClientWithoutCache client.Client,
+	restrictedDefaultModules []string,
+) error {
+	// cannot re-use the existing repo as we need to use the uncached client before the manager starts
+	mrmRepo := mrmrepo.NewRepository(kcpClientWithoutCache, shared.DefaultControlPlaneNamespace)
+
+	for _, moduleName := range restrictedDefaultModules {
+		exists, err := mrmRepo.Exists(ctx, moduleName)
+		if err != nil {
+			return fmt.Errorf("failed checking existence of ModuleReleaseMeta for module %s: %w", moduleName, err)
+		}
+		if !exists {
+			return fmt.Errorf("%w for module %s", errModuleReleaseMetaDoesNotExist, moduleName)
+		}
+	}
+	return nil
 }

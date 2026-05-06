@@ -99,6 +99,10 @@ type SkrSyncService interface {
 	SyncImagePullSecret(ctx context.Context, kyma types.NamespacedName) error
 }
 
+type RestrictedModules interface {
+	Default(ctx context.Context, kyma *v1beta2.Kyma) error
+}
+
 // ReconcilerConfig holds configuration values for the Kyma Reconciler.
 // Usually read from flags or environment variables.
 type ReconcilerConfig struct {
@@ -125,15 +129,18 @@ type Reconciler struct {
 	RemoteCatalog  *remote.RemoteCatalog
 	TemplateLookup *templatelookup.TemplateLookup
 
-	DeletionMetrics DeletionMetricWriter
-	DeletionEvents  DeletionEventRecorder
-	DeletionService DeletionService
-	LookupService   LookupService
+	DeletionMetrics   DeletionMetricWriter
+	DeletionEvents    DeletionEventRecorder
+	DeletionService   DeletionService
+	LookupService     LookupService
+	RestrictedModules RestrictedModules
 }
 
 // Reconcile reconciles Kyma resources.
 //
 // See https://github.com/kyma-project/lifecycle-manager/issues/2943.
+//
+//nolint:funlen // disable for kyma controller until further refactoring
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("Kyma reconciliation started")
@@ -152,6 +159,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, fmt.Errorf("KymaController: %w", err)
 	}
 
+	err := r.RestrictedModules.Default(ctx, kyma)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("KymaController: failed to default restricted modules: %w", err)
+	}
+
 	status.InitConditions(kyma, r.WatcherEnabled(), r.SkrImagePullSecretSyncEnabled())
 
 	if kyma.SkipReconciliation() && kyma.DeletionTimestamp.IsZero() {
@@ -159,7 +171,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
-	err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
+	err = r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
 	if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
 		return r.handleDeletedSkr(ctx, req, kyma)
 	}

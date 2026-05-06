@@ -6,7 +6,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -244,6 +246,60 @@ func TestRepository_Get(t *testing.T) {
 		require.Error(t, err)
 		require.Nil(t, result)
 		require.Contains(t, err.Error(), "failed to get ModuleReleaseMeta")
+		require.Contains(t, err.Error(), testMRMName)
+		require.Contains(t, err.Error(), testNamespace)
+		require.True(t, stub.getCalled)
+	})
+}
+
+func TestRepository_Exists(t *testing.T) {
+	ctx := context.Background()
+	testNamespace := "test-namespace"
+	testMRMName := "test-mrm"
+
+	t.Run("returns true when MRM exists", func(t *testing.T) {
+		mrm := &v1beta2.ModuleReleaseMeta{
+			ObjectMeta: apimetav1.ObjectMeta{
+				Name:      testMRMName,
+				Namespace: testNamespace,
+			},
+		}
+
+		stub := &clientStub{mrm: mrm}
+		repo := mrmrepo.NewRepository(stub, testNamespace)
+
+		exists, err := repo.Exists(ctx, testMRMName)
+
+		require.NoError(t, err)
+		require.True(t, exists)
+		require.True(t, stub.getCalled)
+	})
+
+	t.Run("returns false when MRM is not found", func(t *testing.T) {
+		notFoundErr := apierrors.NewNotFound(
+			schema.GroupResource{Group: "operator.kyma-project.io", Resource: "modulereleasemetas"},
+			testMRMName,
+		)
+		stub := &clientStub{getErr: notFoundErr}
+		repo := mrmrepo.NewRepository(stub, testNamespace)
+
+		exists, err := repo.Exists(ctx, testMRMName)
+
+		require.NoError(t, err)
+		require.False(t, exists)
+		require.True(t, stub.getCalled)
+	})
+
+	t.Run("returns error when client get fails with non-NotFound error", func(t *testing.T) {
+		expectedErr := errors.New("client get error")
+		stub := &clientStub{getErr: expectedErr}
+		repo := mrmrepo.NewRepository(stub, testNamespace)
+
+		exists, err := repo.Exists(ctx, testMRMName)
+
+		require.Error(t, err)
+		require.False(t, exists)
+		require.Contains(t, err.Error(), "failed to check existence of ModuleReleaseMeta")
 		require.Contains(t, err.Error(), testMRMName)
 		require.Contains(t, err.Error(), testNamespace)
 		require.True(t, stub.getCalled)

@@ -213,3 +213,12 @@ skr-image-pull-secret-sync:
 
 module-api-upgrade-under-blocked-deletion:
 	$(GO_TEST) "Module API Upgrade Under Blocked Deletion"
+
+restricted-default-module:
+	$(MAKE) -f $(MAKEFILE_DIR)/restricted_default_module_test.mk test
+
+restricted-default-module-catalog-sync:
+	$(MAKE) -f $(MAKEFILE_DIR)/restricted_default_module_catalog_sync_test.mk test
+
+restricted-module-normal-installation:
+	$(MAKE) -f $(MAKEFILE_DIR)/restricted_module_normal_module_installation_test.mk test
