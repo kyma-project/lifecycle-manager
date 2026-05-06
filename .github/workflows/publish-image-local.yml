@@ -1,0 +1,99 @@
+name: Publish Image (Local testing / ghcr.io)
+
+# Triggered by a successful "Build Image (Local testing / ghcr.io)" run.
+# Downloads the OCI tarball artifact and pushes it to ghcr.io.
+# This workflow never checks out untrusted code — it only handles the
+# pre-built image, which keeps the privileged context safe from supply-chain attacks.
+#
+# Tag decisions are derived entirely from github.event.workflow_run context
+# (trusted) — never from PR-produced artifacts, which could be forged by a fork.
+
+on:
+  workflow_run:
+    workflows: ["Build Image (Local testing / ghcr.io)"]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  push:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      actions: read
+
+    steps:
+      - name: Download image artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: image-oci
+          path: /tmp/artifacts
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Download metadata artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: image-metadata
+          path: /tmp/metadata
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Compute image tags
+        id: tags
+        run: |
+          event="${{ github.event.workflow_run.event }}"
+          sha="${{ github.event.workflow_run.head_sha }}"
+          short_sha="${sha:0:7}"
+          head_branch="${{ github.event.workflow_run.head_branch }}"
+          # pull_requests is only populated for same-repo PRs, empty for forks.
+          pr_number=$(jq -r '.workflow_run.pull_requests[0].number // ""' "$GITHUB_EVENT_PATH")
+
+          image="ghcr.io/kyma-project/lifecycle-manager"
+          tags=""
+
+          if [[ "$event" == "push" && "$head_branch" == "main" ]]; then
+            tags="${image}:latest,${image}:sha-${short_sha}"
+          elif [[ "$event" == "pull_request" && -n "$pr_number" ]]; then
+            tags="${image}:pr-${pr_number},${image}:sha-${short_sha}"
+          elif [[ "$event" == "pull_request" || "$event" == "workflow_dispatch" ]]; then
+            # Fork PRs: pr_number unavailable from workflow_run context.
+            # workflow_dispatch: custom tag not passed through for security.
+            tags="${image}:sha-${short_sha}"
+          fi
+
+          if [[ -z "$tags" ]]; then
+            echo "::error::No tags computed for event '$event_name'" && exit 1
+          fi
+
+          echo "tags=$tags" >> "$GITHUB_OUTPUT"
+          echo "Computed tags: $tags"
+
+      - name: Install skopeo
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq skopeo
+
+      - name: Log in to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | skopeo login ghcr.io --username "${{ github.actor }}" --password-stdin
+
+      - name: Push image to ghcr.io
+        run: |
+          IFS=',' read -ra TAG_ARRAY <<< "${{ steps.tags.outputs.tags }}"
+          for tag in "${TAG_ARRAY[@]}"; do
+            skopeo copy --all oci-archive:/tmp/artifacts/image.tar "docker://${tag}"
+          done
+
+      - name: Print published image
+        run: |
+          echo "### Published image" >> "$GITHUB_STEP_SUMMARY"
+          IFS=',' read -ra TAG_ARRAY <<< "${{ steps.tags.outputs.tags }}"
+          first_tag="${TAG_ARRAY[0]}"
+          digest=$(skopeo inspect --raw "docker://${first_tag}" | jq -r '.manifests[0].digest // .Digest')
+          echo "Digest: \`${digest}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Tags:" >> "$GITHUB_STEP_SUMMARY"
+          for tag in "${TAG_ARRAY[@]}"; do
+            echo "- \`${tag}\`" >> "$GITHUB_STEP_SUMMARY"
+          done
