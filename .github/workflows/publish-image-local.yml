@@ -4,6 +4,9 @@ name: Publish Image (Local testing / ghcr.io)
 # Downloads the OCI tarball artifact and pushes it to ghcr.io.
 # This workflow never checks out untrusted code — it only handles the
 # pre-built image, which keeps the privileged context safe from supply-chain attacks.
+#
+# Tag decisions are derived entirely from github.event.workflow_run context
+# (trusted) — never from PR-produced artifacts, which could be forged by a fork.
 
 on:
   workflow_run:
@@ -40,27 +43,24 @@ jobs:
       - name: Compute image tags
         id: tags
         run: |
-          metadata=$(cat /tmp/metadata/metadata.json)
-          event_name=$(echo "$metadata" | jq -r '.event_name')
-          sha=$(echo "$metadata" | jq -r '.sha')
-          pr_number=$(echo "$metadata" | jq -r '.pr_number')
-          dispatch_tag=$(echo "$metadata" | jq -r '.dispatch_tag')
-          ref=$(echo "$metadata" | jq -r '.ref')
-          short_sha=${sha:0:7}
+          event="${{ github.event.workflow_run.event }}"
+          sha="${{ github.event.workflow_run.head_sha }}"
+          short_sha="${sha:0:7}"
+          head_branch="${{ github.event.workflow_run.head_branch }}"
+          # pull_requests is only populated for same-repo PRs, empty for forks.
+          pr_number=$(jq -r '.workflow_run.pull_requests[0].number // ""' "$GITHUB_EVENT_PATH")
 
           image="ghcr.io/kyma-project/lifecycle-manager"
           tags=""
 
-          if [[ "$event_name" == "push" && "$ref" == "refs/heads/main" ]]; then
+          if [[ "$event" == "push" && "$head_branch" == "main" ]]; then
             tags="${image}:latest,${image}:sha-${short_sha}"
-          elif [[ "$event_name" == "pull_request" ]]; then
+          elif [[ "$event" == "pull_request" && -n "$pr_number" ]]; then
             tags="${image}:pr-${pr_number},${image}:sha-${short_sha}"
-          elif [[ "$event_name" == "workflow_dispatch" ]]; then
-            if [[ -n "$dispatch_tag" && "$dispatch_tag" != "" ]]; then
-              tags="${image}:${dispatch_tag},${image}:sha-${short_sha}"
-            else
-              tags="${image}:sha-${short_sha}"
-            fi
+          elif [[ "$event" == "pull_request" || "$event" == "workflow_dispatch" ]]; then
+            # Fork PRs: pr_number unavailable from workflow_run context.
+            # workflow_dispatch: custom tag not passed through for security.
+            tags="${image}:sha-${short_sha}"
           fi
 
           if [[ -z "$tags" ]]; then
