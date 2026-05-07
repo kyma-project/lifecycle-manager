@@ -58,8 +58,9 @@ func TestRequireManifestStateUpdateAfterSyncResource(t *testing.T) {
 				t.Errorf("expected state to be %v, got %v", testCase.expectedState, manifest.GetStatus().State)
 			}
 
-			if manifest.GetStatus().Operation != testCase.expectedOp {
-				t.Errorf("expected operation to be %v, got %v", testCase.expectedOp, manifest.GetStatus().Operation)
+			if manifest.GetStatus().LastOperation.Operation != testCase.expectedOp {
+				t.Errorf("expected operation to be %v, got %v",
+					testCase.expectedOp, manifest.GetStatus().LastOperation.Operation)
 			}
 		})
 	}

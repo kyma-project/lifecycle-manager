@@ -28,6 +28,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
+// +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
@@ -64,7 +65,7 @@ type KymaSpec struct {
 // Module defines the components to be installed.
 type Module struct {
 	// +kubebuilder:default:=CreateAndDelete
-	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
+	CustomResourcePolicy CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
 
 	// Name is a unique identifier of the module.
 	// It is used to resolve a ModuleTemplate for creating a set of resources on the cluster.
@@ -133,7 +134,7 @@ func (kyma *Kyma) GetModuleStatusMap() map[string]*ModuleStatus {
 
 // KymaStatus defines the observed state of Kyma.
 type KymaStatus struct {
-	shared.LastOperation `json:"lastOperation,omitempty"`
+	LastOperation shared.LastOperation `json:"lastOperation,omitempty"`
 
 	// State signifies current state of Kyma.
 	// Value can be one of ("Ready", "Processing", "Warning", "Error", "Deleting").
@@ -217,8 +218,13 @@ func (m *ModuleStatus) GetManifestCR() *unstructured.Unstructured {
 // the generation fields even when embedding ObjectMeta.
 type TrackingObject struct {
 	apimetav1.TypeMeta `json:",inline"`
-	PartialMeta        `json:"metadata,omitempty"`
+
+	PartialMeta PartialMeta `json:"metadata,omitempty"`
 }
+
+func (t *TrackingObject) GetName() string      { return t.PartialMeta.GetName() }
+func (t *TrackingObject) GetNamespace() string { return t.PartialMeta.GetNamespace() }
+func (t *TrackingObject) GetGeneration() int64 { return t.PartialMeta.GetGeneration() }
 
 // PartialMeta is a subset of ObjectMeta that contains relevant information to track an Object.
 // see https://github.com/kubernetes/apimachinery/blob/v0.26.1/pkg/apis/meta/v1/types.go#L111

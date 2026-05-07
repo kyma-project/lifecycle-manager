@@ -296,7 +296,7 @@ func useRemoteNamespaceForModuleTemplates(status *v1beta2.KymaStatus) {
 		if status.Modules[i].Template == nil {
 			continue
 		}
-		status.Modules[i].Template.Namespace = shared.DefaultRemoteNamespace
+		status.Modules[i].Template.PartialMeta.Namespace = shared.DefaultRemoteNamespace
 	}
 }
 
