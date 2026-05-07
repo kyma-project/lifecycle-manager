@@ -168,7 +168,7 @@ GOLANG_CI_LINT = $(LOCALBIN)/golangci-lint
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v$(shell yq e '.kustomize' ./versions.yaml)
 CONTROLLER_TOOLS_VERSION ?= v$(shell yq e '.controllerTools' ./versions.yaml)
-CODE_GENERATOR_VERSION ?= v$(shell yq e '.codeGenerator' ./versions.yaml)
+APPLYCONFIGURATION_GEN_VERSION ?= v$(shell yq e '.applyconfiguration-gen' ./versions.yaml)
 GOLANG_CI_LINT_VERSION ?= v$(shell yq e '.golangciLint' ./versions.yaml)
 
 ## Tool Install Targets
@@ -192,7 +192,7 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 .PHONY: applyconfiguration-gen
 applyconfiguration-gen: $(APPLYCONFIGURATION_GEN) ## Download applyconfiguration-gen locally if necessary.
 $(APPLYCONFIGURATION_GEN): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) $(GO) install k8s.io/code-generator/cmd/applyconfiguration-gen@$(CODE_GENERATOR_VERSION)
+	GOBIN=$(LOCALBIN) $(GO) install k8s.io/code-generator/cmd/applyconfiguration-gen@$(APPLYCONFIGURATION_GEN_VERSION)
 
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.

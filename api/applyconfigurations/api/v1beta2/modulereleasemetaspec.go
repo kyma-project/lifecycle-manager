@@ -17,6 +17,10 @@ limitations under the License.
 
 package v1beta2
 
+import (
+	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
+)
+
 // ModuleReleaseMetaSpecApplyConfiguration represents a declarative configuration of the ModuleReleaseMetaSpec type for use
 // with apply.
 //
@@ -39,6 +43,8 @@ type ModuleReleaseMetaSpecApplyConfiguration struct {
 	//
 	// Deprecated: This field is deprecated and will be removed in the upcoming API version.
 	Internal *bool `json:"internal,omitempty"`
+	// EXPERIMENTAL FEATURE - DO NOT USE - LIKELY TO BE REMOVED IN THE FUTURE
+	KymaSelector *v1.LabelSelectorApplyConfiguration `json:"kymaSelector,omitempty"`
 }
 
 // ModuleReleaseMetaSpecApplyConfiguration constructs a declarative configuration of the ModuleReleaseMetaSpec type for use with
@@ -97,5 +103,13 @@ func (b *ModuleReleaseMetaSpecApplyConfiguration) WithBeta(value bool) *ModuleRe
 // If called multiple times, the Internal field is set to the value of the last call.
 func (b *ModuleReleaseMetaSpecApplyConfiguration) WithInternal(value bool) *ModuleReleaseMetaSpecApplyConfiguration {
 	b.Internal = &value
+	return b
+}
+
+// WithKymaSelector sets the KymaSelector field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the KymaSelector field is set to the value of the last call.
+func (b *ModuleReleaseMetaSpecApplyConfiguration) WithKymaSelector(value *v1.LabelSelectorApplyConfiguration) *ModuleReleaseMetaSpecApplyConfiguration {
+	b.KymaSelector = value
 	return b
 }
