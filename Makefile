@@ -57,11 +57,11 @@ test-crd: controller-gen ## Generate crd for test
 	$(CONTROLLER_GEN) crd paths="./config/samples/component-integration-installed/crd/..." output:crd:artifacts:config=config/samples/component-integration-installed/crd
 
 .PHONY: generate-openapi-schema
-generate-openapi-schema: ## Generate OpenAPI schema from CRD YAMLs for applyconfiguration-gen.
+generate-openapi-schema: manifests ## Generate OpenAPI schema from CRD YAMLs for applyconfiguration-gen.
 	$(GO) run ./hack/crd-to-openapi/main.go
 
 .PHONY: generate-applyconfiguration
-generate-applyconfiguration: applyconfiguration-gen generate-openapi-schema manifests ## Generate applyconfiguration types for ModuleReleaseMeta and ModuleTemplate.
+generate-applyconfiguration: applyconfiguration-gen manifests generate-openapi-schema ## Generate applyconfiguration types for ModuleReleaseMeta and ModuleTemplate.
 	cd api && $(APPLYCONFIGURATION_GEN) \
 		--output-dir ./applyconfigurations \
 		--output-pkg github.com/kyma-project/lifecycle-manager/api/applyconfigurations \
@@ -168,7 +168,7 @@ GOLANG_CI_LINT = $(LOCALBIN)/golangci-lint
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v$(shell yq e '.kustomize' ./versions.yaml)
 CONTROLLER_TOOLS_VERSION ?= v$(shell yq e '.controllerTools' ./versions.yaml)
-APPLYCONFIGURATION_GEN_VERSION ?= v$(shell yq e '.applyconfiguration-gen' ./versions.yaml)
+APPLYCONFIGURATION_GEN_VERSION ?= v$(shell yq e '.applyconfiguration_gen' ./versions.yaml)
 GOLANG_CI_LINT_VERSION ?= v$(shell yq e '.golangciLint' ./versions.yaml)
 
 ## Tool Install Targets
