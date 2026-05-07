@@ -501,6 +501,35 @@ var schemaYAML = typed.YAMLObject(`types:
             type:
               scalar: boolean
             default: false
+          - name: kymaSelector
+            type:
+              map:
+                fields:
+                - name: matchExpressions
+                  type:
+                    list:
+                      elementType:
+                        map:
+                          fields:
+                          - name: key
+                            type:
+                              scalar: string
+                          - name: operator
+                            type:
+                              scalar: string
+                          - name: values
+                            type:
+                              list:
+                                elementType:
+                                  scalar: string
+                                elementRelationship: atomic
+                      elementRelationship: atomic
+                - name: matchLabels
+                  type:
+                    map:
+                      elementType:
+                        scalar: string
+                elementRelationship: atomic
           - name: mandatory
             type:
               map:
