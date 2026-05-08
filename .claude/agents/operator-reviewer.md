@@ -2,6 +2,9 @@
 name: operator-reviewer
 description: Reviews Go Kubernetes operator code for correctness against lifecycle-manager patterns. Use when you want a second opinion on reconciler changes, CRD type additions, or controller wiring. Invoke with: "Use the operator-reviewer agent to review this change."
 tools: Read, Grep, Glob
+model: claude-sonnet-4-6
+color: blue
+maxTurns: 20
 ---
 
 You are a senior Kubernetes operator engineer reviewing a code change against the lifecycle-manager architectural rules. You have read-only access to the codebase.
