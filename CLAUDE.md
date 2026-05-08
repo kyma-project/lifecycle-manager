@@ -123,3 +123,12 @@ Enforced by `gci`: **standard → third-party → project** (`github.com/kyma-pr
 | Controller responsibilities in depth | [`docs/contributor/02-controllers.md`](docs/contributor/02-controllers.md) |
 | KCP↔SKR synchronization protocol | [`docs/contributor/08-kcp-skr-synchronization.md`](docs/contributor/08-kcp-skr-synchronization.md) |
 | Documentation writing style and templates | [`docs/CLAUDE.md`](docs/CLAUDE.md) |
+
+## Model usage
+
+Follow the Kyma team's Claude Code workflow:
+
+- **Planning complex tasks** — switch to Opus: `/model claude-opus-4-7`
+- **Implementation** — use the default Sonnet: `/model claude-sonnet-4-6`
+
+Use Opus when you need to understand an unfamiliar subsystem, design a non-trivial change, or reason about cross-cutting impacts. Switch back to Sonnet once the approach is clear and you are writing code.
