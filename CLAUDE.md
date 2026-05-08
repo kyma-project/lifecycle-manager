@@ -124,6 +124,51 @@ Enforced by `gci`: **standard → third-party → project** (`github.com/kyma-pr
 | KCP↔SKR synchronization protocol | [`docs/contributor/08-kcp-skr-synchronization.md`](docs/contributor/08-kcp-skr-synchronization.md) |
 | Documentation writing style and templates | [`docs/CLAUDE.md`](docs/CLAUDE.md) |
 
+## Security guardrails
+
+These constraints exist for specific CVE mitigations or compliance requirements — do not remove or weaken them without understanding what they protect against.
+
+### FIPS compliance
+- **Never remove `GOFIPS140=v1.0.0`** from `Dockerfile` or `Makefile`. Mandatory for SAP/Kyma production builds. The Go FIPS module restricts crypto to FIPS-140-approved algorithms.
+- FIPS mode is monitored at runtime via the `lifecycle_mgr_fips_mode` Prometheus metric (`internal/pkg/metrics/fipsMode.go`). A value of `0` means FIPS is off — that is an incident.
+- Do not add Go dependencies that use non-FIPS-approved crypto (custom cipher suites, `golang.org/x/crypto` elliptic curves that bypass the stdlib FIPS module).
+
+### TLS enforcement
+- **`config/watcher/gateway.yaml`** enforces TLS 1.3 exclusively (`minProtocolVersion: TLSV1_3`, `maxProtocolVersion: TLSV1_3`) with `mode: MUTUAL`. Do not downgrade to TLS 1.2.
+- **`forwardClientCertDetails: SANITIZE_SET`** on the Istio Gateway prevents client cert header spoofing — keep it.
+- Certificates use 4096-bit RSA with `rotationPolicy: Always` (key re-generated on every renewal). Do not reduce key size or remove the rotation policy. See `config/certmanager/certificate_watcher.yaml`.
+
+### Container security context
+Every container (including sidecars and init containers) must include:
+```yaml
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  capabilities:
+    drop: ["ALL"]
+  seccompProfile:
+    type: RuntimeDefault
+```
+Reference: `skr-webhook/resources.yaml` and `config/manager/manager.yaml`.
+
+### Container base image
+`Dockerfile` pins `gcr.io/distroless/static:nonroot` to a **sha256 digest**. Never switch to a tag (`:latest`, `:nonroot`) — only the digest form is acceptable. When updating the base image, update the digest and document the CVE or reason.
+
+### NetworkPolicies
+`skr-webhook/resources.yaml` contains four strict NetworkPolicies. Do not relax egress to `0.0.0.0/0` or remove namespace/pod selectors. All rules are intentional:
+- Ingress: Gardener VPN source only + Prometheus scrape port
+- Egress: Kubernetes API server (443) + DNS only
+
+### RBAC
+`config/rbac/manager_role.yaml` uses explicit resource and verb lists — no wildcards. When adding a permission: use the minimum verb set, add a separate `rules` entry per API group. Never use `resources: ["*"]` or `verbs: ["*"]`.
+
+### Secret handling
+TLS keys and sensitive credentials must be mounted as Kubernetes Secret volumes — never passed as environment variables. See `config/certmanager/certificate_watcher.yaml` for the cert-manager pattern.
+
+### CVE triage
+Three scanners run against this repo (`sec-scanners-config.yaml`): **Checkmarx One** (SAST), **BDBA** (container CVE scan), **Mend** (Go module SCA). When triaging a CVE finding, see [`.claude/cve-triage/context.md`](.claude/cve-triage/context.md).
+
 ## Model usage
 
 Follow the Kyma team's Claude Code workflow:
