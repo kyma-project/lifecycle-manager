@@ -32,21 +32,17 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
 
-      - name: Download metadata artifact
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: image-metadata
-          path: /tmp/metadata
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ github.event.workflow_run.id }}
-
       - name: Compute image tags
         id: tags
+        env:
+          WR_EVENT: ${{ github.event.workflow_run.event }}
+          WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          WR_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
         run: |
-          event="${{ github.event.workflow_run.event }}"
-          sha="${{ github.event.workflow_run.head_sha }}"
+          event="$WR_EVENT"
+          sha="$WR_HEAD_SHA"
           short_sha="${sha:0:7}"
-          head_branch="${{ github.event.workflow_run.head_branch }}"
+          head_branch="$WR_HEAD_BRANCH"
           # pull_requests is only populated for same-repo PRs, empty for forks.
           pr_number=$(jq -r '.workflow_run.pull_requests[0].number // ""' "$GITHUB_EVENT_PATH")
 
@@ -64,7 +60,7 @@ jobs:
           fi
 
           if [[ -z "$tags" ]]; then
-            echo "::error::No tags computed for event '$event_name'" && exit 1
+            echo "::error::No tags computed for event '$event'" && exit 1
           fi
 
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
