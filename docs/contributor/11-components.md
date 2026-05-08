@@ -26,7 +26,7 @@ To run, Lifecycle Manager requires a set of Kubernetes components that must exis
 | `Issuer`                   | `klm-watcher-selfsigned`                      | `istio-system` | CA-signed Issuer used to issue SKR client certificates.                                                   |
 | `Issuer`                   | `klm-controller-manager-selfsigned`           | `kcp-system`   | Issues the webhook serving certificates.                                                               |
 | `Secret`                   | `klm-watcher`                                 | `istio-system` | Stores the current self-signed CA certificate managed by Cert-Manager. Root of the watcher PKI.           |
-| `Secret`                   | `klm-istio-gateway`                           | `istio-system` | Stores the server certificate and the CA bundle (all unexpired CA certs) used by the Istio Gateway.       |
+| `Secret`                   | `klm-istio-gateway`                           | `istio-system` | Stores the server certificate and the CA bundle (all unexpired CA certs) used by the Istio Gateway for the purpose of establishing mutual TLS connections with runtime-watchers deployed in remote Kyma runtime clusters.       |
 | `Authorization Policy`     | `klm-controller-manager`                      | `kcp-system`   | Policy to allow access to metrics and webhooks.                                                        |
 
 Additionally, deploy the following `Config Maps to expose metrics on a Grafana dashboard:
