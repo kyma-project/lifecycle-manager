@@ -176,4 +176,15 @@ Follow the Kyma team's Claude Code workflow:
 - **Planning complex tasks** — switch to Opus: `/model claude-opus-4-7`
 - **Implementation** — use the default Sonnet: `/model claude-sonnet-4-6`
 
+## Review agents
+
+Two complementary agents are available in `.claude/agents/`:
+
+| Agent | When to use | Model |
+|---|---|---|
+| `operator-reviewer` | After writing code — checks rule compliance (spec mutation, conditions, markers, finalizers) | Sonnet |
+| `principal-engineer` | Before or after coding — judges whether the design is right, not just rule-compliant | Opus |
+
+Run `operator-reviewer` for any PR touching reconciler logic or CRD types. Run `principal-engineer` for non-trivial changes — new abstractions, new controllers, significant refactors, or anything where you want a second opinion on the approach itself.
+
 Use Opus when you need to understand an unfamiliar subsystem, design a non-trivial change, or reason about cross-cutting impacts. Switch back to Sonnet once the approach is clear and you are writing code.
