@@ -1,10 +1,11 @@
 name: Build Image (Local testing / ghcr.io)
 
-# Builds and publishes lifecycle-manager images to ghcr.io/kyma-project for fast
-# local testing, especially on Apple M-series (arm64) machines.
+# Builds lifecycle-manager multi-platform images for local testing.
+# The image is exported as an OCI tarball and uploaded as an artifact.
+# A separate workflow (publish-image-local.yml) pushes it to ghcr.io.
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths-ignore:
       - "docs/**"
@@ -26,72 +27,40 @@ on:
         required: false
         default: ""
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      # QEMU provides arm64 emulation on the amd64 GitHub-hosted runner.
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
+        uses: docker/setup-qemu-action@49b3bc8e6bdd4a60e6116a5414239cba5943d3cf # v3.2.0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      # Tag strategy:
-      #   PR            → pr-<number>  and  sha-<short>
-      #   push to main  → latest       and  sha-<short>
-      #   manual        → <input-tag>  and  sha-<short>   (sha only if no input)
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5.5.1
-        with:
-          images: ghcr.io/kyma-project/lifecycle-manager
-          tags: |
-            type=raw,value=latest,enable=${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-            type=raw,value=pr-${{ github.event.pull_request.number }},enable=${{ github.event_name == 'pull_request_target' }}
-            type=raw,value=${{ inputs.tag }},enable=${{ github.event_name == 'workflow_dispatch' && inputs.tag != '' }}
-            type=sha,format=short
-
-      - name: Build and push image
-        id: build
+      - name: Build image (OCI tarball)
         uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6.10.0
         with:
           context: .
           file: Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          # Align TAG_default_tag with the Dockerfile ARG used by the official builder.
+          push: false
+          outputs: type=oci,dest=/tmp/image.tar
           build-args: |
-            TAG_default_tag=${{ github.event.pull_request.head.sha || github.sha }}
-          # GitHub Actions cache keeps layer rebuilds fast across PR pushes.
+            TAG_default_tag=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Print published image
-        run: |
-          echo "### Published image" >> "$GITHUB_STEP_SUMMARY"
-          echo "Digest: \`${{ steps.build.outputs.digest }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "Tags:" >> "$GITHUB_STEP_SUMMARY"
-          echo '${{ steps.meta.outputs.tags }}' | while read tag; do
-            echo "- \`${tag}\`" >> "$GITHUB_STEP_SUMMARY"
-          done
+      - name: Upload image artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: image-oci
+          path: /tmp/image.tar
+          retention-days: 1
+          if-no-files-found: error
