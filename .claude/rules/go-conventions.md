@@ -5,38 +5,22 @@ paths:
 
 # Go code conventions — lifecycle-manager
 
-These rules are enforced by CI (`make lint`). Violations fail the build.
+`make lint` is the authoritative check. The full linter config is in `.golangci.yaml`.
 
 ## Import aliases
 
-The `importas` linter enforces strict aliases. Key ones used in almost every file:
+Strict aliases are enforced by `importas` — violations fail CI. The **complete alias list** is in `.golangci.yaml` under `linters-settings.importas.alias` (75 entries). When adding an import, check that file first.
 
-| Package | Alias |
-|---|---|
-| `k8s.io/apimachinery/pkg/apis/meta/v1` | `apimetav1` |
-| `k8s.io/apimachinery/pkg/api/errors` | `apierrors` |
-| `k8s.io/apimachinery/pkg/runtime` | `machineryruntime` |
-| `k8s.io/apimachinery/pkg/labels` | `k8slabels` |
-| `k8s.io/api/core/v1` | `apicorev1` |
-| `k8s.io/api/apps/v1` | `apiappsv1` |
-| `k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1` | `apiextensionsv1` |
-| `sigs.k8s.io/controller-runtime` | `ctrl` |
-| `sigs.k8s.io/controller-runtime/pkg/controller` | `ctrlruntime` |
-| `sigs.k8s.io/controller-runtime/pkg/log` | `logf` |
+Import ordering is enforced by `gci`: **standard → third-party → project** (`github.com/kyma-project/lifecycle-manager`) **→ blank → dot**.
 
-Full alias list: `.golangci.yaml` → `linters-settings.importas.alias`.
+## nolint policy
 
-## Import ordering
-
-Enforced by `gci`: **standard → third-party → project** (`github.com/kyma-project/lifecycle-manager`) **→ blank → dot**.
-
-## Lint limits
-
-- Line length: **120 characters** (`revive line-length-limit`)
-- Function length: **80 lines** (`funlen`) — `//nolint:funlen // <reason>` only for composition root wiring
-- Cyclomatic complexity: **20** (`cyclop`)
-- All linters enabled by default; check `.golangci.yaml` before adding any `//nolint`. Every directive **must** include an explanation comment.
+Every `//nolint` directive **must** include an explanation:
+```go
+//nolint:funlen // composition root wiring — acceptable exception
+```
+Bare `//nolint:funlen` fails review. Check `.golangci.yaml` before adding any suppression.
 
 ## FIPS
 
-Use `GOFIPS140=v1.0.0 go` for any `go` command run directly (Makefile sets this automatically). Do not add dependencies that use non-FIPS-approved crypto.
+Use `GOFIPS140=v1.0.0 go` for any `go` command run directly (the Makefile sets this automatically). Do not add dependencies that bypass the FIPS-approved stdlib crypto (no third-party elliptic curves, no custom cipher suites).
