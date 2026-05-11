@@ -19,14 +19,13 @@ done
 
 # 2. Resolve Docker image index digest (validates the image exists on the registry)
 IMAGE="golang:${NEW_VERSION}-alpine"
-echo "  Resolving digest for ${IMAGE}..."
 DIGEST=$(docker buildx imagetools inspect "${IMAGE}" --format '{{println .Manifest.Digest}}')
 
 if [[ -z "${DIGEST}" ]]; then
-  echo "  ✗ Failed to resolve digest for ${IMAGE}. Does this Go version exist?" >&2
+  echo "  ✗ Failed to resolve digest for ${IMAGE} image. Does this Go version exist?" >&2
   exit 1
 fi
-echo "  ✓ Verified ${IMAGE} exists (${DIGEST})"
+echo "  ✓ Verified ${IMAGE} image exists (${DIGEST})"
 
 # 3. Update versions.yaml
 yq e -i ".go = \"${NEW_VERSION}\"" "${REPO_ROOT}/versions.yaml"
