@@ -21,10 +21,11 @@ echo "Bumping Go version to ${NEW_VERSION}..."
 
 # 1. Update all go.mod files using 'go mod edit'
 #    This validates quickly that the Go version is recognized by the toolchain.
-for moddir in "${REPO_ROOT}" "${REPO_ROOT}/api" "${REPO_ROOT}/maintenancewindows"; do
+while IFS= read -r modfile; do
+  moddir="$(dirname "${modfile}")"
   (cd "${moddir}" && go mod edit -go="${NEW_VERSION}")
-  echo "  ✓ ${moddir#${REPO_ROOT}/}/go.mod"
-done
+  echo "  ✓ ${modfile#${REPO_ROOT}/}"
+done < <(find "${REPO_ROOT}" -name "go.mod" -not -path "*/vendor/*")
 
 # 2. Resolve Docker image index digest (validates the image exists on the registry)
 IMAGE="golang:${NEW_VERSION}-alpine"
@@ -36,13 +37,18 @@ if [[ -z "${DIGEST}" ]]; then
 fi
 echo "  ✓ Verified ${IMAGE} image exists (${DIGEST})"
 
-# 3. Update versions.yaml
-yq e -i ".go = \"${NEW_VERSION}\"" "${REPO_ROOT}/versions.yaml"
-echo "  ✓ versions.yaml"
+# 3. Update versions.yaml (optional: only if the file exists and contains a "go" entry)
+VERSIONS_YAML="${REPO_ROOT}/versions.yaml"
+if [[ -f "${VERSIONS_YAML}" ]] && yq e '.go' "${VERSIONS_YAML}" | grep -qv '^null$'; then
+  yq e -i ".go = \"${NEW_VERSION}\"" "${VERSIONS_YAML}"
+  echo "  ✓ versions.yaml"
+fi
 
-# 4. Update Dockerfile with new version and resolved digest
-sedi "s|golang:[0-9]\+\.[0-9]\+\.[0-9]\+-alpine@sha256:[a-f0-9]\+|golang:${NEW_VERSION}-alpine@${DIGEST}|" "${REPO_ROOT}/Dockerfile"
-echo "  ✓ Dockerfile (golang:${NEW_VERSION}-alpine@${DIGEST})"
+# 4. Update all Dockerfiles with new version and resolved digest
+while IFS= read -r dockerfile; do
+  sedi "s|golang:[0-9]\+\.[0-9]\+\.[0-9]\+-alpine@sha256:[a-f0-9]\+|golang:${NEW_VERSION}-alpine@${DIGEST}|" "${dockerfile}"
+  echo "  ✓ ${dockerfile#${REPO_ROOT}/} (golang:${NEW_VERSION}-alpine@${DIGEST})"
+done < <(find "${REPO_ROOT}" -name "Dockerfile" -not -path "*/vendor/*")
 
 echo ""
 echo "Done! Go version bumped to ${NEW_VERSION}."
