@@ -6,7 +6,13 @@ set -euo pipefail
 
 NEW_VERSION="${1:?Usage: $0 <new-go-version>}"
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# When piped to bash (e.g. curl ... | bash), BASH_SOURCE[0] is not a file path,
+# so fall back to the current working directory as the repo root.
+if [[ -f "${BASH_SOURCE[0]:-}" ]]; then
+  REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+else
+  REPO_ROOT="$(pwd)"
+fi
 
 # Helper function to handle sed -i differences between GNU and BSD (macOS)
 sedi() {
