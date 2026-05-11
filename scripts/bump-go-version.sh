@@ -8,6 +8,15 @@ NEW_VERSION="${1:?Usage: $0 <new-go-version>}"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# Helper function to handle sed -i differences between GNU and BSD (macOS)
+sedi() {
+    if sed --version >/dev/null 2>&1; then
+        sed -i "$@"
+    else
+        sed -i '' "$@"
+    fi
+}
+
 echo "Bumping Go version to ${NEW_VERSION}..."
 
 # 1. Update all go.mod files using 'go mod edit'
@@ -32,7 +41,7 @@ yq e -i ".go = \"${NEW_VERSION}\"" "${REPO_ROOT}/versions.yaml"
 echo "  ✓ versions.yaml"
 
 # 4. Update Dockerfile with new version and resolved digest
-sed -i'' -e "s|golang:[0-9]\+\.[0-9]\+\.[0-9]\+-alpine@sha256:[a-f0-9]\+|golang:${NEW_VERSION}-alpine@${DIGEST}|" "${REPO_ROOT}/Dockerfile"
+sedi "s|golang:[0-9]\+\.[0-9]\+\.[0-9]\+-alpine@sha256:[a-f0-9]\+|golang:${NEW_VERSION}-alpine@${DIGEST}|" "${REPO_ROOT}/Dockerfile"
 echo "  ✓ Dockerfile (golang:${NEW_VERSION}-alpine@${DIGEST})"
 
 echo ""
