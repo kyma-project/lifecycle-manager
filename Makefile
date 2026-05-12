@@ -192,3 +192,7 @@ lint: install-golangci-lint ## Run golangci-lint against code.
 .PHONY: lint-yaml
 lint-yaml: ## Run yamllint against repository. Assumes yamllint is installed. Install via 'brew install yamllint' or 'pip install yamllint'.
 	yamllint -c .yamllint.yml --no-warnings  .
+
+.PHONY: bump-go-version
+bump-go-version: ## Bump Go version. Usage: make bump-go-version GO_VERSION=1.26.3
+	./scripts/bump-go-version.sh $(GO_VERSION)
