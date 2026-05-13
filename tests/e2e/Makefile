@@ -36,6 +36,9 @@ GINKGO_VERSION ?= v2.12.0
 # FIPS140 Module version
 FIPS140_MODULE_VERSION := v1.0.0
 
+# Go command with FIPS140 Module enabled
+GO := GOFIPS140=$(FIPS140_MODULE_VERSION) go
+
 set-fips:
 	export GOFIPS140=$(FIPS140_MODULE_VERSION)
 ##@ General
@@ -57,7 +60,7 @@ help: ## Display this help.
 ginkgo: $(GINKGO) ## Download local ginkgo binary if necessary.
 $(GINKGO): $(LOCALBIN)
 	@test -s $(GINKGO) && $(GINKGO) version | grep -q $(GINKGO_VERSION) || \
-	GOBIN=$(LOCALBIN) GOFIPS140=$(FIPS140_MODULE_VERSION) go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
+	GOBIN=$(LOCALBIN) $(GO) install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the test suites.
 	@# for file in        - Iterates over all the E2E test suite files.
@@ -74,7 +77,7 @@ e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the t
     done
 
 ##@ E2E Tests
-GO_TEST := GOFIPS140=$(FIPS140_MODULE_VERSION) go test -timeout 20m -ginkgo.v -ginkgo.focus
+GO_TEST := $(GO) test -timeout 20m -ginkgo.v -ginkgo.focus
 
 kyma-deprovision-with-foreground-propagation:
 	$(GO_TEST) "KCP Kyma CR Deprovision With Foreground Propagation After SKR Cluster Removal"
