@@ -61,7 +61,7 @@ generate-openapi-schema: manifests ## Generate OpenAPI schema from CRD YAMLs for
 	$(GO) run ./hack/crd-to-openapi/main.go
 
 .PHONY: generate-applyconfiguration
-generate-applyconfiguration: applyconfiguration-gen manifests generate-openapi-schema ## Generate applyconfiguration types for ModuleReleaseMeta and ModuleTemplate.
+generate-applyconfiguration: applyconfiguration-gen manifests generate-openapi-schema ## Generate applyconfiguration types.
 	cd api && $(APPLYCONFIGURATION_GEN) \
 		--output-dir ./applyconfigurations \
 		--output-pkg github.com/kyma-project/lifecycle-manager/api/applyconfigurations \
