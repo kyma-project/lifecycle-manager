@@ -10,7 +10,7 @@ To get the latest CRD in the YAML format, run the following command:
 kubectl get crd modulereleasemetas.operator.kyma-project.io -o yaml
 ```
 
-> ### Note
+> ### Note:
 > The ModuleReleaseMeta CR is applied in both Kyma Control Plane (KCP) and SAP BTP, Kyma runtime clusters.
 > Lifecycle Manager synchronizes the ModuleReleaseMeta from KCP to the applicable Kyma runtime instances.
 
@@ -22,11 +22,17 @@ The **moduleName** defines the name of the module for which the channel assignme
 
 ### **.spec.beta**
 
+> ### Note:
+> The **beta** field is deprecated and will be removed in a future release.
+
 The **beta** flag defines if the module is a `beta` module. If marked as `beta`, it is only synced to Kyma runtimes where the Kyma CR is marked with the `"operator.kyma-project.io/beta": "true"` label. This includes the ModuleTemplates related to this module.
 
 The default value is `false`.
 
 ### **.spec.internal**
+
+> ### Note:
+> The **internal** field is deprecated and will be removed in a future release.
 
 The **internal** flag defines if the module is an `internal` module. If marked as `internal`, it is only synced to Kyma runtimes where the Kyma CR is marked with the `"operator.kyma-project.io/internal": "true"` label. This includes the ModuleTemplates related to this module.
 
@@ -40,8 +46,6 @@ See the following example:
 ```yaml
 spec:
   moduleName: keda
-  beta: false
-  internal: false
   channels:
     - channel: regular
       version: 1.0.0
