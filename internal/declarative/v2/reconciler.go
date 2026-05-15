@@ -136,7 +136,6 @@ func NewReconciler(requeueIntervals queue.RequeueIntervals,
 	return reconciler
 }
 
-//nolint:funlen,cyclop,gocyclo,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 
@@ -153,13 +152,28 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.manifestMetrics.RecordRequeueReason(metrics.ManifestRetrieval, queue.UnexpectedRequeue)
 		return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 	}
-	manifestStatus := manifest.GetStatus()
 
 	if manifest.SkipReconciliation() {
 		logf.FromContext(ctx, "skip-label", shared.SkipReconcileLabel).
 			V(internal.DebugLogLevel).Info("resource gets skipped because of label")
 		return ctrl.Result{RequeueAfter: r.requeueIntervals.Success}, nil
 	}
+
+	if manifest.GetDeletionTimestamp().IsZero() {
+		return r.install(ctx, req, manifest)
+	} else {
+		return r.delete(ctx, req, manifest)
+	}
+}
+
+// install handles the reconciliation in all conditions except when the manifest is being deleted.
+// invariant: manifest.GetDeletionTimestamp().IsZero() == true
+//
+//nolint:funlen // Declarative pkg will be removed soon
+func (r *Reconciler) install(ctx context.Context, req ctrl.Request,
+	manifest *v1beta2.Manifest,
+) (ctrl.Result, error) {
+	manifestStatus := manifest.GetStatus()
 
 	if err := status.Initialize(manifest); err != nil {
 		return r.finishReconcile(ctx, manifest, metrics.ManifestInit, manifestStatus, err)
@@ -169,19 +183,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	skrClient, err := r.getTargetClient(ctx, manifest)
 	if err != nil {
-		if !manifest.GetDeletionTimestamp().IsZero() && errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
-			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestClientInit, err)
-		}
-
 		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
 		return r.finishReconcile(ctx, manifest, metrics.ManifestClientInit, manifestStatus, err)
 	}
 
 	if manifest.IsUnmanaged() {
-		if !manifest.GetDeletionTimestamp().IsZero() {
-			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestUnmanagedUpdate, nil)
-		}
-
 		if controllerutil.ContainsFinalizer(manifest, finalizer.LabelRemovalFinalizer) {
 			return r.handleLabelsRemovalFinalizer(ctx, req, skrClient, manifest)
 		}
@@ -202,18 +208,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 	}
 
-	if manifest.GetDeletionTimestamp().IsZero() {
-		if finalizer.FinalizersUpdateRequired(manifest) {
-			return r.ssaSpec(ctx, req, manifest, metrics.ManifestAddFinalizer)
-		}
+	if finalizer.FinalizersUpdateRequired(manifest) {
+		return r.ssaSpec(ctx, req, manifest, metrics.ManifestAddFinalizer)
 	}
 
 	spec, err := r.specResolver.GetSpec(ctx, manifest)
 	if err != nil {
 		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
-		if !manifest.GetDeletionTimestamp().IsZero() {
-			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestParseSpec, err)
-		}
 		return r.finishReconcile(ctx, manifest, metrics.ManifestParseSpec, manifestStatus, err)
 	}
 
@@ -222,7 +223,83 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.updateManifest(ctx, req, manifest, metrics.ManifestInitSyncedOCIRef)
 	}
 
-	target, current, err := r.renderResources(ctx, skrClient, manifest, spec)
+	target, current, err := r.renderResourcesForInstall(ctx, skrClient, manifest, spec)
+	if err != nil {
+		return r.finishReconcile(ctx, manifest, metrics.ManifestRenderResources, manifestStatus, err)
+	}
+
+	if err := r.pruneDiff(ctx, skrClient, manifest, current, target, spec); errors.Is(err,
+		resources.ErrDeletionNotFinished) {
+		r.manifestMetrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
+		return ctrl.Result{RequeueAfter: r.rateLimiter.When(req)}, nil
+	} else if err != nil {
+		return r.finishReconcile(ctx, manifest, metrics.ManifestPruneDiff, manifestStatus, err)
+	}
+
+	if err := skrresources.SyncResources(ctx, skrClient, manifest, target); err != nil {
+		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncResources, manifestStatus, err)
+	}
+
+	if err := r.syncManifestState(ctx, skrClient, manifest, target); err != nil {
+		if errors.Is(err, finalizer.ErrRequeueRequired) {
+			r.manifestMetrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, queue.IntendedRequeue)
+			return ctrl.Result{RequeueAfter: r.rateLimiter.When(req)}, nil
+		}
+		logf.FromContext(ctx).Error(err, "failed to sync manifest state")
+		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncState, manifestStatus, err)
+	}
+
+	// This situation happens when manifest get new installation layer to update resources,
+	// we need to make sure all updates successfully before we can update synced oci ref
+	if requireUpdateSyncedOCIRefAnnotation(manifest, spec.OCIRef) {
+		updateSyncedOCIRefAnnotation(manifest, spec.OCIRef)
+		return r.updateManifest(ctx, req, manifest, metrics.ManifestUpdateSyncedOCIRef)
+	}
+
+	return r.finishReconcile(ctx, manifest, metrics.ManifestReconcileFinished, manifestStatus, nil)
+}
+
+// delete handles the reconciliation when the manifest is being deleted.
+// invariant: manifest.GetDeletionTimestamp().IsZero() == false
+//
+//nolint:funlen // Declarative pkg will be removed soon
+func (r *Reconciler) delete(ctx context.Context, req ctrl.Request,
+	manifest *v1beta2.Manifest,
+) (ctrl.Result, error) {
+	manifestStatus := manifest.GetStatus()
+
+	if err := status.Initialize(manifest); err != nil {
+		return r.finishReconcile(ctx, manifest, metrics.ManifestInit, manifestStatus, err)
+	}
+
+	recordMandatoryModuleState(manifest, r)
+
+	skrClient, err := r.getTargetClient(ctx, manifest)
+	if err != nil {
+		if errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
+			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestClientInit, err)
+		}
+
+		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
+		return r.finishReconcile(ctx, manifest, metrics.ManifestClientInit, manifestStatus, err)
+	}
+
+	if manifest.IsUnmanaged() {
+		return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestUnmanagedUpdate, nil)
+	}
+
+	spec, err := r.specResolver.GetSpec(ctx, manifest)
+	if err != nil {
+		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
+		return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestParseSpec, err)
+	}
+
+	if notContainsSyncedOCIRefAnnotation(manifest) {
+		updateSyncedOCIRefAnnotation(manifest, spec.OCIRef)
+		return r.updateManifest(ctx, req, manifest, metrics.ManifestInitSyncedOCIRef)
+	}
+
+	target, current, err := r.renderResourcesForDelete(ctx, skrClient, manifest, spec)
 	if err != nil {
 		return r.finishReconcile(ctx, manifest, metrics.ManifestRenderResources, manifestStatus, err)
 	}
@@ -239,14 +316,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.finishReconcile(ctx, manifest, metrics.ManifestPruneDiff, manifestStatus, err)
 	}
 
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		if err := modulecr.NewClient(skrClient).RemoveDefaultModuleCR(ctx, r.kcpClient, manifest); err != nil {
-			if errors.Is(err, finalizer.ErrRequeueRequired) {
-				r.manifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
-				return ctrl.Result{RequeueAfter: r.rateLimiter.When(req)}, nil
-			}
-			return r.finishReconcile(ctx, manifest, metrics.ManifestPreDelete, manifestStatus, err)
+	if err := modulecr.NewClient(skrClient).RemoveDefaultModuleCR(ctx, r.kcpClient, manifest); err != nil {
+		if errors.Is(err, finalizer.ErrRequeueRequired) {
+			r.manifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
+			return ctrl.Result{RequeueAfter: r.rateLimiter.When(req)}, nil
 		}
+		return r.finishReconcile(ctx, manifest, metrics.ManifestPreDelete, manifestStatus, err)
 	}
 
 	if err := skrresources.SyncResources(ctx, skrClient, manifest, target); err != nil {
@@ -261,6 +336,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		logf.FromContext(ctx).Error(err, "failed to sync manifest state")
 		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncState, manifestStatus, err)
 	}
+
 	// This situation happens when manifest get new installation layer to update resources,
 	// we need to make sure all updates successfully before we can update synced oci ref
 	if requireUpdateSyncedOCIRefAnnotation(manifest, spec.OCIRef) {
@@ -268,11 +344,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.updateManifest(ctx, req, manifest, metrics.ManifestUpdateSyncedOCIRef)
 	}
 
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestReconcileFinished, nil)
-	}
-
-	return r.finishReconcile(ctx, manifest, metrics.ManifestReconcileFinished, manifestStatus, nil)
+	return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestReconcileFinished, nil)
 }
 
 // Normally after all resources have been deleted, the manifest should be cleared as well.
@@ -354,9 +426,12 @@ func (r *Reconciler) evictSKRClientCache(ctx context.Context, manifest *v1beta2.
 	}
 }
 
-func (r *Reconciler) renderResources(ctx context.Context, skrClient skrclient.Client, manifest *v1beta2.Manifest,
-	spec *Spec,
-) (ResourceList, ResourceList, error) {
+func (r *Reconciler) renderResourcesForInstall(ctx context.Context, skrClient skrclient.Client,
+	manifest *v1beta2.Manifest, spec *Spec) (
+	ResourceList,
+	ResourceList,
+	error,
+) {
 	manifestStatus := manifest.GetStatus()
 
 	var err error
@@ -369,21 +444,46 @@ func (r *Reconciler) renderResources(ctx context.Context, skrClient skrclient.Cl
 		return nil, nil, err
 	}
 
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		allModuleCRsDeleted, err := ensureModuleCRsAllDeleted(ctx, skrClient, manifest)
-		switch {
-		case allModuleCRsDeleted:
-			return ResourceList{}, current, nil
-		case errors.Is(err, modulecr.ErrWaitingForModuleCRsDeletion):
-			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateDeleting).
-				WithOperation("waiting for module crs deletion"))
-			return nil, nil, err
-		case err != nil:
-			manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
-			return nil, nil, err
-		}
+	if target, err = r.renderTargetResources(ctx, converter, manifest, spec); err != nil {
+		return nil, nil, err
 	}
 
+	status.SetResourcesConditionTrue(manifest)
+	return target, current, nil
+}
+
+func (r *Reconciler) renderResourcesForDelete(ctx context.Context, skrClient skrclient.Client,
+	manifest *v1beta2.Manifest, spec *Spec) (
+	ResourceList,
+	ResourceList,
+	error,
+) {
+	manifestStatus := manifest.GetStatus()
+
+	var err error
+	var target, current ResourceList
+
+	converter := skrresources.NewDefaultResourceToInfoConverter(skrresources.ResourceInfoConverter(skrClient),
+		apimetav1.NamespaceDefault)
+	if current, err = converter.ResourcesToInfos(manifestStatus.Synced); err != nil {
+		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
+		return nil, nil, err
+	}
+
+	allModuleCRsDeleted, err := ensureModuleCRsAllDeleted(ctx, skrClient, manifest)
+	switch {
+	case allModuleCRsDeleted:
+		return ResourceList{}, current, nil
+	case errors.Is(err, modulecr.ErrWaitingForModuleCRsDeletion):
+		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateDeleting).
+			WithOperation("waiting for module crs deletion"))
+		return nil, nil, err
+	case err != nil:
+		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
+		return nil, nil, err
+	}
+
+	// we're here only if allModuleCRsDeleted == false and err == nil.
 	if target, err = r.renderTargetResources(ctx, converter, manifest, spec); err != nil {
 		return nil, nil, err
 	}
