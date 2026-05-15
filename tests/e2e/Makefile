@@ -39,8 +39,6 @@ FIPS140_MODULE_VERSION := v1.0.0
 # Go command with FIPS140 Module enabled
 GO := GOFIPS140=$(FIPS140_MODULE_VERSION) go
 
-set-fips:
-	export GOFIPS140=$(FIPS140_MODULE_VERSION)
 ##@ General
 
 # The help target prints out all targets with their descriptions organized
