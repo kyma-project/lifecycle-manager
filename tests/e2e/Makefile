@@ -80,7 +80,7 @@ kyma-deprovision-with-foreground-propagation:
 	$(MAKE) -f $(MAKEFILE_DIR)/kyma_deprovision_with_foreground_propagation_test.mk test
 
 kyma-deprovision-with-background-propagation:
-	$(GO_TEST) "KCP Kyma CR Deprovision With Background Propagation After SKR Cluster Removal"
+	$(MAKE) -f $(MAKEFILE_DIR)/kyma_deprovision_with_background_propagation_test.mk test
 
 kyma-metrics:
 	$(GO_TEST) "Manage Module Metrics"
