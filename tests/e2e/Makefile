@@ -77,10 +77,10 @@ e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the t
 GO_TEST := GOFIPS140=$(FIPS140_MODULE_VERSION) go test -timeout 20m -ginkgo.v -ginkgo.focus
 
 kyma-deprovision-with-foreground-propagation:
-	$(MAKE) -f $(MAKEFILE_DIR)/kyma_deprovision_with_foreground_propagation_test.mk test
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=KCP Kyma CR Deprovision With Foreground Propagation After SKR Cluster Removal"
 
 kyma-deprovision-with-background-propagation:
-	$(MAKE) -f $(MAKEFILE_DIR)/kyma_deprovision_with_background_propagation_test.mk test
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=KCP Kyma CR Deprovision With Background Propagation After SKR Cluster Removal"
 
 kyma-metrics:
 	$(GO_TEST) "Manage Module Metrics"
@@ -89,7 +89,7 @@ mandatory-module-metrics:
 	$(MAKE) -f $(MAKEFILE_DIR)/mandatory_modules_metrics_test.mk
 
 watcher-enqueue:
-	$(MAKE) -f $(MAKEFILE_DIR)/watcher_enqueue_test.mk test
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Enqueue Event from Watcher"
 
 module-status-decoupling-with-statefulset:
 	$(GO_TEST) "Module Status Decoupling With StatefulSet"
@@ -101,7 +101,7 @@ module-without-default-cr:
 	$(GO_TEST) "Module Without Default CR"
 
 module-consistency:
-	$(MAKE) -f $(MAKEFILE_DIR)/module_consistency_test.mk test
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Module Keep Consistent After Deploy"
 
 mandatory-module:
 	$(MAKE) -f $(MAKEFILE_DIR)/mandatory_module_test.mk test
@@ -110,16 +110,16 @@ non-blocking-deletion:
 	$(GO_TEST) "Non Blocking Kyma Module Deletion"
 
 module-deletion-with-only-default-cr:
-	$(MAKE) -f $(MAKEFILE_DIR)/module_deletion_with_only_default_cr_test.mk test
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Non Blocking Module Deletion With Only Default CR"
 
 skip-manifest-reconciliation:
-	$(MAKE) -f $(MAKEFILE_DIR)/skip_manifest_reconciliation_test.mk test
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Manifest Skip Reconciliation Label"
 
 modulereleasemeta-upgrade-under-deletion:
 	$(GO_TEST) "Kyma Module with ModuleReleaseMeta Upgrade Under Deletion"
 
 unmanage-module:
-	$(MAKE) -f $(MAKEFILE_DIR)/unmanage_module_test.mk test
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Unmanaging Kyma Module"
 
 purge-controller:
 	$(GO_TEST) "Purge Controller"
@@ -137,10 +137,10 @@ self-signed-certificate-rotation:
 	$(GO_TEST) "Self Signed Certificate Rotation"
 
 misconfigured-kyma-secret:
-	$(MAKE) -f $(MAKEFILE_DIR)/misconfigured_kyma_secret_test.mk test
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Misconfigured Kyma Secret"
 
 rbac-privileges:
-	$(MAKE) -f $(MAKEFILE_DIR)/rbac_privileges_test.mk test
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.no_module_setup.mk test "GINKGO_FOCUS=RBAC Privileges"
 
 oci-reg-cred-secret:
 	$(GO_TEST) "OCI Registry Credentials Secret"
@@ -161,7 +161,7 @@ modulereleasemeta-not-allowed-installation:
 	$(GO_TEST) "ModuleReleaseMeta Not Allowed Installation"
 
 labelling:
-	$(MAKE) -f $(MAKEFILE_DIR)/labelling_test.mk test
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Labelling SKR resources"
 
 maintenance-windows:
 	$(GO_TEST) "Maintenance Windows - Wait for Maintenance Window"
@@ -176,19 +176,19 @@ watcher-zero-downtime:
 	$(GO_TEST) "Watcher Zero Downtime"
 
 module-deletion-blocking-with-multiple-crs-ignore-policy:
-	$(MAKE) -f $(MAKEFILE_DIR)/module_deletion_blocking_with_multiple_crs_ignore_policy_test.mk test
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Blocking Module Deletion With Multiple Module CRs with Ignore Policy"
 
 module-deletion-blocking-with-multiple-crs-create-and-delete-policy:
-	$(MAKE) -f $(MAKEFILE_DIR)/module_deletion_blocking_with_multiple_crs_create_and_delete_policy_test.mk test
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Blocking Module Deletion With Multiple Module CRs with CreateAndDelete Policy"
 
 module-deletion-blocking-with-default-cr-with-finalizer:
-	$(MAKE) -f $(MAKEFILE_DIR)/module_deletion_blocking_with_default_cr_with_finalizer_test.mk test
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Blocking Module Deletion With Default CR With Finalizer with CreateAndDelete Policy"
 
 module-deletion-blocking-with-cross-namespace-ignore-policy:
-	$(MAKE) -f $(MAKEFILE_DIR)/module_deletion_blocking_with_cross_namespace_ignore_policy_test.mk test
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Blocking Module Deletion With Module CRs in Different Namespaces with Ignore Policy"
 
 module-deletion-blocking-with-cross-namespace-create-and-delete-policy:
-	$(MAKE) -f $(MAKEFILE_DIR)/module_deletion_blocking_with_cross_namespace_create_and_delete_policy_test.mk test
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Blocking Module Deletion With Module CRs in Different Namespaces with CreateAndDelete Policy"
 
 module-deletion-blocking-with-cluster-scoped-crs-ignore-policy:
 	$(GO_TEST) "Blocking Module Deletion With Cluster-Scoped CRs with Ignore Policy"
@@ -200,7 +200,7 @@ module-transferred-to-another-oci-registry:
 	$(GO_TEST) "Module Transferred to Another OCI Registry"
 
 fips-mode-metric:
-	$(MAKE) -f $(MAKEFILE_DIR)/fips_mode_metric_test.mk test
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.no_module_setup.mk test "GINKGO_FOCUS=FIPS Mode metric"
 
 gateway-secret-server-cert-metric:
 	$(MAKE) -f $(MAKEFILE_DIR)/gateway_secret_server_cert_metric_test.mk test
