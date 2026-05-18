@@ -89,7 +89,7 @@ mandatory-module-metrics:
 	$(MAKE) -f $(MAKEFILE_DIR)/mandatory_modules_metrics_test.mk
 
 watcher-enqueue:
-	$(GO_TEST) "Enqueue Event from Watcher"
+	$(MAKE) -f $(MAKEFILE_DIR)/watcher_enqueue_test.mk test
 
 module-status-decoupling-with-statefulset:
 	$(GO_TEST) "Module Status Decoupling With StatefulSet"
