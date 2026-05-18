@@ -105,9 +105,14 @@ jobs:
           MisconfiguredModuleName: template-operator-misconfigured
           ModuleName: template-operator
       - name: Run '${{ matrix.e2e-test }}' test
+        # temporary workaround for watcher-enqueue test, as it requires a specific setup
         working-directory: lifecycle-manager
         run: |
-          make -C tests/e2e ${{ matrix.e2e-test }}
+          if [[ "${{ matrix.e2e-test }}" == "watcher-enqueue" ]]; then
+            make -f tests/e2e/e2e.no_module_setup.mk test-run "GINKGO_FOCUS=Enqueue Event from Watcher"
+          else
+            make -C tests/e2e ${{ matrix.e2e-test }}
+          fi
       - name: Post debug
         if: always()
         run: ./lifecycle-manager/.github/scripts/debug/teardown.sh
