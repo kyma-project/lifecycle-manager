@@ -135,7 +135,8 @@ jobs:
                 matrix.e2e-test != 'skip-manifest-reconciliation' &&
                 matrix.e2e-test != 'misconfigured-kyma-secret' &&
                 matrix.e2e-test != 'module-deletion-blocking-with-multiple-crs-ignore-policy' &&
-                matrix.e2e-test != 'module-deletion-blocking-with-multiple-crs-create-and-delete-policy' }}
+                matrix.e2e-test != 'module-deletion-blocking-with-multiple-crs-create-and-delete-policy' &&
+                matrix.e2e-test != 'module-deletion-blocking-with-default-cr-with-finalizer' }}
         uses: ./lifecycle-manager/.github/actions/setup-test-clusters
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
@@ -160,7 +161,8 @@ jobs:
                 matrix.e2e-test != 'skip-manifest-reconciliation' &&
                 matrix.e2e-test != 'misconfigured-kyma-secret' &&
                 matrix.e2e-test != 'module-deletion-blocking-with-multiple-crs-ignore-policy' &&
-                matrix.e2e-test != 'module-deletion-blocking-with-multiple-crs-create-and-delete-policy' }}
+                matrix.e2e-test != 'module-deletion-blocking-with-multiple-crs-create-and-delete-policy' &&
+                matrix.e2e-test != 'module-deletion-blocking-with-default-cr-with-finalizer' }}
         uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
         with:
           klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
@@ -180,7 +182,8 @@ jobs:
                 matrix.e2e-test != 'skip-manifest-reconciliation' &&
                 matrix.e2e-test != 'misconfigured-kyma-secret' &&
                 matrix.e2e-test != 'module-deletion-blocking-with-multiple-crs-ignore-policy' &&
-                matrix.e2e-test != 'module-deletion-blocking-with-multiple-crs-create-and-delete-policy' }}
+                matrix.e2e-test != 'module-deletion-blocking-with-multiple-crs-create-and-delete-policy' &&
+                matrix.e2e-test != 'module-deletion-blocking-with-default-cr-with-finalizer' }}
         uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
         with:
           module_version: ${{ steps.configuration.outputs.template_operator_version }}
