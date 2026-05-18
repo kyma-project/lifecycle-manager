@@ -89,7 +89,7 @@ mandatory-module-metrics:
 	$(MAKE) -f $(MAKEFILE_DIR)/mandatory_modules_metrics_test.mk
 
 watcher-enqueue:
-	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Enqueue Event from Watcher"
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.no_module_setup.mk test "GINKGO_FOCUS=Enqueue Event from Watcher"
 
 module-status-decoupling-with-statefulset:
 	$(GO_TEST) "Module Status Decoupling With StatefulSet"
