@@ -119,7 +119,7 @@ modulereleasemeta-upgrade-under-deletion:
 	$(GO_TEST) "Kyma Module with ModuleReleaseMeta Upgrade Under Deletion"
 
 unmanage-module:
-	$(GO_TEST) "Unmanaging Kyma Module"
+	$(MAKE) -f $(MAKEFILE_DIR)/unmanage_module_test.mk test
 
 purge-controller:
 	$(GO_TEST) "Purge Controller"
