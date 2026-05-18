@@ -161,7 +161,7 @@ modulereleasemeta-not-allowed-installation:
 	$(GO_TEST) "ModuleReleaseMeta Not Allowed Installation"
 
 labelling:
-	$(GO_TEST) "Labelling SKR resources"
+	$(MAKE) -f $(MAKEFILE_DIR)/labelling_test.mk test
 
 maintenance-windows:
 	$(GO_TEST) "Maintenance Windows - Wait for Maintenance Window"
