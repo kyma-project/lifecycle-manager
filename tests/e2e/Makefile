@@ -188,7 +188,7 @@ module-deletion-blocking-with-cross-namespace-ignore-policy:
 	$(MAKE) -f $(MAKEFILE_DIR)/module_deletion_blocking_with_cross_namespace_ignore_policy_test.mk test
 
 module-deletion-blocking-with-cross-namespace-create-and-delete-policy:
-	$(GO_TEST) "Blocking Module Deletion With Module CRs in Different Namespaces with CreateAndDelete Policy"
+	$(MAKE) -f $(MAKEFILE_DIR)/module_deletion_blocking_with_cross_namespace_create_and_delete_policy_test.mk test
 
 module-deletion-blocking-with-cluster-scoped-crs-ignore-policy:
 	$(GO_TEST) "Blocking Module Deletion With Cluster-Scoped CRs with Ignore Policy"
