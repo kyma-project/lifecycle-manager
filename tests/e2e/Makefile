@@ -176,7 +176,7 @@ watcher-zero-downtime:
 	$(GO_TEST) "Watcher Zero Downtime"
 
 module-deletion-blocking-with-multiple-crs-ignore-policy:
-	$(GO_TEST) "Blocking Module Deletion With Multiple Module CRs with Ignore Policy"
+	$(MAKE) -f $(MAKEFILE_DIR)/module_deletion_blocking_with_multiple_crs_ignore_policy_test.mk test
 
 module-deletion-blocking-with-multiple-crs-create-and-delete-policy:
 	$(GO_TEST) "Blocking Module Deletion With Multiple Module CRs with CreateAndDelete Policy"
