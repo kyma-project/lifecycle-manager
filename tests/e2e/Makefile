@@ -185,7 +185,7 @@ module-deletion-blocking-with-default-cr-with-finalizer:
 	$(MAKE) -f $(MAKEFILE_DIR)/module_deletion_blocking_with_default_cr_with_finalizer_test.mk test
 
 module-deletion-blocking-with-cross-namespace-ignore-policy:
-	$(GO_TEST) "Blocking Module Deletion With Module CRs in Different Namespaces with Ignore Policy"
+	$(MAKE) -f $(MAKEFILE_DIR)/module_deletion_blocking_with_cross_namespace_ignore_policy_test.mk test
 
 module-deletion-blocking-with-cross-namespace-create-and-delete-policy:
 	$(GO_TEST) "Blocking Module Deletion With Module CRs in Different Namespaces with CreateAndDelete Policy"
