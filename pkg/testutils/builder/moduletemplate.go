@@ -76,11 +76,6 @@ func (m ModuleTemplateBuilder) WithGeneration(generation int) ModuleTemplateBuil
 	return m
 }
 
-func (m ModuleTemplateBuilder) WithChannel(channel string) ModuleTemplateBuilder {
-	m.moduleTemplate.Spec.Channel = channel //nolint:staticcheck // legacy tests still rely on the deprecated field
-	return m
-}
-
 func (m ModuleTemplateBuilder) WithMandatory(mandatory bool) ModuleTemplateBuilder {
 	m.moduleTemplate.Spec.Mandatory = mandatory
 	return m

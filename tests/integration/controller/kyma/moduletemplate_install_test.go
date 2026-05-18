@@ -122,8 +122,7 @@ func givenKymaAndModuleTemplateCondition(
 		for _, module := range skrKyma.Spec.Modules {
 			mtBuilder := builder.NewModuleTemplateBuilder().
 				WithNamespace(ControlPlaneNamespace).
-				WithModuleName(module.Name).
-				WithChannel(module.Channel)
+				WithModuleName(module.Name)
 			if isModuleTemplateInternal {
 				mtBuilder.WithLabel(shared.InternalLabel, shared.EnableLabelValue)
 			}
