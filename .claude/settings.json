@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Lint the edited file",
+            "command": ".claude/hooks/lint.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -209,6 +209,23 @@ lint: install-golangci-lint ## Run golangci-lint against code.
 	pushd api; $(LOCALBIN)/golangci-lint run --verbose -c ../.golangci.yaml; popd
 	pushd maintenancewindows; $(LOCALBIN)/golangci-lint run --verbose -c ../.golangci.yaml; popd
 
+PKG ?= ./...
+
+.PHONY: lint-fix
+lint-fix: lint-fix-pkg lint-fix-api lint-fix-maintenancewindows ## Run golangci-lint with autofix against all modules.
+
+.PHONY: lint-fix-pkg
+lint-fix-pkg: install-golangci-lint ## Run golangci-lint with autofix on the root module. Usage: make lint-fix-pkg PKG=./internal/service/...
+	$(LOCALBIN)/golangci-lint run --fix -c .golangci.yaml "$(PKG)"
+
+.PHONY: lint-fix-api
+lint-fix-api: install-golangci-lint ## Run golangci-lint with autofix on the api module. Usage: make lint-fix-api PKG=./v1beta2/...
+	pushd api; $(LOCALBIN)/golangci-lint run --fix -c ../.golangci.yaml "$(PKG)"; popd
+
+.PHONY: lint-fix-maintenancewindows
+lint-fix-maintenancewindows: install-golangci-lint ## Run golangci-lint with autofix on the maintenancewindows module.
+	pushd maintenancewindows; $(LOCALBIN)/golangci-lint run --fix -c ../.golangci.yaml "$(PKG)"; popd
+
 .PHONY: lint-yaml
 lint-yaml: ## Run yamllint against repository. Assumes yamllint is installed. Install via 'brew install yamllint' or 'pip install yamllint'.
 	yamllint -c .yamllint.yml --no-warnings  .
