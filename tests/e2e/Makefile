@@ -113,7 +113,7 @@ module-deletion-with-only-default-cr:
 	$(MAKE) -f $(MAKEFILE_DIR)/module_deletion_with_only_default_cr_test.mk test
 
 skip-manifest-reconciliation:
-	$(GO_TEST) "Manifest Skip Reconciliation Label"
+	$(MAKE) -f $(MAKEFILE_DIR)/skip_manifest_reconciliation_test.mk test
 
 modulereleasemeta-upgrade-under-deletion:
 	$(GO_TEST) "Kyma Module with ModuleReleaseMeta Upgrade Under Deletion"
