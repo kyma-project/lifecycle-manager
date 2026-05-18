@@ -200,7 +200,7 @@ module-transferred-to-another-oci-registry:
 	$(GO_TEST) "Module Transferred to Another OCI Registry"
 
 fips-mode-metric:
-	$(GO_TEST) "FIPS Mode metric"
+	$(MAKE) -f $(MAKEFILE_DIR)/fips_mode_metric_test.mk test
 
 gateway-secret-server-cert-metric:
 	$(MAKE) -f $(MAKEFILE_DIR)/gateway_secret_server_cert_metric_test.mk test
