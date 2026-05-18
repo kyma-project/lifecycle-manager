@@ -137,7 +137,7 @@ self-signed-certificate-rotation:
 	$(GO_TEST) "Self Signed Certificate Rotation"
 
 misconfigured-kyma-secret:
-	$(GO_TEST) "Misconfigured Kyma Secret"
+	$(MAKE) -f $(MAKEFILE_DIR)/misconfigured_kyma_secret_test.mk test
 
 rbac-privileges:
 	$(GO_TEST) "RBAC Privileges"
