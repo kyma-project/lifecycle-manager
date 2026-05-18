@@ -140,7 +140,7 @@ misconfigured-kyma-secret:
 	$(MAKE) -f $(MAKEFILE_DIR)/misconfigured_kyma_secret_test.mk test
 
 rbac-privileges:
-	$(GO_TEST) "RBAC Privileges"
+	$(MAKE) -f $(MAKEFILE_DIR)/rbac_privileges_test.mk test
 
 oci-reg-cred-secret:
 	$(GO_TEST) "OCI Registry Credentials Secret"
