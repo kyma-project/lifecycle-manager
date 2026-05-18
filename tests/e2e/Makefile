@@ -110,7 +110,7 @@ non-blocking-deletion:
 	$(GO_TEST) "Non Blocking Kyma Module Deletion"
 
 module-deletion-with-only-default-cr:
-	$(GO_TEST) "Non Blocking Module Deletion With Only Default CR"
+	$(MAKE) -f $(MAKEFILE_DIR)/module_deletion_with_only_default_cr_test.mk test
 
 skip-manifest-reconciliation:
 	$(GO_TEST) "Manifest Skip Reconciliation Label"
