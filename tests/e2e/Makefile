@@ -101,7 +101,7 @@ module-without-default-cr:
 	$(GO_TEST) "Module Without Default CR"
 
 module-consistency:
-	$(GO_TEST) "Module Keep Consistent After Deploy"
+	$(MAKE) -f $(MAKEFILE_DIR)/module_consistency_test.mk test
 
 mandatory-module:
 	$(MAKE) -f $(MAKEFILE_DIR)/mandatory_module_test.mk test
