@@ -89,7 +89,6 @@ func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 		template := builder.NewModuleTemplateBuilder().
 			WithNamespace(ControlPlaneNamespace).
 			WithModuleName(module.Name).
-			WithChannel(module.Channel).
 			WithName(moduleTemplateName).
 			Build()
 		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
