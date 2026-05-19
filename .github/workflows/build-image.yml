@@ -1,5 +1,8 @@
 name: Build Image
 
+permissions:
+  contents: read # This is required for actions/checkout
+
 on:
   push:
     branches:
@@ -13,10 +16,6 @@ on:
         default: ""
   pull_request_target:
     types: [ opened, synchronize, reopened, ready_for_review ]
-
-permissions:
-  id-token: write # This is required for requesting the JWT token
-  contents: read # This is required for actions/checkout
 
 jobs:
   get-custom-tags:
@@ -39,8 +38,20 @@ jobs:
           fi
           echo "Using custom tags: '$tags'"
           echo "tags=$tags" >> $GITHUB_OUTPUT
-  build-image:
+
+  restricted-gate:
     needs: get-custom-tags
+    runs-on: ubuntu-latest
+    environment:
+      name: restricted
+    steps:
+      - run: echo "'build-image' job approval granted"
+
+  build-image:
+    needs: [get-custom-tags, restricted-gate]
+    permissions:
+      id-token: write # This is required for requesting the JWT token
+      contents: read # This is required for actions/checkout
     uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
     with:
       name: lifecycle-manager
