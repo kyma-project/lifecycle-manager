@@ -978,6 +978,11 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 				assert.True(t, ok)
 				assert.Equal(t, wantModule.DesiredChannel, module.DesiredChannel)
 				require.ErrorIs(t, module.Err, wantModule.Err)
+				if wantModule.ModuleTemplate != nil {
+					require.NotNil(t, module.ModuleTemplate)
+					assert.Equal(t, wantModule.ModuleTemplate.Name, module.ModuleTemplate.Name)
+					assert.Equal(t, wantModule.ModuleTemplate.Spec.Version, module.ModuleTemplate.Spec.Version)
+				}
 			}
 		})
 	}
