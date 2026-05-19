@@ -121,12 +121,39 @@ jobs:
           modulectl_version: ${{ steps.configuration.outputs.modulectl_version }}
           go-version-file: lifecycle-manager/go.mod
           cache-dependency-path: lifecycle-manager/go.sum
+      - name: Check if test manages its own setup
+        id: setup-check
+        run: |
+          case "${{ matrix.e2e-test }}" in
+            mandatory-module | \
+            mandatory-module-metrics | \
+            gateway-secret-server-cert-metric | \
+            restricted-default-module | \
+            restricted-module-normal-installation | \
+            restricted-default-module-catalog-sync | \
+            kyma-deprovision-with-foreground-propagation | \
+            kyma-deprovision-with-background-propagation | \
+            module-consistency | \
+            module-deletion-with-only-default-cr | \
+            unmanage-module | \
+            skip-manifest-reconciliation | \
+            misconfigured-kyma-secret | \
+            module-deletion-blocking-with-multiple-crs-ignore-policy | \
+            module-deletion-blocking-with-multiple-crs-create-and-delete-policy | \
+            module-deletion-blocking-with-default-cr-with-finalizer | \
+            module-deletion-blocking-with-cross-namespace-ignore-policy | \
+            module-deletion-blocking-with-cross-namespace-create-and-delete-policy | \
+            watcher-enqueue | \
+            rbac-privileges | \
+            labelling | \
+            fips-mode-metric)
+              echo "self-contained=true" >> $GITHUB_OUTPUT ;;
+            *)
+              echo "self-contained=false" >> $GITHUB_OUTPUT ;;
+          esac
+
       - name: Setup test clusters
-        if: ${{ matrix.e2e-test != 'mandatory-module' &&
-                matrix.e2e-test != 'mandatory-module-metrics' &&
-                matrix.e2e-test != 'restricted-default-module' &&
-                matrix.e2e-test != 'restricted-module-normal-installation' &&
-                matrix.e2e-test != 'restricted-default-module-catalog-sync' }}
+        if: ${{ steps.setup-check.outputs.self-contained == 'false' }}
         uses: ./lifecycle-manager/.github/actions/setup-test-clusters
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
@@ -137,23 +164,13 @@ jobs:
         uses: ./lifecycle-manager/.github/actions/setup-private-registry
 
       - name: Deploy lifecycle-manager
-        if: ${{ matrix.e2e-test != 'mandatory-module' &&
-                matrix.e2e-test != 'mandatory-module-metrics'&&
-                matrix.e2e-test != 'gateway-secret-server-cert-metric'&&
-                matrix.e2e-test != 'restricted-default-module'&&
-                matrix.e2e-test != 'restricted-module-normal-installation' &&
-                matrix.e2e-test != 'restricted-default-module-catalog-sync' }}
+        if: ${{ steps.setup-check.outputs.self-contained == 'false' }}
         uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
         with:
           klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
           klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
       - name: Deploy template-operator
-        if: ${{ matrix.e2e-test != 'mandatory-module' &&
-                matrix.e2e-test != 'mandatory-module-metrics'&&
-                matrix.e2e-test != 'gateway-secret-server-cert-metric'&&
-                matrix.e2e-test != 'restricted-default-module'&&
-                matrix.e2e-test != 'restricted-module-normal-installation' &&
-                matrix.e2e-test != 'restricted-default-module-catalog-sync' }}
+        if: ${{ steps.setup-check.outputs.self-contained == 'false' }}
         uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
         with:
           module_version: ${{ steps.configuration.outputs.template_operator_version }}
