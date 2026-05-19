@@ -911,6 +911,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 					DesiredChannel: testModule.Channel,
 					Err:            nil,
 					ModuleTemplate: builder.NewModuleTemplateBuilder().
+						WithName(fmt.Sprintf("%s-%s", testModule.Name, moduleVersion)).
 						WithModuleName(testModule.Name).
 						WithVersion(moduleVersion).
 						Build(),
@@ -937,7 +938,9 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 					DesiredChannel: testModule.Channel,
 					Err:            nil,
 					ModuleTemplate: builder.NewModuleTemplateBuilder().
+						WithName(fmt.Sprintf("%s-%s", testModule.Name, moduleVersion)).
 						WithModuleName(testModule.Name).
+						WithVersion(moduleVersion).
 						Build(),
 				},
 			},
@@ -980,8 +983,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 				require.ErrorIs(t, module.Err, wantModule.Err)
 				if wantModule.ModuleTemplate != nil {
 					require.NotNil(t, module.ModuleTemplate)
-					assert.Equal(t, wantModule.ModuleTemplate.Name, module.ModuleTemplate.Name)
-					assert.Equal(t, wantModule.ModuleTemplate.Spec.Version, module.ModuleTemplate.Spec.Version)
+					assert.Equal(t, wantModule.Name, module.Name)
+					assert.Equal(t, wantModule.Spec.Version, module.Spec.Version)
 				}
 			}
 		})
