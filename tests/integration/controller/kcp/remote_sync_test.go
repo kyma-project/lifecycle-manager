@@ -264,7 +264,6 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 		WithName(fmt.Sprintf("%s-%s", moduleInKCP.Name, moduleVersion)).
 		WithNamespace(ControlPlaneNamespace).
 		WithModuleName(moduleInKCP.Name).
-		WithChannel(moduleInKCP.Channel).
 		WithVersion(moduleVersion).
 		Build()
 
