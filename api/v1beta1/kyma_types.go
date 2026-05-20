@@ -18,6 +18,7 @@ package v1beta1
 
 import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 )
 
 // +genclient
@@ -252,5 +253,8 @@ const (
 
 //nolint:gochecknoinits // registers Kyma CRD on startup
 func init() {
-	SchemeBuilder.Register(&Kyma{}, &KymaList{})
+	SchemeBuilder.Register(func(s *machineryruntime.Scheme) error {
+		s.AddKnownTypes(GroupVersion, &Kyma{}, &KymaList{})
+		return nil
+	})
 }

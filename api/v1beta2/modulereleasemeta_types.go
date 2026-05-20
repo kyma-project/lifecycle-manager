@@ -2,6 +2,7 @@ package v1beta2
 
 import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 )
 
 // ModuleReleaseMeta is the representation of the channel-version pairs for modules. Each item represents
@@ -98,7 +99,10 @@ type ChannelVersionAssignment struct {
 
 //nolint:gochecknoinits // registers ModuleReleaseMeta CRD on startup
 func init() {
-	SchemeBuilder.Register(&ModuleReleaseMeta{}, &ModuleReleaseMetaList{})
+	SchemeBuilder.Register(func(s *machineryruntime.Scheme) error {
+		s.AddKnownTypes(GroupVersion, &ModuleReleaseMeta{}, &ModuleReleaseMetaList{})
+		return nil
+	})
 }
 
 func (m *ModuleReleaseMeta) IsBeta() bool {

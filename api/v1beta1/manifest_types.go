@@ -114,5 +114,8 @@ type ManifestList struct {
 
 //nolint:gochecknoinits // registers Kyma CRD on startup
 func init() {
-	SchemeBuilder.Register(&Manifest{}, &ManifestList{})
+	SchemeBuilder.Register(func(s *machineryruntime.Scheme) error {
+		s.AddKnownTypes(GroupVersion, &Manifest{}, &ManifestList{})
+		return nil
+	})
 }
