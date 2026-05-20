@@ -104,31 +104,6 @@ runs:
         cat self-signed-cert.yaml
         kustomize edit add patch --path self-signed-cert.yaml --kind Deployment
         popd
-    - name: Patch requeue intervals
-      if: ${{ matrix.e2e-test == 'modulereleasemeta-watch-trigger'}}
-      working-directory: lifecycle-manager
-      shell: bash
-      run: |
-        pushd ${E2E_KUSTOMIZE_DIR}
-        echo \
-        "- op: replace
-          path: /spec/template/spec/containers/0/args/16
-          value: --kyma-requeue-success-interval=1h
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --kyma-requeue-warning-interval=1h
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --kyma-requeue-error-interval=1h
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --kyma-requeue-busy-interval=1s
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --module-upgrade-rollout-max-delay=10s" >> requeue-interval-patch.yaml
-        cat requeue-interval-patch.yaml
-        kustomize edit add patch --path requeue-interval-patch.yaml --kind Deployment
-        popd
     - name: Patch SKR Image Pull Secret
       if: ${{ matrix.e2e-test == 'skr-image-pull-secret-sync' }}
       working-directory: lifecycle-manager

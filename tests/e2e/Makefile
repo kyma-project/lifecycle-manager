@@ -150,7 +150,7 @@ modulereleasemeta-with-obsolete-moduletemplate:
 	$(GO_TEST) "ModuleReleaseMeta With Obsolete ModuleTemplate"
 
 modulereleasemeta-watch-trigger:
-	$(GO_TEST) "ModuleReleaseMeta Watch Trigger"
+	$(MAKE) -f $(MAKEFILE_DIR)/modulereleasemeta_watch_trigger_test.mk
 
 modulereleasemeta-sync:
 	$(GO_TEST) "ModuleReleaseMeta Sync"

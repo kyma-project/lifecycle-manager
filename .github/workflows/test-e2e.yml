@@ -147,7 +147,8 @@ jobs:
             rbac-privileges | \
             labelling | \
             fips-mode-metric | \
-            watcher-zero-downtime)
+            watcher-zero-downtime | \
+            modulereleasemeta-watch-trigger)
               echo "self-contained=true" >> $GITHUB_OUTPUT ;;
             *)
               echo "self-contained=false" >> $GITHUB_OUTPUT ;;
