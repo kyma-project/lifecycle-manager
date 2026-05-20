@@ -30,7 +30,6 @@ var _ = Describe("ModuleTemplate version is not empty", Ordered, func() {
 				WithNamespace(ControlPlaneNamespace).
 				WithVersion(givenVersion).
 				WithModuleName("").
-				WithChannel(module.Channel).
 				Build()
 
 			err := kcpClient.Create(ctx, template)
@@ -125,7 +124,6 @@ var _ = Describe("ModuleTemplate version is not empty", Ordered, func() {
 				WithNamespace(ControlPlaneNamespace).
 				WithModuleName(givenModuleName).
 				WithVersion("").
-				WithChannel(module.Channel).
 				Build()
 
 			err := kcpClient.Create(ctx, template)

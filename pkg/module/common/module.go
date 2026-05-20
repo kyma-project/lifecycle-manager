@@ -29,7 +29,6 @@ func (m *Module) Logger(base logr.Logger) logr.Logger {
 	return base.WithValues(
 		"componentName", m.OCMComponentName,
 		"module", m.Manifest.GetName(),
-		"channel", m.TemplateInfo.Spec.Channel, //nolint:staticcheck // legacy Channel field
 		"templateGeneration", m.TemplateInfo.GetGeneration(),
 	)
 }

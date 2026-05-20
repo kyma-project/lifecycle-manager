@@ -23,8 +23,11 @@ endif
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
+# FIPS140 Module version
+FIPS140_MODULE_VERSION := v1.0.0
+
 # Go command with FIPS140 Module enabled
-GO := GOFIPS140=v1.0.0 go
+GO := GOFIPS140=$(FIPS140_MODULE_VERSION) go
 
 .PHONY: all
 all: build
@@ -111,7 +114,7 @@ build: generate fmt vet ## Build manager binary.
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./cmd/main.go
+	$(GO) run ./cmd/main.go
 
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.

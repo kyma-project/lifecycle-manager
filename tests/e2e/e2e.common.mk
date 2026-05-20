@@ -33,9 +33,11 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-# Go command with FIPS140 module enabled.
-GO := GOFIPS140=v1.0.0 go
+# FIPS140 Module version
+FIPS140_MODULE_VERSION := v1.0.0
 
+# Go command with FIPS140 Module enabled
+GO := GOFIPS140=$(FIPS140_MODULE_VERSION) go
 
 ##@ Important directories
 
