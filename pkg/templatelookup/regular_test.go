@@ -439,7 +439,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 						},
 					},
 				}).Build(),
-			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, "",
+			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name,
 				version2),
 			availableModuleReleaseMeta: generateModuleReleaseMetaList(testModule.Name,
 				[]v1beta2.ChannelVersionAssignment{
@@ -467,7 +467,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 						},
 					},
 				}).Build(),
-			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, "",
+			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name,
 				version1),
 			availableModuleReleaseMeta: generateModuleReleaseMetaList(testModule.Name,
 				[]v1beta2.ChannelVersionAssignment{
@@ -512,12 +512,9 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchBetweenModuleVersions(t *t
 	moduleToInstall := moduleToInstallByVersion("module1", version2)
 
 	availableModuleTemplates := (&ModuleTemplateListBuilder{}).
-		Add(moduleToInstall.Name, "regular", version1).
-		Add(moduleToInstall.Name, "fast", version2).
-		Add(moduleToInstall.Name, "experimental", version3).
-		Add(moduleToInstall.Name, string(shared.NoneChannel), version1).
-		Add(moduleToInstall.Name, string(shared.NoneChannel), version2).
-		Add(moduleToInstall.Name, string(shared.NoneChannel), version3).
+		Add(moduleToInstall.Name, version1).
+		Add(moduleToInstall.Name, version2).
+		Add(moduleToInstall.Name, version3).
 		Build()
 
 	availableModuleReleaseMetas := generateModuleReleaseMetaList(moduleToInstall.Name,
@@ -586,12 +583,9 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromChannelToVersion(t *te
 	t.Skip("This test verifies install-by-version which is not supported yet in the logic based on ModuleReleaseMeta")
 	moduleToInstall := moduleToInstallByVersion("module1", version2)
 	availableModuleTemplates := (&ModuleTemplateListBuilder{}).
-		Add(moduleToInstall.Name, "regular", version1).
-		Add(moduleToInstall.Name, "fast", version2).
-		Add(moduleToInstall.Name, "experimental", version3).
-		Add(moduleToInstall.Name, string(shared.NoneChannel), version1).
-		Add(moduleToInstall.Name, string(shared.NoneChannel), version2).
-		Add(moduleToInstall.Name, string(shared.NoneChannel), version3).
+		Add(moduleToInstall.Name, version1).
+		Add(moduleToInstall.Name, version2).
+		Add(moduleToInstall.Name, version3).
 		Build()
 
 	availableModuleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
@@ -656,12 +650,9 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromChannelToVersion(t *te
 func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromVersionToChannel(t *testing.T) {
 	moduleToInstall := testutils.NewTestModule("module1", "new_channel")
 	availableModuleTemplates := (&ModuleTemplateListBuilder{}).
-		Add(moduleToInstall.Name, "regular", version1).
-		Add(moduleToInstall.Name, "new_channel", version2).
-		Add(moduleToInstall.Name, "fast", version3).
-		Add(moduleToInstall.Name, string(shared.NoneChannel), version1).
-		Add(moduleToInstall.Name, string(shared.NoneChannel), version2).
-		Add(moduleToInstall.Name, string(shared.NoneChannel), version3).
+		Add(moduleToInstall.Name, version1).
+		Add(moduleToInstall.Name, version2).
+		Add(moduleToInstall.Name, version3).
 		Build()
 
 	availableModuleReleaseMetas := generateModuleReleaseMetaList(
@@ -786,7 +777,6 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 					*builder.NewModuleTemplateBuilder().
 						WithName(fmt.Sprintf("%s-%s", module.Name, testModule.Version)).
 						WithModuleName(module.Name).
-						WithChannel(module.Channel).
 						WithDescriptor(nil).
 						WithRawDescriptor([]byte("{invalid_json}")).Build())
 
@@ -908,24 +898,22 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 	require.NoError(t, err)
 
 	tests := []struct {
-		name     string
-		kyma     *v1beta2.Kyma
-		mrmExist bool
-		want     templatelookup.ModuleTemplatesByModuleName
+		name string
+		kyma *v1beta2.Kyma
+		want templatelookup.ModuleTemplatesByModuleName
 	}{
 		{
 			name: "When module enabled in Spec, then return expected moduleTemplateInfo, with ModuleReleaseMeta",
 			kyma: builder.NewKymaBuilder().
 				WithEnabledModule(testModule).Build(),
-			mrmExist: true,
 			want: templatelookup.ModuleTemplatesByModuleName{
 				testModule.Name: &templatelookup.ModuleTemplateInfo{
 					DesiredChannel: testModule.Channel,
 					Err:            nil,
 					ModuleTemplate: builder.NewModuleTemplateBuilder().
+						WithName(fmt.Sprintf("%s-%s", testModule.Name, moduleVersion)).
 						WithModuleName(testModule.Name).
 						WithVersion(moduleVersion).
-						WithChannel("").
 						Build(),
 				},
 			},
@@ -945,14 +933,14 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 					},
 					Version: "1.0.0",
 				}).Build(),
-			mrmExist: true,
 			want: templatelookup.ModuleTemplatesByModuleName{
 				testModule.Name: &templatelookup.ModuleTemplateInfo{
 					DesiredChannel: testModule.Channel,
 					Err:            nil,
 					ModuleTemplate: builder.NewModuleTemplateBuilder().
+						WithName(fmt.Sprintf("%s-%s", testModule.Name, moduleVersion)).
 						WithModuleName(testModule.Name).
-						WithChannel("").
+						WithVersion(moduleVersion).
 						Build(),
 				},
 			},
@@ -964,27 +952,18 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 			moduleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
 			const moduleTemplateVersion = "1.0.0"
 			for _, module := range templatelookup.FetchModuleInfo(testCase.kyma) {
-				if testCase.mrmExist {
-					givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
-						WithName(fmt.Sprintf("%s-%s", module.Name, moduleTemplateVersion)).
+				givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
+					WithName(fmt.Sprintf("%s-%s", module.Name, moduleTemplateVersion)).
+					WithModuleName(module.Name).
+					WithVersion(moduleTemplateVersion).
+					Build())
+				moduleReleaseMetas.Items = append(moduleReleaseMetas.Items,
+					*builder.NewModuleReleaseMetaBuilder().
 						WithModuleName(module.Name).
-						WithVersion(moduleTemplateVersion).
-						Build())
-					moduleReleaseMetas.Items = append(moduleReleaseMetas.Items,
-						*builder.NewModuleReleaseMetaBuilder().
-							WithModuleName(module.Name).
-							WithOcmComponentName(testutils.FullOCMName(module.Name)).
-							WithModuleChannelAndVersions([]v1beta2.ChannelVersionAssignment{
-								{Channel: module.Channel, Version: moduleTemplateVersion},
-							}).Build())
-				} else {
-					givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
-						WithName(fmt.Sprintf("%s-%s", module.Name, moduleTemplateVersion)).
-						WithModuleName(module.Name).
-						WithVersion(moduleTemplateVersion).
-						WithChannel(module.Channel).
-						Build())
-				}
+						WithOcmComponentName(testutils.FullOCMName(module.Name)).
+						WithModuleChannelAndVersions([]v1beta2.ChannelVersionAssignment{
+							{Channel: module.Channel, Version: moduleTemplateVersion},
+						}).Build())
 			}
 			reader := NewFakeModuleTemplateReader(*givenTemplateList,
 				moduleReleaseMetas)
@@ -1002,12 +981,10 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 				assert.True(t, ok)
 				assert.Equal(t, wantModule.DesiredChannel, module.DesiredChannel)
 				require.ErrorIs(t, module.Err, wantModule.Err)
-				if !testCase.mrmExist {
-					assert.Equal(
-						t,
-						wantModule.Spec.Channel, //nolint:staticcheck    // legacy Channel field
-						module.Spec.Channel,     //nolint:staticcheck    // legacy Channel field
-					)
+				if wantModule.ModuleTemplate != nil {
+					require.NotNil(t, module.ModuleTemplate)
+					assert.Equal(t, wantModule.Name, module.Name)
+					assert.Equal(t, wantModule.Spec.Version, module.Spec.Version)
 				}
 			}
 		})
@@ -1102,12 +1079,11 @@ func executeGetRegularTemplatesTestCases(t *testing.T,
 	}
 }
 
-func generateModuleTemplateListWithModule(moduleName, moduleChannel, moduleVersion string) v1beta2.ModuleTemplateList {
+func generateModuleTemplateListWithModule(moduleName, moduleVersion string) v1beta2.ModuleTemplateList {
 	templateList := v1beta2.ModuleTemplateList{}
 	templateList.Items = append(templateList.Items, *builder.NewModuleTemplateBuilder().
 		WithName(v1beta2.CreateModuleTemplateName(moduleName, moduleVersion)).
 		WithModuleName(moduleName).
-		WithChannel(moduleChannel).
 		WithVersion(moduleVersion).
 		Build())
 	return templateList
@@ -1129,8 +1105,8 @@ type ModuleTemplateListBuilder struct {
 	ModuleTemplates []v1beta2.ModuleTemplate
 }
 
-func (mtlb *ModuleTemplateListBuilder) Add(moduleName, moduleChannel, moduleVersion string) *ModuleTemplateListBuilder {
-	list := generateModuleTemplateListWithModule(moduleName, moduleChannel, moduleVersion)
+func (mtlb *ModuleTemplateListBuilder) Add(moduleName, moduleVersion string) *ModuleTemplateListBuilder {
+	list := generateModuleTemplateListWithModule(moduleName, moduleVersion)
 	mtlb.ModuleTemplates = append(mtlb.ModuleTemplates, list.Items...)
 	return mtlb
 }
