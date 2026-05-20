@@ -112,7 +112,7 @@ type ManifestList struct {
 	Items []Manifest `json:"items"`
 }
 
-//nolint:gochecknoinits // registers Kyma CRD on startup
+//nolint:gochecknoinits // registers Manifest CRD on startup
 func init() {
 	SchemeBuilder.Register(func(s *machineryruntime.Scheme) error {
 		s.AddKnownTypes(GroupVersion, &Manifest{}, &ManifestList{})
