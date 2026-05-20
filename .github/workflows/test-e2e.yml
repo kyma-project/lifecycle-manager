@@ -146,7 +146,8 @@ jobs:
             watcher-enqueue | \
             rbac-privileges | \
             labelling | \
-            fips-mode-metric)
+            fips-mode-metric | \
+            watcher-zero-downtime)
               echo "self-contained=true" >> $GITHUB_OUTPUT ;;
             *)
               echo "self-contained=false" >> $GITHUB_OUTPUT ;;

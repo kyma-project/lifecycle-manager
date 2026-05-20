@@ -129,43 +129,6 @@ runs:
         cat requeue-interval-patch.yaml
         kustomize edit add patch --path requeue-interval-patch.yaml --kind Deployment
         popd
-    - name: Patch KLM deployment for watcher zero downtime
-      if: ${{matrix.e2e-test == 'watcher-zero-downtime'}}
-      working-directory: lifecycle-manager
-      shell: bash
-      run: |
-        pushd ${E2E_KUSTOMIZE_DIR}
-        echo \
-        "- op: replace
-          path: /spec/template/spec/containers/0/args/11
-          value: --kyma-requeue-success-interval=1s
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --istio-gateway-server-cert-switch-grace-period=30s
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --istio-gateway-secret-requeue-success-interval=1s" >> requeue-interval-patch.yaml
-        cat requeue-interval-patch.yaml
-        kustomize edit add patch --path requeue-interval-patch.yaml --kind Deployment
-        popd
-    - name: Patch CA certificate renewBefore
-      if: ${{matrix.e2e-test == 'watcher-zero-downtime'}}
-      working-directory: lifecycle-manager
-      shell: bash
-      run: |
-        pushd ${E2E_KUSTOMIZE_DIR}
-        if [[ -z "${E2E_USE_GARDENER_CERT_MANAGER}" ]]; then
-        echo \
-        "- op: replace
-          path: /spec/renewBefore
-          value: 59m
-        - op: replace
-          path: /spec/duration
-          value: 1h">> certificate_renewal.yaml
-        cat certificate_renewal.yaml
-        kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving
-        fi
-        popd
     - name: Patch SKR Image Pull Secret
       if: ${{ matrix.e2e-test == 'skr-image-pull-secret-sync' }}
       working-directory: lifecycle-manager
