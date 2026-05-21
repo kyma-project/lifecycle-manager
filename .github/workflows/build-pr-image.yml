@@ -1,0 +1,32 @@
+name: Build PR Image
+
+permissions:
+  contents: read # This is required for actions/checkout
+
+on:
+  pull_request_target:
+    types: [ opened, synchronize, reopened, ready_for_review ]
+
+jobs:
+  restricted-gate:
+    runs-on: ubuntu-latest
+    environment:
+      name: restricted
+    steps:
+      - run: echo "'build-pr-image' job approval granted"
+
+  build-pr-image:
+    needs: restricted-gate
+    permissions:
+      id-token: write # This is required for requesting the JWT token
+      contents: read # This is required for actions/checkout
+    uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
+    with:
+      name: lifecycle-manager
+      dockerfile: Dockerfile
+      context: .
+      platforms: |
+        linux/amd64
+      # tags are additional tags that will be added to the image on top of the default ones
+      # default tags are documented here: https://github.com/kyma-project/test-infra/tree/main/cmd/image-builder#default-tags
+      tags: ${{ github.event.pull_request.head.sha }}
