@@ -110,6 +110,8 @@ jobs:
         run: |
           if [[ "${{ matrix.e2e-test }}" == "watcher-enqueue" ]]; then
             make -f tests/e2e/e2e.no_module_setup.mk test-run "GINKGO_FOCUS=Enqueue Event from Watcher"
+          elif [[ "${{ matrix.e2e-test }}" == "modulereleasemeta-watch-trigger" ]]; then
+            make -f tests/e2e/modulereleasemeta_watch_trigger_test.mk test-run
           else
             make -C tests/e2e ${{ matrix.e2e-test }}
           fi

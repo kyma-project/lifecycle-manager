@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
 
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
@@ -42,10 +44,29 @@ const (
 	ConsistentDuration      = 20 * time.Second
 	interval                = 500 * time.Millisecond
 	moduleCRFinalizer       = "cr-finalizer"
-	ModuleVersionToBeUsed   = "1.0.5"
 	NewerVersion            = "2.4.2-e2e-test"
 	MisconfiguredModuleName = "template-operator-misconfigured"
 )
+
+// ModuleVersionToBeUsed is the template-operator version used in tests.
+// It is read from versions.yaml to stay in sync with the version deployed by the test setup.
+var ModuleVersionToBeUsed = mustReadTemplateOperatorVersion()
+
+func mustReadTemplateOperatorVersion() string {
+	content, err := os.ReadFile("../../versions.yaml")
+	if err != nil {
+		panic(fmt.Sprintf("failed to read versions.yaml: %v", err))
+	}
+	var versions map[string]string
+	if err := yaml.Unmarshal(content, &versions); err != nil {
+		panic(fmt.Sprintf("failed to parse versions.yaml: %v", err))
+	}
+	version, ok := versions["template-operator"]
+	if !ok {
+		panic("template-operator version not found in versions.yaml")
+	}
+	return version
+}
 
 func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
