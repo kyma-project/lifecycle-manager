@@ -14,8 +14,6 @@ on:
         required: false
         type: string
         default: ""
-  pull_request_target:
-    types: [ opened, synchronize, reopened, ready_for_review ]
 
 jobs:
   get-custom-tags:
@@ -33,22 +31,12 @@ jobs:
             tags="latest"
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             tags="${{ inputs.tag }}"
-          elif [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
-            tags="${{ github.event.pull_request.head.sha }}"
           fi
           echo "Using custom tags: '$tags'"
           echo "tags=$tags" >> $GITHUB_OUTPUT
 
-  restricted-gate:
-    needs: get-custom-tags
-    runs-on: ubuntu-latest
-    environment:
-      name: restricted
-    steps:
-      - run: echo "'build-image' job approval granted"
-
   build-image:
-    needs: [get-custom-tags, restricted-gate]
+    needs: [get-custom-tags]
     permissions:
       id-token: write # This is required for requesting the JWT token
       contents: read # This is required for actions/checkout
