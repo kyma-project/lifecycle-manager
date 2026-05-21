@@ -191,7 +191,7 @@ teardown: ## Delete KCP and SKR test clusters.
 ##@ Module Metadata Variables
 
 MODULE_NAME                     := template-operator
-MODULE_DEPLOYABLE_VERSION       ?= $(shell yq e '."template-operator"' $(LIFECYCLE_MANAGER_DIR)/versions.yaml)
+MODULE_DEPLOYABLE_VERSION       ?= $(shell yq -e e '."template-operator"' $(LIFECYCLE_MANAGER_DIR)/versions.yaml)
 MODULE_DEPLOYMENT_CURRENT_VERSION := template-operator-controller-manager
 MODULE_OLDER_VERSION            := 1.1.0-smoke-test
 MODULE_DEPLOYMENT_OLDER_VERSION := template-operator-v1-controller-manager
