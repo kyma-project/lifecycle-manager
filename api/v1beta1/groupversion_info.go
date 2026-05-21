@@ -22,8 +22,9 @@ limitations under the License.
 package v1beta1
 
 import (
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/controller-runtime/pkg/scheme"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
@@ -36,8 +37,13 @@ var (
 	}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme.
-	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion} //nolint:staticcheck // See #3239
+	SchemeBuilder = machineryruntime.NewSchemeBuilder(addKnownTypes)
 
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
 )
+
+func addKnownTypes(s *machineryruntime.Scheme) error {
+	apimetav1.AddToGroupVersion(s, GroupVersion)
+	return nil
+}

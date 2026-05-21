@@ -18,6 +18,7 @@ package v1beta1
 
 import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 )
 
 // +kubebuilder:object:root=true
@@ -118,5 +119,8 @@ type WatcherList struct {
 
 //nolint:gochecknoinits // registers Watcher CRD on startup
 func init() {
-	SchemeBuilder.Register(&Watcher{}, &WatcherList{})
+	SchemeBuilder.Register(func(s *machineryruntime.Scheme) error {
+		s.AddKnownTypes(GroupVersion, &Watcher{}, &WatcherList{})
+		return nil
+	})
 }

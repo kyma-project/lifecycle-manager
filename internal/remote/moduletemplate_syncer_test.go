@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -28,8 +29,8 @@ func TestSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:dupl,revive // dupl
 	mtSKR4 := moduleTemplate("mt4", "kyma-system") // this one should be deleted, because it's not in the KCP
 
 	// Create a fake client with the SKR modules
-	scheme, err := v1beta2.SchemeBuilder.Build()
-	require.NoError(t, err)
+	scheme := machineryruntime.NewScheme()
+	require.NoError(t, v1beta2.AddToScheme(scheme))
 	skrClient := fake.NewClientBuilder().
 		WithObjects(&mtSKR2, &mtSKR3, &mtSKR4).
 		WithScheme(scheme).
@@ -75,7 +76,7 @@ func TestSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:dupl,revive // dupl
 	}
 
 	// when
-	err = subject.SyncToSKR(t.Context(), []v1beta2.ModuleTemplate{mtKCP1, mtKCP2, mtKCP3})
+	err := subject.SyncToSKR(t.Context(), []v1beta2.ModuleTemplate{mtKCP1, mtKCP2, mtKCP3})
 
 	// then
 	assert.NoError(t, err)
@@ -89,8 +90,8 @@ func TestSyncer_SyncToSKR_nilList(t *testing.T) {
 	mtSKR4 := moduleTemplate("mt4", "kyma-system") // should be deleted, because it's not in the KCP
 
 	// Create a fake client with the SKR modules
-	scheme, err := v1beta2.SchemeBuilder.Build()
-	require.NoError(t, err)
+	scheme := machineryruntime.NewScheme()
+	require.NoError(t, v1beta2.AddToScheme(scheme))
 	skrClient := fake.NewClientBuilder().
 		WithObjects(&mtSKR2, &mtSKR3, &mtSKR4).
 		WithScheme(scheme).
@@ -136,7 +137,7 @@ func TestSyncer_SyncToSKR_nilList(t *testing.T) {
 
 	// when
 	var nilModuleTemplateList []v1beta2.ModuleTemplate = nil
-	err = subject.SyncToSKR(t.Context(), nilModuleTemplateList)
+	err := subject.SyncToSKR(t.Context(), nilModuleTemplateList)
 
 	// then
 	assert.NoError(t, err)

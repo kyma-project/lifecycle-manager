@@ -195,7 +195,10 @@ type Resource struct {
 
 //nolint:gochecknoinits // registers ModuleTemplate CRD on startup
 func init() {
-	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{})
+	SchemeBuilder.Register(func(s *machineryruntime.Scheme) error {
+		s.AddKnownTypes(GroupVersion, &ModuleTemplate{}, &ModuleTemplateList{})
+		return nil
+	})
 }
 
 func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
