@@ -163,7 +163,10 @@ type ManifestList struct {
 
 //nolint:gochecknoinits // registers Manifest CRD on startup
 func init() {
-	SchemeBuilder.Register(&Manifest{}, &ManifestList{})
+	SchemeBuilder.Register(func(s *machineryruntime.Scheme) error {
+		s.AddKnownTypes(GroupVersion, &Manifest{}, &ManifestList{})
+		return nil
+	})
 }
 
 func (manifest *Manifest) SkipReconciliation() bool {

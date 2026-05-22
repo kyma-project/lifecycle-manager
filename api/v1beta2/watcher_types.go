@@ -19,6 +19,7 @@ package v1beta2
 import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
@@ -152,7 +153,10 @@ type WatcherList struct {
 
 //nolint:gochecknoinits // registers Watcher CRD on startup
 func init() {
-	SchemeBuilder.Register(&Watcher{}, &WatcherList{})
+	SchemeBuilder.Register(func(s *machineryruntime.Scheme) error {
+		s.AddKnownTypes(GroupVersion, &Watcher{}, &WatcherList{})
+		return nil
+	})
 }
 
 // DefaultIstioGatewaySelector defines a default label selector for a Gateway to configure a VirtualService
