@@ -93,13 +93,13 @@ watcher-enqueue:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.no_module_setup.mk test "GINKGO_FOCUS=Enqueue Event from Watcher"
 
 module-status-decoupling-with-statefulset:
-	$(GO_TEST) "Module Status Decoupling With StatefulSet"
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.module_status_decoupling_with_statefulset.mk test
 
 module-status-decoupling-with-deployment:
-	$(GO_TEST) "Module Status Decoupling With Deployment"
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.module_status_decoupling_with_deployment.mk test
 
 module-without-default-cr:
-	$(GO_TEST) "Module Without Default CR"
+	$(MAKE) -f $(MAKEFILE_DIR)/e2e.module_without_default_cr.mk test
 
 module-consistency:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Module Keep Consistent After Deploy"
