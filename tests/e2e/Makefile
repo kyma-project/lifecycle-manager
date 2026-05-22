@@ -150,7 +150,7 @@ modulereleasemeta-with-obsolete-moduletemplate:
 	$(GO_TEST) "ModuleReleaseMeta With Obsolete ModuleTemplate"
 
 modulereleasemeta-watch-trigger:
-	$(GO_TEST) "ModuleReleaseMeta Watch Trigger"
+	$(MAKE) -f $(MAKEFILE_DIR)/modulereleasemeta_watch_trigger_test.mk
 
 modulereleasemeta-sync:
 	$(GO_TEST) "ModuleReleaseMeta Sync"
@@ -174,7 +174,7 @@ maintenance-windows-skip:
 	$(GO_TEST) "Maintenance Windows - No Wait for Maintenance Widnow on Skip"
 
 watcher-zero-downtime:
-	$(GO_TEST) "Watcher Zero Downtime"
+	$(MAKE) -f $(MAKEFILE_DIR)/watcher_zero_downtime_test.mk
 
 module-deletion-blocking-with-multiple-crs-ignore-policy:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Blocking Module Deletion With Multiple Module CRs with Ignore Policy"
