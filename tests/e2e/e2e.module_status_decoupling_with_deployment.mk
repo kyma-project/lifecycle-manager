@@ -3,6 +3,10 @@
 
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))e2e.common.mk
 
+VERSION_WARNING_DEPLOYMENT       := 1.0.0-warning-deployment
+VERSION_MISCONFIGURED_DEPLOYMENT := 1.0.0-misconfigured-deployment
+MODULE_NAME_MISCONFIGURED        := template-operator-misconfigured
+
 .PHONY: klm-patch
 klm-patch:
 	@echo "::group::KLM patch"

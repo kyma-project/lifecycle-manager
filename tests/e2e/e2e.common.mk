@@ -198,13 +198,6 @@ MODULE_DEPLOYMENT_OLDER_VERSION := template-operator-v1-controller-manager
 MODULE_NEWER_VERSION            := 2.4.1-smoke-test
 MODULE_DEPLOYMENT_NEWER_VERSION := template-operator-v2-controller-manager
 
-VERSION_NO_DEFAULT_CR              := 1.0.0-no-default-cr
-VERSION_WARNING_DEPLOYMENT         := 1.0.0-warning-deployment
-VERSION_MISCONFIGURED_DEPLOYMENT   := 1.0.0-misconfigured-deployment
-VERSION_WARNING_STATEFULSET        := 1.0.0-warning-statefulset
-VERSION_MISCONFIGURED_STATEFULSET  := 1.0.0-misconfigured-statefulset
-MODULE_NAME_MISCONFIGURED          := template-operator-misconfigured
-
 ##@ Test helpers
 
 .PHONY: log-tool-versions
