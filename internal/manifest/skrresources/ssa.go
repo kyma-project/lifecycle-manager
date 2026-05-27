@@ -9,7 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -23,7 +22,7 @@ var (
 )
 
 type SSA interface {
-	Run(ctx context.Context, resourceInfo []*resource.Info) error
+	Run(ctx context.Context, resources []client.Object) error
 }
 
 type ManagedFieldsCollector interface {
@@ -54,7 +53,7 @@ func ConcurrentSSA(clnt client.Client,
 	}
 }
 
-func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.Info) error {
+func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []client.Object) error {
 	logger := logf.FromContext(ctx, "owner", c.owner)
 	logger.V(internal.TraceLogLevel).Info("ServerSideApply", "resources", len(resources))
 
@@ -112,42 +111,39 @@ func (c *ConcurrentDefaultSSA) allTLSExpired(errs []error) bool {
 
 func (c *ConcurrentDefaultSSA) serverSideApply(
 	ctx context.Context,
-	resource *resource.Info,
+	obj client.Object,
 	results chan error,
 ) {
 	start := time.Now()
 	logger := logf.FromContext(ctx, "owner", c.owner)
-	logger.V(internal.TraceLogLevel).Info("apply " + resource.ObjectName())
-	results <- c.serverSideApplyResourceInfo(ctx, resource)
+	name := fmt.Sprintf("%s/%s", obj.GetNamespace(), obj.GetName())
+	logger.V(internal.TraceLogLevel).Info("apply " + name)
+	results <- c.serverSideApplyObject(ctx, obj)
 	logger.V(internal.TraceLogLevel).Info(
-		fmt.Sprintf("apply %s finished", resource.ObjectName()),
+		fmt.Sprintf("apply %s finished", name),
 		"time", time.Since(start),
 	)
 }
 
-func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
+func (c *ConcurrentDefaultSSA) serverSideApplyObject(
 	ctx context.Context,
-	info *resource.Info,
+	obj client.Object,
 ) error {
-	obj, isTyped := info.Object.(client.Object)
-	if !isTyped {
-		return fmt.Errorf(
-			"%s is not a valid client-go object: %w", info.ObjectName(), ErrClientObjectConversionFailed,
-		)
-	}
 	obj.SetManagedFields(nil)
 
-	unstructured, ok := obj.(*unstructured.Unstructured)
+	unstructuredObj, ok := obj.(*unstructured.Unstructured)
 	if !ok {
+		name := fmt.Sprintf("%s/%s", obj.GetNamespace(), obj.GetName())
 		return fmt.Errorf(
-			"%s is not a valid unstructured object: %w", info.ObjectName(), ErrClientObjectConversionFailed,
+			"%s is not a valid unstructured object: %w", name, ErrClientObjectConversionFailed,
 		)
 	}
 
-	err := c.clnt.Apply(ctx, client.ApplyConfigurationFromUnstructured(unstructured), client.ForceOwnership, c.owner)
+	err := c.clnt.Apply(ctx, client.ApplyConfigurationFromUnstructured(unstructuredObj), client.ForceOwnership, c.owner)
 	if err != nil {
+		name := fmt.Sprintf("%s/%s", obj.GetNamespace(), obj.GetName())
 		return fmt.Errorf(
-			"patch for %s failed: %w", info.ObjectName(), supressLongClientErrors(err),
+			"patch for %s failed: %w", name, supressLongClientErrors(err),
 		)
 	}
 

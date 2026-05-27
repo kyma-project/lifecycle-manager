@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -38,7 +37,7 @@ func TestConcurrentSSA(t *testing.T) {
 	tests := []struct {
 		name  string
 		ssa   args
-		apply []*resource.Info
+		apply []client.Object
 		err   error
 	}{
 		{
@@ -47,7 +46,7 @@ func TestConcurrentSSA(t *testing.T) {
 				clnt:  fakeClientBuilder,
 				owner: fieldowners.LifecycleManager,
 			},
-			[]*resource.Info{},
+			[]client.Object{},
 			nil,
 		},
 	}

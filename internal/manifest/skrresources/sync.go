@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"k8s.io/cli-runtime/pkg/resource"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -15,7 +16,7 @@ import (
 var ErrWarningResourceSyncStateDiff = errors.New("resource syncTarget state diff detected")
 
 func SyncResources(ctx context.Context, skrClient client.Client, manifest *v1beta2.Manifest,
-	target []*resource.Info,
+	target []client.Object,
 ) error {
 	manifestStatus := manifest.GetStatus()
 
@@ -30,7 +31,7 @@ func SyncResources(ctx context.Context, skrClient client.Client, manifest *v1bet
 	}
 
 	oldSynced := manifestStatus.Synced
-	newSynced := NewDefaultInfoToResourceConverter().InfosToResources(target)
+	newSynced := objectsToResources(target)
 	manifestStatus.Synced = newSynced
 
 	if HasDiff(oldSynced, newSynced) {
@@ -45,6 +46,25 @@ func SyncResources(ctx context.Context, skrClient client.Client, manifest *v1bet
 		return ErrWarningResourceSyncStateDiff
 	}
 	return nil
+}
+
+func objectsToResources(objs []client.Object) []shared.Resource {
+	result := make([]shared.Resource, 0, len(objs))
+	for _, obj := range objs {
+		gvk := obj.GetObjectKind().GroupVersionKind()
+		result = append(result, shared.Resource{
+			Name:      obj.GetName(),
+			Namespace: obj.GetNamespace(),
+			GroupVersionKind: apimetav1.GroupVersionKind(
+				schema.GroupVersionKind{
+					Group:   gvk.Group,
+					Version: gvk.Version,
+					Kind:    gvk.Kind,
+				},
+			),
+		})
+	}
+	return result
 }
 
 func HasDiff(oldResources []shared.Resource, newResources []shared.Resource) bool {

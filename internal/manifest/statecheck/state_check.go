@@ -4,7 +4,6 @@ import (
 	"context"
 
 	apiappsv1 "k8s.io/api/apps/v1"
-	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -50,7 +49,7 @@ func NewManagerStateCheck(statefulSetChecker StatefulSetStateChecker,
 // Will be refactored with https://github.com/kyma-project/lifecycle-manager/issues/1831
 func (m *ManagerStateCheck) GetState(ctx context.Context,
 	clnt client.Client,
-	resources []*resource.Info,
+	resources []client.Object,
 ) (shared.State, error) {
 	mgr := findManager(clnt, resources)
 	if mgr == nil {
@@ -68,19 +67,19 @@ func (m *ManagerStateCheck) GetState(ctx context.Context,
 	return shared.StateReady, nil
 }
 
-func findManager(clt client.Client, resources []*resource.Info) *Manager {
+func findManager(clt client.Client, resources []client.Object) *Manager {
 	deploy := &apiappsv1.Deployment{}
 	statefulSet := &apiappsv1.StatefulSet{}
 
-	for _, res := range resources {
-		if err := clt.Scheme().Convert(res.Object, deploy, nil); err == nil {
+	for _, obj := range resources {
+		if err := clt.Scheme().Convert(obj, deploy, nil); err == nil {
 			return &Manager{
 				kind:       DeploymentKind,
 				deployment: deploy,
 			}
 		}
 
-		if err := clt.Scheme().Convert(res.Object, statefulSet, nil); err == nil {
+		if err := clt.Scheme().Convert(obj, statefulSet, nil); err == nil {
 			return &Manager{
 				kind:        StatefulSetKind,
 				statefulSet: statefulSet,

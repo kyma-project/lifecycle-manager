@@ -1,56 +1,33 @@
 package v2
 
-import "k8s.io/cli-runtime/pkg/resource"
+import (
+	"strings"
 
-// ResourceList provides convenience methods for comparing collections of Infos.
-// Copy from https://github.com/helm/helm/blob/v3.19.0/pkg/kube/resource.go
-type ResourceList []*resource.Info
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
-// Difference will return a new Result with objects not contained in rs.
-func (r ResourceList) Difference(rs ResourceList) ResourceList {
-	return r.filter(func(info *resource.Info) bool {
-		return !rs.contains(info)
-	})
-}
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+)
 
-// Visit implements resource.Visitor.
-func (r ResourceList) Visit(fn resource.VisitorFunc) error {
-	for _, i := range r {
-		if err := fn(i, nil); err != nil {
-			return err
+// ResourceList provides convenience methods for comparing collections of synced resources.
+type ResourceList []shared.Resource
+
+// Difference returns resources from r that are not present in target (by identity).
+func (r ResourceList) Difference(target []client.Object) ResourceList {
+	targetIDs := make(map[string]struct{}, len(target))
+	for _, obj := range target {
+		targetIDs[objectID(obj)] = struct{}{}
+	}
+	var diff ResourceList
+	for _, res := range r {
+		if _, found := targetIDs[res.ID()]; !found {
+			diff = append(diff, res)
 		}
 	}
-	return nil
+	return diff
 }
 
-// append adds an Info to the Result.
-func (r *ResourceList) append(val *resource.Info) {
-	*r = append(*r, val)
-}
-
-// filter returns a new Result with Infos that satisfy the predicate fn.
-func (r ResourceList) filter(fn func(*resource.Info) bool) ResourceList {
-	var result ResourceList
-	for _, i := range r {
-		if fn(i) {
-			result.append(i)
-		}
-	}
-	return result
-}
-
-// contains checks to see if an object exists.
-func (r ResourceList) contains(info *resource.Info) bool {
-	for _, i := range r {
-		if isMatchingInfo(i, info) {
-			return true
-		}
-	}
-	return false
-}
-
-// isMatchingInfo returns true if infos match on Name and GroupVersionKind.
-func isMatchingInfo(a, b *resource.Info) bool {
-	return a.Name == b.Name && a.Namespace == b.Namespace &&
-		a.Mapping.GroupVersionKind.Kind == b.Mapping.GroupVersionKind.Kind
+// objectID returns a stable identity string for a client.Object matching shared.Resource.ID() format.
+func objectID(obj client.Object) string {
+	gvk := obj.GetObjectKind().GroupVersionKind()
+	return strings.Join([]string{obj.GetNamespace(), obj.GetName(), gvk.Group, gvk.Version, gvk.Kind}, "/")
 }

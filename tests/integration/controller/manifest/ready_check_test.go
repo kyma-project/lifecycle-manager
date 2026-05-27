@@ -11,7 +11,6 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -144,7 +143,7 @@ func verifyDeploymentInstallation(ctx context.Context, clnt client.Client, deplo
 	return nil
 }
 
-func prepareResourceInfosForCustomCheck(clt skrclient.Client, deploy *apiappsv1.Deployment) ([]*resource.Info,
+func prepareResourceInfosForCustomCheck(_ skrclient.Client, deploy *apiappsv1.Deployment) ([]client.Object,
 	error,
 ) {
 	deployUnstructuredObj, err := machineryruntime.DefaultUnstructuredConverter.ToUnstructured(deploy)
@@ -154,11 +153,7 @@ func prepareResourceInfosForCustomCheck(clt skrclient.Client, deploy *apiappsv1.
 	deployUnstructured := &unstructured.Unstructured{}
 	deployUnstructured.SetUnstructuredContent(deployUnstructuredObj)
 	deployUnstructured.SetGroupVersionKind(apiappsv1.SchemeGroupVersion.WithKind("Deployment"))
-	deployInfo, err := clt.ResourceInfo(deployUnstructured)
-	if err != nil {
-		return nil, err
-	}
-	return []*resource.Info{deployInfo}, nil
+	return []client.Object{deployUnstructured}, nil
 }
 
 func asResource(name, namespace, group, version, kind string) shared.Resource {
