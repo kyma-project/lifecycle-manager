@@ -1,6 +1,226 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "osvVulnerabilityAlerts": true,
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(chore)",
+    ":semanticCommitScopeDisabled",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "labels": ["area/dependency", "kind/chore"],
+  "gomod": {
+    "postUpdateOptions": ["gomodTidy"],
+    "enabled": true
+  },
+  "kustomize": {
+    "enabled": false
+  },
+  "dockerfile": {
+    "enabled": true
+  },
+  "helm-values": {
+    "enabled": false
+  },
+  "github-actions": {
+    "enabled": true
+  },
+  "ignorePaths": ["docs/**"],
+  "packageRules": [
+    {
+      "matchCategories": ["golang"],
+      "postUpdateOptions": ["gomodTidy"],
+      "enabled": true
+    },
+    {
+      "matchDatasources": ["golang-version"],
+      "rangeStrategy": "bump"
+    },
+    {
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["indirect"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["digest"],
+      "schedule": "every month",
+      "enabled": false
+    },
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchCurrentVersion": "!/^0/",
+      "automerge": true
+    },
+    {
+      "matchManagers": ["gomod"],
+      "groupName": "All opentelemetry collector packages",
+      "matchSourceUrls": [
+        "https://go.opentelemetry.io/collector{/,}**",
+        "https://github.com/open-telemetry/opentelemetry-collector{/,}**",
+        "https://github.com/open-telemetry/opentelemetry-collector-contrib{/,}**"
+      ]
+    },
+    {
+      "matchManagers": ["gomod"],
+      "groupName": "All Kubernetes packages",
+      "matchPackagePrefixes": ["k8s.io/", "sigs.k8s.io/"]
+    },
+    {
+      "matchManagers": ["gomod"],
+      "groupName": "ginkgo and gomega",
+      "matchPackageNames": [
+        "github.com/onsi/ginkgo/v2",
+        "github.com/onsi/gomega"
+      ]
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "matchStrings": ["go: \"(?<currentValue>[\\d.]+)\""],
+      "datasourceTemplate": "golang-version",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "go"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "matchStrings": ["istio: \"(?<currentValue>[\\d.]+)\""],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "istio/istio"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "matchStrings": ["certManager: \"(?<currentValue>[\\d.]+)\""],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "cert-manager/cert-manager"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "matchStrings": ["gardenerCertManager: \"(?<currentValue>[\\d.]+)\""],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "gardener/cert-management"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "matchStrings": ["controllerTools: \"(?<currentValue>[\\d.]+)\""],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "kubernetes-sigs/controller-tools"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "matchStrings": ["docker: \"(?<currentValue>[\\d.]+)\""],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "moby/moby"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "matchStrings": ["golangciLint: \"(?<currentValue>[\\d.]+)\""],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "golangci/golangci-lint"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "matchStrings": ["k3d: \"(?<currentValue>[\\d.]+)\""],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "k3d-io/k3d"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "matchStrings": ["k8s: \"(?<currentValue>[\\d.]+)\""],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "kubernetes/kubernetes"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "matchStrings": ["envtest_k8s: \"(?<currentValue>[\\d.]+)\""],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "kubernetes/kubernetes"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "matchStrings": ["kubectl: \"(?<currentValue>[\\d.]+)\""],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "kubernetes/kubernetes"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "matchStrings": ["kustomize: \"(?<currentValue>[\\d.]+)\""],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "kubernetes-sigs/kustomize"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "matchStrings": ["modulectl: \"(?<currentValue>[\\d.]+)\""],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "kyma-project/modulectl"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "matchStrings": ["ocm-cli: \"(?<currentValue>[\\d.]+)\""],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "open-component-model/ocm"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "matchStrings": ["template-operator: \"(?<currentValue>[\\d.]+)\""],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "kyma-project/template-operator"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "matchStrings": ["yq: \"(?<currentValue>[\\d.]+)\""],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "mikefarah/yq"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "matchStrings": ["applyconfiguration_gen: \"(?<currentValue>[\\d.]+)\""],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "kubernetes/code-generator"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/actions/get-configuration/action\\.yml$/"
+      ],
+      "matchStrings": ["yq_version: (?<currentValue>[\\d.]+)"],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "mikefarah/yq"
+    }
   ]
 }
