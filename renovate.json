@@ -9,6 +9,7 @@
     "helpers:pinGitHubActionDigests"
   ],
   "labels": ["area/dependency", "kind/chore"],
+  "commitMessagePrefix": "chore(renovate):",
   "gomod": {
     "postUpdateOptions": ["gomodTidy"],
     "enabled": true
