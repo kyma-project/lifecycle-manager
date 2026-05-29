@@ -16,4 +16,4 @@ modulectl: "3.1.0"
 ocm-cli: "0.32.0"
 template-operator: "1.0.5"
 yq: "4.45.1"
-envtest: "0.21"
+envtest: "0.21" # tracks controller-runtime minor version (sigs.k8s.io/controller-runtime/tools/setup-envtest@release-<minor>); bump manually alongside controller-runtime upgrades
