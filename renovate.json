@@ -96,7 +96,7 @@
   "customManagers": [
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "managerFilePatterns": ["^versions\\.yaml$"],
       "matchStrings": ["go: \"(?<currentValue>[\\d.]+)\""],
       "datasourceTemplate": "golang-version",
       "versioningTemplate": "semver",
@@ -104,7 +104,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "managerFilePatterns": ["^versions\\.yaml$"],
       "matchStrings": ["istio: \"(?<currentValue>[\\d.]+)\""],
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
@@ -112,7 +112,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "managerFilePatterns": ["^versions\\.yaml$"],
       "matchStrings": ["certManager: \"(?<currentValue>[\\d.]+)\""],
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
@@ -120,7 +120,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "managerFilePatterns": ["^versions\\.yaml$"],
       "matchStrings": ["gardenerCertManager: \"(?<currentValue>[\\d.]+)\""],
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
@@ -128,7 +128,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "managerFilePatterns": ["^versions\\.yaml$"],
       "matchStrings": ["controllerTools: \"(?<currentValue>[\\d.]+)\""],
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
@@ -136,7 +136,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "managerFilePatterns": ["^versions\\.yaml$"],
       "matchStrings": ["docker: \"(?<currentValue>[\\d.]+)\""],
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
@@ -144,7 +144,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "managerFilePatterns": ["^versions\\.yaml$"],
       "matchStrings": ["golangciLint: \"(?<currentValue>[\\d.]+)\""],
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
@@ -152,7 +152,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "managerFilePatterns": ["^versions\\.yaml$"],
       "matchStrings": ["k3d: \"(?<currentValue>[\\d.]+)\""],
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
@@ -160,7 +160,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "managerFilePatterns": ["^versions\\.yaml$"],
       "matchStrings": ["k8s: \"(?<currentValue>[\\d.]+)\""],
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
@@ -168,7 +168,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "managerFilePatterns": ["^versions\\.yaml$"],
       "matchStrings": ["envtest_k8s: \"(?<currentValue>[\\d.]+)\""],
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
@@ -176,7 +176,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "managerFilePatterns": ["^versions\\.yaml$"],
       "matchStrings": ["kubectl: \"(?<currentValue>[\\d.]+)\""],
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
@@ -184,7 +184,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "managerFilePatterns": ["^versions\\.yaml$"],
       "matchStrings": ["kustomize: \"(?<currentValue>[\\d.]+)\""],
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
@@ -193,7 +193,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "managerFilePatterns": ["^versions\\.yaml$"],
       "matchStrings": ["modulectl: \"(?<currentValue>[\\d.]+)\""],
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
@@ -201,7 +201,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "managerFilePatterns": ["^versions\\.yaml$"],
       "matchStrings": ["ocm-cli: \"(?<currentValue>[\\d.]+)\""],
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
@@ -209,7 +209,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "managerFilePatterns": ["^versions\\.yaml$"],
       "matchStrings": ["template-operator: \"(?<currentValue>[\\d.]+)\""],
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
@@ -217,7 +217,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "managerFilePatterns": ["^versions\\.yaml$"],
       "matchStrings": ["yq: \"(?<currentValue>[\\d.]+)\""],
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
@@ -225,7 +225,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^versions\\.yaml$/"],
+      "managerFilePatterns": ["^versions\\.yaml$"],
       "matchStrings": ["applyconfiguration_gen: \"(?<currentValue>[\\d.]+)\""],
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
