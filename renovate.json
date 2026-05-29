@@ -3,9 +3,6 @@
   "osvVulnerabilityAlerts": true,
   "extends": [
     "config:recommended",
-    ":semanticCommits",
-    ":semanticCommitTypeAll(chore)",
-    ":semanticCommitScopeDisabled",
     "helpers:pinGitHubActionDigests"
   ],
   "labels": ["area/dependency", "kind/chore"],
