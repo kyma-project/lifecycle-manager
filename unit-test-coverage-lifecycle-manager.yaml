@@ -46,7 +46,7 @@ packages:
   internal/service/watcher/chartreader: 100
   internal/service/watcher/gateway: 94
   internal/service/watcher/resources: 82
-  internal/service/skrclient: 34
+  internal/service/skrclient: 30.7
   internal/service/mandatorymodule/installation: 100
   internal/service/mandatorymodule/deletion: 100
   internal/service/mandatorymodule/deletion/usecases: 100

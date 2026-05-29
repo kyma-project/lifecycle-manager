@@ -18,7 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/skrresources"
 )
 
 const (
@@ -27,8 +26,6 @@ const (
 )
 
 type Client interface {
-	skrresources.ResourceInfoConverter
-
 	client.Client
 }
 
@@ -83,8 +80,7 @@ type SKRClient struct {
 	unstructuredSyncLock        sync.Mutex
 	unstructuredRESTClientCache map[string]resource.RESTClient
 
-	mappingResolver            MappingResolver
-	resourceInfoClientResolver ResourceInfoClientResolver
+	mappingResolver MappingResolver
 }
 
 func (s *Service) ResolveClient(ctx context.Context, manifest *v1beta2.Manifest) (*SKRClient, error) {
@@ -130,7 +126,6 @@ func (s *Service) ResolveClient(ctx context.Context, manifest *v1beta2.Manifest)
 		unstructuredRESTClientCache: map[string]resource.RESTClient{},
 		Client:                      runtimeClient,
 		mappingResolver:             getResourceMapping,
-		resourceInfoClientResolver:  getResourceInfoClient,
 	}
 
 	return clients, nil
@@ -138,54 +133,6 @@ func (s *Service) ResolveClient(ctx context.Context, manifest *v1beta2.Manifest)
 
 func (s *SKRClient) SetMappingResolver(resolver MappingResolver) {
 	s.mappingResolver = resolver
-}
-
-func (s *SKRClient) SetResourceInfoClientResolver(resolver ResourceInfoClientResolver) {
-	s.resourceInfoClientResolver = resolver
-}
-
-func (s *SKRClient) ResourceInfo(obj *unstructured.Unstructured) (*resource.Info, error) {
-	mapping, err := s.mappingResolver(obj.GetObjectKind().GroupVersionKind(), s.discoveryShortcutExpander)
-	if err != nil {
-		return nil, err
-	}
-
-	clnt, err := s.resourceInfoClientResolver(obj, s, mapping)
-	if err != nil {
-		return nil, err
-	}
-
-	info := &resource.Info{}
-	info.Client = clnt
-	info.Mapping = mapping
-	info.Namespace = obj.GetNamespace()
-	info.Name = obj.GetName()
-	info.Object = obj
-	info.ResourceVersion = obj.GetResourceVersion()
-	return info, nil
-}
-
-func getResourceInfoClient(obj *unstructured.Unstructured,
-	client *SKRClient,
-	mapping *meta.RESTMapping,
-) (resource.RESTClient,
-	error,
-) {
-	var clnt resource.RESTClient
-	var err error
-	if client.Scheme().IsGroupRegistered(mapping.GroupVersionKind.Group) {
-		clnt, err = client.ClientForMapping(mapping)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		clnt, err = client.UnstructuredClientForMapping(mapping)
-		if err != nil {
-			return nil, err
-		}
-		obj.SetGroupVersionKind(mapping.GroupVersionKind)
-	}
-	return clnt, nil
 }
 
 func setKubernetesDefaults(config *rest.Config) error {

@@ -5,59 +5,35 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	apiappsv1 "k8s.io/api/apps/v1"
-	apicorev1 "k8s.io/api/core/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/cli-runtime/pkg/resource"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
+
+func makeRes(name, namespace, kind string) shared.Resource {
+	return shared.Resource{
+		Name:      name,
+		Namespace: namespace,
+		GroupVersionKind: apimetav1.GroupVersionKind{
+			Kind: kind,
+		},
+	}
+}
 
 func TestPruneResource(t *testing.T) {
 	t.Parallel()
-	kubeNs := &resource.Info{
-		Object: &apicorev1.Namespace{
-			ObjectMeta: apimetav1.ObjectMeta{Name: "kube-system"},
-			TypeMeta:   apimetav1.TypeMeta{Kind: "Namespace"},
-		},
-	}
-	service := &resource.Info{
-		Object: &apicorev1.Service{
-			ObjectMeta: apimetav1.ObjectMeta{Name: "some-service"},
-			TypeMeta:   apimetav1.TypeMeta{Kind: "Service"},
-		},
-	}
-	kymaNs := &resource.Info{
-		Object: &apicorev1.Namespace{
-			ObjectMeta: apimetav1.ObjectMeta{Name: "kyma-system"},
-			TypeMeta:   apimetav1.TypeMeta{Kind: "Namespace"},
-		},
-	}
-	deployment := &resource.Info{
-		Object: &apiappsv1.Deployment{
-			ObjectMeta: apimetav1.ObjectMeta{Name: "some-deploy"},
-			TypeMeta:   apimetav1.TypeMeta{Kind: "Deployment"},
-		},
-	}
-	crd := &resource.Info{
-		Object: &apiextensionsv1.CustomResourceDefinition{
-			ObjectMeta: apimetav1.ObjectMeta{Name: "btpoperator"},
-			TypeMeta:   apimetav1.TypeMeta{Kind: "CustomResourceDefinition"},
-		},
-	}
+	kubeNs := makeRes("kube-system", "", "Namespace")
+	service := makeRes("some-service", "default", "Service")
+	kymaNs := makeRes("kyma-system", "", "Namespace")
+	deployment := makeRes("some-deploy", "default", "Deployment")
+	crd := makeRes("btpoperator", "", "CustomResourceDefinition")
 
 	t.Run("contains kyma-system", func(t *testing.T) {
 		t.Parallel()
 
-		infos := []*resource.Info{
-			kubeNs,
-			service,
-			kymaNs,
-			deployment,
-		}
+		diff := ResourceList{kubeNs, service, kymaNs, deployment}
+		result := pruneResource(diff, "Namespace", namespaceNotBeRemoved)
 
-		result, err := pruneResource(infos, "Namespace", namespaceNotBeRemoved)
-
-		require.NoError(t, err)
 		require.Len(t, result, 3)
 		require.NotContains(t, result, kymaNs)
 	})
@@ -65,17 +41,9 @@ func TestPruneResource(t *testing.T) {
 	t.Run("prune a crd", func(t *testing.T) {
 		t.Parallel()
 
-		infos := []*resource.Info{
-			kubeNs,
-			service,
-			kymaNs,
-			deployment,
-			crd,
-		}
+		diff := ResourceList{kubeNs, service, kymaNs, deployment, crd}
+		result := pruneResource(diff, "CustomResourceDefinition", "btpoperator")
 
-		result, err := pruneResource(infos, "CustomResourceDefinition", "btpoperator")
-
-		require.NoError(t, err)
 		require.Len(t, result, 4)
 		require.NotContains(t, result, crd)
 	})
@@ -83,15 +51,9 @@ func TestPruneResource(t *testing.T) {
 	t.Run("does not contain kyma-system", func(t *testing.T) {
 		t.Parallel()
 
-		infos := []*resource.Info{
-			kubeNs,
-			service,
-			deployment,
-		}
+		diff := ResourceList{kubeNs, service, deployment}
+		result := pruneResource(diff, "Namespace", namespaceNotBeRemoved)
 
-		result, err := pruneResource(infos, "Namespace", namespaceNotBeRemoved)
-
-		require.NoError(t, err)
 		require.Len(t, result, 3)
 		require.Contains(t, result, kubeNs)
 		require.Contains(t, result, service)

@@ -5,12 +5,10 @@ import (
 	"errors"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -28,36 +26,28 @@ func NewConcurrentCleanup(clnt client.Client, manifest *v1beta2.Manifest) *Concu
 	}
 }
 
-func (c *ConcurrentCleanup) DeleteDiffResources(ctx context.Context, resources []*resource.Info,
-) error {
+func (c *ConcurrentCleanup) DeleteDiffResources(ctx context.Context, resources []shared.Resource) error {
 	status := c.manifest.GetStatus()
-	operatorRelatedResources, operatorManagedResources, err := SplitResources(resources)
-	if err != nil {
-		return err
-	}
+	operatorRelatedResources, operatorManagedResources := SplitResources(resources)
 	if err := c.cleanupResources(ctx, operatorManagedResources, status); err != nil {
 		return err
 	}
 	return c.cleanupResources(ctx, operatorRelatedResources, status)
 }
 
-func SplitResources(resources []*resource.Info) ([]*resource.Info, []*resource.Info, error) {
-	operatorRelatedResources := make([]*resource.Info, 0)
-	operatorManagedResources := make([]*resource.Info, 0)
+func SplitResources(resources []shared.Resource) ([]shared.Resource, []shared.Resource) {
+	operatorRelatedResources := make([]shared.Resource, 0)
+	operatorManagedResources := make([]shared.Resource, 0)
 
-	for _, item := range resources {
-		obj, ok := item.Object.(client.Object)
-		if !ok {
-			return nil, nil, common.ErrTypeAssert
-		}
-		if IsOperatorRelatedResources(obj.GetObjectKind().GroupVersionKind().Kind) {
-			operatorRelatedResources = append(operatorRelatedResources, item)
+	for _, res := range resources {
+		if IsOperatorRelatedResources(res.Kind) {
+			operatorRelatedResources = append(operatorRelatedResources, res)
 			continue
 		}
-		operatorManagedResources = append(operatorManagedResources, item)
+		operatorManagedResources = append(operatorManagedResources, res)
 	}
 
-	return operatorRelatedResources, operatorManagedResources, nil
+	return operatorRelatedResources, operatorManagedResources
 }
 
 func IsOperatorRelatedResources(kind string) bool {
@@ -72,18 +62,18 @@ func IsOperatorRelatedResources(kind string) bool {
 		kind == "Deployment"
 }
 
-func (c *ConcurrentCleanup) Run(ctx context.Context, infos []*resource.Info) error {
-	infosCount := len(infos)
-	results := make(chan error, infosCount)
-	for i := range infos {
-		go c.cleanupResource(ctx, infos[i], results)
+func (c *ConcurrentCleanup) Run(ctx context.Context, resources []shared.Resource) error {
+	count := len(resources)
+	results := make(chan error, count)
+	for i := range resources {
+		go c.cleanupResource(ctx, resources[i], results)
 	}
 
 	var errs []error
-	for range infos {
+	for range resources {
 		err := <-results
 		if util.IsNotFound(err) {
-			infosCount--
+			count--
 			continue
 		}
 		if err != nil {
@@ -95,7 +85,7 @@ func (c *ConcurrentCleanup) Run(ctx context.Context, infos []*resource.Info) err
 		return errors.Join(errs...)
 	}
 
-	if infosCount > 0 {
+	if count > 0 {
 		return ErrDeletionNotFinished
 	}
 	return nil
@@ -103,7 +93,7 @@ func (c *ConcurrentCleanup) Run(ctx context.Context, infos []*resource.Info) err
 
 func (c *ConcurrentCleanup) cleanupResources(
 	ctx context.Context,
-	resources []*resource.Info,
+	resources []shared.Resource,
 	status shared.Status,
 ) error {
 	if err := c.Run(ctx, resources); errors.Is(err, ErrDeletionNotFinished) {
@@ -116,10 +106,7 @@ func (c *ConcurrentCleanup) cleanupResources(
 	return nil
 }
 
-func (c *ConcurrentCleanup) cleanupResource(ctx context.Context, info *resource.Info, results chan error) {
-	obj, ok := info.Object.(client.Object)
-	if !ok {
-		return
-	}
-	results <- c.clnt.Delete(ctx, obj, client.PropagationPolicy(apimetav1.DeletePropagationBackground))
+func (c *ConcurrentCleanup) cleanupResource(ctx context.Context, res shared.Resource, results chan error) {
+	results <- c.clnt.Delete(ctx, res.ToUnstructured(),
+		client.PropagationPolicy(apimetav1.DeletePropagationBackground))
 }

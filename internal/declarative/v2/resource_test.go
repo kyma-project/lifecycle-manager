@@ -4,32 +4,37 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/cli-runtime/pkg/resource"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
-func newInfo(name, namespace, kind string) *resource.Info {
-	return &resource.Info{
+func makeResource(name, namespace, kind string) shared.Resource {
+	return shared.Resource{
 		Name:      name,
 		Namespace: namespace,
-		Mapping: &meta.RESTMapping{
-			GroupVersionKind: schema.GroupVersionKind{Kind: kind},
+		GroupVersionKind: apimetav1.GroupVersionKind{
+			Kind: kind,
 		},
 	}
 }
 
+func makeObj(name, namespace, kind string) client.Object {
+	res := makeResource(name, namespace, kind)
+	return res.ToUnstructured()
+}
+
 func TestResourceList_Difference(t *testing.T) {
-	dummyPod := newInfo("foo", "default", "Pod")
-	dummyService := newInfo("bar", "default", "Service")
-	dummyDeploy := newInfo("baz", "default", "Deployment")
+	dummyPod := makeResource("foo", "default", "Pod")
+	dummyService := makeResource("bar", "default", "Service")
+	dummyDeploy := makeResource("baz", "default", "Deployment")
 
 	list1 := declarativev2.ResourceList{dummyPod, dummyService, dummyDeploy}
-	list2 := declarativev2.ResourceList{dummyService}
+	target := []client.Object{makeObj("bar", "default", "Service")}
 
-	diff := list1.Difference(list2)
+	diff := list1.Difference(target)
 
 	assert.Len(t, diff, 2)
 	assert.Contains(t, diff, dummyPod)

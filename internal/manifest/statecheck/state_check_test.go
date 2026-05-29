@@ -8,7 +8,6 @@ import (
 	apiappsv1 "k8s.io/api/apps/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -19,18 +18,16 @@ import (
 func TestManagerStateCheck_GetState(t *testing.T) {
 	tests := []struct {
 		name          string
-		resources     []*resource.Info
+		resources     []client.Object
 		isDeployment  bool
 		isStateFulSet bool
 		expectedError error
 	}{
 		{
 			name: "Test Deployment State Checker",
-			resources: []*resource.Info{
-				{
-					Object: &apiappsv1.Deployment{
-						ObjectMeta: apimetav1.ObjectMeta{Name: "some-deploy"},
-					},
+			resources: []client.Object{
+				&apiappsv1.Deployment{
+					ObjectMeta: apimetav1.ObjectMeta{Name: "some-deploy"},
 				},
 			},
 			isDeployment:  true,
@@ -39,11 +36,9 @@ func TestManagerStateCheck_GetState(t *testing.T) {
 		},
 		{
 			name: "Test StatefulSet State Checker",
-			resources: []*resource.Info{
-				{
-					Object: &apiappsv1.StatefulSet{
-						ObjectMeta: apimetav1.ObjectMeta{Name: "some-statefulset"},
-					},
+			resources: []client.Object{
+				&apiappsv1.StatefulSet{
+					ObjectMeta: apimetav1.ObjectMeta{Name: "some-statefulset"},
 				},
 			},
 			isDeployment:  false,
@@ -52,7 +47,7 @@ func TestManagerStateCheck_GetState(t *testing.T) {
 		},
 		{
 			name:          "Test no manager found",
-			resources:     []*resource.Info{},
+			resources:     []client.Object{},
 			isDeployment:  false,
 			isStateFulSet: false,
 			expectedError: nil,

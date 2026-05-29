@@ -6,15 +6,9 @@ import (
 	"reflect"
 	"testing"
 
-	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
-	apiappsv1 "k8s.io/api/apps/v1"
-	apicorev1 "k8s.io/api/core/v1"
-	apirbacv1 "k8s.io/api/rbac/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	machineryruntime "k8s.io/apimachinery/pkg/runtime"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -47,19 +41,19 @@ func Test_DeleteDiffResourcesWhenManifestUnderDeleting(t *testing.T) {
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			resourcesInfo := convertToResourceInfo([]machineryruntime.Object{
-				&apicorev1.ServiceAccount{},
-				&apiappsv1.Deployment{},
-				&templatev1alpha1.Sample{},
-				&templatev1alpha1.Managed{},
-			})
+			objs := []shared.Resource{
+				makeResource("sa", "default", "ServiceAccount"),
+				makeResource("deploy", "default", "Deployment"),
+				makeResource("sample", "default", "Sample"),
+				makeResource("managed", "default", "Managed"),
+			}
 			fakeClient := NewErrorMockFakeClient(testCase.clientError)
 			manifest := testutils.NewTestManifest("test")
 			manifest.Status.State = shared.StateDeleting
 			cleanup := resources.NewConcurrentCleanup(fakeClient, manifest)
-			_ = cleanup.DeleteDiffResources(t.Context(), resourcesInfo)
+			_ = cleanup.DeleteDiffResources(t.Context(), objs)
 			if manifest.Status.State != testCase.expectManifestState {
-				t.Errorf("SplitResources() manifest.Status.State = %v, want %v",
+				t.Errorf("DeleteDiffResources() manifest.Status.State = %v, want %v",
 					manifest.Status.State, testCase.expectManifestState)
 			}
 		})
@@ -91,108 +85,86 @@ func (c *ErrorMockFakeClient) Delete(_ context.Context, _ client.Object, _ ...cl
 func Test_IsOperatorRelatedResources(t *testing.T) {
 	tests := []struct {
 		name  string
-		kinds []any
+		kinds []string
 		want  bool
 	}{
 		{
 			"operator related resources should be determined",
-			[]any{
-				apicorev1.Namespace{},
-				apicorev1.ServiceAccount{},
-				apicorev1.Service{},
-				apirbacv1.Role{},
-				apirbacv1.ClusterRole{},
-				apirbacv1.RoleBinding{},
-				apirbacv1.ClusterRoleBinding{},
-				apiappsv1.Deployment{},
-				apiextensionsv1.CustomResourceDefinition{},
+			[]string{
+				"Namespace", "ServiceAccount", "Service",
+				"Role", "ClusterRole", "RoleBinding", "ClusterRoleBinding",
+				"Deployment", "CustomResourceDefinition",
 			},
 			true,
 		},
 		{
 			"non operator related resources should be ignored",
-			[]any{
-				apicorev1.Pod{},
-			},
+			[]string{"Pod"},
 			false,
 		},
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			for _, kind := range testCase.kinds {
-				if got := resources.IsOperatorRelatedResources(getKindName(kind)); got != testCase.want {
-					t.Errorf("IsOperatorRelatedResources() = %v, want %v", got, testCase.want)
+				if got := resources.IsOperatorRelatedResources(kind); got != testCase.want {
+					t.Errorf("IsOperatorRelatedResources(%q) = %v, want %v", kind, got, testCase.want)
 				}
 			}
 		})
 	}
 }
 
-func getKindName(cr any) string {
-	t := reflect.TypeOf(cr)
-	if t.Kind() == reflect.Ptr {
-		return t.Elem().Name()
-	} else {
-		return t.Name()
-	}
-}
-
 func Test_SplitResources(t *testing.T) {
 	tests := []struct {
 		name                     string
-		resources                []machineryruntime.Object
-		operatorRelatedResources []machineryruntime.Object
-		operatorManagedResources []machineryruntime.Object
+		resources                []shared.Resource
+		operatorRelatedResources []shared.Resource
+		operatorManagedResources []shared.Resource
 	}{
 		{
 			"resources split correctly",
-			[]machineryruntime.Object{
-				&apicorev1.Namespace{},
-				&apiextensionsv1.CustomResourceDefinition{},
-				&apicorev1.ServiceAccount{},
-				&apiappsv1.Deployment{},
-				&templatev1alpha1.Sample{},
-				&templatev1alpha1.Managed{},
+			[]shared.Resource{
+				makeResource("ns", "", "Namespace"),
+				makeResource("crd", "", "CustomResourceDefinition"),
+				makeResource("sa", "default", "ServiceAccount"),
+				makeResource("deploy", "default", "Deployment"),
+				makeResource("sample", "default", "Sample"),
+				makeResource("managed", "default", "Managed"),
 			},
-			[]machineryruntime.Object{
-				&apicorev1.Namespace{},
-				&apiextensionsv1.CustomResourceDefinition{},
-				&apicorev1.ServiceAccount{},
-				&apiappsv1.Deployment{},
+			[]shared.Resource{
+				makeResource("ns", "", "Namespace"),
+				makeResource("crd", "", "CustomResourceDefinition"),
+				makeResource("sa", "default", "ServiceAccount"),
+				makeResource("deploy", "default", "Deployment"),
 			},
-			[]machineryruntime.Object{
-				&templatev1alpha1.Sample{}, &templatev1alpha1.Managed{},
+			[]shared.Resource{
+				makeResource("sample", "default", "Sample"),
+				makeResource("managed", "default", "Managed"),
 			},
 		},
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			expectedOperatorRelatedResources := convertToResourceInfo(testCase.operatorRelatedResources)
-			expectedOperatorManagedResources := convertToResourceInfo(testCase.operatorManagedResources)
-			resourcesInfo := convertToResourceInfo(testCase.resources)
-			actualOperatorRelatedResources, actualOperatorManagedResources, _ := resources.SplitResources(resourcesInfo)
+			actualRelated, actualManaged := resources.SplitResources(testCase.resources)
 
-			if !reflect.DeepEqual(actualOperatorRelatedResources, expectedOperatorRelatedResources) {
-				t.Errorf("SplitResources() actualOperatorRelatedResources = %v, want %v",
-					actualOperatorRelatedResources, testCase.operatorRelatedResources)
+			if !reflect.DeepEqual(actualRelated, testCase.operatorRelatedResources) {
+				t.Errorf("SplitResources() operatorRelatedResources = %v, want %v",
+					actualRelated, testCase.operatorRelatedResources)
 			}
-			if !reflect.DeepEqual(actualOperatorManagedResources, expectedOperatorManagedResources) {
-				t.Errorf("SplitResources() actualOperatorManagedResources = %v, want %v",
-					actualOperatorManagedResources, testCase.operatorManagedResources)
+			if !reflect.DeepEqual(actualManaged, testCase.operatorManagedResources) {
+				t.Errorf("SplitResources() operatorManagedResources = %v, want %v",
+					actualManaged, testCase.operatorManagedResources)
 			}
 		})
 	}
 }
 
-func convertToResourceInfo(objects []machineryruntime.Object) []*resource.Info {
-	items := make([]*resource.Info, 0, len(objects))
-	for _, object := range objects {
-		kind := getKindName(object)
-		v := reflect.ValueOf(object).Elem()
-		v.FieldByName("Kind").SetString(kind)
-		items = append(items, &resource.Info{
-			Object: object,
-		})
+func makeResource(name, namespace, kind string) shared.Resource {
+	return shared.Resource{
+		Name:      name,
+		Namespace: namespace,
+		GroupVersionKind: apimetav1.GroupVersionKind{
+			Kind: kind,
+		},
 	}
-	return items
 }
