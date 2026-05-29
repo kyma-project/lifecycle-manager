@@ -70,7 +70,7 @@
     {
       "matchManagers": ["gomod"],
       "groupName": "All Kubernetes packages",
-      "matchPackagePrefixes": ["k8s.io/", "sigs.k8s.io/"]
+      "matchPackageNames": ["k8s.io/**", "sigs.k8s.io/**"]
     },
     {
       "matchManagers": ["gomod"],
@@ -83,12 +83,12 @@
     {
       "matchManagers": ["gomod"],
       "groupName": "All Istio packages",
-      "matchPackagePrefixes": ["istio.io/"]
+      "matchPackageNames": ["istio.io/**"]
     },
     {
       "description": "envtest in versions.yaml is intentionally untracked: it mirrors the controller-runtime minor version and must be bumped manually alongside sigs.k8s.io/controller-runtime upgrades.",
       "matchManagers": ["regex"],
-      "matchFileNames": ["versions.yaml"],
+      "matchFileNames": ["^versions\\.yaml$"],
       "matchDepNames": ["envtest"],
       "enabled": false
     }
@@ -234,7 +234,7 @@
     {
       "customType": "regex",
       "managerFilePatterns": [
-        "/^\\.github/actions/get-configuration/action\\.yml$/"
+        "^\\.github/actions/get-configuration/action\\.yml$"
       ],
       "matchStrings": ["yq_version: (?<currentValue>[\\d.]+)"],
       "datasourceTemplate": "github-releases",
