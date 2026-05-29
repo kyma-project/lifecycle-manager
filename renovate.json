@@ -12,7 +12,12 @@
   "commitMessagePrefix": "chore(renovate):",
   "gomod": {
     "postUpdateOptions": ["gomodTidy"],
-    "enabled": true
+    "enabled": true,
+    "managerFilePatterns": [
+      "/go\\.mod$/",
+      "/api/go\\.mod$/",
+      "/maintenancewindows/go\\.mod$/"
+    ]
   },
   "kustomize": {
     "enabled": false
@@ -74,6 +79,18 @@
         "github.com/onsi/ginkgo/v2",
         "github.com/onsi/gomega"
       ]
+    },
+    {
+      "matchManagers": ["gomod"],
+      "groupName": "All Istio packages",
+      "matchPackagePrefixes": ["istio.io/"]
+    },
+    {
+      "description": "envtest in versions.yaml is intentionally untracked: it mirrors the controller-runtime minor version and must be bumped manually alongside sigs.k8s.io/controller-runtime upgrades.",
+      "matchManagers": ["regex"],
+      "matchFileNames": ["versions.yaml"],
+      "matchDepNames": ["envtest"],
+      "enabled": false
     }
   ],
   "customManagers": [
@@ -171,7 +188,8 @@
       "matchStrings": ["kustomize: \"(?<currentValue>[\\d.]+)\""],
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
-      "depNameTemplate": "kubernetes-sigs/kustomize"
+      "depNameTemplate": "kubernetes-sigs/kustomize",
+      "extractVersionTemplate": "^kustomize\\/v(?<version>.*)$"
     },
     {
       "customType": "regex",
