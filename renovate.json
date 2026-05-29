@@ -40,6 +40,11 @@
       "rangeStrategy": "bump"
     },
     {
+      "groupName": "Go version",
+      "matchPackageNames": ["go", "golang"],
+      "matchDatasources": ["golang-version", "docker"]
+    },
+    {
       "matchManagers": ["gomod"],
       "matchDepTypes": ["indirect"],
       "enabled": false
