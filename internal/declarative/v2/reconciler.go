@@ -188,14 +188,7 @@ func (r *Reconciler) install(ctx context.Context, req ctrl.Request,
 	}
 
 	if manifest.IsUnmanaged() {
-		if controllerutil.ContainsFinalizer(manifest, finalizer.LabelRemovalFinalizer) {
-			return r.handleLabelsRemovalFinalizer(ctx, req, skrClient, manifest)
-		}
-
-		if err := r.kcpClient.Delete(ctx, manifest); err != nil {
-			return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
-		}
-		return ctrl.Result{RequeueAfter: r.requeueIntervals.Success}, nil
+		return r.handleUnmanagedManifest(ctx, req, skrClient, manifest)
 	}
 
 	err = r.orphanDetectionService.DetectOrphanedManifest(ctx, manifest)
@@ -240,11 +233,19 @@ func (r *Reconciler) install(ctx context.Context, req ctrl.Request,
 		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncResources, manifestStatus, err)
 	}
 
-	if err := r.syncManifestState(ctx, skrClient, manifest, target); err != nil {
+	if err := r.syncDefaultModuleCR(ctx, skrClient, manifest); err != nil {
+		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncState, manifestStatus, err)
+	}
+
+	if err := finalizer.EnsureCRFinalizer(ctx, r.kcpClient, manifest); err != nil {
 		if errors.Is(err, finalizer.ErrRequeueRequired) {
 			r.manifestMetrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{RequeueAfter: r.rateLimiter.When(req)}, nil
 		}
+		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncState, manifestStatus, err)
+	}
+
+	if err := r.updateManifestStateAfterSync(ctx, skrClient, manifest, target); err != nil {
 		logf.FromContext(ctx).Error(err, "failed to sync manifest state")
 		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncState, manifestStatus, err)
 	}
@@ -328,11 +329,7 @@ func (r *Reconciler) delete(ctx context.Context, req ctrl.Request,
 		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncResources, manifestStatus, err)
 	}
 
-	if err := r.syncManifestState(ctx, skrClient, manifest, target); err != nil {
-		if errors.Is(err, finalizer.ErrRequeueRequired) {
-			r.manifestMetrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, queue.IntendedRequeue)
-			return ctrl.Result{RequeueAfter: r.rateLimiter.When(req)}, nil
-		}
+	if err := r.updateDeletingState(manifest); err != nil {
 		logf.FromContext(ctx).Error(err, "failed to sync manifest state")
 		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncState, manifestStatus, err)
 	}
@@ -481,11 +478,22 @@ func ensureModuleCRsAllDeleted(ctx context.Context, skrClient skrclient.Client, 
 	return modulecr.NewClient(skrClient).CheckDefaultCRDeletion(ctx, manifest)
 }
 
-func (r *Reconciler) syncManifestState(ctx context.Context, skrClient skrclient.Client, manifest *v1beta2.Manifest,
-	target []client.Object,
+func (r *Reconciler) handleUnmanagedManifest(ctx context.Context, req ctrl.Request,
+	skrClient client.Client, manifest *v1beta2.Manifest,
+) (ctrl.Result, error) {
+	if controllerutil.ContainsFinalizer(manifest, finalizer.LabelRemovalFinalizer) {
+		return r.handleLabelsRemovalFinalizer(ctx, req, skrClient, manifest)
+	}
+	if err := r.kcpClient.Delete(ctx, manifest); err != nil {
+		return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
+	}
+	return ctrl.Result{RequeueAfter: r.requeueIntervals.Success}, nil
+}
+
+func (r *Reconciler) syncDefaultModuleCR(ctx context.Context, skrClient skrclient.Client,
+	manifest *v1beta2.Manifest,
 ) error {
 	manifestStatus := manifest.GetStatus()
-
 	if manifest.ShouldCreateDefaultModuleCR() && !status.IsModuleCRInstallConditionTrue(manifestStatus) {
 		if err := modulecr.NewClient(skrClient).SyncDefaultModuleCR(ctx, manifest); err != nil {
 			manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
@@ -493,28 +501,28 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient skrclient.
 		}
 		status.SetModuleCRInstallConditionTrue(manifest)
 	}
+	return nil
+}
 
-	if err := finalizer.EnsureCRFinalizer(ctx, r.kcpClient, manifest); err != nil {
-		return err
-	}
-
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		if status.RequireManifestStateUpdateAfterSyncResource(manifest, shared.StateDeleting) {
-			return fmt.Errorf("%w: from %s to %s", errStateRequireUpdate,
-				manifestStatus.State, shared.StateDeleting)
-		}
-		return nil
-	}
-
+func (r *Reconciler) updateManifestStateAfterSync(ctx context.Context, skrClient skrclient.Client,
+	manifest *v1beta2.Manifest, target []client.Object,
+) error {
+	manifestStatus := manifest.GetStatus()
 	managerState, err := r.checkManagerState(ctx, skrClient, target)
 	if err != nil {
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return err
 	}
-
 	if status.RequireManifestStateUpdateAfterSyncResource(manifest, managerState) {
-		return fmt.Errorf("%w: from %s to %s", errStateRequireUpdate,
-			manifestStatus.State, managerState)
+		return fmt.Errorf("%w: from %s to %s", errStateRequireUpdate, manifestStatus.State, managerState)
+	}
+	return nil
+}
+
+func (r *Reconciler) updateDeletingState(manifest *v1beta2.Manifest) error {
+	manifestStatus := manifest.GetStatus()
+	if status.RequireManifestStateUpdateAfterSyncResource(manifest, shared.StateDeleting) {
+		return fmt.Errorf("%w: from %s to %s", errStateRequireUpdate, manifestStatus.State, shared.StateDeleting)
 	}
 	return nil
 }
