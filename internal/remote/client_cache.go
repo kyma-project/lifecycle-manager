@@ -19,7 +19,11 @@ type ClientCache struct {
 }
 
 func NewClientCache() *ClientCache {
-	cache := &ClientCache{internal: ttlcache.New[client.ObjectKey, client.Client]()}
+	cache := &ClientCache{
+		internal: ttlcache.New[client.ObjectKey, client.Client](
+			ttlcache.WithDisableTouchOnHit[client.ObjectKey, client.Client](),
+		),
+	}
 	go cache.internal.Start()
 	return cache
 }
