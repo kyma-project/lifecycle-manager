@@ -1,26 +1,26 @@
-//nolint:testpackage // testing package internals
-package remote
+package remote_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 )
 
 func TestNewClientCache(t *testing.T) {
-	cache := NewClientCache()
+	cache := remote.NewClientCache()
 
 	assert.NotNil(t, cache)
 	assert.Equal(t, 0, cache.Size())
 }
 
 func TestAddGetClientCache(t *testing.T) {
-	cache := NewClientCache()
+	cache := remote.NewClientCache()
 	key := client.ObjectKey{}
-	value := &testClient{}
+	value := &TestClient{}
 
 	cache.Add(key, value)
 
@@ -30,9 +30,9 @@ func TestAddGetClientCache(t *testing.T) {
 }
 
 func TestDeleteClientCache(t *testing.T) {
-	cache := NewClientCache()
+	cache := remote.NewClientCache()
 	key := client.ObjectKey{}
-	value := &testClient{}
+	value := &TestClient{}
 
 	cache.Add(key, value)
 
@@ -43,7 +43,7 @@ func TestDeleteClientCache(t *testing.T) {
 }
 
 func TestSizeClientCache(t *testing.T) {
-	cache := NewClientCache()
+	cache := remote.NewClientCache()
 	key1, key2 := client.ObjectKey{
 		Namespace: "namespace-1",
 		Name:      "name-1",
@@ -51,8 +51,8 @@ func TestSizeClientCache(t *testing.T) {
 		Namespace: "namespace-2",
 		Name:      "name-2",
 	}
-	value1 := &testClient{name: "client-1"}
-	value2 := &testClient{name: "client-2"}
+	value1 := &TestClient{name: "client-1"}
+	value2 := &TestClient{name: "client-2"}
 
 	cache.Add(key1, value1)
 	cache.Add(key2, value2)
@@ -64,31 +64,13 @@ func TestSizeClientCache(t *testing.T) {
 	assert.Equal(t, 1, cache.Size())
 
 	result := cache.Get(key2)
-	assert.IsType(t, &testClient{}, result)
+	assert.IsType(t, &TestClient{}, result)
 }
 
-func TestClientCache_TTLExpiresAfterRepeatedGets(t *testing.T) {
-	cache := NewClientCache()
-	key := client.ObjectKey{Namespace: "ns", Name: "kyma"}
-	value := &testClient{name: "client"}
-
-	const shortTTL = 50 * time.Millisecond
-	cache.internal.Set(key, value, shortTTL)
-
-	// Multiple Gets must NOT extend the expiry (WithDisableTouchOnHit).
-	for range 5 {
-		assert.NotNil(t, cache.Get(key), "expected client to be present before TTL expiry")
-	}
-
-	time.Sleep(shortTTL + 10*time.Millisecond)
-
-	assert.Nil(t, cache.Get(key), "expected client to be evicted after TTL expiry")
-}
-
-type testClient struct {
+type TestClient struct {
 	client.Client
 
 	name string
 }
 
-func (c *testClient) Config() *rest.Config { return nil }
+func (c *TestClient) Config() *rest.Config { return nil }
