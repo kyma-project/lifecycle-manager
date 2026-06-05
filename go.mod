@@ -40,8 +40,8 @@ require (
 )
 
 require (
-	istio.io/api v1.30.0
-	istio.io/client-go v1.30.0
+	istio.io/api v1.30.1
+	istio.io/client-go v1.30.1
 )
 
 require (
