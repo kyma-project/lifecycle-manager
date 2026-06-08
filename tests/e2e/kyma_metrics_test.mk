@@ -8,12 +8,13 @@ klm-patch: kustomize-install
 	@echo "::group::KLM patch"
 	@export PATH=$(LOCALBIN):$$PATH
 	@pushd $(LIFECYCLE_MANAGER_DIR)/config/watcher_local_test > /dev/null
-	printf '%s\n' \
+	@rm -f metrics_cleanup.yaml
+	@printf '%s\n' \
 		'- op: add' \
 		'  path: /spec/template/spec/containers/0/args/-' \
 		'  value: --metrics-cleanup-interval=1' \
-		>> metrics_cleanup.yaml
-	kustomize edit add patch --path metrics_cleanup.yaml --kind Deployment
+		> metrics_cleanup.yaml
+	@if ! grep -q "path: metrics_cleanup.yaml" kustomization.yaml; then kustomize edit add patch --path metrics_cleanup.yaml --kind Deployment; fi
 	@popd > /dev/null
 	@echo "::endgroup::"
 

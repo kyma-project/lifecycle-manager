@@ -8,12 +8,13 @@ klm-patch: kustomize-install
 	@echo "::group::KLM patch"
 	@export PATH=$(LOCALBIN):$$PATH
 	@pushd $(LIFECYCLE_MANAGER_DIR)/config/watcher_local_test > /dev/null
-	printf '%s\n' \
+	@rm -f skr_image_pull_secret_patch.yaml
+	@printf '%s\n' \
 		'- op: add' \
 		'  path: /spec/template/spec/containers/0/args/-' \
 		'  value: --skr-image-pull-secret=some-special-image-pull-secret' \
-		>> skr_image_pull_secret_patch.yaml
-	kustomize edit add patch --path skr_image_pull_secret_patch.yaml --kind Deployment
+		> skr_image_pull_secret_patch.yaml
+	@if ! grep -q "path: skr_image_pull_secret_patch.yaml" kustomization.yaml; then kustomize edit add patch --path skr_image_pull_secret_patch.yaml --kind Deployment; fi
 	@popd > /dev/null
 	@echo "::endgroup::"
 

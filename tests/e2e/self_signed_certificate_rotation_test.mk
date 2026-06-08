@@ -8,12 +8,13 @@ klm-patch: kustomize-install
 	@echo "::group::KLM patch"
 	@export PATH=$(LOCALBIN):$$PATH
 	@pushd $(LIFECYCLE_MANAGER_DIR)/config/watcher_local_test > /dev/null
-	printf '%s\n' \
+	@rm -f self-signed-cert.yaml
+	@printf '%s\n' \
 		'- op: add' \
 		'  path: /spec/template/spec/containers/0/args/-' \
 		'  value: --self-signed-cert-renew-buffer=30s' \
-		>> self-signed-cert.yaml
-	kustomize edit add patch --path self-signed-cert.yaml --kind Deployment
+		> self-signed-cert.yaml
+	@if ! grep -q "path: self-signed-cert.yaml" kustomization.yaml; then kustomize edit add patch --path self-signed-cert.yaml --kind Deployment; fi
 	@popd > /dev/null
 	@echo "::endgroup::"
 

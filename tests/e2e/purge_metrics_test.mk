@@ -8,12 +8,13 @@ klm-patch: kustomize-install
 	@echo "::group::KLM patch"
 	@export PATH=$(LOCALBIN):$$PATH
 	@pushd $(LIFECYCLE_MANAGER_DIR)/config/watcher_local_test > /dev/null
-	printf '%s\n' \
+	@rm -f purge_finalizer.yaml
+	@printf '%s\n' \
 		'- op: add' \
 		'  path: /spec/template/spec/containers/0/args/-' \
 		'  value: --purge-finalizer-timeout=5s' \
-		>> purge_finalizer.yaml
-	kustomize edit add patch --path purge_finalizer.yaml --kind Deployment
+		> purge_finalizer.yaml
+	@if ! grep -q "path: purge_finalizer.yaml" kustomization.yaml; then kustomize edit add patch --path purge_finalizer.yaml --kind Deployment; fi
 	@popd > /dev/null
 	@echo "::endgroup::"
 
