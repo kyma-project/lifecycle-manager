@@ -4,7 +4,7 @@ gardenerCertManager: "0.18.0"
 applyconfiguration_gen: "0.36.0" # underscore instead of dash to avoid issues with parsing with yq
 controllerTools: "0.20.1"
 docker: "27.5.1"
-go: "1.26.3"
+go: "1.26.4"
 golangciLint: "2.9.0"
 istio: "1.26.4" # https://github.com/kyma-project/lifecycle-manager/issues/2797
 k3d: "5.8.3"
