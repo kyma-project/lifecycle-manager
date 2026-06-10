@@ -133,6 +133,7 @@ jobs:
             restricted-default-module-catalog-sync | \
             kyma-deprovision-with-foreground-propagation | \
             kyma-deprovision-with-background-propagation | \
+            kyma-metrics | \
             module-consistency | \
             module-deletion-with-only-default-cr | \
             unmanage-module | \
@@ -146,6 +147,10 @@ jobs:
             module-status-decoupling-with-statefulset | \
             module-status-decoupling-with-deployment | \
             module-without-default-cr | \
+            purge-controller | \
+            purge-metrics | \
+            self-signed-certificate-rotation | \
+            skr-image-pull-secret-sync | \
             watcher-enqueue | \
             rbac-privileges | \
             labelling | \
