@@ -29,7 +29,7 @@ import (
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"github.com/go-co-op/gocron"
+	"github.com/go-co-op/gocron/v2"
 	"github.com/go-logr/logr"
 	"go.uber.org/zap/zapcore"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -410,19 +410,26 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 		return
 	}
 
-	scheduler := gocron.NewScheduler(time.UTC)
-	_, scheduleErr := scheduler.Every(cleanupIntervalInMinutes).Minutes().Do(func() {
-		ctx, cancel := context.WithTimeout(ctx, metricCleanupTimeout)
-		defer cancel()
-		if err := kymaMetrics.CleanupNonExistingKymaCrsMetrics(ctx, mgr.GetClient()); err != nil {
-			setupLog.Info(fmt.Sprintf("failed to cleanup non existing kyma crs metrics, err: %s", err))
-		}
-	})
+	scheduler, err := gocron.NewScheduler(gocron.WithLocation(time.UTC))
+	if err != nil {
+		setupLog.Info(fmt.Sprintf("failed to create scheduler for metrics cleanup, err: %s", err))
+		return
+	}
+	_, scheduleErr := scheduler.NewJob(
+		gocron.DurationJob(time.Duration(cleanupIntervalInMinutes)*time.Minute),
+		gocron.NewTask(func() {
+			ctx, cancel := context.WithTimeout(ctx, metricCleanupTimeout)
+			defer cancel()
+			if err := kymaMetrics.CleanupNonExistingKymaCrsMetrics(ctx, mgr.GetClient()); err != nil {
+				setupLog.Info(fmt.Sprintf("failed to cleanup non existing kyma crs metrics, err: %s", err))
+			}
+		}),
+	)
 	if scheduleErr != nil {
 		setupLog.Info(fmt.Sprintf("failed to setup cleanup routine for non existing kyma crs metrics, err: %s",
 			scheduleErr))
 	}
-	scheduler.StartAsync()
+	scheduler.Start()
 	setupLog.V(log.DebugLevel).Info("scheduled job for cleaning up metrics")
 }
 
