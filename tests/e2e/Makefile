@@ -84,7 +84,7 @@ kyma-deprovision-with-background-propagation:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=KCP Kyma CR Deprovision With Background Propagation After SKR Cluster Removal"
 
 kyma-metrics:
-	$(GO_TEST) "Manage Module Metrics"
+	$(MAKE) -f $(MAKEFILE_DIR)/kyma_metrics_test.mk test
 
 mandatory-module-metrics:
 	$(MAKE) -f $(MAKEFILE_DIR)/mandatory_modules_metrics_test.mk
@@ -123,10 +123,10 @@ unmanage-module:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Unmanaging Kyma Module"
 
 purge-controller:
-	$(GO_TEST) "Purge Controller"
+	$(MAKE) -f $(MAKEFILE_DIR)/purge_controller_test.mk test
 
 purge-metrics:
-	$(GO_TEST) "Purge Metrics"
+	$(MAKE) -f $(MAKEFILE_DIR)/purge_metrics_test.mk test
 
 module-upgrade-channel-switch:
 	$(GO_TEST) "Module Upgrade By Channel Switch"
@@ -135,7 +135,7 @@ modulereleasemeta-module-upgrade-new-version:
 	$(GO_TEST) "Module with ModuleReleaseMeta Upgrade By New Version"
 
 self-signed-certificate-rotation:
-	$(GO_TEST) "Self Signed Certificate Rotation"
+	$(MAKE) -f $(MAKEFILE_DIR)/self_signed_certificate_rotation_test.mk test
 
 misconfigured-kyma-secret:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Misconfigured Kyma Secret"
@@ -210,7 +210,7 @@ simulate-skr-secret-rotation-evict-client-cache:
 	$(GO_TEST) "SKR client cache get evicted due to connection error caused by secret rotation"
 
 skr-image-pull-secret-sync:
-	$(GO_TEST) "SKR Image Pull Secret Sync"
+	$(MAKE) -f $(MAKEFILE_DIR)/skr_image_pull_secret_sync_test.mk test
 
 module-api-upgrade-under-blocked-deletion:
 	$(GO_TEST) "Module API Upgrade Under Blocked Deletion"
