@@ -11,4 +11,7 @@ const (
 	OwnedByFormat             = "%s/%s"
 	IsClusterScopedAnnotation = OperatorGroup + Separator + "is-cluster-scoped"
 	UnmanagedAnnotation       = OperatorGroup + Separator + "is-unmanaged"
+	// ReplaceFromKCPAnnotation on a Secret resource indicates its data should be replaced
+	// with the matching secret from the KCP control plane namespace.
+	ReplaceFromKCPAnnotation = OperatorGroup + Separator + "replace-from-kcp"
 )

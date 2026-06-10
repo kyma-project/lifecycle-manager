@@ -306,7 +306,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		kymaMetrics, logger, maintenanceWindow, ociRegistry.GetReference(), kymaDeletionSvc, kymaLookupSvc,
 		mtEventHandlerMapFunc, mrmEventHandler, restrictedModuleDefaulter)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
-		eventRecorder, kymaRepo)
+		eventRecorder, kymaRepo, secretRepo)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, mrmRepo, mtRepo, flagVar, options, mandatoryModulesMetrics,
 		logger, ociRegistry.GetReference(), mandatoryMrmHandlerMapFunc)
 	setupMandatoryModuleDeletionReconciler(mgr, eventRecorder, mrmRepo, manifestRepo, flagVar, options, logger)
@@ -537,6 +537,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	setupLog logr.Logger,
 	event event.Event,
 	kymaRepo *kymarepo.Repository,
+	secretRepo *secretrepo.Repository,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -566,7 +567,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	}, options.RateLimiter,
 		metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, manifestClient, orphanDetectionService,
 		specResolver, clientCache, skrClient, kcpClient, cachedManifestParser, customStateCheck,
-		flagVar.SkrImagePullSecret); err != nil {
+		flagVar.SkrImagePullSecret, secretRepo, flagVar.GetRestrictedDefaultModules()); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(bootstrapFailedExitCode)
 	}

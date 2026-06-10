@@ -109,7 +109,7 @@ func NewReconciler(requeueIntervals queue.RequeueIntervals,
 	kcpClient client.Client,
 	cachedManifestParser CachedManifestParser,
 	stateCheck StateCheck,
-	skrImagePullSecretName string,
+	resourceTransforms []ResourceTransform,
 ) *Reconciler {
 	reconciler := &Reconciler{}
 	reconciler.manifestMetrics = metrics
@@ -123,11 +123,7 @@ func NewReconciler(requeueIntervals queue.RequeueIntervals,
 	reconciler.skrClientCache = clientCache
 	reconciler.skrClient = skrClient
 
-	reconciler.resourceTransforms = GetDefaultResourceTransforms()
-	if skrImagePullSecretName != "" {
-		reconciler.resourceTransforms = append(reconciler.resourceTransforms,
-			CreateSkrImagePullSecretTransform(skrImagePullSecretName))
-	}
+	reconciler.resourceTransforms = append(GetDefaultResourceTransforms(), resourceTransforms...)
 
 	reconciler.kcpClient = kcpClient
 	reconciler.cachedManifestParser = cachedManifestParser

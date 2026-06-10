@@ -165,7 +165,7 @@ var _ = BeforeSuite(func() {
 		kcpClient,
 		cachedManifestParser,
 		declarativev2.NewExistsStateCheck(),
-		"",
+		nil,
 	)
 
 	err = ctrl.NewControllerManagedBy(mgr).

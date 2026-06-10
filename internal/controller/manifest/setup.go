@@ -13,10 +13,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
 
@@ -41,7 +43,19 @@ func SetupWithManager(mgr manager.Manager,
 	cachedManifestParser declarativev2.CachedManifestParser,
 	customStateCheck declarativev2.StateCheck,
 	skrImagePullSecretName string,
+	restrictedDefaultModules []string,
 ) error {
+	var transforms []declarativev2.ResourceTransform
+	if skrImagePullSecretName != "" {
+		transforms = append(transforms, declarativev2.CreateSkrImagePullSecretTransform(skrImagePullSecretName))
+	}
+	if len(restrictedDefaultModules) > 0 {
+		secretRepo := secretrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
+		deployerTransform := declarativev2.CreateRestrictedDefaultModuleImagePullSecretTransform(
+			secretRepo, restrictedDefaultModules)
+		transforms = append(transforms, deployerTransform)
+	}
+
 	if err := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
 		Named(controllerName).
@@ -52,7 +66,7 @@ func SetupWithManager(mgr manager.Manager,
 		Complete(declarativev2.NewReconciler(
 			requeueIntervals, rateLimiter, manifestMetrics, mandatoryModulesMetrics, manifestClient,
 			orphanDetectionService, specResolver, skrClientCache, skrClient, kcpClient, cachedManifestParser,
-			customStateCheck, skrImagePullSecretName)); err != nil {
+			customStateCheck, transforms)); err != nil {
 		return fmt.Errorf("failed to setup manager for manifest controller: %w", err)
 	}
 
