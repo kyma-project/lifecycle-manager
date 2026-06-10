@@ -412,7 +412,7 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 
 	scheduler, err := gocron.NewScheduler(gocron.WithLocation(time.UTC))
 	if err != nil {
-		setupLog.Info(fmt.Sprintf("failed to create scheduler for metrics cleanup, err: %s", err))
+		setupLog.Error(err, "failed to create scheduler for metrics cleanup")
 		return
 	}
 	_, scheduleErr := scheduler.NewJob(
