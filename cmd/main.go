@@ -95,6 +95,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/render"
 	restrictedmodulesvc "github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
@@ -559,6 +560,12 @@ func setupManifestReconciler(mgr ctrl.Manager,
 
 	kcpClient := mgr.GetClient()
 	cachedManifestParser := declarativev2.NewInMemoryCachedManifestParser(declarativev2.DefaultInMemoryParseTTL)
+	resourceTransforms := declarativev2.GetDefaultResourceTransforms()
+	if flagVar.SkrImagePullSecret != "" {
+		resourceTransforms = append(resourceTransforms,
+			declarativev2.CreateSkrImagePullSecretTransform(flagVar.SkrImagePullSecret))
+	}
+	renderService := render.NewService(cachedManifestParser, resourceTransforms)
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	customStateCheck := statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)
@@ -572,8 +579,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 			flagVar.ManifestRequeueJitterPercentage),
 	}, options.RateLimiter,
 		metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, manifestClient, orphanDetectionService,
-		specResolver, clientCache, skrClient, kcpClient, cachedManifestParser, customStateCheck,
-		flagVar.SkrImagePullSecret); err != nil {
+		specResolver, clientCache, skrClient, kcpClient, renderService, customStateCheck); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(bootstrapFailedExitCode)
 	}

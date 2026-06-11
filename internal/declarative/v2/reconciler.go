@@ -79,12 +79,20 @@ type SKRClient interface {
 
 type ResourceTransform = func(context.Context, Object, []*unstructured.Unstructured) error
 
+// ResourceRenderService renders the target resources for a Manifest by parsing
+// the manifest layer and applying any configured transforms. EvictCache drops
+// the cached parse result for a Spec, forcing the next render to re-parse.
+type ResourceRenderService interface {
+	RenderTargetResources(ctx context.Context, manifest *v1beta2.Manifest, spec *Spec) ([]client.Object, error)
+	EvictCache(spec *Spec)
+}
+
 type Reconciler struct {
-	requeueIntervals     queue.RequeueIntervals
-	rateLimiter          workqueue.TypedRateLimiter[ctrl.Request]
-	kcpClient            client.Client
-	cachedManifestParser CachedManifestParser
-	customStateCheck     StateCheck
+	requeueIntervals queue.RequeueIntervals
+	rateLimiter      workqueue.TypedRateLimiter[ctrl.Request]
+	kcpClient        client.Client
+	renderService    ResourceRenderService
+	customStateCheck StateCheck
 
 	manifestMetrics            *metrics.ManifestMetrics
 	mandatoryModuleMetrics     *metrics.MandatoryModulesMetrics
@@ -94,7 +102,6 @@ type Reconciler struct {
 	orphanDetectionService     OrphanDetectionService
 	skrClientCache             SKRClientCache
 	skrClient                  SKRClient
-	resourceTransforms         []ResourceTransform
 }
 
 func NewReconciler(requeueIntervals queue.RequeueIntervals,
@@ -107,9 +114,8 @@ func NewReconciler(requeueIntervals queue.RequeueIntervals,
 	clientCache SKRClientCache,
 	skrClient SKRClient,
 	kcpClient client.Client,
-	cachedManifestParser CachedManifestParser,
+	renderService ResourceRenderService,
 	stateCheck StateCheck,
-	skrImagePullSecretName string,
 ) *Reconciler {
 	reconciler := &Reconciler{}
 	reconciler.manifestMetrics = metrics
@@ -123,14 +129,8 @@ func NewReconciler(requeueIntervals queue.RequeueIntervals,
 	reconciler.skrClientCache = clientCache
 	reconciler.skrClient = skrClient
 
-	reconciler.resourceTransforms = GetDefaultResourceTransforms()
-	if skrImagePullSecretName != "" {
-		reconciler.resourceTransforms = append(reconciler.resourceTransforms,
-			CreateSkrImagePullSecretTransform(skrImagePullSecretName))
-	}
-
 	reconciler.kcpClient = kcpClient
-	reconciler.cachedManifestParser = cachedManifestParser
+	reconciler.renderService = renderService
 
 	reconciler.customStateCheck = stateCheck
 	return reconciler
@@ -546,28 +546,21 @@ func (r *Reconciler) renderTargetResources(ctx context.Context,
 	manifest *v1beta2.Manifest,
 	spec *Spec,
 ) ([]client.Object, error) {
-	targetResources, err := r.cachedManifestParser.Parse(spec)
+	rendered, err := r.renderService.RenderTargetResources(ctx, manifest, spec)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, transform := range r.resourceTransforms {
-		if err := transform(ctx, manifest, targetResources.Items); err != nil {
-			return nil, err
-		}
-	}
-
-	result := make([]client.Object, 0, len(targetResources.Items))
-	for _, unstrObj := range targetResources.Items {
-		converted := client.Object(unstrObj) // unstructured.Unstructured implements client.Object
-		err := normaliseNamespace(converted, apimetav1.NamespaceDefault, skrClient)
+	result := make([]client.Object, 0, len(rendered))
+	for _, obj := range rendered {
+		err := normaliseNamespace(obj, apimetav1.NamespaceDefault, skrClient)
 		if err != nil {
 			recoverable := meta.IsNoMatchError(err)
 			if !recoverable {
 				return nil, err
 			}
 		}
-		result = append(result, converted)
+		result = append(result, obj)
 	}
 
 	return result, nil
@@ -617,7 +610,7 @@ func (r *Reconciler) pruneDiff(ctx context.Context, clnt skrclient.Client, manif
 				WithState(shared.StateWarning).
 				WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()),
 		)
-		r.cachedManifestParser.EvictCache(spec)
+		r.renderService.EvictCache(spec)
 		return ErrResourceSyncDiffInSameOCILayer
 	}
 
