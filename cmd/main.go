@@ -56,6 +56,7 @@ import (
 	kymalookupcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/kyma/lookup"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/deletion"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/installation"
+	manifestrendercmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/manifest/render"
 	restrictedmodulecmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/restrictedmodule"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
@@ -95,7 +96,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
-	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/render"
 	restrictedmodulesvc "github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
@@ -560,12 +560,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 
 	kcpClient := mgr.GetClient()
 	cachedManifestParser := declarativev2.NewInMemoryCachedManifestParser(declarativev2.DefaultInMemoryParseTTL)
-	resourceTransforms := declarativev2.GetDefaultResourceTransforms()
-	if flagVar.SkrImagePullSecret != "" {
-		resourceTransforms = append(resourceTransforms,
-			declarativev2.CreateSkrImagePullSecretTransform(flagVar.SkrImagePullSecret))
-	}
-	renderService := render.NewService(cachedManifestParser, resourceTransforms)
+	renderService := manifestrendercmpse.ComposeRenderService(cachedManifestParser, flagVar.SkrImagePullSecret)
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	customStateCheck := statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)

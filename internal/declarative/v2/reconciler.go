@@ -551,19 +551,15 @@ func (r *Reconciler) renderTargetResources(ctx context.Context,
 		return nil, err
 	}
 
-	result := make([]client.Object, 0, len(rendered))
 	for _, obj := range rendered {
-		err := normaliseNamespace(obj, apimetav1.NamespaceDefault, skrClient)
-		if err != nil {
-			recoverable := meta.IsNoMatchError(err)
-			if !recoverable {
+		if err := normaliseNamespace(obj, apimetav1.NamespaceDefault, skrClient); err != nil {
+			if !meta.IsNoMatchError(err) {
 				return nil, err
 			}
 		}
-		result = append(result, obj)
 	}
 
-	return result, nil
+	return rendered, nil
 }
 
 // normaliseNamespaces is only a workaround for malformed resources, e.g. by bad charts or wrong type configs.

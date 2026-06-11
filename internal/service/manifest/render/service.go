@@ -49,7 +49,7 @@ func (s *Service) RenderTargetResources(ctx context.Context,
 
 	result := make([]client.Object, 0, len(parsed.Items))
 	for _, unstrObj := range parsed.Items {
-		result = append(result, client.Object(unstrObj))
+		result = append(result, unstrObj)
 	}
 	return result, nil
 }
