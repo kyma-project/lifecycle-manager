@@ -56,6 +56,7 @@ import (
 	kymalookupcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/kyma/lookup"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/deletion"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/installation"
+	manifestrendercmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/manifest/render"
 	restrictedmodulecmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/restrictedmodule"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
@@ -559,6 +560,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 
 	kcpClient := mgr.GetClient()
 	cachedManifestParser := declarativev2.NewInMemoryCachedManifestParser(declarativev2.DefaultInMemoryParseTTL)
+	renderService := manifestrendercmpse.ComposeRenderService(cachedManifestParser, flagVar.SkrImagePullSecret)
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	customStateCheck := statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)
@@ -572,8 +574,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 			flagVar.ManifestRequeueJitterPercentage),
 	}, options.RateLimiter,
 		metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, manifestClient, orphanDetectionService,
-		specResolver, clientCache, skrClient, kcpClient, cachedManifestParser, customStateCheck,
-		flagVar.SkrImagePullSecret); err != nil {
+		specResolver, clientCache, skrClient, kcpClient, renderService, customStateCheck); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(bootstrapFailedExitCode)
 	}

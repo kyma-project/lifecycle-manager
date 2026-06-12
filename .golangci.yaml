@@ -127,6 +127,8 @@ linters:
           alias: watchcmpse
         - pkg: github.com/kyma-project/lifecycle-manager/cmd/composition/service/restrictedmodule
           alias: restrictedmodulecmpse
+        - pkg: github.com/kyma-project/lifecycle-manager/cmd/composition/service/manifest/render
+          alias: manifestrendercmpse
         - pkg: github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl
           alias: testskrcontext
         - pkg: github.com/kyma-project/lifecycle-manager/internal/errors
