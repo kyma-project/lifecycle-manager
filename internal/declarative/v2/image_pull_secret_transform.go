@@ -8,7 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 )
 
 //nolint:gosec // This is not sensitive information.
@@ -20,7 +19,7 @@ var ErrSkrImagePullSecretEnvAlreadyExists = errors.New(SkrImagePullSecretEnvName
 	" environment variable already exits in raw manifest")
 
 func CreateSkrImagePullSecretTransform(secretName string) ResourceTransform {
-	return func(_ context.Context, _ skrclient.Client, obj Object, resources []*unstructured.Unstructured) error {
+	return func(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
 		manifest, ok := obj.(*v1beta2.Manifest)
 		if !ok {
 			return fmt.Errorf("%w, got %T", ErrResourceTransformExpectedManifestType, obj)

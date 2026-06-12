@@ -74,7 +74,7 @@ type SKRClient interface {
 	ResolveClient(ctx context.Context, manifest *v1beta2.Manifest) (*skrclient.SKRClient, error)
 }
 
-type ResourceTransform = func(context.Context, skrclient.Client, Object, []*unstructured.Unstructured) error
+type ResourceTransform = func(context.Context, Object, []*unstructured.Unstructured) error
 
 // ResourceRenderService renders the target resources for a Manifest by parsing
 // the manifest layer and applying any configured transforms. EvictCache drops

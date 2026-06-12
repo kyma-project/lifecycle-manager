@@ -5,6 +5,8 @@ package render
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/api/meta"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -30,9 +32,10 @@ func NewService(
 }
 
 // RenderTargetResources returns the resources to be synced to the SKR for the
-// given Manifest. It parses the manifest layer (using the parser cache) and
-// applies the configured transforms to the parsed resources before returning
-// them as client.Objects.
+// given Manifest. It parses the manifest layer (using the parser cache),
+// applies the configured transforms to the parsed resources, and finally
+// normalises each resource's namespace against the SKR's REST mapper before
+// returning them as client.Objects.
 func (s *Service) RenderTargetResources(ctx context.Context, skrClient skrclient.Client,
 	manifest *v1beta2.Manifest, spec *declarativev2.Spec,
 ) ([]client.Object, error) {
@@ -42,13 +45,18 @@ func (s *Service) RenderTargetResources(ctx context.Context, skrClient skrclient
 	}
 
 	for _, transform := range s.transforms {
-		if err := transform(ctx, skrClient, manifest, parsed.Items); err != nil {
+		if err := transform(ctx, manifest, parsed.Items); err != nil {
 			return nil, err
 		}
 	}
 
 	result := make([]client.Object, 0, len(parsed.Items))
 	for _, unstrObj := range parsed.Items {
+		if err := NormaliseNamespace(unstrObj, apimetav1.NamespaceDefault, skrClient); err != nil {
+			if !meta.IsNoMatchError(err) {
+				return nil, err
+			}
+		}
 		result = append(result, unstrObj)
 	}
 	return result, nil
