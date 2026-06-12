@@ -10,6 +10,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/imagerewrite"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 )
 
@@ -22,7 +23,9 @@ const (
 
 var ErrInvalidManifestType = errors.New("invalid object type, expected *v1beta2.Manifest")
 
-func DisclaimerTransform(_ context.Context, _ Object, resources []*unstructured.Unstructured) error {
+func DisclaimerTransform(_ context.Context, _ skrclient.Client, _ Object,
+	resources []*unstructured.Unstructured,
+) error {
 	for _, resource := range resources {
 		annotations := resource.GetAnnotations()
 		if annotations == nil {
@@ -36,7 +39,9 @@ func DisclaimerTransform(_ context.Context, _ Object, resources []*unstructured.
 
 // DockerImageLocalizationTransform rewrites Docker images in the provided resources
 // according to the Spec.LocalizedImages field in the Manifest object.
-func DockerImageLocalizationTransform(ctx context.Context, obj Object, resources []*unstructured.Unstructured) error {
+func DockerImageLocalizationTransform(_ context.Context, _ skrclient.Client, obj Object,
+	resources []*unstructured.Unstructured,
+) error {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
 		return fmt.Errorf("%T: %w", obj, ErrInvalidManifestType)
@@ -69,7 +74,9 @@ func DockerImageLocalizationTransform(ctx context.Context, obj Object, resources
 	return nil
 }
 
-func KymaComponentTransform(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
+func KymaComponentTransform(_ context.Context, _ skrclient.Client, obj Object,
+	resources []*unstructured.Unstructured,
+) error {
 	for _, resource := range resources {
 		resource.SetLabels(collections.MergeMapsSilent(resource.GetLabels(), map[string]string{
 			"app.kubernetes.io/component": obj.GetName(),
@@ -79,7 +86,9 @@ func KymaComponentTransform(_ context.Context, obj Object, resources []*unstruct
 	return nil
 }
 
-func ManagedByOwnedBy(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
+func ManagedByOwnedBy(_ context.Context, _ skrclient.Client, obj Object,
+	resources []*unstructured.Unstructured,
+) error {
 	for _, resource := range resources {
 		resource.SetLabels(collections.MergeMapsSilent(resource.GetLabels(), map[string]string{
 			shared.ManagedBy: shared.ManagedByLabelValue,
@@ -98,5 +107,6 @@ func GetDefaultResourceTransforms() []ResourceTransform {
 		KymaComponentTransform,
 		DisclaimerTransform,
 		DockerImageLocalizationTransform,
+		NormaliseNamespaceTransform,
 	}
 }

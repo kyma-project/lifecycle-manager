@@ -38,7 +38,7 @@ func TestImagePullSecretTransform_WhenNoImagePullSecretsExists_CreatesNew(t *tes
 		},
 	}
 
-	err := transform(t.Context(), manifest, resources)
+	err := transform(t.Context(), nil, manifest, resources)
 	require.NoError(t, err)
 
 	for _, resource := range resources {
@@ -91,7 +91,7 @@ func TestImagePullSecretTransform_WhenImagePullSecretsExists_Appends(t *testing.
 		},
 	}
 
-	err := transform(t.Context(), manifest, resources)
+	err := transform(t.Context(), nil, manifest, resources)
 	require.NoError(t, err)
 
 	for _, resource := range resources {
@@ -170,7 +170,7 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvDoesntExist_AddsEnv(t *testing
 		},
 	}
 
-	err := transform(t.Context(), manifest, resources)
+	err := transform(t.Context(), nil, manifest, resources)
 	require.NoError(t, err)
 
 	for _, resource := range resources {
@@ -234,7 +234,7 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvDoesntExist_AndManagerNotSpeci
 		},
 	}
 
-	err := transform(t.Context(), manifest, resources)
+	err := transform(t.Context(), nil, manifest, resources)
 	require.NoError(t, err)
 
 	for _, resource := range resources {
@@ -310,7 +310,7 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvExists_ReturnsError(t *testing
 		},
 	}
 
-	err := transform(t.Context(), manifest, resources)
+	err := transform(t.Context(), nil, manifest, resources)
 	require.ErrorIs(t, err, declarativev2.ErrSkrImagePullSecretEnvAlreadyExists)
 }
 
@@ -355,7 +355,7 @@ func TestCreateSkrImagePullSecretTransform_DoesntAddEnvVarToNonManagerDeployment
 		},
 	}
 
-	err := transform(t.Context(), manifest, resources)
+	err := transform(t.Context(), nil, manifest, resources)
 	require.NoError(t, err)
 
 	containers, found, err := unstructured.NestedSlice(resources[0].Object, "spec", "template", "spec",

@@ -113,7 +113,7 @@ func Test_defaultTransforms(t *testing.T) {
 				t.Parallel()
 				obj := &testObj{Unstructured: &unstructured.Unstructured{}}
 				obj.SetName("test-object")
-				err := testCase.ResourceTransform(t.Context(), obj, testCase.resources)
+				err := testCase.ResourceTransform(t.Context(), nil, obj, testCase.resources)
 				testCase.wantErr(
 					t, err, testCase.resources,
 				)
@@ -125,12 +125,13 @@ func Test_defaultTransforms(t *testing.T) {
 func TestGetDefaultResourceTransforms(t *testing.T) {
 	t.Parallel()
 	transforms := declarativev2.GetDefaultResourceTransforms()
-	require.Len(t, transforms, 4)
+	require.Len(t, transforms, 5)
 	expected := []uintptr{
 		reflect.ValueOf(declarativev2.ManagedByOwnedBy).Pointer(),
 		reflect.ValueOf(declarativev2.KymaComponentTransform).Pointer(),
 		reflect.ValueOf(declarativev2.DisclaimerTransform).Pointer(),
 		reflect.ValueOf(declarativev2.DockerImageLocalizationTransform).Pointer(),
+		reflect.ValueOf(declarativev2.NormaliseNamespaceTransform).Pointer(),
 	}
 	for i, tr := range transforms {
 		require.Equal(t, expected[i], reflect.ValueOf(tr).Pointer())

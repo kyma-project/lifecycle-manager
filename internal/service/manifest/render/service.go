@@ -9,6 +9,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 )
 
 // Service renders the target resources for a Manifest. It owns the
@@ -32,9 +33,8 @@ func NewService(
 // given Manifest. It parses the manifest layer (using the parser cache) and
 // applies the configured transforms to the parsed resources before returning
 // them as client.Objects.
-func (s *Service) RenderTargetResources(ctx context.Context,
-	manifest *v1beta2.Manifest,
-	spec *declarativev2.Spec,
+func (s *Service) RenderTargetResources(ctx context.Context, skrClient skrclient.Client,
+	manifest *v1beta2.Manifest, spec *declarativev2.Spec,
 ) ([]client.Object, error) {
 	parsed, err := s.parser.Parse(spec)
 	if err != nil {
@@ -42,7 +42,7 @@ func (s *Service) RenderTargetResources(ctx context.Context,
 	}
 
 	for _, transform := range s.transforms {
-		if err := transform(ctx, manifest, parsed.Items); err != nil {
+		if err := transform(ctx, skrClient, manifest, parsed.Items); err != nil {
 			return nil, err
 		}
 	}

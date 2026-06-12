@@ -6,10 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/apimachinery/pkg/api/meta"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -77,13 +74,14 @@ type SKRClient interface {
 	ResolveClient(ctx context.Context, manifest *v1beta2.Manifest) (*skrclient.SKRClient, error)
 }
 
-type ResourceTransform = func(context.Context, Object, []*unstructured.Unstructured) error
+type ResourceTransform = func(context.Context, skrclient.Client, Object, []*unstructured.Unstructured) error
 
 // ResourceRenderService renders the target resources for a Manifest by parsing
 // the manifest layer and applying any configured transforms. EvictCache drops
 // the cached parse result for a Spec, forcing the next render to re-parse.
 type ResourceRenderService interface {
-	RenderTargetResources(ctx context.Context, manifest *v1beta2.Manifest, spec *Spec) ([]client.Object, error)
+	RenderTargetResources(ctx context.Context, skrClient skrclient.Client,
+		manifest *v1beta2.Manifest, spec *Spec) ([]client.Object, error)
 	EvictCache(spec *Spec)
 }
 
@@ -429,7 +427,7 @@ func (r *Reconciler) renderResourcesForInstall(ctx context.Context, skrClient sk
 	manifestStatus := manifest.GetStatus()
 	current := ResourceList(manifestStatus.Synced)
 
-	target, err := r.renderTargetResources(ctx, skrClient, manifest, spec)
+	target, err := r.renderService.RenderTargetResources(ctx, skrClient, manifest, spec)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -458,7 +456,7 @@ func (r *Reconciler) renderResourcesForDelete(ctx context.Context, skrClient skr
 	}
 
 	// we're here only if allModuleCRsDeleted == false and err == nil.
-	target, err := r.renderTargetResources(ctx, skrClient, manifest, spec)
+	target, err := r.renderService.RenderTargetResources(ctx, skrClient, manifest, spec)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -539,55 +537,6 @@ func (r *Reconciler) checkManagerState(ctx context.Context, clnt skrclient.Clien
 		return shared.StateError, ErrManagerInErrorState
 	}
 	return managerState, nil
-}
-
-func (r *Reconciler) renderTargetResources(ctx context.Context,
-	skrClient skrclient.Client,
-	manifest *v1beta2.Manifest,
-	spec *Spec,
-) ([]client.Object, error) {
-	rendered, err := r.renderService.RenderTargetResources(ctx, manifest, spec)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, obj := range rendered {
-		if err := normaliseNamespace(obj, apimetav1.NamespaceDefault, skrClient); err != nil {
-			if !meta.IsNoMatchError(err) {
-				return nil, err
-			}
-		}
-	}
-
-	return rendered, nil
-}
-
-// normaliseNamespaces is only a workaround for malformed resources, e.g. by bad charts or wrong type configs.
-func normaliseNamespace(obj client.Object, defaultNamespace string, skrClient skrclient.Client) error {
-	gvk := obj.GetObjectKind().GroupVersionKind()
-	namespaced, err := isNamespaced(gvk, skrClient)
-	if err != nil {
-		return err
-	}
-	if namespaced {
-		if obj.GetNamespace() == "" {
-			obj.SetNamespace(defaultNamespace)
-		}
-	} else {
-		if obj.GetNamespace() != "" {
-			obj.SetNamespace("")
-		}
-	}
-	return nil
-}
-
-func isNamespaced(gvk schema.GroupVersionKind, skrClient skrclient.Client) (bool, error) {
-	mapper := skrClient.RESTMapper()
-	mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
-	if err != nil {
-		return false, fmt.Errorf("failed to get REST mapping for %s: %w", gvk.Kind, err)
-	}
-	return mapping.Scope.Name() == "namespace", nil
 }
 
 func (r *Reconciler) pruneDiff(ctx context.Context, clnt skrclient.Client, manifest *v1beta2.Manifest,

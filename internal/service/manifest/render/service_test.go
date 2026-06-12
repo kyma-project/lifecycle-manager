@@ -14,6 +14,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/render"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 )
 
 type stubParser struct {
@@ -60,13 +61,17 @@ func TestRenderTargetResources_AppliesTransformsInOrder(t *testing.T) {
 	var calls []string
 	var seenObjs []declarativev2.Object
 	transforms := []declarativev2.ResourceTransform{
-		func(_ context.Context, obj declarativev2.Object, items []*unstructured.Unstructured) error {
+		func(_ context.Context, _ skrclient.Client, obj declarativev2.Object,
+			items []*unstructured.Unstructured,
+		) error {
 			calls = append(calls, "a")
 			seenObjs = append(seenObjs, obj)
 			items[0].SetAnnotations(map[string]string{"step": "a"})
 			return nil
 		},
-		func(_ context.Context, obj declarativev2.Object, items []*unstructured.Unstructured) error {
+		func(_ context.Context, _ skrclient.Client, obj declarativev2.Object,
+			items []*unstructured.Unstructured,
+		) error {
 			calls = append(calls, "b")
 			seenObjs = append(seenObjs, obj)
 			require.Equal(t, "a", items[0].GetAnnotations()["step"])
@@ -77,7 +82,7 @@ func TestRenderTargetResources_AppliesTransformsInOrder(t *testing.T) {
 
 	svc := render.NewService(parser, transforms)
 
-	rendered, err := svc.RenderTargetResources(t.Context(), manifest, &declarativev2.Spec{})
+	rendered, err := svc.RenderTargetResources(t.Context(), nil, manifest, &declarativev2.Spec{})
 
 	require.NoError(t, err)
 	require.Len(t, rendered, 1)
@@ -95,7 +100,7 @@ func TestRenderTargetResources_ReturnsParserError(t *testing.T) {
 	wantErr := errors.New("boom")
 	svc := render.NewService(&stubParser{parseErr: wantErr}, nil)
 
-	rendered, err := svc.RenderTargetResources(t.Context(), &v1beta2.Manifest{}, &declarativev2.Spec{})
+	rendered, err := svc.RenderTargetResources(t.Context(), nil, &v1beta2.Manifest{}, &declarativev2.Spec{})
 
 	require.ErrorIs(t, err, wantErr)
 	assert.Nil(t, rendered)
@@ -113,10 +118,10 @@ func TestRenderTargetResources_StopsOnTransformError(t *testing.T) {
 
 	var secondCalled bool
 	transforms := []declarativev2.ResourceTransform{
-		func(context.Context, declarativev2.Object, []*unstructured.Unstructured) error {
+		func(context.Context, skrclient.Client, declarativev2.Object, []*unstructured.Unstructured) error {
 			return wantErr
 		},
-		func(context.Context, declarativev2.Object, []*unstructured.Unstructured) error {
+		func(context.Context, skrclient.Client, declarativev2.Object, []*unstructured.Unstructured) error {
 			secondCalled = true
 			return nil
 		},
@@ -124,7 +129,7 @@ func TestRenderTargetResources_StopsOnTransformError(t *testing.T) {
 
 	svc := render.NewService(parser, transforms)
 
-	rendered, err := svc.RenderTargetResources(t.Context(), &v1beta2.Manifest{}, &declarativev2.Spec{})
+	rendered, err := svc.RenderTargetResources(t.Context(), nil, &v1beta2.Manifest{}, &declarativev2.Spec{})
 
 	require.ErrorIs(t, err, wantErr)
 	assert.Nil(t, rendered)
