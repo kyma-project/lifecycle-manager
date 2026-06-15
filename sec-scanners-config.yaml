@@ -9,7 +9,7 @@ checkmarx-one:
     - "tests/**"
 bdba:
   - europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:1.18.3
-  - europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:1.18.2
+  - europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:1.18.3
   - europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest
 mend:
   language: golang-mod
