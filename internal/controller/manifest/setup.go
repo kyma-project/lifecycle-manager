@@ -38,9 +38,8 @@ func SetupWithManager(mgr manager.Manager,
 	skrClientCache declarativev2.SKRClientCache,
 	skrClient declarativev2.SKRClient,
 	kcpClient client.Client,
-	cachedManifestParser declarativev2.CachedManifestParser,
+	renderService declarativev2.ResourceRenderService,
 	customStateCheck declarativev2.StateCheck,
-	skrImagePullSecretName string,
 ) error {
 	if err := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
@@ -51,8 +50,8 @@ func SetupWithManager(mgr manager.Manager,
 		WithOptions(opts).
 		Complete(declarativev2.NewReconciler(
 			requeueIntervals, rateLimiter, manifestMetrics, mandatoryModulesMetrics, manifestClient,
-			orphanDetectionService, specResolver, skrClientCache, skrClient, kcpClient, cachedManifestParser,
-			customStateCheck, skrImagePullSecretName)); err != nil {
+			orphanDetectionService, specResolver, skrClientCache, skrClient, kcpClient, renderService,
+			customStateCheck)); err != nil {
 		return fmt.Errorf("failed to setup manager for manifest controller: %w", err)
 	}
 
