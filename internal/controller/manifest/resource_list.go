@@ -1,4 +1,4 @@
-package v2
+package manifest
 
 import (
 	"strings"
@@ -8,7 +8,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
-// ResourceList provides convenience methods for comparing collections of synced resources.
+// ResourceList provides convenience methods for comparing collections of
+// synced resources against the freshly rendered target list.
 type ResourceList []shared.Resource
 
 // Difference returns resources from r that are not present in target (by identity).

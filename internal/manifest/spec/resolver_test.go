@@ -12,7 +12,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 )
 
@@ -59,7 +58,7 @@ func Test_GetSpec(t *testing.T) {
 		require.NoError(t, err)
 
 		// then
-		expected := &declarativev2.Spec{
+		expected := &spec.Spec{
 			ManifestName: mft.Spec.Install.Name,
 			Path:         testPath(),
 			OCIRef:       "sha256:c49b23729d7f12e25a44bbc9c0fb226f998cb443802af4793b4faea79a9bac40",

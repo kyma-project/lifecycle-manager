@@ -10,7 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 )
 
@@ -18,15 +18,15 @@ import (
 // manifest parser cache and the ordered list of transforms that adapt the
 // parsed resources for deployment to a SKR cluster.
 type Service struct {
-	parser     declarativev2.CachedManifestParser
-	transforms []declarativev2.ResourceTransform
+	parser     CachedManifestParser
+	transforms []ResourceTransform
 }
 
 // NewService wires a Service from its dependencies. Transforms are applied
 // in the order provided.
 func NewService(
-	parser declarativev2.CachedManifestParser,
-	transforms []declarativev2.ResourceTransform,
+	parser CachedManifestParser,
+	transforms []ResourceTransform,
 ) *Service {
 	return &Service{parser: parser, transforms: transforms}
 }
@@ -37,7 +37,7 @@ func NewService(
 // normalises each resource's namespace against the SKR's REST mapper before
 // returning them as client.Objects.
 func (s *Service) RenderTargetResources(ctx context.Context, skrClient skrclient.Client,
-	manifest *v1beta2.Manifest, spec *declarativev2.Spec,
+	manifest *v1beta2.Manifest, spec *spec.Spec,
 ) ([]client.Object, error) {
 	parsed, err := s.parser.Parse(spec)
 	if err != nil {
@@ -64,6 +64,6 @@ func (s *Service) RenderTargetResources(ctx context.Context, skrClient skrclient
 
 // EvictCache removes the cached parse result for the given spec, forcing the
 // next RenderTargetResources call to re-parse the manifest from disk.
-func (s *Service) EvictCache(spec *declarativev2.Spec) {
+func (s *Service) EvictCache(spec *spec.Spec) {
 	s.parser.EvictCache(spec)
 }

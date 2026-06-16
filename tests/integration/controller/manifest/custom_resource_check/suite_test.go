@@ -41,11 +41,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/manifest"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/labelsremoval"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
@@ -60,10 +62,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -72,7 +73,7 @@ import (
 var (
 	testEnv          *envtest.Environment
 	mgr              ctrl.Manager
-	reconciler       *declarativev2.Reconciler
+	reconciler       *manifest.Reconciler
 	cfg              *rest.Config
 	ctx              context.Context
 	cancel           context.CancelFunc
@@ -152,11 +153,12 @@ var _ = BeforeSuite(func() {
 	orphanDetectionClient := kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
 	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
 	accessManagerService := testskrcontext.NewFakeAccessManagerService(testEnv, cfg)
-	cachedManifestParser := declarativev2.NewInMemoryCachedManifestParser(declarativev2.DefaultInMemoryParseTTL)
-	renderService := render.NewService(cachedManifestParser, declarativev2.GetDefaultResourceTransforms())
+	cachedManifestParser := parser.NewCachedManifestParser(parser.DefaultInMemoryParseTTL)
+	renderService := render.NewService(cachedManifestParser, render.GetDefaultResourceTransforms())
 
 	rateLimiter := internal.RateLimiter(1*time.Second, 5*time.Second, 30, 200)
-	reconciler = declarativev2.NewReconciler(queue.RequeueIntervals{
+	managedLabelRemovalService := labelsremoval.NewManagedByLabelRemovalService(manifestClient)
+	reconciler = manifest.NewReconciler(queue.RequeueIntervals{
 		Success: 1 * time.Second,
 		Busy:    1 * time.Second,
 		Error:   1 * time.Second,
@@ -165,7 +167,8 @@ var _ = BeforeSuite(func() {
 		manifestClient, orphanDetectionService, spec.NewResolver(keyChainLookup, extractor),
 		skrclientcache.NewService(),
 		skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService),
-		kcpClient, renderService, statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker))
+		kcpClient, renderService, statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker),
+		managedLabelRemovalService)
 
 	err = ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).

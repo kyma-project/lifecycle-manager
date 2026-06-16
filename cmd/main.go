@@ -65,18 +65,19 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	kymadeletionctrl "github.com/kyma-project/lifecycle-manager/internal/controller/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/manifest"
+	manifestctrl "github.com/kyma-project/lifecycle-manager/internal/controller/manifest"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/purge"
 	watcherctrl "github.com/kyma-project/lifecycle-manager/internal/controller/watcher"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
 	"github.com/kyma-project/lifecycle-manager/internal/maintenancewindows"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/labelsremoval"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
@@ -559,13 +560,14 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	skrClient := skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService)
 
 	kcpClient := mgr.GetClient()
-	cachedManifestParser := declarativev2.NewInMemoryCachedManifestParser(declarativev2.DefaultInMemoryParseTTL)
+	cachedManifestParser := parser.NewCachedManifestParser(parser.DefaultInMemoryParseTTL)
 	renderService := manifestrendercmpse.ComposeRenderService(cachedManifestParser, flagVar.SkrImagePullSecret)
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	customStateCheck := statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)
+	managedLabelRemovalService := labelsremoval.NewManagedByLabelRemovalService(manifestClient)
 
-	if err := manifest.SetupWithManager(mgr, options, queue.RequeueIntervals{
+	if err := manifestctrl.SetupWithManager(mgr, options, queue.RequeueIntervals{
 		Success: flagVar.ManifestRequeueSuccessInterval,
 		Busy:    flagVar.ManifestRequeueBusyInterval,
 		Error:   flagVar.ManifestRequeueErrInterval,
@@ -574,7 +576,8 @@ func setupManifestReconciler(mgr ctrl.Manager,
 			flagVar.ManifestRequeueJitterPercentage),
 	}, options.RateLimiter,
 		metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, manifestClient, orphanDetectionService,
-		specResolver, clientCache, skrClient, kcpClient, renderService, customStateCheck); err != nil {
+		specResolver, clientCache, skrClient, kcpClient, renderService, customStateCheck,
+		managedLabelRemovalService); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(bootstrapFailedExitCode)
 	}

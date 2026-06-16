@@ -2,7 +2,7 @@
 package render
 
 import (
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/render"
 )
 
@@ -10,13 +10,13 @@ import (
 // transform chain, plus the optional SkrImagePullSecret transform when
 // skrImagePullSecretName is non-empty.
 func ComposeRenderService(
-	parser declarativev2.CachedManifestParser,
+	cachedParser *parser.CachedManifestParser,
 	skrImagePullSecretName string,
 ) *render.Service {
-	transforms := declarativev2.GetDefaultResourceTransforms()
+	transforms := render.GetDefaultResourceTransforms()
 	if skrImagePullSecretName != "" {
 		transforms = append(transforms,
-			declarativev2.CreateSkrImagePullSecretTransform(skrImagePullSecretName))
+			render.CreateSkrImagePullSecretTransform(skrImagePullSecretName))
 	}
-	return render.NewService(parser, transforms)
+	return render.NewService(cachedParser, transforms)
 }
