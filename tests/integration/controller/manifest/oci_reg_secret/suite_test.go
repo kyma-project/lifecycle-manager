@@ -74,7 +74,7 @@ import (
 var (
 	testEnv          *envtest.Environment
 	mgr              ctrl.Manager
-	reconciler       *manifest.Reconciler
+	reconciler       *manifestctrl.Reconciler
 	cfg              *rest.Config
 	ctx              context.Context
 	cancel           context.CancelFunc
@@ -153,7 +153,7 @@ var _ = BeforeSuite(func() {
 
 	rateLimiter := internal.RateLimiter(1*time.Second, 5*time.Second, 30, 200)
 	managedLabelRemovalService := labelsremoval.NewManagedByLabelRemovalService(manifestClient)
-	reconciler = manifest.NewReconciler(queue.RequeueIntervals{
+	reconciler = manifestctrl.NewReconciler(queue.RequeueIntervals{
 		Success: 1 * time.Second,
 		Busy:    1 * time.Second,
 		Error:   1 * time.Second,
