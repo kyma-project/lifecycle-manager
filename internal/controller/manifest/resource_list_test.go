@@ -1,5 +1,4 @@
-//nolint:testpackage // test private functions
-package manifest
+package manifest_test
 
 import (
 	"testing"
@@ -9,6 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	manifestctrl "github.com/kyma-project/lifecycle-manager/internal/controller/manifest"
 )
 
 func makeResource(name, namespace, kind string) shared.Resource {
@@ -32,7 +32,7 @@ func TestResourceList_Difference(t *testing.T) {
 	dummyService := makeResource("bar", "default", "Service")
 	dummyDeploy := makeResource("baz", "default", "Deployment")
 
-	list1 := ResourceList{dummyPod, dummyService, dummyDeploy}
+	list1 := manifestctrl.ResourceList{dummyPod, dummyService, dummyDeploy}
 	target := []client.Object{makeObj("bar", "default", "Service")}
 
 	diff := list1.Difference(target)
