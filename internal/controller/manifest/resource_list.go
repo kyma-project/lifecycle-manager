@@ -1,8 +1,7 @@
 package manifest
 
 import (
-	"strings"
-
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -16,7 +15,7 @@ type ResourceList []shared.Resource
 func (r ResourceList) Difference(target []client.Object) ResourceList {
 	targetIDs := make(map[string]struct{}, len(target))
 	for _, obj := range target {
-		targetIDs[objectID(obj)] = struct{}{}
+		targetIDs[resourceIDFromObject(obj)] = struct{}{}
 	}
 	var diff ResourceList
 	for _, res := range r {
@@ -27,8 +26,18 @@ func (r ResourceList) Difference(target []client.Object) ResourceList {
 	return diff
 }
 
-// objectID returns a stable identity string for a client.Object matching shared.Resource.ID() format.
-func objectID(obj client.Object) string {
+// resourceIDFromObject returns shared.Resource.ID() for a client.Object so
+// that identity comparison stays consistent with ResourceList entries even
+// when the format of shared.Resource.ID() changes.
+func resourceIDFromObject(obj client.Object) string {
 	gvk := obj.GetObjectKind().GroupVersionKind()
-	return strings.Join([]string{obj.GetNamespace(), obj.GetName(), gvk.Group, gvk.Version, gvk.Kind}, "/")
+	return shared.Resource{
+		GroupVersionKind: apimetav1.GroupVersionKind{
+			Group:   gvk.Group,
+			Version: gvk.Version,
+			Kind:    gvk.Kind,
+		},
+		Name:      obj.GetName(),
+		Namespace: obj.GetNamespace(),
+	}.ID()
 }

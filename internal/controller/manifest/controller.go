@@ -31,9 +31,9 @@ import (
 )
 
 var (
-	ErrManagerInErrorState            = errors.New("manager is in error state")
+	errManagerInErrorState            = errors.New("manager is in error state")
 	errStateRequireUpdate             = errors.New("manifest state requires update")
-	ErrResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
+	errResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
 		"same oci layer, prevent sync resource to be deleted")
 )
 
@@ -630,7 +630,7 @@ func (r *Reconciler) checkManagerState(ctx context.Context, clnt skrclient.Clien
 		return shared.StateError, err
 	}
 	if managerState == shared.StateError {
-		return shared.StateError, ErrManagerInErrorState
+		return shared.StateError, errManagerInErrorState
 	}
 	return managerState, nil
 }
@@ -649,10 +649,10 @@ func (r *Reconciler) pruneDiff(ctx context.Context, clnt skrclient.Client, manif
 		manifest.SetStatus(
 			manifest.GetStatus().
 				WithState(shared.StateWarning).
-				WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()),
+				WithOperation(errResourceSyncDiffInSameOCILayer.Error()),
 		)
 		r.renderService.EvictCache(spec)
-		return ErrResourceSyncDiffInSameOCILayer
+		return errResourceSyncDiffInSameOCILayer
 	}
 
 	err := resources.NewConcurrentCleanup(clnt, manifest).DeleteDiffResources(ctx, diff)

@@ -62,13 +62,13 @@ func (p *CachedManifestParser) Parse(spec *spec.Spec) (internal.ManifestResource
 		}
 		p.cache.Set(key, resources, p.ttl)
 	}
-	copied := &internal.ManifestResources{
+	copied := internal.ManifestResources{
 		Items: make([]*unstructured.Unstructured, 0, len(resources.Items)),
 	}
 	for _, res := range resources.Items {
 		copied.Items = append(copied.Items, res.DeepCopy())
 	}
-	return *copied, nil
+	return copied, nil
 }
 
 func generateCacheKey(spec *spec.Spec) string {
