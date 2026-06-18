@@ -49,5 +49,18 @@ var _ = Describe("Deployer Module Image Pull Secret", Ordered, func() {
 				).
 				Should(Succeed())
 		})
+
+		It("Then the non-annotated pull secret on the SKR retains its original data", func() {
+			Eventually(SecretDataEquals).
+				WithContext(ctx).
+				WithArguments(
+					skrClient,
+					"non-inject-pull-secret",
+					TestModuleResourceNamespace,
+					".dockerconfigjson",
+					[]byte(`{"auths": {}}`+"\n"),
+				).
+				Should(Succeed())
+		})
 	})
 })

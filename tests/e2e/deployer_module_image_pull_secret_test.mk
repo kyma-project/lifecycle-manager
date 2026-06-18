@@ -26,13 +26,16 @@ module-setup:
 		--version $(MODULE_OLDER_VERSION) \
 		--deployment-name $(MODULE_DEPLOYMENT_OLDER_VERSION) \
 		--deployable-version $(MODULE_DEPLOYABLE_VERSION) \
-		--additional-resources $(E2E_TESTS_DIR)/testdata/skr-deployer-image-pull-secret.yaml
+		--additional-resources $(E2E_TESTS_DIR)/testdata/skr-deployer-image-pull-secret.yaml \
+		--additional-resources $(E2E_TESTS_DIR)/testdata/skr-deployer-non-inject-pull-secret.yaml
 	KEEP_FILE=true $(SCRIPTS_DIR)/deploy_modulereleasemeta.sh $(MODULE_NAME) fast:$(MODULE_OLDER_VERSION) regular:$(MODULE_OLDER_VERSION)
 	yq -i '.spec.kymaSelector.matchExpressions = [{"key": "kyma-project.io/global-account-id", "operator": "In", "values": ["$(GLOBAL_ACCOUNT_ID)"]}]' module-release-meta.yaml
 	kubectl apply -f module-release-meta.yaml
 	rm -f module-release-meta.yaml
 # KCP secret: actual data that KLM should inject into the deployer module's secret on SKR
 	kubectl apply -f $(E2E_TESTS_DIR)/testdata/kcp-deployer-image-pull-secret.yaml
+# KCP secret with matching name but no annotation on the SKR counterpart — should not be injected
+	kubectl apply -f $(E2E_TESTS_DIR)/testdata/kcp-deployer-non-inject-pull-secret.yaml
 	@popd > /dev/null
 	@echo "::endgroup::"
 
