@@ -24,7 +24,7 @@ var _ = Describe("Restricted Modules - Normal Module Installation", Ordered, fun
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace,
-					NewDeployer(v1beta2.DefaultChannel)).
+					NewTemplateOperator(v1beta2.DefaultChannel)).
 				Should(Succeed())
 
 			By("And the Module CR has been installed on the SKR cluster")
@@ -52,7 +52,7 @@ var _ = Describe("Restricted Modules - Normal Module Installation", Ordered, fun
 		It("When the module is disabled and MRM gets a kymaSelector", func() {
 			Eventually(DisableModule).
 				WithContext(ctx).
-				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, DeployerModuleName).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, TestModuleName).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
@@ -64,7 +64,7 @@ var _ = Describe("Restricted Modules - Normal Module Installation", Ordered, fun
 			By("And the MRM is patched with a kymaSelector for a non-matching global account ID")
 			Eventually(UpdateModuleReleaseMetaKymaSelector).
 				WithContext(ctx).
-				WithArguments(kcpClient, DeployerModuleName, ControlPlaneNamespace, &apimetav1.LabelSelector{
+				WithArguments(kcpClient, TestModuleName, ControlPlaneNamespace, &apimetav1.LabelSelector{
 					MatchExpressions: []apimetav1.LabelSelectorRequirement{
 						{
 							Key:      "kyma-project.io/global-account-id",
@@ -79,13 +79,13 @@ var _ = Describe("Restricted Modules - Normal Module Installation", Ordered, fun
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace,
-					NewDeployer(v1beta2.DefaultChannel)).
+					NewTemplateOperator(v1beta2.DefaultChannel)).
 				Should(Succeed())
 
 			By("Then the module is in error state on the KCP cluster")
 			Eventually(CheckModuleState).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.Name, ControlPlaneNamespace, DeployerModuleName, shared.StateError).
+				WithArguments(kcpClient, kyma.Name, ControlPlaneNamespace, TestModuleName, shared.StateError).
 				Should(Succeed())
 
 			By("And SKR Kyma CR is in \"Error\" State")
@@ -97,7 +97,7 @@ var _ = Describe("Restricted Modules - Normal Module Installation", Ordered, fun
 			By("And the SKR Kyma status contains the expected error message for the module")
 			Eventually(ModuleMessageInKymaStatusIsCorrect).
 				WithContext(ctx).
-				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, DeployerModuleName,
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, TestModuleName,
 					"module template not allowed: module has kymaSelector but is not in restricted modules list").
 				Should(Succeed())
 		})
