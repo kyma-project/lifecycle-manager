@@ -93,6 +93,7 @@ jobs:
           - restricted-default-module
           - restricted-default-module-catalog-sync
           - restricted-module-normal-installation
+          - deployer-module-image-pull-secret
 
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -131,6 +132,7 @@ jobs:
             restricted-default-module | \
             restricted-module-normal-installation | \
             restricted-default-module-catalog-sync | \
+            deployer-module-image-pull-secret | \
             kyma-deprovision-with-foreground-propagation | \
             kyma-deprovision-with-background-propagation | \
             kyma-metrics | \
