@@ -13,19 +13,25 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-// RestrictedDefaultModuleDeployerName is the only module for which
-// CreateRestrictedDefaultModuleImagePullSecretTransform takes effect. The transform
+// DeployerModuleName is the only module for which
+// CreateDeployerModuleImagePullSecretTransform takes effect. The transform
 // MUST NOT silently apply to any other module: image-pull-secret data injection is
 // reserved for the deployer module per the feature design (issue #3345).
-const RestrictedDefaultModuleDeployerName = "deployer"
+const DeployerModuleName = "deployer"
 
 const secretKind = "Secret"
 
 var (
-	ErrInjectFromKCPSecretMissingModuleLabel = errors.New(
-		"kcp source secret is missing the required " + shared.ModuleName + " label")
-	ErrInjectFromKCPSecretModuleLabelMismatch = errors.New(
-		"kcp source secret " + shared.ModuleName + " label does not match the manifest module")
+	// ErrInjectDataFromKCP is the umbrella sentinel for every error returned by
+	// CreateDeployerModuleImagePullSecretTransform. The Manifest
+	// reconciler keys on it (errors.Is) to mark the manifest as StateError and
+	// short-circuit SSA — see renderResourcesForInstall in reconciler.go.
+	ErrInjectDataFromKCP = errors.New("inject-data-from-kcp transform failed")
+
+	ErrInjectFromKCPSecretMissingModuleLabel = fmt.Errorf(
+		"%w: kcp source secret is missing the required %s label", ErrInjectDataFromKCP, shared.ModuleName)
+	ErrInjectFromKCPSecretModuleLabelMismatch = fmt.Errorf(
+		"%w: kcp source secret %s label does not match the manifest module", ErrInjectDataFromKCP, shared.ModuleName)
 )
 
 // SecretRepository reads Secrets from a fixed namespace (kcp-system).
@@ -33,7 +39,7 @@ type SecretRepository interface {
 	Get(ctx context.Context, name string) (*apicorev1.Secret, error)
 }
 
-// CreateRestrictedDefaultModuleImagePullSecretTransform returns a ResourceTransform
+// CreateDeployerModuleImagePullSecretTransform returns a ResourceTransform
 // that replaces the .data of any Secret resource in the manifest annotated with
 // shared.InjectDataFromKCPAnnotation=true with the .data of a same-named Secret
 // fetched from the KCP control-plane namespace.
@@ -42,8 +48,8 @@ type SecretRepository interface {
 // carry the shared.ModuleName label matching the manifest's module-name label.
 //
 // The transform is a no-op for any module other than the hardcoded
-// RestrictedDefaultModuleDeployerName.
-func CreateRestrictedDefaultModuleImagePullSecretTransform(secretRepo SecretRepository) ResourceTransform {
+// DeployerModuleName.
+func CreateDeployerModuleImagePullSecretTransform(secretRepo SecretRepository) ResourceTransform {
 	return func(ctx context.Context, obj Object, resources []*unstructured.Unstructured) error {
 		manifest, ok := obj.(*v1beta2.Manifest)
 		if !ok {
@@ -51,9 +57,9 @@ func CreateRestrictedDefaultModuleImagePullSecretTransform(secretRepo SecretRepo
 		}
 
 		// Hardcoded module-name gate: only the deployer module is allowed to inject
-		// secret data from KCP. See RestrictedDefaultModuleDeployerName above.
+		// secret data from KCP. See DeployerModuleName above.
 		moduleName := manifest.GetLabels()[shared.ModuleName]
-		if moduleName != RestrictedDefaultModuleDeployerName {
+		if moduleName != DeployerModuleName {
 			return nil
 		}
 
@@ -81,10 +87,11 @@ func injectDataFromKCP(ctx context.Context, secretRepo SecretRepository,
 ) error {
 	kcpSecret, err := secretRepo.Get(ctx, resource.GetName())
 	if err != nil {
-		return fmt.Errorf("failed to fetch kcp secret %q: %w", resource.GetName(), err)
+		return fmt.Errorf("%w: failed to fetch kcp secret %q: %w", ErrInjectDataFromKCP, resource.GetName(), err)
 	}
 	if kcpSecret.Namespace != shared.DefaultControlPlaneNamespace {
-		return fmt.Errorf("kcp source secret %q must be in namespace %q (got %q)", kcpSecret.Name, shared.DefaultControlPlaneNamespace, kcpSecret.Namespace)
+		return fmt.Errorf("%w: kcp source secret %q must be in namespace %q (got %q)",
+			ErrInjectDataFromKCP, kcpSecret.Name, shared.DefaultControlPlaneNamespace, kcpSecret.Namespace)
 	}
 
 	if err := assertSecretBelongsToModule(kcpSecret, moduleName); err != nil {
@@ -114,7 +121,7 @@ func replaceSecretData(resource *unstructured.Unstructured, data map[string][]by
 		encoded[key] = base64.StdEncoding.EncodeToString(value)
 	}
 	if err := unstructured.SetNestedMap(resource.Object, encoded, "data"); err != nil {
-		return fmt.Errorf("failed to set .data on secret %q: %w", resource.GetName(), err)
+		return fmt.Errorf("%w: failed to set .data on secret %q: %w", ErrInjectDataFromKCP, resource.GetName(), err)
 	}
 	return nil
 }

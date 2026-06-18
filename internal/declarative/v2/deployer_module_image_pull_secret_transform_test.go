@@ -81,7 +81,7 @@ func newSecretResource(name string, annotations map[string]string, data map[stri
 	return res
 }
 
-func TestRestrictedDefaultModuleImagePullSecretTransform_ReplacesData_WhenDeployerAndAnnotated(t *testing.T) {
+func TestDeployerModuleImagePullSecretTransform_ReplacesData_WhenDeployerAndAnnotated(t *testing.T) {
 	t.Parallel()
 
 	srcData := map[string][]byte{".dockerconfigjson": []byte(`{"auths":{"registry":{}}}`)}
@@ -93,7 +93,7 @@ func TestRestrictedDefaultModuleImagePullSecretTransform_ReplacesData_WhenDeploy
 		map[string]string{shared.InjectDataFromKCPAnnotation: shared.EnableLabelValue},
 		map[string]any{".dockerconfigjson": base64.StdEncoding.EncodeToString([]byte("dummy"))})
 
-	transform := declarativev2.CreateRestrictedDefaultModuleImagePullSecretTransform(repo)
+	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(testDeployerModule), []*unstructured.Unstructured{resource})
 	require.NoError(t, err)
 
@@ -104,7 +104,7 @@ func TestRestrictedDefaultModuleImagePullSecretTransform_ReplacesData_WhenDeploy
 	require.Len(t, gotData, 1)
 }
 
-func TestRestrictedDefaultModuleImagePullSecretTransform_NoOp_WhenManifestIsNotDeployer(t *testing.T) {
+func TestDeployerModuleImagePullSecretTransform_NoOp_WhenManifestIsNotDeployer(t *testing.T) {
 	t.Parallel()
 
 	repo := &secretRepoStub{secrets: map[string]*apicorev1.Secret{
@@ -116,7 +116,7 @@ func TestRestrictedDefaultModuleImagePullSecretTransform_NoOp_WhenManifestIsNotD
 		map[string]string{shared.InjectDataFromKCPAnnotation: shared.EnableLabelValue},
 		originalData)
 
-	transform := declarativev2.CreateRestrictedDefaultModuleImagePullSecretTransform(repo)
+	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(testOtherModule), []*unstructured.Unstructured{resource})
 	require.NoError(t, err)
 
@@ -125,26 +125,26 @@ func TestRestrictedDefaultModuleImagePullSecretTransform_NoOp_WhenManifestIsNotD
 	require.Equal(t, originalData["k"], gotData["k"])
 }
 
-func TestRestrictedDefaultModuleImagePullSecretTransform_NoOp_WhenManifestHasNoModuleNameLabel(t *testing.T) {
+func TestDeployerModuleImagePullSecretTransform_NoOp_WhenManifestHasNoModuleNameLabel(t *testing.T) {
 	t.Parallel()
 
 	repo := &secretRepoStub{secrets: map[string]*apicorev1.Secret{}}
 	resource := newSecretResource(testKCPSecretName,
 		map[string]string{shared.InjectDataFromKCPAnnotation: shared.EnableLabelValue}, nil)
 
-	transform := declarativev2.CreateRestrictedDefaultModuleImagePullSecretTransform(repo)
+	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(""), []*unstructured.Unstructured{resource})
 	require.NoError(t, err)
 }
 
-func TestRestrictedDefaultModuleImagePullSecretTransform_IgnoresSecret_WhenAnnotationMissing(t *testing.T) {
+func TestDeployerModuleImagePullSecretTransform_IgnoresSecret_WhenAnnotationMissing(t *testing.T) {
 	t.Parallel()
 
 	repo := &secretRepoStub{secrets: map[string]*apicorev1.Secret{}}
 	originalData := map[string]any{"k": base64.StdEncoding.EncodeToString([]byte("dummy"))}
 	resource := newSecretResource(testKCPSecretName, nil, originalData)
 
-	transform := declarativev2.CreateRestrictedDefaultModuleImagePullSecretTransform(repo)
+	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(testDeployerModule), []*unstructured.Unstructured{resource})
 	require.NoError(t, err)
 
@@ -153,7 +153,7 @@ func TestRestrictedDefaultModuleImagePullSecretTransform_IgnoresSecret_WhenAnnot
 	require.Equal(t, originalData["k"], gotData["k"])
 }
 
-func TestRestrictedDefaultModuleImagePullSecretTransform_IgnoresNonSecretResource_WithAnnotation(t *testing.T) {
+func TestDeployerModuleImagePullSecretTransform_IgnoresNonSecretResource_WithAnnotation(t *testing.T) {
 	t.Parallel()
 
 	repo := &secretRepoStub{secrets: map[string]*apicorev1.Secret{}}
@@ -166,12 +166,12 @@ func TestRestrictedDefaultModuleImagePullSecretTransform_IgnoresNonSecretResourc
 		},
 	}}
 
-	transform := declarativev2.CreateRestrictedDefaultModuleImagePullSecretTransform(repo)
+	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(testDeployerModule), []*unstructured.Unstructured{configMap})
 	require.NoError(t, err)
 }
 
-func TestRestrictedDefaultModuleImagePullSecretTransform_Errors_WhenKCPSecretMissingModuleLabel(t *testing.T) {
+func TestDeployerModuleImagePullSecretTransform_Errors_WhenKCPSecretMissingModuleLabel(t *testing.T) {
 	t.Parallel()
 
 	repo := &secretRepoStub{secrets: map[string]*apicorev1.Secret{
@@ -180,12 +180,13 @@ func TestRestrictedDefaultModuleImagePullSecretTransform_Errors_WhenKCPSecretMis
 	resource := newSecretResource(testKCPSecretName,
 		map[string]string{shared.InjectDataFromKCPAnnotation: shared.EnableLabelValue}, nil)
 
-	transform := declarativev2.CreateRestrictedDefaultModuleImagePullSecretTransform(repo)
+	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(testDeployerModule), []*unstructured.Unstructured{resource})
 	require.ErrorIs(t, err, declarativev2.ErrInjectFromKCPSecretMissingModuleLabel)
+	require.ErrorIs(t, err, declarativev2.ErrInjectDataFromKCP)
 }
 
-func TestRestrictedDefaultModuleImagePullSecretTransform_Errors_WhenKCPSecretLabelMismatch(t *testing.T) {
+func TestDeployerModuleImagePullSecretTransform_Errors_WhenKCPSecretLabelMismatch(t *testing.T) {
 	t.Parallel()
 
 	repo := &secretRepoStub{secrets: map[string]*apicorev1.Secret{
@@ -194,12 +195,27 @@ func TestRestrictedDefaultModuleImagePullSecretTransform_Errors_WhenKCPSecretLab
 	resource := newSecretResource(testKCPSecretName,
 		map[string]string{shared.InjectDataFromKCPAnnotation: shared.EnableLabelValue}, nil)
 
-	transform := declarativev2.CreateRestrictedDefaultModuleImagePullSecretTransform(repo)
+	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(testDeployerModule), []*unstructured.Unstructured{resource})
 	require.ErrorIs(t, err, declarativev2.ErrInjectFromKCPSecretModuleLabelMismatch)
+	require.ErrorIs(t, err, declarativev2.ErrInjectDataFromKCP)
 }
 
-func TestRestrictedDefaultModuleImagePullSecretTransform_PropagatesRepositoryError(t *testing.T) {
+func TestDeployerModuleImagePullSecretTransform_Errors_WhenKCPSecretInWrongNamespace(t *testing.T) {
+	t.Parallel()
+
+	wrongNs := newKCPSecret(testKCPSecretName, testDeployerModule, map[string][]byte{"k": []byte("v")})
+	wrongNs.Namespace = "default"
+	repo := &secretRepoStub{secrets: map[string]*apicorev1.Secret{testKCPSecretName: wrongNs}}
+	resource := newSecretResource(testKCPSecretName,
+		map[string]string{shared.InjectDataFromKCPAnnotation: shared.EnableLabelValue}, nil)
+
+	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
+	err := transform(t.Context(), newManifest(testDeployerModule), []*unstructured.Unstructured{resource})
+	require.ErrorIs(t, err, declarativev2.ErrInjectDataFromKCP)
+}
+
+func TestDeployerModuleImagePullSecretTransform_PropagatesRepositoryError(t *testing.T) {
 	t.Parallel()
 
 	repoErr := errors.New("kcp api unavailable")
@@ -207,12 +223,13 @@ func TestRestrictedDefaultModuleImagePullSecretTransform_PropagatesRepositoryErr
 	resource := newSecretResource(testKCPSecretName,
 		map[string]string{shared.InjectDataFromKCPAnnotation: shared.EnableLabelValue}, nil)
 
-	transform := declarativev2.CreateRestrictedDefaultModuleImagePullSecretTransform(repo)
+	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(testDeployerModule), []*unstructured.Unstructured{resource})
 	require.ErrorIs(t, err, repoErr)
+	require.ErrorIs(t, err, declarativev2.ErrInjectDataFromKCP)
 }
 
-func TestRestrictedDefaultModuleImagePullSecretTransform_ReplacesAllAnnotatedSecrets(t *testing.T) {
+func TestDeployerModuleImagePullSecretTransform_ReplacesAllAnnotatedSecrets(t *testing.T) {
 	t.Parallel()
 
 	repo := &secretRepoStub{secrets: map[string]*apicorev1.Secret{
@@ -224,7 +241,7 @@ func TestRestrictedDefaultModuleImagePullSecretTransform_ReplacesAllAnnotatedSec
 	resourceB := newSecretResource("secret-b",
 		map[string]string{shared.InjectDataFromKCPAnnotation: shared.EnableLabelValue}, nil)
 
-	transform := declarativev2.CreateRestrictedDefaultModuleImagePullSecretTransform(repo)
+	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(testDeployerModule),
 		[]*unstructured.Unstructured{resourceA, resourceB})
 	require.NoError(t, err)
@@ -243,11 +260,11 @@ func TestRestrictedDefaultModuleImagePullSecretTransform_ReplacesAllAnnotatedSec
 	}
 }
 
-func TestRestrictedDefaultModuleImagePullSecretTransform_Errors_WhenObjectIsNotManifest(t *testing.T) {
+func TestDeployerModuleImagePullSecretTransform_Errors_WhenObjectIsNotManifest(t *testing.T) {
 	t.Parallel()
 
 	repo := &secretRepoStub{}
-	transform := declarativev2.CreateRestrictedDefaultModuleImagePullSecretTransform(repo)
+	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
 
 	err := transform(t.Context(), &nonManifestObject{}, nil)
 	require.ErrorIs(t, err, declarativev2.ErrResourceTransformExpectedManifestType)

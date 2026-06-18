@@ -25,9 +25,9 @@ func ComposeRenderService(
 		transforms = append(transforms,
 			declarativev2.CreateSkrImagePullSecretTransform(skrImagePullSecretName))
 	}
-	if slices.Contains(restrictedDefaultModules, declarativev2.RestrictedDefaultModuleDeployerName) {
+	if slices.Contains(restrictedDefaultModules, declarativev2.DeployerModuleName) {
 		transforms = append(transforms,
-			declarativev2.CreateRestrictedDefaultModuleImagePullSecretTransform(secretRepo))
+			declarativev2.CreateDeployerModuleImagePullSecretTransform(secretRepo))
 	}
 	return render.NewService(parser, transforms)
 }
