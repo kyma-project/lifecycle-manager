@@ -1,14 +1,15 @@
 package e2e_test
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() {
@@ -16,6 +17,15 @@ var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() 
 	// this global account id is added to the module release meta in the Makefile
 	kyma.Labels["kyma-project.io/global-account-id"] = GlobalAccountID2
 	moduleCR := NewTestModuleCR(RemoteNamespace)
+
+	injectFromKCPTransform := "inject-data-from-kcp transform failed"
+	errMsgModuleLabelMismatch := fmt.Sprintf(
+		"%s: kcp source secret %s label does not match the manifest module",
+		injectFromKCPTransform, shared.ModuleName)
+	errMsgMissingModuleLabel := fmt.Sprintf("%s: kcp source secret is missing the required %s label",
+		injectFromKCPTransform, shared.ModuleName)
+	errMsgFetchKCPSecret := fmt.Sprintf("%s: failed to fetch kcp secret \"image-pull-secret\"",
+		injectFromKCPTransform)
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
@@ -77,12 +87,12 @@ var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() 
 				Eventually(ManifestStatusOperationContainsMessage).
 					WithContext(ctx).
 					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), DeployerModuleName,
-						"kcp source secret "+shared.ModuleName+" label does not match the manifest module").
+						errMsgModuleLabelMismatch).
 					Should(Succeed())
 				Consistently(ManifestStatusOperationContainsMessage).
 					WithContext(ctx).
 					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), DeployerModuleName,
-						"kcp source secret "+shared.ModuleName+" label does not match the manifest module").
+						errMsgModuleLabelMismatch).
 					WithTimeout(ConsistentDuration).
 					WithPolling(interval).
 					Should(Succeed())
@@ -97,12 +107,12 @@ var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() 
 				Eventually(ManifestStatusOperationContainsMessage).
 					WithContext(ctx).
 					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), DeployerModuleName,
-						"kcp source secret is missing the required "+shared.ModuleName+" label").
+						errMsgMissingModuleLabel).
 					Should(Succeed())
 				Consistently(ManifestStatusOperationContainsMessage).
 					WithContext(ctx).
 					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), DeployerModuleName,
-						"kcp source secret is missing the required "+shared.ModuleName+" label").
+						errMsgMissingModuleLabel).
 					WithTimeout(ConsistentDuration).
 					WithPolling(interval).
 					Should(Succeed())
@@ -115,12 +125,12 @@ var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() 
 				Eventually(ManifestStatusOperationContainsMessage).
 					WithContext(ctx).
 					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), DeployerModuleName,
-						`failed to fetch kcp secret "image-pull-secret"`).
+						errMsgFetchKCPSecret).
 					Should(Succeed())
 				Consistently(ManifestStatusOperationContainsMessage).
 					WithContext(ctx).
 					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), DeployerModuleName,
-						`failed to fetch kcp secret "image-pull-secret"`).
+						errMsgFetchKCPSecret).
 					WithTimeout(ConsistentDuration).
 					WithPolling(interval).
 					Should(Succeed())
