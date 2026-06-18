@@ -22,7 +22,7 @@ module-setup:
 	@echo "::group::Test-specific module metadata setup"
 	@export PATH=$(LOCALBIN):$$PATH
 	@pushd $(TEMPLATE_OPERATOR_DIR) > /dev/null
-# not-deployer module contains fullfills the criteria for image pull secret injection;
+# not-deployer module fulfills the criteria for image pull secret injection;
 	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh \
 		--module-name $(MODULE_NAME) \
 		--version $(MODULE_OLDER_VERSION) \
