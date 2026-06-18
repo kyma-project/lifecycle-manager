@@ -12,7 +12,7 @@ import (
 
 const notDeployerModuleName = "not-deployer"
 
-var _ = Describe("Block Non Deployer Module Image Pull Secret Injection", Ordered, func() {
+var _ = Describe("2 Block Non Deployer Module Image Pull Secret Injection", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	// this global account id is added to the module release meta in the Makefile
 	kyma.Labels["kyma-project.io/global-account-id"] = GlobalAccountID2

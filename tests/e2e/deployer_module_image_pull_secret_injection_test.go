@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() {
+var _ = Describe("1 Deployer Module Image Pull Secret Injection", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	// this global account id is added to the module release meta in the Makefile
 	kyma.Labels["kyma-project.io/global-account-id"] = GlobalAccountID2
@@ -25,7 +25,7 @@ var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() 
 			": secret=%s expected=deployer actual=not-deployer",
 		injectFromKCPTransform, shared.ModuleName, imagePullResourceName)
 	errMsgMissingModuleLabel := fmt.Sprintf(
-		"%s: kcp source secret is missing the required %s label: : secret=%s",
+		"%s: kcp source secret is missing the required %s label: secret=%s",
 		injectFromKCPTransform, shared.ModuleName, imagePullResourceName)
 	errMsgFetchKCPSecret := fmt.Sprintf(
 		"%s: failed to fetch kcp secret %q: failed to get secret %s-kcp-system: secrets %q not found",
