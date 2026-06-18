@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -317,8 +318,8 @@ func SecretDataEquals(
 	if !ok {
 		return fmt.Errorf("secret %s/%s does not have key %q", namespace, name, dataKey)
 	}
-	if string(actualData) != string(expectedData) {
-		return fmt.Errorf("secret %s/%s key %q: got %q, want %q", namespace, name, dataKey, actualData, expectedData)
+	if !bytes.Equal(actualData, expectedData) {
+		return fmt.Errorf("secret %s/%s key %q data does not match", namespace, name, dataKey)
 	}
 	return nil
 }
