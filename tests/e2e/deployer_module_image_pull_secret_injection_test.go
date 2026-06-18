@@ -68,51 +68,41 @@ var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() 
 				Should(Succeed())
 		})
 
-		It("Then after the KCP secret module-name label is changed, the SKR secret reverts to its original data",
+		It("Then after the KCP secret module-name label is changed, the Manifest reports a module label mismatch error",
 			func() {
 				By("When the KCP image-pull-secret module-name label is changed to a non-matching value")
 				Expect(UpdateSecretLabel(ctx, kcpClient, "image-pull-secret",
 					shared.DefaultControlPlaneNamespace, shared.ModuleName, "not-deployer")).To(Succeed())
-				By("Then the SKR secret reverts to the original manifest data")
-				Eventually(SecretDataEquals).
+				By("Then the Manifest reports a module label mismatch error")
+				Eventually(ManifestStatusOperationContainsMessage).
 					WithContext(ctx).
-					WithArguments(
-						skrClient,
-						"image-pull-secret",
-						TestModuleResourceNamespace,
-						".dockerconfigjson",
-						[]byte(`{"auths": {}}`+"\n"),
-					).
+					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), DeployerModuleName,
+						"kcp source secret "+shared.ModuleName+" label does not match the manifest module").
 					Should(Succeed())
-				Consistently(SecretDataEquals).
+				Consistently(ManifestStatusOperationContainsMessage).
 					WithContext(ctx).
-					WithArguments(
-						skrClient,
-						"image-pull-secret",
-						TestModuleResourceNamespace,
-						".dockerconfigjson",
-						[]byte(`{"auths": {}}`+"\n"),
-					).
+					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), DeployerModuleName,
+						"kcp source secret "+shared.ModuleName+" label does not match the manifest module").
 					WithTimeout(ConsistentDuration).
 					WithPolling(interval).
 					Should(Succeed())
 			})
 
-		It("Then with the KCP secret module-name label removed, the SKR secret data stays at the original value",
+		It("Then with the KCP secret module-name label removed, the Manifest reports a missing module label error",
 			func() {
 				By("When the KCP image-pull-secret module-name label is removed entirely")
 				Expect(RemoveSecretLabel(ctx, kcpClient, "image-pull-secret",
 					shared.DefaultControlPlaneNamespace, shared.ModuleName)).To(Succeed())
-				By("Then the SKR secret consistently retains the original manifest data")
-				Consistently(SecretDataEquals).
+				By("Then the Manifest reports a missing module label error")
+				Eventually(ManifestStatusOperationContainsMessage).
 					WithContext(ctx).
-					WithArguments(
-						skrClient,
-						"image-pull-secret",
-						TestModuleResourceNamespace,
-						".dockerconfigjson",
-						[]byte(`{"auths": {}}`+"\n"),
-					).
+					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), DeployerModuleName,
+						"kcp source secret is missing the required "+shared.ModuleName+" label").
+					Should(Succeed())
+				Consistently(ManifestStatusOperationContainsMessage).
+					WithContext(ctx).
+					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), DeployerModuleName,
+						"kcp source secret is missing the required "+shared.ModuleName+" label").
 					WithTimeout(ConsistentDuration).
 					WithPolling(interval).
 					Should(Succeed())
