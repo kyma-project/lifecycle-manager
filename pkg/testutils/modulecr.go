@@ -24,6 +24,8 @@ const (
 	ModuleManagedCRName                = "template-operator-managed-resource"
 	ModuleDeploymentNameInNewerVersion = "template-operator-v2-controller-manager"
 	ModuleDeploymentNameInOlderVersion = "template-operator-v1-controller-manager"
+
+	DeployerModuleName = "deployer"
 )
 
 var (

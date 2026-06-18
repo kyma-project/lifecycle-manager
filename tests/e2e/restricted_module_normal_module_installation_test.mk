@@ -3,6 +3,8 @@
 
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))e2e.common.mk
 
+MODULE_NAME := deployer
+
 .PHONY: klm-patch
 klm-patch: kustomize-install
 	@echo "::group::KLM patch"
