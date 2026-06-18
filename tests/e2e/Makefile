@@ -227,5 +227,5 @@ restricted-module-normal-installation:
 deployer-module-image-pull-secret:
 	$(MAKE) -f $(MAKEFILE_DIR)/deployer_module_image_pull_secret_test.mk test
 
-block-non-deployer-module-image-pull-secret-sync:
-	$(MAKE) -f $(MAKEFILE_DIR)/block_non_deployer_module_image_pull_secret_sync_test.mk test
+block-non-deployer-module-image-pull-secret-injection:
+	$(MAKE) -f $(MAKEFILE_DIR)/block_non_deployer_module_image_pull_secret_injection_test.mk test
