@@ -223,3 +223,6 @@ restricted-default-module-catalog-sync:
 
 restricted-module-normal-installation:
 	$(MAKE) -f $(MAKEFILE_DIR)/restricted_module_normal_module_installation_test.mk test
+
+deployer-module-image-pull-secret:
+	$(MAKE) -f $(MAKEFILE_DIR)/deployer_module_image_pull_secret_test.mk test
