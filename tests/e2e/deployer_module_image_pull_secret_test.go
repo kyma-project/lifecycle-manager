@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -62,5 +63,23 @@ var _ = Describe("Deployer Module Image Pull Secret", Ordered, func() {
 				).
 				Should(Succeed())
 		})
+
+		It("Then after the KCP secret module-name label is changed, the SKR secret reverts to its original data",
+			func() {
+				By("When the KCP image-pull-secret module-name label is changed to a non-matching value")
+				Expect(UpdateSecretLabel(ctx, kcpClient, "image-pull-secret",
+					shared.DefaultControlPlaneNamespace, shared.ModuleName, "not-deployer")).To(Succeed())
+				By("Then the SKR secret reverts to the original manifest data")
+				Eventually(SecretDataEquals).
+					WithContext(ctx).
+					WithArguments(
+						skrClient,
+						"image-pull-secret",
+						TestModuleResourceNamespace,
+						".dockerconfigjson",
+						[]byte(`{"auths": {}}`+"\n"),
+					).
+					Should(Succeed())
+			})
 	})
 })
