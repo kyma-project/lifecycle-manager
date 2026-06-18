@@ -13,7 +13,7 @@ import (
 
 var _ = Describe("Restricted Default Module Catalog Sync", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
-	module := NewTemplateOperator(v1beta2.DefaultChannel)
+	module := NewDeployer(v1beta2.DefaultChannel)
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)

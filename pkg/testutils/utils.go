@@ -58,6 +58,10 @@ func NewTemplateOperator(channel string) v1beta2.Module {
 	return NewTestModuleWithFixName(TestModuleName, channel, "")
 }
 
+func NewDeployer(channel string) v1beta2.Module {
+	return NewTestModuleWithFixName(DeployerModuleName, channel, "")
+}
+
 func NewTestModuleWithFixName(name, channel, version string) v1beta2.Module {
 	return v1beta2.Module{
 		Name:    name,
