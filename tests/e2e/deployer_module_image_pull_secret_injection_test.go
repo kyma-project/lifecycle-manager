@@ -18,14 +18,18 @@ var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() 
 	kyma.Labels["kyma-project.io/global-account-id"] = GlobalAccountID2
 	moduleCR := NewTestModuleCR(RemoteNamespace)
 
+	imagePullResourceName := "image-pull-secret"
 	injectFromKCPTransform := "inject-data-from-kcp transform failed"
 	errMsgModuleLabelMismatch := fmt.Sprintf(
-		"%s: kcp source secret %s label does not match the manifest module",
-		injectFromKCPTransform, shared.ModuleName)
-	errMsgMissingModuleLabel := fmt.Sprintf("%s: kcp source secret is missing the required %s label",
-		injectFromKCPTransform, shared.ModuleName)
-	errMsgFetchKCPSecret := fmt.Sprintf("%s: failed to fetch kcp secret \"image-pull-secret\"",
-		injectFromKCPTransform)
+		"%s: kcp source secret %s label does not match the manifest module"+
+			": secret=%s expected=deployer actual=not-deployer",
+		injectFromKCPTransform, shared.ModuleName, imagePullResourceName)
+	errMsgMissingModuleLabel := fmt.Sprintf(
+		"%s: kcp source secret is missing the required %s label: : secret=%s",
+		injectFromKCPTransform, shared.ModuleName, imagePullResourceName)
+	errMsgFetchKCPSecret := fmt.Sprintf(
+		"%s: failed to fetch kcp secret %q: failed to get secret %s-kcp-system: secrets %q not found",
+		injectFromKCPTransform, imagePullResourceName, imagePullResourceName, imagePullResourceName)
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
@@ -53,7 +57,7 @@ var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() 
 				WithContext(ctx).
 				WithArguments(
 					skrClient,
-					"image-pull-secret",
+					imagePullResourceName,
 					TestModuleResourceNamespace,
 					".dockerconfigjson",
 					[]byte(`{"auths":{"e2e-test.example.com":{"username":"test","password":"test"}}}`+"\n"),
@@ -81,7 +85,7 @@ var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() 
 		It("Then after the KCP secret module-name label is changed, the Manifest reports a module label mismatch error",
 			func() {
 				By("When the KCP image-pull-secret module-name label is changed to a non-matching value")
-				Expect(UpdateSecretLabel(ctx, kcpClient, "image-pull-secret",
+				Expect(UpdateSecretLabel(ctx, kcpClient, imagePullResourceName,
 					shared.DefaultControlPlaneNamespace, shared.ModuleName, "not-deployer")).To(Succeed())
 				By("Then the Manifest reports a module label mismatch error")
 				Eventually(ManifestStatusOperationContainsMessage).
@@ -101,7 +105,7 @@ var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() 
 		It("Then with the KCP secret module-name label removed, the Manifest reports a missing module label error",
 			func() {
 				By("When the KCP image-pull-secret module-name label is removed entirely")
-				Expect(RemoveSecretLabel(ctx, kcpClient, "image-pull-secret",
+				Expect(RemoveSecretLabel(ctx, kcpClient, imagePullResourceName,
 					shared.DefaultControlPlaneNamespace, shared.ModuleName)).To(Succeed())
 				By("Then the Manifest reports a missing module label error")
 				Eventually(ManifestStatusOperationContainsMessage).
@@ -120,7 +124,7 @@ var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() 
 		It("Then with the KCP secret deleted, the Manifest reports a failure to fetch the KCP secret",
 			func() {
 				By("When the KCP image-pull-secret is deleted")
-				Expect(DeleteAnySecret(ctx, "image-pull-secret", kcpClient)).To(Succeed())
+				Expect(DeleteAnySecret(ctx, imagePullResourceName, kcpClient)).To(Succeed())
 				By("Then the Manifest reports a failure to fetch the KCP secret")
 				Eventually(ManifestStatusOperationContainsMessage).
 					WithContext(ctx).
