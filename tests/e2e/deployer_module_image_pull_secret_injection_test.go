@@ -107,5 +107,23 @@ var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() 
 					WithPolling(interval).
 					Should(Succeed())
 			})
+		It("Then with the KCP secret deleted, the Manifest reports a failure to fetch the KCP secret",
+			func() {
+				By("When the KCP image-pull-secret is deleted")
+				Expect(DeleteAnySecret(ctx, "image-pull-secret", kcpClient)).To(Succeed())
+				By("Then the Manifest reports a failure to fetch the KCP secret")
+				Eventually(ManifestStatusOperationContainsMessage).
+					WithContext(ctx).
+					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), DeployerModuleName,
+						`failed to fetch kcp secret "image-pull-secret"`).
+					Should(Succeed())
+				Consistently(ManifestStatusOperationContainsMessage).
+					WithContext(ctx).
+					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), DeployerModuleName,
+						`failed to fetch kcp secret "image-pull-secret"`).
+					WithTimeout(ConsistentDuration).
+					WithPolling(interval).
+					Should(Succeed())
+			})
 	})
 })
