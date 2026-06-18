@@ -46,10 +46,10 @@ test-run: log-tool-versions
 	@export SKR_KUBECONFIG=$(shell k3d kubeconfig write skr)
 	@echo "::endgroup::"
 
-	@echo "::group::E2E test: Deployer Module Image Pull Secret"
+	@echo "::group::E2E test: Deployer Module Image Pull Secret Injection"
 	@export PATH=$(LOCALBIN):$$PATH
 	@pushd $(E2E_TESTS_DIR) > /dev/null
-	set +e; $(GO) test -timeout 20m -ginkgo.v -ginkgo.focus "Deployer Module Image Pull Secret"; status=$$?; set -e
+	set +e; $(GO) test -timeout 20m -ginkgo.v -ginkgo.focus "Deployer Module Image Pull Secret Injection"; status=$$?; set -e
 	@popd > /dev/null
 	@echo "::endgroup::"
 	exit $${status}

@@ -11,7 +11,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 )
 
-var _ = Describe("Deployer Module Image Pull Secret", Ordered, func() {
+var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	// this global account id is added to the module release meta in the Makefile
 	kyma.Labels["kyma-project.io/global-account-id"] = "a1c1d2e3-4a5b-6c7d-8e9f-0a1b2c3d4e5f"
