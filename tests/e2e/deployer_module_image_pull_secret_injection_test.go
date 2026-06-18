@@ -97,5 +97,25 @@ var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() 
 					WithPolling(interval).
 					Should(Succeed())
 			})
+
+		It("Then with the KCP secret module-name label removed, the SKR secret data stays at the original value",
+			func() {
+				By("When the KCP image-pull-secret module-name label is removed entirely")
+				Expect(RemoveSecretLabel(ctx, kcpClient, "image-pull-secret",
+					shared.DefaultControlPlaneNamespace, shared.ModuleName)).To(Succeed())
+				By("Then the SKR secret consistently retains the original manifest data")
+				Consistently(SecretDataEquals).
+					WithContext(ctx).
+					WithArguments(
+						skrClient,
+						"image-pull-secret",
+						TestModuleResourceNamespace,
+						".dockerconfigjson",
+						[]byte(`{"auths": {}}`+"\n"),
+					).
+					WithTimeout(ConsistentDuration).
+					WithPolling(interval).
+					Should(Succeed())
+			})
 	})
 })

@@ -339,6 +339,18 @@ func UpdateSecretLabel(
 	return clnt.Patch(ctx, secret, patch)
 }
 
+func RemoveSecretLabel(
+	ctx context.Context, clnt client.Client, name, namespace, labelKey string,
+) error {
+	secret := &apicorev1.Secret{}
+	if err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, secret); err != nil {
+		return err
+	}
+	patch := client.MergeFrom(secret.DeepCopy())
+	delete(secret.Labels, labelKey)
+	return clnt.Patch(ctx, secret, patch)
+}
+
 func DeploymentContainersHaveImagePullSecretEnv(ctx context.Context,
 	deploymentName, namespace, secretName string, clnt client.Client,
 ) error {
