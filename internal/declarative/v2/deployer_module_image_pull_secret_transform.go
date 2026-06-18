@@ -62,6 +62,9 @@ func CreateDeployerModuleImagePullSecretTransform(secretRepo SecretRepository) R
 		if moduleName != DeployerModuleName {
 			return nil
 		}
+		if secretRepo == nil {
+			return fmt.Errorf("%w: secret repository is nil", ErrInjectDataFromKCP)
+		}
 
 		for _, resource := range resources {
 			if !isInjectableSecret(resource) {
@@ -116,6 +119,11 @@ func assertSecretBelongsToModule(kcpSecret *apicorev1.Secret, moduleName string)
 func replaceSecretData(resource *unstructured.Unstructured, data map[string][]byte) error {
 	// Secret JSON encoding for .data is map<string, base64-string>; we receive the
 	// already-decoded raw bytes from the typed Secret and re-encode here.
+	//
+	// If present, stringData can override data during apply, so remove it to ensure
+	// the injected .data is effective.
+	unstructured.RemoveNestedField(resource.Object, "stringData")
+
 	encoded := make(map[string]any, len(data))
 	for key, value := range data {
 		encoded[key] = base64.StdEncoding.EncodeToString(value)
