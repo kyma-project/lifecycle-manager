@@ -29,7 +29,6 @@ var (
 )
 
 // SecretRepository reads Secrets from a fixed namespace (kcp-system).
-// Defined at the consumer side per ADR 001.
 type SecretRepository interface {
 	Get(ctx context.Context, name string) (*apicorev1.Secret, error)
 }

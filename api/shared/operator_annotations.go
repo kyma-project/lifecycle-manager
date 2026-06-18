@@ -13,7 +13,7 @@ const (
 	UnmanagedAnnotation       = OperatorGroup + Separator + "is-unmanaged"
 	// InjectDataFromKCPAnnotation, when set to "true" on a Secret in a module Manifest, signals
 	// that the Secret's .data MUST be replaced at apply-time with the .data of a matching Secret
-	// fetched from KCP. Only honored for restricted default modules (see the corresponding resource
+	// fetched from KCP. Only honored for restricted default module "deployer" (see the corresponding resource
 	// transform in internal/declarative/v2).
 	InjectDataFromKCPAnnotation = OperatorGroup + Separator + "inject-data-from-kcp"
 )
