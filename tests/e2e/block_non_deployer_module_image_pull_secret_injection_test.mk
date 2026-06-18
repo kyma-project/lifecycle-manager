@@ -5,7 +5,7 @@ include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))e2e.common.mk
 
 MODULE_NAME := not-deployer
 DEPLOYER_MODULE_NAME := deployer
-GLOBAL_ACCOUNT_ID ?= a1c1d2e3-4a5b-6c7d-8e9f-0a1b2c3d4e5f
+GLOBAL_ACCOUNT_ID ?= f6e5d4c3-b2a1-9087-6543-210fedcba987
 
 .PHONY: klm-patch
 klm-patch: kustomize-install
