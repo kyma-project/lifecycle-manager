@@ -84,6 +84,9 @@ func injectDataFromKCP(ctx context.Context, secretRepo SecretRepository,
 	if err != nil {
 		return fmt.Errorf("failed to fetch kcp secret %q: %w", resource.GetName(), err)
 	}
+	if kcpSecret.Namespace != shared.DefaultControlPlaneNamespace {
+		return fmt.Errorf("kcp source secret %q must be in namespace %q (got %q)", kcpSecret.Name, shared.DefaultControlPlaneNamespace, kcpSecret.Namespace)
+	}
 
 	if err := assertSecretBelongsToModule(kcpSecret, moduleName); err != nil {
 		return err
