@@ -14,7 +14,7 @@ import (
 var _ = Describe("Restricted Default Modules", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	// this global account id is added to the module release meta in the Makefile
-	kyma.Labels["kyma-project.io/global-account-id"] = "f6e5d4c3-b2a1-9087-6543-210fedcba987"
+	kyma.Labels["kyma-project.io/global-account-id"] = GlobalAccountID2
 	moduleCR := NewTestModuleCR(RemoteNamespace)
 
 	InitEmptyKymaBeforeAll(kyma)

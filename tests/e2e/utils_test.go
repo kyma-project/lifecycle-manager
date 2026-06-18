@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -46,6 +47,10 @@ const (
 	moduleCRFinalizer       = "cr-finalizer"
 	NewerVersion            = "2.4.2-e2e-test"
 	MisconfiguredModuleName = "template-operator-misconfigured"
+	// GlobalAccountID1 is unused in Go tests but defined here to match
+	// GLOBAL_ACCOUNT_ID_1 in restricted_default_module_test.mk.
+	GlobalAccountID1 = "a1c1d2e3-4a5b-6c7d-8e9f-0a1b2c3d4e5f"
+	GlobalAccountID2 = "f6e5d4c3-b2a1-9087-6543-210fedcba987"
 )
 
 // ModuleVersionToBeUsed is the template-operator version used in tests.
@@ -304,6 +309,50 @@ func DeploymentPodSpecHasImagePullSecret(ctx context.Context,
 		}
 	}
 	return fmt.Errorf("imagePullSecret %s not found in deployment %s", secretName, deploymentName)
+}
+
+func SecretDataEquals(
+	ctx context.Context, clnt client.Client, name, namespace, dataKey string, expectedData []byte,
+) error {
+	secret := &apicorev1.Secret{}
+	if err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, secret); err != nil {
+		return err
+	}
+	actualData, ok := secret.Data[dataKey]
+	if !ok {
+		return fmt.Errorf("secret %s/%s does not have key %q", namespace, name, dataKey)
+	}
+	if !bytes.Equal(actualData, expectedData) {
+		return fmt.Errorf("secret %s/%s key %q data does not match", namespace, name, dataKey)
+	}
+	return nil
+}
+
+func UpdateSecretLabel(
+	ctx context.Context, clnt client.Client, name, namespace, labelKey, labelValue string,
+) error {
+	secret := &apicorev1.Secret{}
+	if err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, secret); err != nil {
+		return err
+	}
+	patch := client.MergeFrom(secret.DeepCopy())
+	if secret.Labels == nil {
+		secret.Labels = make(map[string]string)
+	}
+	secret.Labels[labelKey] = labelValue
+	return clnt.Patch(ctx, secret, patch)
+}
+
+func RemoveSecretLabel(
+	ctx context.Context, clnt client.Client, name, namespace, labelKey string,
+) error {
+	secret := &apicorev1.Secret{}
+	if err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, secret); err != nil {
+		return err
+	}
+	patch := client.MergeFrom(secret.DeepCopy())
+	delete(secret.Labels, labelKey)
+	return clnt.Patch(ctx, secret, patch)
 }
 
 func DeploymentContainersHaveImagePullSecretEnv(ctx context.Context,
