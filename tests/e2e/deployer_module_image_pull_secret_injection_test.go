@@ -39,7 +39,7 @@ var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() 
 		})
 
 		It("Then the image-pull-secret on the SKR has data injected from KCP", func() {
-			Eventually(SecretDataEquals).
+			Consistently(SecretDataEquals).
 				WithContext(ctx).
 				WithArguments(
 					skrClient,
@@ -48,11 +48,13 @@ var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() 
 					".dockerconfigjson",
 					[]byte(`{"auths":{"e2e-test.example.com":{"username":"test","password":"test"}}}`+"\n"),
 				).
+				WithTimeout(ConsistentDuration).
+				WithPolling(interval).
 				Should(Succeed())
 		})
 
 		It("Then the non-annotated pull secret on the SKR retains its original data", func() {
-			Eventually(SecretDataEquals).
+			Consistently(SecretDataEquals).
 				WithContext(ctx).
 				WithArguments(
 					skrClient,
@@ -61,6 +63,8 @@ var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() 
 					".dockerconfigjson",
 					[]byte(`{"auths": {}}`+"\n"),
 				).
+				WithTimeout(ConsistentDuration).
+				WithPolling(interval).
 				Should(Succeed())
 		})
 
@@ -79,6 +83,18 @@ var _ = Describe("Deployer Module Image Pull Secret Injection", Ordered, func() 
 						".dockerconfigjson",
 						[]byte(`{"auths": {}}`+"\n"),
 					).
+					Should(Succeed())
+				Consistently(SecretDataEquals).
+					WithContext(ctx).
+					WithArguments(
+						skrClient,
+						"image-pull-secret",
+						TestModuleResourceNamespace,
+						".dockerconfigjson",
+						[]byte(`{"auths": {}}`+"\n"),
+					).
+					WithTimeout(ConsistentDuration).
+					WithPolling(interval).
 					Should(Succeed())
 			})
 	})
