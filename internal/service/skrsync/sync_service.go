@@ -10,7 +10,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 )
@@ -25,33 +24,22 @@ type SecretRepository interface {
 	Get(ctx context.Context, name string) (*apicorev1.Secret, error)
 }
 
-type SyncCrdsUseCase interface {
-	Execute(ctx context.Context, kyma *v1beta2.Kyma) (bool, error)
-}
-
 type Service struct {
 	skrContextFactory   remote.SkrContextProvider
 	secretRepository    SecretRepository
-	syncCrdsUseCase     SyncCrdsUseCase
 	imagePullSecretName string
 }
 
 func NewService(
 	skrContextFactory remote.SkrContextProvider,
 	secretRepository SecretRepository,
-	syncCrdsUseCase SyncCrdsUseCase,
 	imagePullSecretName string,
 ) *Service {
 	return &Service{
 		skrContextFactory:   skrContextFactory,
 		secretRepository:    secretRepository,
-		syncCrdsUseCase:     syncCrdsUseCase,
 		imagePullSecretName: imagePullSecretName,
 	}
-}
-
-func (s *Service) SyncCrds(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
-	return s.syncCrdsUseCase.Execute(ctx, kyma)
 }
 
 func (s *Service) SyncImagePullSecret(ctx context.Context, kyma types.NamespacedName) error {

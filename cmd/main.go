@@ -58,6 +58,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/installation"
 	manifestrendercmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/manifest/render"
 	restrictedmodulecmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/restrictedmodule"
+	skrsynccmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal"
@@ -303,9 +304,9 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		kymaRepo,
 	)
 
-	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
-		kymaMetrics, logger, maintenanceWindow, ociRegistry.GetReference(), kymaDeletionSvc, kymaLookupSvc,
-		mtEventHandlerMapFunc, mrmEventHandler, restrictedModuleDefaulter)
+	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, remoteClientCache, eventRecorder, flagVar, options,
+		skrWebhookManager, kymaMetrics, logger, maintenanceWindow, ociRegistry.GetReference(), kymaDeletionSvc,
+		kymaLookupSvc, mtEventHandlerMapFunc, mrmEventHandler, restrictedModuleDefaulter)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
 		eventRecorder, kymaRepo, secretRepo)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, mrmRepo, mtRepo, flagVar, options, mandatoryModulesMetrics,
@@ -435,7 +436,8 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 }
 
 func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
-	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
+	skrContextFactory remote.SkrContextProvider, skrClientCache *remote.ClientCache, event event.Event,
+	flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SkrWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
 	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, ociRegistry string,
 	kymaDeletionSvc *kymadeletionsvc.Service, kymaLookupSvc *kymalookupsvc.Service,
@@ -460,12 +462,11 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		SkrImagePullSecretName: flagVar.SkrImagePullSecret,
 	}
 	kcpSystemSecretRepo := secretrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
-	syncCrdsUseCase := remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil)
 	skrSyncService := skrsync.NewService(
 		skrContextFactory,
 		kcpSystemSecretRepo,
-		&syncCrdsUseCase,
 		flagVar.SkrImagePullSecret)
+	crdSyncService := skrsynccmpse.ComposeCrdSyncService(kcpClient, skrClientCache)
 
 	deletionMetricsWriter := kymadeletionctrl.NewMetricWriter(kymaMetrics)
 	resultEventRecorder := resultevent.NewEventRecorder(event)
@@ -476,6 +477,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		Event:                event,
 		DescriptorProvider:   descriptorProvider,
 		SkrSyncService:       skrSyncService,
+		CrdSyncService:       crdSyncService,
 		ModulesStatusHandler: modulesStatusHandler,
 		SKRWebhookManager:    skrWebhookManager,
 		RateLimiter:          options.RateLimiter,

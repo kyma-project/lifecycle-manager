@@ -14,9 +14,8 @@ import (
 )
 
 var (
-	errModuleReleaseMetaCRDNotReady = errors.New("catalog sync: ModuleReleaseMeta CRD is not ready")
-	errModuleReleaseMetaCleanup     = errors.New("catalog sync: Failed to delete ModuleReleaseMeta")
-	errCatModuleReleaseMetaApply    = errors.New("catalog sync: Could not apply ModuleReleseMetas")
+	errModuleReleaseMetaCleanup  = errors.New("catalog sync: Failed to delete ModuleReleaseMeta")
+	errCatModuleReleaseMetaApply = errors.New("catalog sync: Could not apply ModuleReleseMetas")
 )
 
 // moduleReleaseMetaConcurrentWorker performs ModuleReleaseMeta synchronization using multiple goroutines.
@@ -24,13 +23,12 @@ type moduleReleaseMetaConcurrentWorker struct {
 	namespace  string
 	patchDiff  func(ctx context.Context, obj *v1beta2.ModuleReleaseMeta) error
 	deleteDiff func(ctx context.Context, obj *v1beta2.ModuleReleaseMeta) error
-	createCRD  func(ctx context.Context) error
 }
 
 // newModuleReleaseMetaConcurrentWorker returns a new moduleReleaseMetaConcurrentWorker
 // instance with default dependencies.
 func newModuleReleaseMetaConcurrentWorker(
-	kcpClient, skrClient client.Client,
+	_, skrClient client.Client,
 	settings *Settings,
 ) *moduleReleaseMetaConcurrentWorker {
 	patchDiffFn := func(ctx context.Context, obj *v1beta2.ModuleReleaseMeta) error {
@@ -41,20 +39,18 @@ func newModuleReleaseMetaConcurrentWorker(
 		return deleteModuleReleaseMeta(ctx, obj, skrClient)
 	}
 
-	createCRDFn := func(ctx context.Context) error {
-		return createModuleReleaseMetaCRDInRuntime(ctx, kcpClient, skrClient)
-	}
-
 	return &moduleReleaseMetaConcurrentWorker{
 		namespace:  settings.Namespace,
 		patchDiff:  patchDiffFn,
 		deleteDiff: deleteDiffFn,
-		createCRD:  createCRDFn,
 	}
 }
 
 // SyncConcurrently synchronizes ModuleReleaseMetas from KCP to SKR.
 // kcpModules are the ModuleReleaseMetas to be synced from the KCP cluster.
+// CRDs are expected to be installed beforehand by the central CRD sync. If the SKR API server reports
+// a no-match error for the ModuleReleaseMeta kind, the error is propagated so the controller can requeue
+// with backoff and re-enter the reconciliation where CRDs are tried to be installed again.
 func (c *moduleReleaseMetaConcurrentWorker) SyncConcurrently(
 	ctx context.Context,
 	kcpModules []v1beta2.ModuleReleaseMeta,
@@ -71,13 +67,6 @@ func (c *moduleReleaseMetaConcurrentWorker) SyncConcurrently(
 	for range channelLength {
 		if err := <-results; err != nil {
 			errs = append(errs, err)
-		}
-	}
-
-	// retry if ModuleReleaseMeta CRD is not existing in SKR cluster
-	if containsCRDNotFoundError(errs) {
-		if err := c.createCRD(ctx); err != nil {
-			return err
 		}
 	}
 
@@ -111,10 +100,6 @@ func (c *moduleReleaseMetaConcurrentWorker) DeleteConcurrently(ctx context.Conte
 		return errors.Join(errs...)
 	}
 	return nil
-}
-
-func createModuleReleaseMetaCRDInRuntime(ctx context.Context, kcpClient client.Client, skrClient client.Client) error {
-	return createCRDInRuntime(ctx, shared.ModuleReleaseMetaKind, errModuleReleaseMetaCRDNotReady, kcpClient, skrClient)
 }
 
 func prepareModuleReleaseMetaForSSA(moduleReleaseMeta *v1beta2.ModuleReleaseMeta, namespace string) {

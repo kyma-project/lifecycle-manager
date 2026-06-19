@@ -145,20 +145,23 @@ func TestInitConditions_WithEmptyKyma(t *testing.T) {
 
 	// ASSERT
 
-	// Should have exactly 2 conditions (Modules and ModuleCatalog)
-	if len(kyma.Status.Conditions) != 2 {
-		t.Errorf("Expected 2 conditions, but got %d", len(kyma.Status.Conditions))
+	// Should have exactly 3 conditions (Modules, ModuleCatalog, CRDsSync)
+	if len(kyma.Status.Conditions) != 3 {
+		t.Errorf("Expected 3 conditions, but got %d", len(kyma.Status.Conditions))
 	}
 
 	// Verify specific conditions are present
 	hasModules := false
 	hasModuleCatalog := false
+	hasCRDsSync := false
 	for _, condition := range kyma.Status.Conditions {
 		switch condition.Type {
 		case string(v1beta2.ConditionTypeModules):
 			hasModules = true
 		case string(v1beta2.ConditionTypeModuleCatalog):
 			hasModuleCatalog = true
+		case string(v1beta2.ConditionTypeCRDsSync):
+			hasCRDsSync = true
 		}
 	}
 
@@ -167,6 +170,9 @@ func TestInitConditions_WithEmptyKyma(t *testing.T) {
 	}
 	if !hasModuleCatalog {
 		t.Error("Missing ConditionTypeModuleCatalog")
+	}
+	if !hasCRDsSync {
+		t.Error("Missing ConditionTypeCRDsSync")
 	}
 }
 
@@ -186,6 +192,7 @@ func TestInitConditions_MessageGeneration(t *testing.T) {
 			expectedMessages: map[v1beta2.KymaConditionType]string{
 				v1beta2.ConditionTypeModules:       "modules state is unknown",
 				v1beta2.ConditionTypeModuleCatalog: "module templates synchronization state is unknown",
+				v1beta2.ConditionTypeCRDsSync:      "CRDs synchronization state is unknown",
 			},
 		},
 		{
@@ -195,6 +202,7 @@ func TestInitConditions_MessageGeneration(t *testing.T) {
 			expectedMessages: map[v1beta2.KymaConditionType]string{
 				v1beta2.ConditionTypeModules:       "modules state is unknown",
 				v1beta2.ConditionTypeModuleCatalog: "module templates synchronization state is unknown",
+				v1beta2.ConditionTypeCRDsSync:      "CRDs synchronization state is unknown",
 				v1beta2.ConditionTypeSKRWebhook:    "skrwebhook is out of sync and needs to be resynchronized",
 				v1beta2.ConditionTypeSKRImagePullSecretSync: "skr image pull secret is out of sync " +
 					"and needs to be resynchronized",
@@ -263,8 +271,8 @@ func TestInitConditions_RemovesDeprecatedConditions(t *testing.T) {
 		}
 	}
 
-	// Should have 4 new conditions
-	expectedConditions := 4 // Modules, ModuleCatalog, SKRWebhook, SKRImagePullSecretSync
+	// Should have 5 new conditions
+	expectedConditions := 5 // Modules, ModuleCatalog, CRDsSync, SKRWebhook, SKRImagePullSecretSync
 	if len(kyma.Status.Conditions) != expectedConditions {
 		t.Errorf("Expected %d conditions after init, got %d", expectedConditions, len(kyma.Status.Conditions))
 	}
@@ -353,6 +361,7 @@ func getExpectedConditions(watcherEnabled, skrImagePullSecretSync bool) []v1beta
 	expectedConditions := []v1beta2.KymaConditionType{
 		v1beta2.ConditionTypeModules,       // Always required
 		v1beta2.ConditionTypeModuleCatalog, // Always required
+		v1beta2.ConditionTypeCRDsSync,      // Always required
 	}
 
 	if watcherEnabled {

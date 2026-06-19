@@ -41,11 +41,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	restrictedmodulecmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/restrictedmodule"
+	skrsynccmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	kymadeletionctrl "github.com/kyma-project/lifecycle-manager/internal/controller/kyma/deletion"
-	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
@@ -93,7 +93,6 @@ var (
 	restCfg               *rest.Config
 	descriptorProvider    *provider.CachedDescriptorProvider
 	descProviderService   *componentdescriptor.FakeService
-	crdCache              *crd.Cache
 	registerDescriptor    func(name, version string) error // register component descriptors during tests.
 )
 
@@ -182,7 +181,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 	descriptorProvider = provider.NewCachedDescriptorProvider(descProviderService, descriptorcache.NewDescriptorCache())
 
-	crdCache = crd.NewCache(nil)
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
 
@@ -190,8 +188,8 @@ var _ = BeforeSuite(func() {
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 	}
 
-	syncCrdsUseCase := remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache)
-	skrSyncService := skrsync.NewService(nil, nil, &syncCrdsUseCase, "")
+	syncCrdsService := skrsynccmpse.ComposeCrdSyncService(kcpClient, skrClientCache)
+	skrSyncService := skrsync.NewService(nil, nil, "")
 
 	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
 	Expect(err).ToNot(HaveOccurred())
@@ -232,6 +230,7 @@ var _ = BeforeSuite(func() {
 		RequeueIntervals:     intervals,
 		DescriptorProvider:   descriptorProvider,
 		SkrSyncService:       skrSyncService,
+		CrdSyncService:       syncCrdsService,
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
 		Metrics:              kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,

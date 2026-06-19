@@ -15,7 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
@@ -23,7 +22,7 @@ import (
 )
 
 func TestSyncImagePullSecret_WhenSecretNameIsNotConfigured_ReturnsError(t *testing.T) {
-	skrSyncService := skrsync.NewService(nil, nil, nil, "")
+	skrSyncService := skrsync.NewService(nil, nil, "")
 
 	err := skrSyncService.SyncImagePullSecret(t.Context(), random.NamespacedName())
 
@@ -33,7 +32,7 @@ func TestSyncImagePullSecret_WhenSecretNameIsNotConfigured_ReturnsError(t *testi
 func TestSyncImagePullSecret_WhenSecretRepositoryReturnsError_ReturnsError(t *testing.T) {
 	expectedError := errors.New("secret not found in repository")
 	secretRepo := &secretRepositoryStub{err: expectedError}
-	skrSyncService := skrsync.NewService(nil, secretRepo, nil, "test-secret")
+	skrSyncService := skrsync.NewService(nil, secretRepo, "test-secret")
 
 	err := skrSyncService.SyncImagePullSecret(t.Context(), random.NamespacedName())
 
@@ -50,7 +49,7 @@ func TestSyncImagePullSecret_WhenSkrContextFactoryReturnsError_ReturnsError(t *t
 	}
 	secretRepo := &secretRepositoryStub{secret: secret}
 	skrContextFactory := &skrContextProviderStub{err: expectedError}
-	skrSyncService := skrsync.NewService(skrContextFactory, secretRepo, nil, "test-secret")
+	skrSyncService := skrsync.NewService(skrContextFactory, secretRepo, "test-secret")
 
 	err := skrSyncService.SyncImagePullSecret(t.Context(), random.NamespacedName())
 
@@ -72,7 +71,7 @@ func TestSyncImagePullSecret_WhenSkrContextPatchReturnsError_ReturnsError(t *tes
 	secretRepo := &secretRepositoryStub{secret: secret}
 	mockClient := &mockSkrClient{patchError: patchError}
 	skrContextFactory := &skrContextProviderStub{mockClient: mockClient}
-	skrSyncService := skrsync.NewService(skrContextFactory, secretRepo, nil, "test-secret")
+	skrSyncService := skrsync.NewService(skrContextFactory, secretRepo, "test-secret")
 
 	err := skrSyncService.SyncImagePullSecret(t.Context(), random.NamespacedName())
 
@@ -106,7 +105,7 @@ func TestSyncImagePullSecret_WhenSuccessful_SyncsSecretToSkr(t *testing.T) {
 	secretRepo := &secretRepositoryStub{secret: secret}
 	mockClient := &mockSkrClient{}
 	skrContextFactory := &skrContextProviderStub{mockClient: mockClient}
-	skrSyncService := skrsync.NewService(skrContextFactory, secretRepo, nil, "test-secret")
+	skrSyncService := skrsync.NewService(skrContextFactory, secretRepo, "test-secret")
 
 	err := skrSyncService.SyncImagePullSecret(t.Context(), random.NamespacedName())
 
@@ -135,51 +134,7 @@ func TestSyncImagePullSecret_WhenSuccessful_SyncsSecretToSkr(t *testing.T) {
 	require.Contains(t, mockClient.patchOptions, fieldowners.LegacyLifecycleManager)
 }
 
-func TestSyncCrds_WhenCalled_ShouldInvokeUseCase(t *testing.T) {
-	syncCrdsUseCase := &syncCrdsUseCaseStub{}
-	skrSyncService := skrsync.NewService(nil, nil, syncCrdsUseCase, "")
-
-	_, err := skrSyncService.SyncCrds(t.Context(), &v1beta2.Kyma{})
-
-	require.NoError(t, err)
-	require.True(t, syncCrdsUseCase.called)
-}
-
-func TestSyncCrds_WhenUseCaseReturnsError_ReturnsError(t *testing.T) {
-	expectedError := errors.New("usecase execution failed")
-	syncCrdsUseCase := &syncCrdsUseCaseStub{err: expectedError}
-	skrSyncService := skrsync.NewService(nil, nil, syncCrdsUseCase, "")
-
-	result, err := skrSyncService.SyncCrds(t.Context(), &v1beta2.Kyma{})
-
-	require.ErrorIs(t, err, expectedError)
-	require.False(t, result)
-	require.True(t, syncCrdsUseCase.called)
-}
-
-func TestSyncCrds_WhenUseCaseSucceeds_ReturnsResult(t *testing.T) {
-	syncCrdsUseCase := &syncCrdsUseCaseStub{result: true}
-	skrSyncService := skrsync.NewService(nil, nil, syncCrdsUseCase, "")
-
-	result, err := skrSyncService.SyncCrds(t.Context(), &v1beta2.Kyma{})
-
-	require.NoError(t, err)
-	require.True(t, result)
-	require.True(t, syncCrdsUseCase.called)
-}
-
 // Test Stubs
-
-type syncCrdsUseCaseStub struct {
-	called bool
-	result bool
-	err    error
-}
-
-func (s *syncCrdsUseCaseStub) Execute(_ context.Context, _ *v1beta2.Kyma) (bool, error) {
-	s.called = true
-	return s.result, s.err
-}
 
 type secretRepositoryStub struct {
 	called bool
@@ -187,7 +142,7 @@ type secretRepositoryStub struct {
 	err    error
 }
 
-func (s *secretRepositoryStub) Get(ctx context.Context, name string) (*apicorev1.Secret, error) {
+func (s *secretRepositoryStub) Get(_ context.Context, _ string) (*apicorev1.Secret, error) {
 	s.called = true
 	return s.secret, s.err
 }
@@ -198,7 +153,7 @@ type skrContextProviderStub struct {
 	err        error
 }
 
-func (s *skrContextProviderStub) Get(kyma types.NamespacedName) (*remote.SkrContext, error) {
+func (s *skrContextProviderStub) Get(_ types.NamespacedName) (*remote.SkrContext, error) {
 	s.called = true
 	if s.err != nil {
 		return nil, s.err
@@ -222,9 +177,9 @@ type mockSkrClient struct {
 	patchError    error
 }
 
-func (m *mockSkrClient) Patch(ctx context.Context,
+func (m *mockSkrClient) Patch(_ context.Context,
 	obj client.Object,
-	patch client.Patch,
+	_ client.Patch,
 	opts ...client.PatchOption,
 ) error {
 	m.patchCalled = true
