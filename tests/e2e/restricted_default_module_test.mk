@@ -3,6 +3,8 @@
 
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))e2e.common.mk
 
+MODULE_NAME := deployer
+
 RESTRICTED_DEFAULT_MODULES ?= $(MODULE_NAME),not-$(MODULE_NAME)
 GLOBAL_ACCOUNT_ID_1 ?= a1c1d2e3-4a5b-6c7d-8e9f-0a1b2c3d4e5f
 # this global account id is added to the Kyma labels in the test

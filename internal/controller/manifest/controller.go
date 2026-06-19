@@ -24,6 +24,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/resources"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/render"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -197,6 +198,12 @@ func (r *Reconciler) install(ctx context.Context, req ctrl.Request,
 
 	target, current, err := r.renderResourcesForInstall(ctx, skrClient, manifest, spec)
 	if err != nil {
+		// The inject-data-from-kcp transform marks an unrecoverable misconfiguration
+		// of the deployer module's secret wiring. Surface it as StateError so the
+		// Kyma CR reflects the failure; the early return below already skips SSA.
+		if errors.Is(err, render.ErrInjectDataFromKCP) {
+			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
+		}
 		return r.finishReconcile(ctx, manifest, metrics.ManifestRenderResources, manifestStatus, err)
 	}
 

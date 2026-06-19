@@ -308,7 +308,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		kymaMetrics, logger, maintenanceWindow, ociRegistry.GetReference(), kymaDeletionSvc, kymaLookupSvc,
 		mtEventHandlerMapFunc, mrmEventHandler, restrictedModuleDefaulter)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
-		eventRecorder, kymaRepo)
+		eventRecorder, kymaRepo, secretRepo)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, mrmRepo, mtRepo, flagVar, options, mandatoryModulesMetrics,
 		logger, ociRegistry.GetReference(), mandatoryMrmHandlerMapFunc)
 	setupMandatoryModuleDeletionReconciler(mgr, eventRecorder, mrmRepo, manifestRepo, flagVar, options, logger)
@@ -546,6 +546,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	setupLog logr.Logger,
 	event event.Event,
 	kymaRepo *kymarepo.Repository,
+	secretRepo *secretrepo.Repository,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -561,7 +562,8 @@ func setupManifestReconciler(mgr ctrl.Manager,
 
 	kcpClient := mgr.GetClient()
 	cachedManifestParser := parser.NewCachedManifestParser(parser.DefaultInMemoryParseTTL)
-	renderService := manifestrendercmpse.ComposeRenderService(cachedManifestParser, flagVar.SkrImagePullSecret)
+	renderService := manifestrendercmpse.ComposeRenderService(cachedManifestParser, flagVar.SkrImagePullSecret,
+		secretRepo, flagVar.GetRestrictedDefaultModules())
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	customStateCheck := statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)
