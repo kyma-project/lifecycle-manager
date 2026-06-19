@@ -3,13 +3,15 @@
 
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))e2e.common.mk
 
+MODULE_NAME := deployer
+
 .PHONY: klm-patch
 klm-patch: kustomize-install
 	@echo "::group::KLM patch"
 	@export PATH=$(LOCALBIN):$$PATH
 	@pushd $(LIFECYCLE_MANAGER_DIR)/config/watcher_local_test > /dev/null
 	kustomize edit add patch --kind Deployment --patch \
-		'[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--restricted-default-modules=template-operator"}]'
+		'[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--restricted-default-modules=$(MODULE_NAME)"}]'
 	@popd > /dev/null
 	@echo "::endgroup::"
 

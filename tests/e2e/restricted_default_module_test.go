@@ -14,7 +14,7 @@ import (
 var _ = Describe("Restricted Default Modules", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	// this global account id is added to the module release meta in the Makefile
-	kyma.Labels["kyma-project.io/global-account-id"] = "f6e5d4c3-b2a1-9087-6543-210fedcba987"
+	kyma.Labels["kyma-project.io/global-account-id"] = GlobalAccountID2
 	moduleCR := NewTestModuleCR(RemoteNamespace)
 
 	InitEmptyKymaBeforeAll(kyma)
@@ -25,12 +25,12 @@ var _ = Describe("Restricted Default Modules", Ordered, func() {
 		It("Then the matching restricted module is enabled on the KCP cluster", func() {
 			Eventually(ContainsModuleInSpec).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), TestModuleName).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), DeployerModuleName).
 				Should(Succeed())
 			By("And the non-matching restricted module is not enabled on the KCP cluster")
 			Eventually(NotContainsModuleInSpec).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), "not-"+TestModuleName).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), "not-"+DeployerModuleName).
 				Should(Succeed())
 			By("And the Module CR has been installed on the SKR cluster")
 			Eventually(ModuleCRExists).
@@ -47,7 +47,7 @@ var _ = Describe("Restricted Default Modules", Ordered, func() {
 		It("When the restricted module is disabled on the SKR cluster", func() {
 			Eventually(DisableModule).
 				WithContext(ctx).
-				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, TestModuleName).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, DeployerModuleName).
 				Should(Succeed())
 
 			By("Then the Module CR is removed from the SKR cluster")
@@ -77,7 +77,7 @@ var _ = Describe("Restricted Default Modules", Ordered, func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace,
-					NewTemplateOperator(v1beta2.DefaultChannel)).
+					NewDeployer(v1beta2.DefaultChannel)).
 				Should(Succeed())
 
 			By("And the Module CR has been installed on the SKR cluster")

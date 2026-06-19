@@ -216,6 +216,12 @@ func (r *Reconciler) install(ctx context.Context, req ctrl.Request,
 
 	target, current, err := r.renderResourcesForInstall(ctx, skrClient, manifest, spec)
 	if err != nil {
+		// The inject-data-from-kcp transform marks an unrecoverable misconfiguration
+		// of the deployer module's secret wiring. Surface it as StateError so the
+		// Kyma CR reflects the failure; the early return below already skips SSA.
+		if errors.Is(err, ErrInjectDataFromKCP) {
+			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
+		}
 		return r.finishReconcile(ctx, manifest, metrics.ManifestRenderResources, manifestStatus, err)
 	}
 

@@ -12,17 +12,19 @@ MANDATORY=false
 INCLUDE_DEFAULT_CR=true
 REQUIRES_DOWNTIME=false
 DEPLOY_MODULETEMPLATE=true
+ADDITIONAL_RESOURCES=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --module-name)        MODULE_NAME="$2";            shift 2 ;;
-    --version)            RELEASE_VERSION="$2";        shift 2 ;;
-    --deployment-name)    DEPLOYMENT_NAME="$2";        shift 2 ;;
-    --deployable-version) DEPLOYABLE_VERSION="$2";     shift 2 ;;
-    --mandatory)          MANDATORY=true;               shift   ;;
-    --no-default-cr)      INCLUDE_DEFAULT_CR=false;    shift   ;;
-    --requires-downtime)  REQUIRES_DOWNTIME=true;      shift   ;;
-    --skip-apply)         DEPLOY_MODULETEMPLATE=false;  shift   ;;
+    --module-name)           MODULE_NAME="$2";                    shift 2 ;;
+    --version)               RELEASE_VERSION="$2";                shift 2 ;;
+    --deployment-name)       DEPLOYMENT_NAME="$2";                shift 2 ;;
+    --deployable-version)    DEPLOYABLE_VERSION="$2";             shift 2 ;;
+    --mandatory)             MANDATORY=true;                       shift   ;;
+    --no-default-cr)         INCLUDE_DEFAULT_CR=false;            shift   ;;
+    --requires-downtime)     REQUIRES_DOWNTIME=true;              shift   ;;
+    --skip-apply)            DEPLOY_MODULETEMPLATE=false;          shift   ;;
+    --additional-resources)  ADDITIONAL_RESOURCES+=("$2");        shift 2 ;;
     *) echo "Unknown flag: $1"; exit 1 ;;
   esac
 done
@@ -48,6 +50,11 @@ echo "=== Preparing module template: ${MODULE_NAME} ${RELEASE_VERSION} ==="
 yq eval ".images[0].newTag = \"${RELEASE_VERSION}\"" -i config/manager/deployment/kustomization.yaml
 make build-manifests
 yq eval "(. | select(.kind == \"Deployment\") | .metadata.name) = \"${DEPLOYMENT_NAME}\"" -i template-operator.yaml
+
+for resource in "${ADDITIONAL_RESOURCES[@]}"; do
+  yq eval-all '.' template-operator.yaml "$resource" > template-operator.yaml.tmp
+  mv template-operator.yaml.tmp template-operator.yaml
+done
 
 ./deploy_moduletemplate.sh \
   "${MODULE_NAME}" \
