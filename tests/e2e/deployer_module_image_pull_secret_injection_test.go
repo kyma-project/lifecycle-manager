@@ -67,6 +67,25 @@ var _ = Describe("1 Deployer Module Image Pull Secret Injection", Ordered, func(
 				Should(Succeed())
 		})
 
+		It("Then a change to the KCP secret data eventually propagates to the SKR", func() {
+			updatedDockerConfig := []byte(
+				`{"auths":{"e2e-test.example.com":{"username":"updated","password":"updated"}}}` + "\n")
+			By("When the KCP image-pull-secret data is updated")
+			Expect(UpdateSecretDataKey(ctx, kcpClient, imagePullResourceName,
+				shared.DefaultControlPlaneNamespace, ".dockerconfigjson", updatedDockerConfig)).To(Succeed())
+			By("Then the updated data eventually arrives at the SKR image-pull-secret")
+			Eventually(SecretDataEquals).
+				WithContext(ctx).
+				WithArguments(
+					skrClient,
+					imagePullResourceName,
+					TestModuleResourceNamespace,
+					".dockerconfigjson",
+					updatedDockerConfig,
+				).
+				Should(Succeed())
+		})
+
 		It("Then the non-annotated pull secret on the SKR retains its original data", func() {
 			Consistently(SecretDataEquals).
 				WithContext(ctx).
