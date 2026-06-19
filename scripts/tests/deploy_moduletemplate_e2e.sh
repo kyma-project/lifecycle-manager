@@ -52,8 +52,8 @@ make build-manifests
 yq eval "(. | select(.kind == \"Deployment\") | .metadata.name) = \"${DEPLOYMENT_NAME}\"" -i template-operator.yaml
 
 for resource in "${ADDITIONAL_RESOURCES[@]}"; do
-  printf '\n' >> template-operator.yaml
-  cat "$resource" >> template-operator.yaml
+  yq eval-all '.' template-operator.yaml "$resource" > template-operator.yaml.tmp
+  mv template-operator.yaml.tmp template-operator.yaml
 done
 
 ./deploy_moduletemplate.sh \
