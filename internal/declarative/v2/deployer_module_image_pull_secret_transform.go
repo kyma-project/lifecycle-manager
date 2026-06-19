@@ -67,6 +67,10 @@ func CreateDeployerModuleImagePullSecretTransform(secretRepo SecretRepository) R
 		}
 
 		for _, resource := range resources {
+			if resource == nil {
+				continue
+			}
+
 			if !isInjectableSecret(resource) {
 				continue
 			}

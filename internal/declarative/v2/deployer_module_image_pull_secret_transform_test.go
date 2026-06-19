@@ -260,6 +260,26 @@ func TestDeployerModuleImagePullSecretTransform_ReplacesAllAnnotatedSecrets(t *t
 	}
 }
 
+func TestDeployerModuleImagePullSecretTransform_SkipsNilResource(t *testing.T) {
+	t.Parallel()
+
+	srcData := map[string][]byte{".dockerconfigjson": []byte(`{"auths":{}}`)}
+	repo := &secretRepoStub{secrets: map[string]*apicorev1.Secret{
+		testKCPSecretName: newKCPSecret(testKCPSecretName, testDeployerModule, srcData),
+	}}
+	resource := newSecretResource(testKCPSecretName,
+		map[string]string{shared.InjectDataFromKCPAnnotation: shared.EnableLabelValue}, nil)
+
+	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
+	err := transform(t.Context(), newManifest(testDeployerModule), []*unstructured.Unstructured{nil, resource})
+	require.NoError(t, err)
+
+	gotData, found, err := unstructured.NestedStringMap(resource.Object, "data")
+	require.NoError(t, err)
+	require.True(t, found)
+	require.Equal(t, base64.StdEncoding.EncodeToString(srcData[".dockerconfigjson"]), gotData[".dockerconfigjson"])
+}
+
 func TestDeployerModuleImagePullSecretTransform_Errors_WhenObjectIsNotManifest(t *testing.T) {
 	t.Parallel()
 
