@@ -10,13 +10,10 @@ klm-patch:
 	@echo "::endgroup::"
 
 .PHONY: module-setup
-module-setup:
-	@echo "::group::Test-specific module metadata setup"
+module-setup: module-setup-latest module-setup-in-older-version module-setup-in-newer-version
+	@echo "::group::Test-specific ModuleReleaseMeta setup"
 	@export PATH=$(LOCALBIN):$$PATH
-	@pushd $(TEMPLATE_OPERATOR_DIR) > /dev/null
-	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh --module-name $(MODULE_NAME) --version $(MODULE_MANDATORY_OLDER_VERSION) --deployment-name $(MODULE_DEPLOYMENT_OLDER_VERSION) --deployable-version $(MODULE_DEPLOYABLE_VERSION) --mandatory
-	$(SCRIPTS_DIR)/deploy_mandatory_modulereleasemeta.sh $(MODULE_NAME) $(MODULE_MANDATORY_OLDER_VERSION)
-	@popd > /dev/null
+	$(SCRIPTS_DIR)/deploy_modulereleasemeta.sh $(MODULE_NAME) fast:$(MODULE_NEWER_VERSION) regular:$(MODULE_OLDER_VERSION)
 	@echo "::endgroup::"
 
 .PHONY: test-run
@@ -26,10 +23,10 @@ test-run: log-tool-versions
 	@export SKR_KUBECONFIG=$(shell k3d kubeconfig write skr)
 	@echo "::endgroup::"
 
-	@echo "::group::E2E test: Mandatory Module Metrics"
+	@echo "::group::E2E test: Module with ModuleReleaseMeta Upgrade By New Version"
 	@export PATH=$(LOCALBIN):$$PATH
 	@pushd $(E2E_TESTS_DIR) > /dev/null
-	set +e; $(GO) test -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module Metrics"; status=$$?; set -e
+	set +e; $(GO) test -timeout 20m -ginkgo.v -ginkgo.focus "Module with ModuleReleaseMeta Upgrade By New Version"; status=$$?; set -e
 	@popd > /dev/null
 	@echo "::endgroup::"
 	exit $${status}

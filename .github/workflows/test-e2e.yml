@@ -160,7 +160,15 @@ jobs:
             labelling | \
             fips-mode-metric | \
             watcher-zero-downtime | \
-            modulereleasemeta-watch-trigger)
+            modulereleasemeta-watch-trigger | \
+            module-upgrade-channel-switch | \
+            modulereleasemeta-module-upgrade-new-version | \
+            modulereleasemeta-upgrade-under-deletion | \
+            modulereleasemeta-sync | \
+            module-status-on-skr-connection-lost | \
+            modulereleasemeta-not-allowed-installation | \
+            simulate-skr-secret-rotation-evict-client-cache | \
+            non-blocking-deletion)
               echo "self-contained=true" >> $GITHUB_OUTPUT ;;
             *)
               echo "self-contained=false" >> $GITHUB_OUTPUT ;;
