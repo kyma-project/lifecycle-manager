@@ -13,7 +13,7 @@ klm-patch: kustomize-install
 	@export PATH=$(LOCALBIN):$$PATH
 	@pushd $(LIFECYCLE_MANAGER_DIR)/config/watcher_local_test > /dev/null
 	kustomize edit add patch --kind Deployment --patch \
-		'[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--restricted-default-modules=deployer,$(MODULE_NAME)"}]'
+		'[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--restricted-default-modules=${DEPLOYER_MODULE_NAME},$(MODULE_NAME)"}]'
 	@popd > /dev/null
 	@echo "::endgroup::"
 
