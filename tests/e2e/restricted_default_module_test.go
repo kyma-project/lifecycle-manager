@@ -147,7 +147,7 @@ var _ = Describe("Restricted Default Modules", Ordered, func() {
 			By("And the SKR Kyma status contains the expected error message for the module")
 			Eventually(ModuleMessageInKymaStatusIsCorrect).
 				WithContext(ctx).
-				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, TestModuleName,
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, DeployerModuleName,
 					"module template not allowed: restricted module not allowed for this Kyma").
 				Should(Succeed())
 		})
