@@ -95,11 +95,8 @@ type ModuleStatusHandler interface {
 }
 
 type SkrSyncService interface {
+	SyncCRDs(ctx context.Context, kyma *v1beta2.Kyma) error
 	SyncImagePullSecret(ctx context.Context, kyma types.NamespacedName) error
-}
-
-type CrdSyncService interface {
-	Sync(ctx context.Context, kyma *v1beta2.Kyma) error
 }
 
 type RestrictedModules interface {
@@ -125,7 +122,6 @@ type Reconciler struct {
 	SkrContextFactory    remote.SkrContextProvider
 	DescriptorProvider   *provider.CachedDescriptorProvider
 	SkrSyncService       SkrSyncService
-	CrdSyncService       CrdSyncService
 	ModulesStatusHandler ModuleStatusHandler
 	SKRWebhookManager    SKRWebhookManager
 
@@ -330,7 +326,7 @@ func (r *Reconciler) reconcile(ctx context.Context, req ctrl.Request, kyma *v1be
 		return ctrl.Result{RequeueAfter: r.RateLimiter.When(req)}, nil
 	}
 
-	if err := r.CrdSyncService.Sync(ctx, kyma); err != nil {
+	if err := r.SkrSyncService.SyncCRDs(ctx, kyma); err != nil {
 		kyma.UpdateCondition(v1beta2.ConditionTypeCRDsSync, apimetav1.ConditionFalse)
 		r.Metrics.RecordRequeueReason(metrics.CrdsSync, queue.UnexpectedRequeue)
 		return ctrl.Result{}, r.updateStatusWithError(ctx, kyma, fmt.Errorf("could not sync CRDs: %w", err))

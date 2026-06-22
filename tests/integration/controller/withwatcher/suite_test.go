@@ -57,7 +57,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
-	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -186,8 +185,7 @@ var _ = BeforeSuite(func() {
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 	}
 
-	syncCrdsService := skrsynccmpse.ComposeCrdSyncService(kcpClient, skrClientCache)
-	skrSyncService := skrsync.NewService(nil, nil, "")
+	skrSyncService := skrsynccmpse.ComposeService(kcpClient, skrClientCache, testSkrContextFactory, nil, "")
 
 	kymaMetrics := metrics.NewKymaMetrics(metrics.NewSharedMetrics())
 	deletionEvents := resultevent.NewEventRecorder(testEventRec)
@@ -214,7 +212,6 @@ var _ = BeforeSuite(func() {
 		SKRWebhookManager:    skrWebhookChartManager,
 		DescriptorProvider:   nil, // no descriptor provider needed for these tests
 		SkrSyncService:       skrSyncService,
-		CrdSyncService:       syncCrdsService,
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
 		Metrics:              kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,

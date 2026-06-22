@@ -100,7 +100,6 @@ import (
 	restrictedmodulesvc "github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
-	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	mrmwatch "github.com/kyma-project/lifecycle-manager/internal/watch/modulereleasemeta"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -462,11 +461,13 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		SkrImagePullSecretName: flagVar.SkrImagePullSecret,
 	}
 	kcpSystemSecretRepo := secretrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
-	skrSyncService := skrsync.NewService(
+	skrSyncService := skrsynccmpse.ComposeService(
+		kcpClient,
+		skrClientCache,
 		skrContextFactory,
 		kcpSystemSecretRepo,
-		flagVar.SkrImagePullSecret)
-	crdSyncService := skrsynccmpse.ComposeCrdSyncService(kcpClient, skrClientCache)
+		flagVar.SkrImagePullSecret,
+	)
 
 	deletionMetricsWriter := kymadeletionctrl.NewMetricWriter(kymaMetrics)
 	resultEventRecorder := resultevent.NewEventRecorder(event)
@@ -477,7 +478,6 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		Event:                event,
 		DescriptorProvider:   descriptorProvider,
 		SkrSyncService:       skrSyncService,
-		CrdSyncService:       crdSyncService,
 		ModulesStatusHandler: modulesStatusHandler,
 		SKRWebhookManager:    skrWebhookManager,
 		RateLimiter:          options.RateLimiter,

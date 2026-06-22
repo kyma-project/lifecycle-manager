@@ -59,7 +59,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
-	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -188,8 +187,7 @@ var _ = BeforeSuite(func() {
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 	}
 
-	syncCrdsService := skrsynccmpse.ComposeCrdSyncService(kcpClient, skrClientCache)
-	skrSyncService := skrsync.NewService(nil, nil, "")
+	skrSyncService := skrsynccmpse.ComposeService(kcpClient, skrClientCache, testSkrContextFactory, nil, "")
 
 	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
 	Expect(err).ToNot(HaveOccurred())
@@ -230,7 +228,6 @@ var _ = BeforeSuite(func() {
 		RequeueIntervals:     intervals,
 		DescriptorProvider:   descriptorProvider,
 		SkrSyncService:       skrSyncService,
-		CrdSyncService:       syncCrdsService,
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
 		Metrics:              kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,

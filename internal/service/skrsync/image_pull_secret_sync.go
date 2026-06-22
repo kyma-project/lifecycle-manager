@@ -20,37 +20,36 @@ var (
 	ErrFailedToSyncImagePullSecret  = errors.New("failed to sync image pull secret to SKR")
 )
 
-type SecretRepository interface {
-	Get(ctx context.Context, name string) (*apicorev1.Secret, error)
+// imagePullSecretSync copies the configured image pull secret from KCP to the SKR cluster of a Kyma.
+// Cluster-specific metadata is stripped before applying the secret on the SKR via Server-Side Apply.
+type imagePullSecretSync struct {
+	secretRepository  SecretRepository
+	skrContextFactory remote.SkrContextProvider
+	secretName        string
 }
 
-type Service struct {
-	skrContextFactory   remote.SkrContextProvider
-	secretRepository    SecretRepository
-	imagePullSecretName string
-}
-
-func NewService(
-	skrContextFactory remote.SkrContextProvider,
+func newImagePullSecretSync(
 	secretRepository SecretRepository,
-	imagePullSecretName string,
-) *Service {
-	return &Service{
-		skrContextFactory:   skrContextFactory,
-		secretRepository:    secretRepository,
-		imagePullSecretName: imagePullSecretName,
+	skrContextFactory remote.SkrContextProvider,
+	secretName string,
+) *imagePullSecretSync {
+	return &imagePullSecretSync{
+		secretRepository:  secretRepository,
+		skrContextFactory: skrContextFactory,
+		secretName:        secretName,
 	}
 }
 
-func (s *Service) SyncImagePullSecret(ctx context.Context, kyma types.NamespacedName) error {
-	if s.imagePullSecretName == "" {
+func (s *imagePullSecretSync) execute(ctx context.Context, kyma types.NamespacedName) error {
+	if s.secretName == "" {
 		return ErrImagePullSecretNotConfigured
 	}
 
-	secret, err := s.secretRepository.Get(ctx, s.imagePullSecretName)
+	secret, err := s.secretRepository.Get(ctx, s.secretName)
 	if err != nil {
 		return errors.Join(ErrImagePullSecretNotFound, err)
 	}
+
 	skrContext, err := s.skrContextFactory.Get(kyma)
 	if err != nil {
 		return err
@@ -59,6 +58,7 @@ func (s *Service) SyncImagePullSecret(ctx context.Context, kyma types.Namespaced
 	remoteSecret := secret.DeepCopy()
 	remoteSecret.Namespace = shared.DefaultRemoteNamespace
 	clearClusterSpecificMetadata(remoteSecret)
+
 	err = skrContext.Patch(ctx, remoteSecret,
 		//nolint: staticcheck // issues: #2706, #2707
 		client.Apply,
