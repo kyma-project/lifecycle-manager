@@ -21,7 +21,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var ErrNotContainsExpectedCondition = errors.New("kyma CR not contains expected condition")
+var ErrNotContainsExpectedCondition = errors.New("kyma CR does not contain expected condition")
 
 var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	var err error

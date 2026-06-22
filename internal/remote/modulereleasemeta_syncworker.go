@@ -15,7 +15,7 @@ import (
 
 var (
 	errModuleReleaseMetaCleanup  = errors.New("catalog sync: Failed to delete ModuleReleaseMeta")
-	errCatModuleReleaseMetaApply = errors.New("catalog sync: Could not apply ModuleReleseMetas")
+	errCatModuleReleaseMetaApply = errors.New("catalog sync: Could not apply ModuleReleaseMetas")
 )
 
 // moduleReleaseMetaConcurrentWorker performs ModuleReleaseMeta synchronization using multiple goroutines.
