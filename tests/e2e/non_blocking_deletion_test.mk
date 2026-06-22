@@ -10,7 +10,7 @@ klm-patch:
 	@echo "::endgroup::"
 
 .PHONY: module-setup
-module-setup: module-setup-latest module-setup-in-older-version module-setup-in-newer-version
+module-setup: module-setup-latest module-setup-in-newer-version
 	@echo "::group::Test-specific ModuleReleaseMeta setup"
 	@export PATH=$(LOCALBIN):$$PATH
 	$(SCRIPTS_DIR)/deploy_modulereleasemeta.sh $(MODULE_NAME) fast:$(MODULE_NEWER_VERSION) regular:$(MODULE_DEPLOYABLE_VERSION)
