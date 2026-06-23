@@ -63,10 +63,6 @@ func stopReconcile(res ctrl.Result, err error) *stepResult {
 	return &stepResult{Result: res, Err: err}
 }
 
-// Consumer-defined collaborator interfaces (ADR 001). The reconciler depends
-// only on these interfaces; concrete implementations are injected by the
-// composition root in cmd/main.go.
-
 // SpecResolver resolves a Manifest CR to the location and identity of its
 // installation layer (OCI ref, manifest YAML path).
 type SpecResolver interface {
@@ -96,7 +92,7 @@ type SKRClientCache interface {
 	DeleteClient(key string)
 }
 
-// SKRClient resolves a Kubernetes client for the SKR a Manifest installs to.
+// SKRClient resolves the Kubernetes client for the SKR if the SKRClientCache doesn't hold it already.
 type SKRClient interface {
 	ResolveClient(ctx context.Context, manifest *v1beta2.Manifest) (*skrclient.SKRClient, error)
 }
