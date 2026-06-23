@@ -1,0 +1,4 @@
+name: kyma-project.io/kyma-runtime/kcp-components/lifecycle-manager
+team: kyma/jellyfish
+images:
+  - europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest

@@ -6,10 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/apimachinery/pkg/api/meta"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -79,12 +76,21 @@ type SKRClient interface {
 
 type ResourceTransform = func(context.Context, Object, []*unstructured.Unstructured) error
 
+// ResourceRenderService renders the target resources for a Manifest by parsing
+// the manifest layer and applying any configured transforms. EvictCache drops
+// the cached parse result for a Spec, forcing the next render to re-parse.
+type ResourceRenderService interface {
+	RenderTargetResources(ctx context.Context, skrClient skrclient.Client,
+		manifest *v1beta2.Manifest, spec *Spec) ([]client.Object, error)
+	EvictCache(spec *Spec)
+}
+
 type Reconciler struct {
-	requeueIntervals     queue.RequeueIntervals
-	rateLimiter          workqueue.TypedRateLimiter[ctrl.Request]
-	kcpClient            client.Client
-	cachedManifestParser CachedManifestParser
-	customStateCheck     StateCheck
+	requeueIntervals queue.RequeueIntervals
+	rateLimiter      workqueue.TypedRateLimiter[ctrl.Request]
+	kcpClient        client.Client
+	renderService    ResourceRenderService
+	customStateCheck StateCheck
 
 	manifestMetrics            *metrics.ManifestMetrics
 	mandatoryModuleMetrics     *metrics.MandatoryModulesMetrics
@@ -94,7 +100,6 @@ type Reconciler struct {
 	orphanDetectionService     OrphanDetectionService
 	skrClientCache             SKRClientCache
 	skrClient                  SKRClient
-	resourceTransforms         []ResourceTransform
 }
 
 func NewReconciler(requeueIntervals queue.RequeueIntervals,
@@ -107,9 +112,8 @@ func NewReconciler(requeueIntervals queue.RequeueIntervals,
 	clientCache SKRClientCache,
 	skrClient SKRClient,
 	kcpClient client.Client,
-	cachedManifestParser CachedManifestParser,
+	renderService ResourceRenderService,
 	stateCheck StateCheck,
-	skrImagePullSecretName string,
 ) *Reconciler {
 	reconciler := &Reconciler{}
 	reconciler.manifestMetrics = metrics
@@ -123,14 +127,8 @@ func NewReconciler(requeueIntervals queue.RequeueIntervals,
 	reconciler.skrClientCache = clientCache
 	reconciler.skrClient = skrClient
 
-	reconciler.resourceTransforms = GetDefaultResourceTransforms()
-	if skrImagePullSecretName != "" {
-		reconciler.resourceTransforms = append(reconciler.resourceTransforms,
-			CreateSkrImagePullSecretTransform(skrImagePullSecretName))
-	}
-
 	reconciler.kcpClient = kcpClient
-	reconciler.cachedManifestParser = cachedManifestParser
+	reconciler.renderService = renderService
 
 	reconciler.customStateCheck = stateCheck
 	return reconciler
@@ -218,6 +216,12 @@ func (r *Reconciler) install(ctx context.Context, req ctrl.Request,
 
 	target, current, err := r.renderResourcesForInstall(ctx, skrClient, manifest, spec)
 	if err != nil {
+		// The inject-data-from-kcp transform marks an unrecoverable misconfiguration
+		// of the deployer module's secret wiring. Surface it as StateError so the
+		// Kyma CR reflects the failure; the early return below already skips SSA.
+		if errors.Is(err, ErrInjectDataFromKCP) {
+			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
+		}
 		return r.finishReconcile(ctx, manifest, metrics.ManifestRenderResources, manifestStatus, err)
 	}
 
@@ -429,7 +433,7 @@ func (r *Reconciler) renderResourcesForInstall(ctx context.Context, skrClient sk
 	manifestStatus := manifest.GetStatus()
 	current := ResourceList(manifestStatus.Synced)
 
-	target, err := r.renderTargetResources(ctx, skrClient, manifest, spec)
+	target, err := r.renderService.RenderTargetResources(ctx, skrClient, manifest, spec)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -458,7 +462,7 @@ func (r *Reconciler) renderResourcesForDelete(ctx context.Context, skrClient skr
 	}
 
 	// we're here only if allModuleCRsDeleted == false and err == nil.
-	target, err := r.renderTargetResources(ctx, skrClient, manifest, spec)
+	target, err := r.renderService.RenderTargetResources(ctx, skrClient, manifest, spec)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -541,66 +545,6 @@ func (r *Reconciler) checkManagerState(ctx context.Context, clnt skrclient.Clien
 	return managerState, nil
 }
 
-func (r *Reconciler) renderTargetResources(ctx context.Context,
-	skrClient skrclient.Client,
-	manifest *v1beta2.Manifest,
-	spec *Spec,
-) ([]client.Object, error) {
-	targetResources, err := r.cachedManifestParser.Parse(spec)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, transform := range r.resourceTransforms {
-		if err := transform(ctx, manifest, targetResources.Items); err != nil {
-			return nil, err
-		}
-	}
-
-	result := make([]client.Object, 0, len(targetResources.Items))
-	for _, unstrObj := range targetResources.Items {
-		converted := client.Object(unstrObj) // unstructured.Unstructured implements client.Object
-		err := normaliseNamespace(converted, apimetav1.NamespaceDefault, skrClient)
-		if err != nil {
-			recoverable := meta.IsNoMatchError(err)
-			if !recoverable {
-				return nil, err
-			}
-		}
-		result = append(result, converted)
-	}
-
-	return result, nil
-}
-
-// normaliseNamespaces is only a workaround for malformed resources, e.g. by bad charts or wrong type configs.
-func normaliseNamespace(obj client.Object, defaultNamespace string, skrClient skrclient.Client) error {
-	gvk := obj.GetObjectKind().GroupVersionKind()
-	namespaced, err := isNamespaced(gvk, skrClient)
-	if err != nil {
-		return err
-	}
-	if namespaced {
-		if obj.GetNamespace() == "" {
-			obj.SetNamespace(defaultNamespace)
-		}
-	} else {
-		if obj.GetNamespace() != "" {
-			obj.SetNamespace("")
-		}
-	}
-	return nil
-}
-
-func isNamespaced(gvk schema.GroupVersionKind, skrClient skrclient.Client) (bool, error) {
-	mapper := skrClient.RESTMapper()
-	mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
-	if err != nil {
-		return false, fmt.Errorf("failed to get REST mapping for %s: %w", gvk.Kind, err)
-	}
-	return mapping.Scope.Name() == "namespace", nil
-}
-
 func (r *Reconciler) pruneDiff(ctx context.Context, clnt skrclient.Client, manifest *v1beta2.Manifest,
 	current ResourceList, target []client.Object, spec *Spec,
 ) error {
@@ -617,7 +561,7 @@ func (r *Reconciler) pruneDiff(ctx context.Context, clnt skrclient.Client, manif
 				WithState(shared.StateWarning).
 				WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()),
 		)
-		r.cachedManifestParser.EvictCache(spec)
+		r.renderService.EvictCache(spec)
 		return ErrResourceSyncDiffInSameOCILayer
 	}
 

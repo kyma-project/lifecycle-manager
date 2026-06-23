@@ -56,6 +56,7 @@ import (
 	kymalookupcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/kyma/lookup"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/deletion"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/installation"
+	manifestrendercmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/manifest/render"
 	restrictedmodulecmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/restrictedmodule"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
@@ -306,7 +307,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		kymaMetrics, logger, maintenanceWindow, ociRegistry.GetReference(), kymaDeletionSvc, kymaLookupSvc,
 		mtEventHandlerMapFunc, mrmEventHandler, restrictedModuleDefaulter)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
-		eventRecorder, kymaRepo)
+		eventRecorder, kymaRepo, secretRepo)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, mrmRepo, mtRepo, flagVar, options, mandatoryModulesMetrics,
 		logger, ociRegistry.GetReference(), mandatoryMrmHandlerMapFunc)
 	setupMandatoryModuleDeletionReconciler(mgr, eventRecorder, mrmRepo, manifestRepo, flagVar, options, logger)
@@ -544,6 +545,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	setupLog logr.Logger,
 	event event.Event,
 	kymaRepo *kymarepo.Repository,
+	secretRepo *secretrepo.Repository,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -559,6 +561,8 @@ func setupManifestReconciler(mgr ctrl.Manager,
 
 	kcpClient := mgr.GetClient()
 	cachedManifestParser := declarativev2.NewInMemoryCachedManifestParser(declarativev2.DefaultInMemoryParseTTL)
+	renderService := manifestrendercmpse.ComposeRenderService(cachedManifestParser, flagVar.SkrImagePullSecret,
+		secretRepo, flagVar.GetRestrictedDefaultModules())
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	customStateCheck := statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)
@@ -572,8 +576,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 			flagVar.ManifestRequeueJitterPercentage),
 	}, options.RateLimiter,
 		metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, manifestClient, orphanDetectionService,
-		specResolver, clientCache, skrClient, kcpClient, cachedManifestParser, customStateCheck,
-		flagVar.SkrImagePullSecret); err != nil {
+		specResolver, clientCache, skrClient, kcpClient, renderService, customStateCheck); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(bootstrapFailedExitCode)
 	}

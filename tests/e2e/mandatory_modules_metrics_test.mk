@@ -14,8 +14,8 @@ module-setup:
 	@echo "::group::Test-specific module metadata setup"
 	@export PATH=$(LOCALBIN):$$PATH
 	@pushd $(TEMPLATE_OPERATOR_DIR) > /dev/null
-	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh --module-name $(MODULE_NAME) --version $(MODULE_OLDER_VERSION) --deployment-name $(MODULE_DEPLOYMENT_OLDER_VERSION) --deployable-version $(MODULE_DEPLOYABLE_VERSION) --mandatory
-	$(SCRIPTS_DIR)/deploy_mandatory_modulereleasemeta.sh $(MODULE_NAME) $(MODULE_OLDER_VERSION)
+	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh --module-name $(MODULE_NAME) --version $(MODULE_MANDATORY_OLDER_VERSION) --deployment-name $(MODULE_DEPLOYMENT_OLDER_VERSION) --deployable-version $(MODULE_DEPLOYABLE_VERSION) --mandatory
+	$(SCRIPTS_DIR)/deploy_mandatory_modulereleasemeta.sh $(MODULE_NAME) $(MODULE_MANDATORY_OLDER_VERSION)
 	@popd > /dev/null
 	@echo "::endgroup::"
 

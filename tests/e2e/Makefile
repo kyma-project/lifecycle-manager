@@ -108,7 +108,7 @@ mandatory-module:
 	$(MAKE) -f $(MAKEFILE_DIR)/mandatory_module_test.mk test
 
 non-blocking-deletion:
-	$(GO_TEST) "Non Blocking Kyma Module Deletion"
+	$(MAKE) -f $(MAKEFILE_DIR)/non_blocking_deletion_test.mk test
 
 module-deletion-with-only-default-cr:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Non Blocking Module Deletion With Only Default CR"
@@ -117,7 +117,7 @@ skip-manifest-reconciliation:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Manifest Skip Reconciliation Label"
 
 modulereleasemeta-upgrade-under-deletion:
-	$(GO_TEST) "Kyma Module with ModuleReleaseMeta Upgrade Under Deletion"
+	$(MAKE) -f $(MAKEFILE_DIR)/modulereleasemeta_upgrade_under_deletion_test.mk test
 
 unmanage-module:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Unmanaging Kyma Module"
@@ -129,10 +129,10 @@ purge-metrics:
 	$(MAKE) -f $(MAKEFILE_DIR)/purge_metrics_test.mk test
 
 module-upgrade-channel-switch:
-	$(GO_TEST) "Module Upgrade By Channel Switch"
+	$(MAKE) -f $(MAKEFILE_DIR)/module_upgrade_channel_switch_test.mk test
 
 modulereleasemeta-module-upgrade-new-version:
-	$(GO_TEST) "Module with ModuleReleaseMeta Upgrade By New Version"
+	$(MAKE) -f $(MAKEFILE_DIR)/modulereleasemeta_module_upgrade_new_version_test.mk test
 
 self-signed-certificate-rotation:
 	$(MAKE) -f $(MAKEFILE_DIR)/self_signed_certificate_rotation_test.mk test
@@ -153,13 +153,13 @@ modulereleasemeta-watch-trigger:
 	$(MAKE) -f $(MAKEFILE_DIR)/modulereleasemeta_watch_trigger_test.mk
 
 modulereleasemeta-sync:
-	$(GO_TEST) "ModuleReleaseMeta Sync"
+	$(MAKE) -f $(MAKEFILE_DIR)/modulereleasemeta_sync_test.mk test
 
 module-status-on-skr-connection-lost:
-	$(GO_TEST) "KCP Kyma Module status on SKR connection lost"
+	$(MAKE) -f $(MAKEFILE_DIR)/module_status_on_skr_connection_lost_test.mk test
 
 modulereleasemeta-not-allowed-installation:
-	$(GO_TEST) "ModuleReleaseMeta Not Allowed Installation"
+	$(MAKE) -f $(MAKEFILE_DIR)/modulereleasemeta_not_allowed_installation_test.mk test
 
 labelling:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Labelling SKR resources"
@@ -207,7 +207,7 @@ gateway-secret-server-cert-metric:
 	$(MAKE) -f $(MAKEFILE_DIR)/gateway_secret_server_cert_metric_test.mk test
 
 simulate-skr-secret-rotation-evict-client-cache:
-	$(GO_TEST) "SKR client cache get evicted due to connection error caused by secret rotation"
+	$(MAKE) -f $(MAKEFILE_DIR)/simulate_skr_secret_rotation_evict_client_cache_test.mk test
 
 skr-image-pull-secret-sync:
 	$(MAKE) -f $(MAKEFILE_DIR)/skr_image_pull_secret_sync_test.mk test
@@ -223,3 +223,9 @@ restricted-default-module-catalog-sync:
 
 restricted-module-normal-installation:
 	$(MAKE) -f $(MAKEFILE_DIR)/restricted_module_normal_module_installation_test.mk test
+
+deployer-module-image-pull-secret-injection:
+	$(MAKE) -f $(MAKEFILE_DIR)/deployer_module_image_pull_secret_injection_test.mk test
+
+block-non-deployer-module-image-pull-secret-injection:
+	$(MAKE) -f $(MAKEFILE_DIR)/block_non_deployer_module_image_pull_secret_injection_test.mk test

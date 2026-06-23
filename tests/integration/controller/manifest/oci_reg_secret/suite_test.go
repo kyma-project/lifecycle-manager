@@ -51,6 +51,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/render"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
@@ -146,6 +147,7 @@ var _ = BeforeSuite(func() {
 	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
 	accessManagerService := testskrcontext.NewFakeAccessManagerService(testEnv, cfg)
 	cachedManifestParser := declarativev2.NewInMemoryCachedManifestParser(declarativev2.DefaultInMemoryParseTTL)
+	renderService := render.NewService(cachedManifestParser, declarativev2.GetDefaultResourceTransforms())
 
 	rateLimiter := internal.RateLimiter(1*time.Second, 5*time.Second, 30, 200)
 	reconciler = declarativev2.NewReconciler(queue.RequeueIntervals{
@@ -163,9 +165,8 @@ var _ = BeforeSuite(func() {
 		skrclientcache.NewService(),
 		skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService),
 		kcpClient,
-		cachedManifestParser,
+		renderService,
 		declarativev2.NewExistsStateCheck(),
-		"",
 	)
 
 	err = ctrl.NewControllerManagedBy(mgr).
