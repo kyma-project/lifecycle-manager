@@ -192,10 +192,10 @@ module-deletion-blocking-with-cross-namespace-create-and-delete-policy:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Blocking Module Deletion With Module CRs in Different Namespaces with CreateAndDelete Policy"
 
 module-deletion-blocking-with-cluster-scoped-crs-ignore-policy:
-	$(GO_TEST) "Blocking Module Deletion With Cluster-Scoped CRs with Ignore Policy"
+	$(MAKE) -f $(MAKEFILE_DIR)/module_deletion_blocking_cluster_scoped_test.mk test "GINKGO_FOCUS=Blocking Module Deletion With Cluster-Scoped CRs with Ignore Policy"
 
 module-deletion-blocking-with-cluster-scoped-crs-create-and-delete-policy:
-	$(GO_TEST) "Blocking Module Deletion With Cluster-Scoped CRs with CreateAndDelete Policy"
+	$(MAKE) -f $(MAKEFILE_DIR)/module_deletion_blocking_cluster_scoped_test.mk test "GINKGO_FOCUS=Blocking Module Deletion With Cluster-Scoped CRs with CreateAndDelete Policy"
 
 module-transferred-to-another-oci-registry:
 	$(GO_TEST) "Module Transferred to Another OCI Registry"
