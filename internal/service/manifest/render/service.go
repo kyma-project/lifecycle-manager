@@ -10,9 +10,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 )
+
+// CachedManifestParser is the consumer-defined interface for the manifest
+// parser used by Service. Service owns the parser to keep the parse cache
+// scoped to the render lifecycle.
+type CachedManifestParser interface {
+	Parse(spec *spec.Spec) (internal.ManifestResources, error)
+	EvictCache(spec *spec.Spec)
+}
 
 // Service renders the target resources for a Manifest. It owns the
 // manifest parser cache and the ordered list of transforms that adapt the
