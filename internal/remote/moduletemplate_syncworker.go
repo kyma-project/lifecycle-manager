@@ -27,7 +27,7 @@ type moduleTemplateConcurrentWorker struct {
 
 // newModuleTemplateConcurrentWorker returns a new moduleTemplateConcurrentWorker instance with default dependencies.
 func newModuleTemplateConcurrentWorker(
-	_, skrClient client.Client,
+	skrClient client.Client,
 	settings *Settings,
 ) *moduleTemplateConcurrentWorker {
 	patchDiffFn := func(ctx context.Context, obj *v1beta2.ModuleTemplate) error {

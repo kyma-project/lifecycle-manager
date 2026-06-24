@@ -28,7 +28,7 @@ type moduleReleaseMetaConcurrentWorker struct {
 // newModuleReleaseMetaConcurrentWorker returns a new moduleReleaseMetaConcurrentWorker
 // instance with default dependencies.
 func newModuleReleaseMetaConcurrentWorker(
-	_, skrClient client.Client,
+	skrClient client.Client,
 	settings *Settings,
 ) *moduleReleaseMetaConcurrentWorker {
 	patchDiffFn := func(ctx context.Context, obj *v1beta2.ModuleReleaseMeta) error {

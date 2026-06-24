@@ -359,9 +359,9 @@ func TestInitConditions_Metadata(t *testing.T) {
 func getExpectedConditions(watcherEnabled, skrImagePullSecretSync bool) []v1beta2.KymaConditionType {
 	// Based on the logic in condition_messages.go, these are the expected conditions:
 	expectedConditions := []v1beta2.KymaConditionType{
+		v1beta2.ConditionTypeCRDsSync,      // Always required, runs first
 		v1beta2.ConditionTypeModules,       // Always required
 		v1beta2.ConditionTypeModuleCatalog, // Always required
-		v1beta2.ConditionTypeCRDsSync,      // Always required
 	}
 
 	if watcherEnabled {

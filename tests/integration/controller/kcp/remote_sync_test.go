@@ -443,4 +443,34 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 			return skrModuleReleaseMetaCrd.Spec.Versions[0].Schema
 		}, Timeout, Interval).Should(Equal(kcpModuleReleaseMetaCrd.Spec.Versions[0].Schema))
 	})
+
+	It("Should re-apply Kyma CRD on SKR after it is deleted", func() {
+		kymaCrd, err := fetchCrd(skrClient, shared.KymaKind)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(skrClient.Delete, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(ctx, kymaCrd).
+			Should(Succeed())
+
+		Eventually(func() error {
+			_, err := fetchCrd(skrClient, shared.KymaKind)
+			return err
+		}, Timeout, Interval).WithContext(ctx).Should(Succeed())
+	})
+
+	It("Should re-apply ModuleTemplate CRD on SKR after it is deleted", func() {
+		moduleTemplateCrd, err := fetchCrd(skrClient, shared.ModuleTemplateKind)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(skrClient.Delete, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(ctx, moduleTemplateCrd).
+			Should(Succeed())
+
+		Eventually(func() error {
+			_, err := fetchCrd(skrClient, shared.ModuleTemplateKind)
+			return err
+		}, Timeout, Interval).WithContext(ctx).Should(Succeed())
+	})
 })

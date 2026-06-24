@@ -50,7 +50,7 @@ func (c *crdSync) execute(ctx context.Context, kyma *v1beta2.Kyma) error {
 		return nil
 	}
 
-	return errors.Join(append(errs, ErrCrdSync)...)
+	return errors.Join(append([]error{ErrCrdSync}, errs...)...)
 }
 
 func (c *crdSync) applyOne(ctx context.Context, kymaName types.NamespacedName, entry SkrCrdSyncEntry) error {

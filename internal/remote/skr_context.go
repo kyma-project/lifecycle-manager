@@ -102,7 +102,7 @@ func (s *SkrContext) CreateKymaNamespace(ctx context.Context) error {
 }
 
 func (s *SkrContext) CreateOrFetchKyma(
-	ctx context.Context, _ client.Client, kyma *v1beta2.Kyma,
+	ctx context.Context, kyma *v1beta2.Kyma,
 ) (*v1beta2.Kyma, error) {
 	remoteKyma, err := s.getRemoteKyma(ctx)
 	if util.IsNotFound(err) {

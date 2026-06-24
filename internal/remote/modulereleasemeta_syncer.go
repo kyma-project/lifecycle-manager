@@ -20,26 +20,24 @@ type moduleReleaseMetaSyncWorker interface {
 }
 
 // mrmSyncWorkerFactory is a factory function for creating new moduleReleaseMetaSyncWorker instance.
-type mrmSyncWorkerFactory func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncWorker
+type mrmSyncWorkerFactory func(skrClient client.Client, settings *Settings) moduleReleaseMetaSyncWorker
 
 // moduleReleaseMetaSyncer provides a top-level API for synchronizing ModuleReleaseMetas from KCP to SKR.
-// It expects a ready-to-use client to the KCP and SKR cluster.
+// It expects a ready-to-use client to the SKR cluster.
 type moduleReleaseMetaSyncer struct {
-	kcpClient           client.Client
 	skrClient           client.Client
 	settings            *Settings
 	syncWorkerFactoryFn mrmSyncWorkerFactory
 }
 
-func newModuleReleaseMetaSyncer(kcpClient, skrClient client.Client, settings *Settings) *moduleReleaseMetaSyncer {
-	var syncWokerFactoryFn mrmSyncWorkerFactory = func(kcpClient,
+func newModuleReleaseMetaSyncer(skrClient client.Client, settings *Settings) *moduleReleaseMetaSyncer {
+	var syncWokerFactoryFn mrmSyncWorkerFactory = func(
 		skrClient client.Client, settings *Settings,
 	) moduleReleaseMetaSyncWorker {
-		return newModuleReleaseMetaConcurrentWorker(kcpClient, skrClient, settings)
+		return newModuleReleaseMetaConcurrentWorker(skrClient, settings)
 	}
 
 	return &moduleReleaseMetaSyncer{
-		kcpClient:           kcpClient,
 		skrClient:           skrClient,
 		settings:            settings,
 		syncWorkerFactoryFn: syncWokerFactoryFn,
@@ -56,7 +54,7 @@ func (mts *moduleReleaseMetaSyncer) SyncToSKR(
 	ctx context.Context,
 	kcpModuleReleases []v1beta2.ModuleReleaseMeta,
 ) error {
-	worker := mts.syncWorkerFactoryFn(mts.kcpClient, mts.skrClient, mts.settings)
+	worker := mts.syncWorkerFactoryFn(mts.skrClient, mts.settings)
 
 	if err := worker.SyncConcurrently(ctx, kcpModuleReleases); err != nil {
 		return err

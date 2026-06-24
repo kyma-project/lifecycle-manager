@@ -86,7 +86,7 @@ func (r *Repository) Apply(ctx context.Context,
 		return err
 	}
 
-	desired, err := buildSkrCrd(kcpCrd)
+	desired, err := buildSkrCrd(r.crdName, kcpCrd)
 	if err != nil {
 		return fmt.Errorf("failed to build SKR CRD %q: %w", r.crdName, err)
 	}
@@ -102,7 +102,7 @@ func (r *Repository) Apply(ctx context.Context,
 	return nil
 }
 
-func buildSkrCrd(kcpCrd *apiextensionsv1.CustomResourceDefinition) (*unstructured.Unstructured, error) {
+func buildSkrCrd(name string, kcpCrd *apiextensionsv1.CustomResourceDefinition) (*unstructured.Unstructured, error) {
 	spec := kcpCrd.Spec.DeepCopy()
 	spec.Conversion = &apiextensionsv1.CustomResourceConversion{
 		Strategy: apiextensionsv1.NoneConverter,
@@ -116,7 +116,7 @@ func buildSkrCrd(kcpCrd *apiextensionsv1.CustomResourceDefinition) (*unstructure
 	desired := &unstructured.Unstructured{}
 	desired.SetGroupVersionKind(apiextensionsv1.SchemeGroupVersion.WithKind(
 		reflect.TypeFor[apiextensionsv1.CustomResourceDefinition]().Name()))
-	desired.SetName(kcpCrd.Name)
+	desired.SetName(name)
 	desired.SetLabels(map[string]string{shared.ManagedBy: shared.ManagedByLabelValue})
 	if err := unstructured.SetNestedField(desired.Object, specMap, "spec"); err != nil {
 		return nil, fmt.Errorf("failed to set CRD spec on unstructured object: %w", err)

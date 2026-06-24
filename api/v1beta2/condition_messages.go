@@ -88,11 +88,13 @@ var conditionMessagesByType = map[KymaConditionType]conditionMessages{
 	},
 }
 
-// GetRequiredConditionTypes returns all required ConditionTypes for a KymaCR.
+// GetRequiredConditionTypes returns all required ConditionTypes for a KymaCR, ordered to mirror
+// the reconciliation sequence: CRDs are synced first; modules and the module catalog are reconciled
+// afterwards; SKR webhook and image pull secret follow when enabled.
 func GetRequiredConditionTypes(watcherEnabled, skrImagePullSecretSyncEnabled bool) []KymaConditionType {
-	requiredConditions := []KymaConditionType{ConditionTypeModules}
+	requiredConditions := []KymaConditionType{ConditionTypeCRDsSync}
+	requiredConditions = append(requiredConditions, ConditionTypeModules)
 	requiredConditions = append(requiredConditions, ConditionTypeModuleCatalog)
-	requiredConditions = append(requiredConditions, ConditionTypeCRDsSync)
 
 	if watcherEnabled {
 		requiredConditions = append(requiredConditions, ConditionTypeSKRWebhook)

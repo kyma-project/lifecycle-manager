@@ -60,6 +60,27 @@ func TestApply_PatchesCrdViaSSA(t *testing.T) {
 	require.Contains(t, patchClient.options, fieldowners.LegacyLifecycleManager)
 }
 
+func TestApply_UsesRepositoryCrdNameEvenWhenKcpCrdNameDiffers(t *testing.T) {
+	kymaName := types.NamespacedName{Name: random.Name(), Namespace: random.Name()}
+	repoCrdName := "kymas.operator.kyma-project.io"
+	kcpCrdName := "moduletemplates.operator.kyma-project.io"
+
+	patchClient := &applyClientStub{}
+	clientRetrieverStub := &skrClientRetrieverStub{client: patchClient}
+	repo := skrcrdrepo.NewRepository(clientRetrieverStub.retrieverFunc(), repoCrdName)
+
+	kcpCrd := &apiextensionsv1.CustomResourceDefinition{
+		ObjectMeta: apimetav1.ObjectMeta{Name: kcpCrdName},
+	}
+
+	require.NoError(t, repo.Apply(t.Context(), kymaName, kcpCrd))
+
+	patched, ok := patchClient.patched.(*unstructured.Unstructured)
+	require.True(t, ok)
+	assert.Equal(t, repoCrdName, patched.GetName(),
+		"applied CRD must use the repository's bound name, not kcpCrd.Name")
+}
+
 func TestApply_ClientNotFound_ReturnsError(t *testing.T) {
 	clientRetrieverStub := &skrClientRetrieverStub{client: nil}
 	repo := skrcrdrepo.NewRepository(clientRetrieverStub.retrieverFunc(), random.Name())
