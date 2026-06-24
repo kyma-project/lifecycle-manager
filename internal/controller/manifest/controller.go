@@ -255,9 +255,11 @@ func (r *Reconciler) install(ctx context.Context, req ctrl.Request,
 	return r.finishReconcile(ctx, manifest, metrics.ManifestReconcileFinished, manifestStatus, nil)
 }
 
-// prepareReconcile runs the steps shared by install: status init, mandatory-module
-// metric, SKR client resolution, unmanaged short-circuit, orphan detection, and
-// finalizer SSA. A non-nil *stepResult signals the caller must return immediately.
+// prepareReconcile runs the preparatory steps at the start of the install
+// pipeline — status init, mandatory-module metric, SKR client resolution,
+// unmanaged short-circuit, orphan detection, and finalizer SSA — before the
+// spec is resolved or resources are rendered. A non-nil *stepResult signals
+// the caller must return immediately.
 func (r *Reconciler) prepareReconcile(ctx context.Context, req ctrl.Request,
 	manifest *v1beta2.Manifest, manifestStatus shared.Status,
 ) (skrclient.Client, *stepResult) {
@@ -396,10 +398,11 @@ func (r *Reconciler) delete(ctx context.Context, req ctrl.Request,
 	return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestReconcileFinished, nil)
 }
 
-// prepareDeleteReconcile runs the steps shared by delete: status init,
-// mandatory-module metric, SKR client resolution (with access-secret cleanup
-// short-circuit) and unmanaged cleanup. A non-nil *stepResult signals the
-// caller must return immediately.
+// prepareDeleteReconcile runs the preparatory steps at the start of the
+// delete pipeline — status init, mandatory-module metric, SKR client
+// resolution (with access-secret cleanup short-circuit), and unmanaged
+// cleanup — before the spec is resolved or resources are rendered. A non-nil
+// *stepResult signals the caller must return immediately.
 func (r *Reconciler) prepareDeleteReconcile(ctx context.Context, req ctrl.Request,
 	manifest *v1beta2.Manifest, manifestStatus shared.Status,
 ) (skrclient.Client, *stepResult) {
