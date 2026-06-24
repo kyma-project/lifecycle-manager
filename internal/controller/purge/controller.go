@@ -18,6 +18,7 @@ package purge
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -37,6 +38,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
@@ -139,7 +141,7 @@ func (r *Reconciler) handleRemovingPurgeFinalizerFailedError(
 func (r *Reconciler) handleSkrNotFoundError(
 	ctx context.Context, req ctrl.Request, kyma *v1beta2.Kyma, err error,
 ) (ctrl.Result, error) {
-	if util.IsNotFound(err) {
+	if util.IsNotFound(err) || errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
 		dropped, err := r.dropPurgeFinalizer(ctx, kyma)
 		if err != nil {
 			return r.handleRemovingPurgeFinalizerFailedError(ctx, kyma, err)
