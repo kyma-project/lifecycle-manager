@@ -190,13 +190,31 @@ teardown: ## Delete KCP and SKR test clusters.
 
 ##@ Module Metadata Variables
 
-MODULE_NAME                     := template-operator
-MODULE_DEPLOYABLE_VERSION       ?= $(shell yq -e e '."template-operator"' $(LIFECYCLE_MANAGER_DIR)/versions.yaml)
+# Two version tracks coexist intentionally:
+#   - General track (-e2e-test):     used by most tests; values match the literals
+#                                    asserted in tests/e2e/utils_test.go and other
+#                                    *_test.go files (e.g. NewerVersion = "2.4.2-e2e-test"
+#                                    in utils_test.go, "2.4.2-e2e-test" / "1.1.1-e2e-test"
+#                                    in module_upgrade_channel_switch_test.go and
+#                                    modulereleasemeta_sync_test.go).
+#   - Mandatory track (-smoke-test): used only by mandatory_module / mandatory_modules_metrics;
+#                                    values match the literals in mandatory_module_test.go.
+# The suffixes are synthesized OCM component-descriptor versions (the underlying image is
+# the same template-operator:$(MODULE_DEPLOYABLE_VERSION) for both); they just have to
+# match what the Go assertions expect.
+
+MODULE_NAME                       := template-operator
+MODULE_DEPLOYABLE_VERSION         ?= $(shell yq -e e '."template-operator"' $(LIFECYCLE_MANAGER_DIR)/versions.yaml)
 MODULE_DEPLOYMENT_CURRENT_VERSION := template-operator-controller-manager
-MODULE_OLDER_VERSION            := 1.1.0-smoke-test
-MODULE_DEPLOYMENT_OLDER_VERSION := template-operator-v1-controller-manager
-MODULE_NEWER_VERSION            := 2.4.1-smoke-test
-MODULE_DEPLOYMENT_NEWER_VERSION := template-operator-v2-controller-manager
+MODULE_OLDER_VERSION              := 1.1.1-e2e-test
+MODULE_DEPLOYMENT_OLDER_VERSION   := template-operator-v1-controller-manager
+MODULE_NEWER_VERSION              := 2.4.2-e2e-test
+MODULE_DEPLOYMENT_NEWER_VERSION   := template-operator-v2-controller-manager
+
+# Mandatory-track versions. Used only by the mandatory_module / mandatory_modules_metrics
+# tests; their Go code (tests/e2e/mandatory_module_test.go) asserts on these literals.
+MODULE_MANDATORY_OLDER_VERSION := 1.1.0-smoke-test
+MODULE_MANDATORY_NEWER_VERSION := 2.4.1-smoke-test
 
 ##@ Test helpers
 
