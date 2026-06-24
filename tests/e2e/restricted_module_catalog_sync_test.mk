@@ -32,10 +32,10 @@ test-run: log-tool-versions
 	@export SKR_KUBECONFIG=$(shell k3d kubeconfig write skr)
 	@echo "::endgroup::"
 
-	@echo "::group::E2E test: Restricted Default Module Catalog Sync"
+	@echo "::group::E2E test: Restricted Module Catalog Sync"
 	@export PATH=$(LOCALBIN):$$PATH
 	@pushd $(E2E_TESTS_DIR) > /dev/null
-	set +e; $(GO) test -timeout 20m -ginkgo.v -ginkgo.focus "Restricted Default Module Catalog Sync"; status=$$?; set -e
+	set +e; $(GO) test -timeout 20m -ginkgo.v -ginkgo.focus "Restricted Module Catalog Sync"; status=$$?; set -e
 	@popd > /dev/null
 	@echo "::endgroup::"
 	exit $${status}

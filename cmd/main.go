@@ -57,7 +57,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/deletion"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/installation"
 	manifestrendercmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/manifest/render"
-	restrictedmodulecmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/restrictedmodule"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal"
@@ -96,7 +95,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
-	restrictedmodulesvc "github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
@@ -297,15 +295,9 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	kymaLookupSvc := kymalookupcmpse.ComposeKymaLookupService(kymaRepo)
 
-	restrictedModuleDefaulter := restrictedmodulecmpse.ComposeDefaulter(
-		flagVar.GetRestrictedDefaultModules(),
-		mrmRepo,
-		kymaRepo,
-	)
-
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
 		kymaMetrics, logger, maintenanceWindow, ociRegistry.GetReference(), kymaDeletionSvc, kymaLookupSvc,
-		mtEventHandlerMapFunc, mrmEventHandler, restrictedModuleDefaulter)
+		mtEventHandlerMapFunc, mrmEventHandler)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
 		eventRecorder, kymaRepo, secretRepo)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, mrmRepo, mtRepo, flagVar, options, mandatoryModulesMetrics,
@@ -440,7 +432,6 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, ociRegistry string,
 	kymaDeletionSvc *kymadeletionsvc.Service, kymaLookupSvc *kymalookupsvc.Service,
 	mtEventHandlerMapFunc handler.MapFunc, mrmEventHandler *mrmwatch.EventHandler,
-	restrictedModuleDefaulter *restrictedmodulesvc.Defaulter,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -490,12 +481,11 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			flagVar.RemoteSyncNamespace, flagVar.GetRestrictedDefaultModules()),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
 			moduleTemplateInfoLookup, flagVar.GetRestrictedDefaultModules()),
-		Config:            kymaReconcilerConfig,
-		DeletionMetrics:   deletionMetricsWriter,
-		DeletionEvents:    resultEventRecorder,
-		DeletionService:   kymaDeletionSvc,
-		LookupService:     kymaLookupSvc,
-		RestrictedModules: restrictedModuleDefaulter,
+		Config:          kymaReconcilerConfig,
+		DeletionMetrics: deletionMetricsWriter,
+		DeletionEvents:  resultEventRecorder,
+		DeletionService: kymaDeletionSvc,
+		LookupService:   kymaLookupSvc,
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:   flagVar.KymaListenerAddr,
