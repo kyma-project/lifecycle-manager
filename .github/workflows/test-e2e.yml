@@ -170,7 +170,10 @@ jobs:
             module-status-on-skr-connection-lost | \
             modulereleasemeta-not-allowed-installation | \
             simulate-skr-secret-rotation-evict-client-cache | \
-            non-blocking-deletion)
+            non-blocking-deletion | \
+            maintenance-windows | \
+            maintenance-windows-initial-installation | \
+            maintenance-windows-skip)
               echo "self-contained=true" >> $GITHUB_OUTPUT ;;
             *)
               echo "self-contained=false" >> $GITHUB_OUTPUT ;;
