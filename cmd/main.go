@@ -217,7 +217,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 
 	gatewayRepository := istiogateway.NewRepository(kcpClientWithoutCache)
-	secretRepo := secretrepo.NewRepository(kcpClientWithoutCache, shared.DefaultControlPlaneNamespace)
+	secretRepo := secretrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
 	accessManagerService := accessmanager.NewService(secretRepo)
 	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient,
 		remoteClientCache,
@@ -262,7 +262,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	sharedMetrics := metrics.NewSharedMetrics()
 
-	ociRegistry := oci.ComposeRegistry(secretRepo, flagVar, logger, bootstrapFailedExitCode)
+	ociRegistry := oci.ComposeRegistry(kcpClientWithoutCache, flagVar, logger, bootstrapFailedExitCode)
 
 	descriptorProvider := componentdescriptorcache.ComposeCachedDescriptorProvider(
 		keychainLookupFromFlag(mgr.GetClient(), flagVar),

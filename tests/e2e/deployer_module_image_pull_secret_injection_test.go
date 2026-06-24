@@ -28,7 +28,7 @@ var _ = Describe("1 Deployer Module Image Pull Secret Injection", Ordered, func(
 		"%s: kcp source secret is missing the required %s label: secret=%s",
 		injectFromKCPTransform, shared.ModuleName, imagePullResourceName)
 	errMsgFetchKCPSecret := fmt.Sprintf(
-		"%s: failed to fetch kcp secret %q: failed to get secret %s-kcp-system: secrets %q not found",
+		"%s: failed to fetch kcp secret %q: failed to get secret %s-kcp-system: Secret %q not found",
 		injectFromKCPTransform, imagePullResourceName, imagePullResourceName, imagePullResourceName)
 
 	InitEmptyKymaBeforeAll(kyma)
