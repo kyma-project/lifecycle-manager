@@ -218,8 +218,8 @@ module-api-upgrade-under-blocked-deletion:
 restricted-module-catalog-sync:
 	$(MAKE) -f $(MAKEFILE_DIR)/restricted_module_catalog_sync_test.mk test
 
-restricted-module-normal-installation:
-	$(MAKE) -f $(MAKEFILE_DIR)/restricted_module_normal_module_installation_test.mk test
+restricted-modules:
+	$(MAKE) -f $(MAKEFILE_DIR)/restricted_modules_test.mk test
 
 deployer-module-image-pull-secret-injection:
 	$(MAKE) -f $(MAKEFILE_DIR)/deployer_module_image_pull_secret_injection_test.mk test

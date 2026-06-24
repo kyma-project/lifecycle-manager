@@ -52,7 +52,7 @@ test-run: log-tool-versions
 	@echo "::group::E2E test: Restricted Modules"
 	@export PATH=$(LOCALBIN):$$PATH
 	@pushd $(E2E_TESTS_DIR) > /dev/null
-	set +e; $(GO) test -timeout 20m -ginkgo.v -ginkgo.focus "Restricted Modules - "; status=$$?; set -e
+	set +e; $(GO) test -timeout 20m -ginkgo.v -ginkgo.focus "Restricted Modules"; status=$$?; set -e
 	@popd > /dev/null
 	@echo "::endgroup::"
 	exit $${status}

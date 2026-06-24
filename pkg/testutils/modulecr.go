@@ -27,8 +27,8 @@ const (
 
 	DeployerModuleName = "deployer"
 	// DeployerDeploymentName must match MODULE_DEPLOYMENT_DEPLOYER_VERSION in
-	// tests/e2e/restricted_module_normal_module_installation_test.mk so the
-	// deployer module's Deployment can coexist with template-operator's.
+	// tests/e2e/restricted_modules_test.mk so the deployer module's
+	// Deployment can coexist with template-operator's.
 	DeployerDeploymentName = "template-operator-deployer-controller-manager"
 )
 

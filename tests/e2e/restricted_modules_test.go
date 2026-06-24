@@ -13,21 +13,25 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 )
 
-var _ = Describe("Restricted Modules - Normal Module Installation", Ordered, func() {
+var _ = Describe("Restricted Modules", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
+	// The Kyma's global-account-id label matches the deployer MRM's kymaSelector configured by the
+	// test's .mk; a later It mutates the kymaSelector so the Kyma no longer matches.
+	kyma.Labels["kyma-project.io/global-account-id"] = GlobalAccountID2
 	moduleCR := NewTestModuleCR(RemoteNamespace)
+
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
-	Context("Given KLM flag for restricted modules is set", func() {
-		It("Then normal modules can be enabled as usual", func() {
+	Context("Given the Kyma matches the deployer MRM kymaSelector", func() {
+		It("When a normal module (template-operator) is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace,
 					NewTemplateOperator(v1beta2.DefaultChannel)).
 				Should(Succeed())
 
-			By("And the Module CR has been installed on the SKR cluster")
+			By("Then the Module CR has been installed on the SKR cluster")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(skrClient, moduleCR).
@@ -49,19 +53,33 @@ var _ = Describe("Restricted Modules - Normal Module Installation", Ordered, fun
 				Should(Succeed())
 		})
 
-		It("When the module is disabled and MRM gets a kymaSelector", func() {
+		It("When the normal module is disabled before the restricted-module lifecycle", func() {
 			Eventually(DisableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, TestModuleName).
 				Should(Succeed())
+
+			By("Then the Module Operator Deployment is removed from the SKR cluster")
+			Eventually(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
+				Should(Equal(ErrNotFound))
+
+			By("And the Module CR is removed from the SKR cluster")
+			Eventually(ModuleCRExists).
+				WithContext(ctx).
+				WithArguments(skrClient, moduleCR).
+				Should(Equal(ErrNotFound))
 
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
+		})
 
-			By("And the MRM is patched with a kymaSelector for a non-matching global account ID")
+		It("When a non-restricted module's MRM gets a kymaSelector and the module is re-enabled", func() {
+			By("Patch the template-operator MRM with a non-matching kymaSelector")
 			Eventually(UpdateModuleReleaseMetaKymaSelector).
 				WithContext(ctx).
 				WithArguments(kcpClient, TestModuleName, ControlPlaneNamespace, &apimetav1.LabelSelector{
@@ -75,7 +93,7 @@ var _ = Describe("Restricted Modules - Normal Module Installation", Ordered, fun
 				}).
 				Should(Succeed())
 
-			By("And the module is enabled again on the SKR cluster")
+			By("Re-enable the module on the SKR cluster")
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace,
@@ -101,21 +119,25 @@ var _ = Describe("Restricted Modules - Normal Module Installation", Ordered, fun
 					"module template not allowed: module has kymaSelector but is not in restricted modules list").
 				Should(Succeed())
 		})
-	})
-})
 
-var _ = Describe("Restricted Modules - Forced Uninstall On KymaSelector Mismatch", Ordered, func() {
-	kyma := NewKymaWithNamespaceName("kyma-restricted", ControlPlaneNamespace, v1beta2.DefaultChannel)
-	// This global account id matches the deployer MRM's kymaSelector configured by the test's .mk;
-	// the test then mutates the kymaSelector so the Kyma no longer matches.
-	kyma.Labels["kyma-project.io/global-account-id"] = GlobalAccountID2
-	moduleCR := NewTestModuleCR(RemoteNamespace)
+		It("When the rejected normal module is disabled again to clear the error", func() {
+			Eventually(DisableModule).
+				WithContext(ctx).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, TestModuleName).
+				Should(Succeed())
 
-	InitEmptyKymaBeforeAll(kyma)
-	CleanupKymaAfterAll(kyma)
+			By("Then KCP Kyma CR returns to \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(defaultRemoteKymaName, RemoteNamespace, skrClient, shared.StateReady).
+				Should(Succeed())
+		})
 
-	Context("Given a restricted module enabled on a matching Kyma", func() {
-		It("When the deployer module is enabled on the SKR cluster", func() {
+		It("When the deployer module (restricted) is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace,
@@ -127,7 +149,7 @@ var _ = Describe("Restricted Modules - Forced Uninstall On KymaSelector Mismatch
 				WithContext(ctx).
 				WithArguments(skrClient, moduleCR).
 				Should(Succeed())
-			By("And the Module Operator Deployment is ready on the SKR cluster")
+			By("And the deployer Deployment is ready on the SKR cluster")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments(skrClient, DeployerDeploymentName, TestModuleResourceNamespace).
@@ -144,7 +166,7 @@ var _ = Describe("Restricted Modules - Forced Uninstall On KymaSelector Mismatch
 				Should(Succeed())
 		})
 
-		It("When the deployer module is disabled on the SKR cluster", func() {
+		It("When the deployer module is disabled", func() {
 			Eventually(DisableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, DeployerModuleName).
@@ -156,7 +178,7 @@ var _ = Describe("Restricted Modules - Forced Uninstall On KymaSelector Mismatch
 				WithArguments(skrClient, moduleCR).
 				Should(Equal(ErrNotFound))
 
-			By("And the Module Operator Deployment is removed from the SKR cluster")
+			By("And the deployer Deployment is removed from the SKR cluster")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments(skrClient, DeployerDeploymentName, TestModuleResourceNamespace).
@@ -173,7 +195,7 @@ var _ = Describe("Restricted Modules - Forced Uninstall On KymaSelector Mismatch
 				Should(Succeed())
 		})
 
-		It("When the deployer module is enabled again on the SKR cluster", func() {
+		It("When the deployer module is re-enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace,
@@ -185,7 +207,7 @@ var _ = Describe("Restricted Modules - Forced Uninstall On KymaSelector Mismatch
 				WithContext(ctx).
 				WithArguments(skrClient, moduleCR).
 				Should(Succeed())
-			By("And the Module Operator Deployment is ready on the SKR cluster")
+			By("And the deployer Deployment is ready on the SKR cluster")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments(skrClient, DeployerDeploymentName, TestModuleResourceNamespace).
@@ -202,7 +224,7 @@ var _ = Describe("Restricted Modules - Forced Uninstall On KymaSelector Mismatch
 				Should(Succeed())
 		})
 
-		It("When the Global Account is removed from the MRM kymaSelector", func() {
+		It("When the Global Account is removed from the deployer MRM kymaSelector", func() {
 			Eventually(UpdateModuleReleaseMetaKymaSelector).
 				WithContext(ctx).
 				WithArguments(kcpClient, DeployerModuleName, ControlPlaneNamespace,
@@ -223,14 +245,14 @@ var _ = Describe("Restricted Modules - Forced Uninstall On KymaSelector Mismatch
 				Should(Succeed())
 		})
 
-		It("Then the module is forcefully uninstalled from the SKR cluster", func() {
+		It("Then the deployer module is forcefully uninstalled from the SKR cluster", func() {
 			By("And the Module CR is removed from the SKR cluster")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(skrClient, moduleCR).
 				Should(Equal(ErrNotFound))
 
-			By("And the Module Operator Deployment is removed from the SKR cluster")
+			By("And the deployer Deployment is removed from the SKR cluster")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments(skrClient, DeployerDeploymentName, TestModuleResourceNamespace).

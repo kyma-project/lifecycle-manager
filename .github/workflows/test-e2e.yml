@@ -91,7 +91,7 @@ jobs:
           - skr-image-pull-secret-sync
           - gateway-secret-server-cert-metric
           - restricted-module-catalog-sync
-          - restricted-module-normal-installation
+          - restricted-modules
           - deployer-module-image-pull-secret-injection
           - block-non-deployer-module-image-pull-secret-injection
 
@@ -129,7 +129,7 @@ jobs:
             mandatory-module | \
             mandatory-module-metrics | \
             gateway-secret-server-cert-metric | \
-            restricted-module-normal-installation | \
+            restricted-modules | \
             restricted-module-catalog-sync | \
             deployer-module-image-pull-secret-injection | \
             block-non-deployer-module-image-pull-secret-injection | \
