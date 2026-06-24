@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
       - name: Set Image
@@ -100,11 +100,11 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout lifecycle-manager
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           path: lifecycle-manager
       - name: Checkout template-operator
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: kyma-project/template-operator
           path: template-operator
@@ -160,7 +160,15 @@ jobs:
             labelling | \
             fips-mode-metric | \
             watcher-zero-downtime | \
-            modulereleasemeta-watch-trigger)
+            modulereleasemeta-watch-trigger | \
+            module-upgrade-channel-switch | \
+            modulereleasemeta-module-upgrade-new-version | \
+            modulereleasemeta-upgrade-under-deletion | \
+            modulereleasemeta-sync | \
+            module-status-on-skr-connection-lost | \
+            modulereleasemeta-not-allowed-installation | \
+            simulate-skr-secret-rotation-evict-client-cache | \
+            non-blocking-deletion)
               echo "self-contained=true" >> $GITHUB_OUTPUT ;;
             *)
               echo "self-contained=false" >> $GITHUB_OUTPUT ;;
