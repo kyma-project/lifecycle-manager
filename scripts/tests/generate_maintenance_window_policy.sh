@@ -7,17 +7,12 @@ set -o pipefail
 OUTPUT_FILE="${1:?Usage: generate_maintenance_window_policy.sh <output-file-path>}"
 mkdir -p "$(dirname "$OUTPUT_FILE")"
 
-if [[ "$(uname)" == "Darwin" ]]; then
-  current_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  time_plus_2_hours=$(date -u -v+2H +"%Y-%m-%dT%H:%M:%SZ")
-  time_plus_1_day=$(date -u -v+1d +"%Y-%m-%dT%H:%M:%SZ")
-  time_plus_1_day_plus_2_hours=$(date -u -v+1d -v+2H +"%Y-%m-%dT%H:%M:%SZ")
-else
-  current_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  time_plus_2_hours=$(date -u -d "2 hours" +"%Y-%m-%dT%H:%M:%SZ")
-  time_plus_1_day=$(date -u -d "1 day" +"%Y-%m-%dT%H:%M:%SZ")
-  time_plus_1_day_plus_2_hours=$(date -u -d "1 day 2 hours" +"%Y-%m-%dT%H:%M:%SZ")
-fi
+read -r NOW PLUS_2H PLUS_1D PLUS_1D_2H < <(python3 -c '
+from datetime import datetime, timedelta, timezone
+now = datetime.now(timezone.utc)
+def t(delta): return (now + delta).strftime("%Y-%m-%dT%H:%M:%SZ")
+print(t(timedelta()), t(timedelta(hours=2)), t(timedelta(days=1)), t(timedelta(days=1, hours=2)))
+')
 
 cat <<POLICY > "$OUTPUT_FILE"
 {
@@ -28,8 +23,8 @@ cat <<POLICY > "$OUTPUT_FILE"
       },
       "windows": [
         {
-          "begin": "$current_time",
-          "end": "$time_plus_2_hours"
+          "begin": "$NOW",
+          "end": "$PLUS_2H"
         }
       ]
     },
@@ -39,8 +34,8 @@ cat <<POLICY > "$OUTPUT_FILE"
       },
       "windows": [
         {
-          "begin": "$time_plus_1_day",
-          "end": "$time_plus_1_day_plus_2_hours"
+          "begin": "$PLUS_1D",
+          "end": "$PLUS_1D_2H"
         }
       ]
     }
