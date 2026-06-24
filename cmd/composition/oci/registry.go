@@ -13,9 +13,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 )
 
+// ComposeRegistry faciliates the creation of a new OCIRegistry.
+// The kcpClientWithoutCache is an uncached client because the registry resolves a secret
+// before the manager is started.
 func ComposeRegistry(
-	// kcp client needs to be uncached because the registry resolves the OCI registry secret
-	// before the manager starts
 	kcpClientWithoutCache client.Client,
 	flagVar *flags.FlagVar,
 	logger logr.Logger,
