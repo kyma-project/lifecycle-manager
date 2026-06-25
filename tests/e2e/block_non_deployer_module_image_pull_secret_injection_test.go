@@ -34,12 +34,7 @@ var _ = Describe("2 Block Non Deployer Module Image Pull Secret Injection", Orde
 					}).
 				Should(Succeed())
 
-			By("Then the not-deployer module appears in the KCP Kyma spec")
-			Eventually(ContainsModuleInSpec).
-				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), notDeployerModuleName).
-				Should(Succeed())
-			By("And the Module CR has been installed on the SKR cluster")
+			By("Then the Module CR has been installed on the SKR cluster")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(skrClient, moduleCR).

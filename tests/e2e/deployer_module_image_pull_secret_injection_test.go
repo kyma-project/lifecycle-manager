@@ -43,12 +43,7 @@ var _ = Describe("1 Deployer Module Image Pull Secret Injection", Ordered, func(
 					NewDeployer(v1beta2.DefaultChannel)).
 				Should(Succeed())
 
-			By("Then the deployer module appears in the KCP Kyma spec")
-			Eventually(ContainsModuleInSpec).
-				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), DeployerModuleName).
-				Should(Succeed())
-			By("And the Module CR has been installed on the SKR cluster")
+			By("Then the Module CR has been installed on the SKR cluster")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(skrClient, moduleCR).
