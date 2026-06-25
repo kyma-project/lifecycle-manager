@@ -1,7 +1,7 @@
 packages:
   internal/controller: 100
   internal/controller/istiogatewaysecret: 25.6
-  internal/crd: 92
+  internal/crd: 88
   internal/descriptor/cache: 90
   internal/descriptor/provider: 100
   internal/event: 100
@@ -24,9 +24,10 @@ packages:
   internal/remote: 30
 
   internal/repository/kyma: 95.8
+  internal/repository/crd: 100
   internal/repository/ocm: 100
   internal/repository/ocm/oci: 100
-  internal/repository/skr/crd: 100
+  internal/repository/skr/crd: 90
   internal/repository/watcher/certificate: 100
   internal/repository/watcher/certificate/certmanager/certificate: 100
   internal/repository/watcher/certificate/gcm/certificate: 98

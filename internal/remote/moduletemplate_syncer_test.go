@@ -61,7 +61,7 @@ func TestSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:dupl,revive // dupl
 		}
 	}
 
-	syncWokerFactoryFn := func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncWorker {
+	syncWokerFactoryFn := func(skrClient client.Client, settings *Settings) moduleTemplateSyncWorker {
 		return &fakeSyncWorker{
 			namespace:            settings.Namespace,
 			onSyncConcurrently:   onSyncConcurrentlyFn,
@@ -121,7 +121,7 @@ func TestSyncer_SyncToSKR_nilList(t *testing.T) {
 		}
 	}
 
-	syncWokerFactoryFn := func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncWorker {
+	syncWokerFactoryFn := func(skrClient client.Client, settings *Settings) moduleTemplateSyncWorker {
 		return &fakeSyncWorker{
 			namespace:            settings.Namespace,
 			onSyncConcurrently:   onSyncConcurrentlyFn,

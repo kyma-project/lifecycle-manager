@@ -95,7 +95,7 @@ type ModuleStatusHandler interface {
 }
 
 type SkrSyncService interface {
-	SyncCrds(ctx context.Context, kyma *v1beta2.Kyma) (bool, error)
+	SyncCRDs(ctx context.Context, kyma *v1beta2.Kyma) error
 	SyncImagePullSecret(ctx context.Context, kyma types.NamespacedName) error
 }
 
@@ -301,7 +301,6 @@ func (r *Reconciler) handleDeletedSkr(ctx context.Context, req ctrl.Request, kym
 	return ctrl.Result{RequeueAfter: r.RateLimiter.When(req)}, nil
 }
 
-//nolint:funlen // disable for kyma controller until split is done into provisioning and deprovisioning controllers
 func (r *Reconciler) reconcile(ctx context.Context, req ctrl.Request, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != shared.StateDeleting {
 		if err := r.deleteRemoteKyma(ctx, kyma); err != nil {
@@ -327,20 +326,12 @@ func (r *Reconciler) reconcile(ctx context.Context, req ctrl.Request, kyma *v1be
 		return ctrl.Result{RequeueAfter: r.RateLimiter.When(req)}, nil
 	}
 
-	updateRequired, err := r.SkrSyncService.SyncCrds(ctx, kyma)
-	if err != nil {
+	if err := r.SkrSyncService.SyncCRDs(ctx, kyma); err != nil {
+		kyma.UpdateCondition(v1beta2.ConditionTypeCRDsSync, apimetav1.ConditionFalse)
 		r.Metrics.RecordRequeueReason(metrics.CrdsSync, queue.UnexpectedRequeue)
 		return ctrl.Result{}, r.updateStatusWithError(ctx, kyma, fmt.Errorf("could not sync CRDs: %w", err))
 	}
-	if updateRequired {
-		if err := r.Update(ctx, kyma); err != nil {
-			r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdate, queue.UnexpectedRequeue)
-			return ctrl.Result{}, r.updateStatusWithError(ctx, kyma,
-				fmt.Errorf("could not update kyma annotations: %w", err))
-		}
-		r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdate, queue.IntendedRequeue)
-		return ctrl.Result{RequeueAfter: r.RateLimiter.When(req)}, nil
-	}
+	kyma.UpdateCondition(v1beta2.ConditionTypeCRDsSync, apimetav1.ConditionTrue)
 
 	if r.SkrImagePullSecretSyncEnabled() {
 		if err := r.SkrSyncService.SyncImagePullSecret(ctx, kyma.GetNamespacedName()); err != nil {
@@ -353,7 +344,7 @@ func (r *Reconciler) reconcile(ctx context.Context, req ctrl.Request, kyma *v1be
 	}
 
 	// update the control-plane kyma with the changes to the spec of the remote Kyma
-	if err = r.replaceSpecFromRemote(ctx, kyma); err != nil {
+	if err := r.replaceSpecFromRemote(ctx, kyma); err != nil {
 		r.Metrics.RecordRequeueReason(metrics.SpecReplacementFromRemote, queue.UnexpectedRequeue)
 		return ctrl.Result{}, r.updateStatusWithError(ctx, kyma, fmt.Errorf("could not replace control plane kyma spec"+
 			" with remote kyma spec: %w", err))
@@ -398,7 +389,7 @@ func (r *Reconciler) fetchRemoteKyma(ctx context.Context, kcpKyma *v1beta2.Kyma)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get syncContext: %w", err)
 	}
-	remoteKyma, err := syncContext.CreateOrFetchKyma(ctx, r.Client, kcpKyma)
+	remoteKyma, err := syncContext.CreateOrFetchKyma(ctx, kcpKyma)
 	if err != nil {
 		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
 			return nil, err
