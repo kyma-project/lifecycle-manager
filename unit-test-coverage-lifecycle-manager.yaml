@@ -1,36 +1,36 @@
 packages:
   internal/controller: 100
-  internal/controller/istiogatewaysecret: 25.6
-  internal/crd: 92
+  internal/controller/istiogatewaysecret: 35.5
+  internal/crd: 92.1
   internal/descriptor/cache: 90
   internal/descriptor/provider: 100
   internal/event: 100
   internal/gatewaysecret/cabundle: 98.6
-  internal/imagerewrite: 82
-  internal/istio: 63
+  internal/imagerewrite: 85.8
+  internal/istio: 63.3
   internal/manifest/filemutex: 100
-  internal/manifest/finalizer: 17
-  internal/manifest/img: 65
-  internal/manifest/keychainprovider: 76
+  internal/manifest/finalizer: 19.4
+  internal/manifest/img: 67.1
+  internal/manifest/keychainprovider: 76.9
   internal/manifest/labelsremoval: 100
   internal/manifest/manifestclient: 5
-  internal/manifest/modulecr: 50
-  internal/manifest/skrresources: 20
-  internal/manifest/statecheck: 71
+  internal/manifest/modulecr: 56.9
+  internal/manifest/skrresources: 30.1
+  internal/manifest/statecheck: 71.9
   internal/manifest/status: 73.8
-  internal/maintenancewindows: 87
+  internal/maintenancewindows: 91.2
   internal/pkg/metrics: 39.3
-  internal/pkg/resources: 91
-  internal/remote: 30
+  internal/pkg/resources: 97.5
+  internal/remote: 31.7
 
-  internal/repository/kyma: 95.8
+  internal/repository/kyma: 96.3
   internal/repository/ocm: 100
   internal/repository/ocm/oci: 100
   internal/repository/skr/crd: 100
   internal/repository/watcher/certificate: 100
   internal/repository/watcher/certificate/certmanager/certificate: 100
-  internal/repository/watcher/certificate/gcm/certificate: 98
-  internal/repository/secret: 94
+  internal/repository/watcher/certificate/gcm/certificate: 98.6
+  internal/repository/secret: 100
   internal/repository/manifest: 100
   internal/repository/moduletemplate: 100
   internal/repository/modulereleasemeta: 100
@@ -41,12 +41,12 @@ packages:
   internal/service/kyma/status/modules/generator/fromerror: 100
   internal/service/kyma/lookup: 100
   internal/service/manifest/orphan: 100
-  internal/service/manifest/render: 96
+  internal/service/manifest/render: 96.7
   internal/service/watcher/certificate: 100
   internal/service/watcher/certificate/secret/data: 100
   internal/service/watcher/chartreader: 100
-  internal/service/watcher/gateway: 94
-  internal/service/watcher/resources: 82
+  internal/service/watcher/gateway: 94.1
+  internal/service/watcher/resources: 84.1
   internal/service/skrclient: 30.7
   internal/service/mandatorymodule/installation: 100
   internal/service/mandatorymodule/deletion: 100
@@ -54,14 +54,14 @@ packages:
   internal/service/restrictedmodule: 100
   internal/service/skrsync: 100
 
-  internal/setup: 71
-  internal/util/collections: 87
+  internal/setup: 71.9
+  internal/util/collections: 87.9
 
   internal/watch/modulereleasemeta: 97.6
   internal/watch/modulereleasemeta/events: 100
 
-  pkg/module/sync: 10
-  pkg/status: 16
-  pkg/templatelookup: 76
+  pkg/module/sync: 11
+  pkg/status: 20
+  pkg/templatelookup: 79.7
   pkg/templatelookup/moduletemplateinfolookup: 100
-  pkg/watcher: 10
+  pkg/watcher: 10.6
