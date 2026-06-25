@@ -27,6 +27,7 @@ module-setup-in-newer-version-e2e-with-crd-upgrade:
 	@echo "::group::Module setup with $(MODULE_NEWER_VERSION_E2E) and CRD v1beta1 upgrade"
 	@export PATH=$(LOCALBIN):$$PATH
 	@pushd $(TEMPLATE_OPERATOR_DIR) > /dev/null
+	yq eval '.apiVersion = "operator.kyma-project.io/v1alpha1"' -i config/samples/default-sample-cr.yaml
 	cp $(SCRIPTS_DIR)/deploy_moduletemplate.sh .
 	yq eval '.images[0].newTag = "$(MODULE_NEWER_VERSION_E2E)"' -i config/manager/deployment/kustomization.yaml
 	make build-manifests
