@@ -8,6 +8,8 @@ import (
 	certmanagerapiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	certmanagerapplyv1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/certmanager/v1"
+	certmanagerapplymetav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -53,58 +55,42 @@ func NewRepository(
 }
 
 func (r *Repository) Create(ctx context.Context, name, commonName string, dnsNames []string) error {
-	cert := &certmanagerv1.Certificate{
-		TypeMeta: apimetav1.TypeMeta{
-			Kind:       certmanagerv1.CertificateKind,
-			APIVersion: certmanagerv1.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      name,
-			Namespace: r.certConfig.Namespace,
-		},
-		Spec: certmanagerv1.CertificateSpec{
-			CommonName: commonName,
-			Subject: &certmanagerv1.X509Subject{
-				OrganizationalUnits: []string{certificate.DefaultOrganizationalUnit},
-				Organizations:       []string{certificate.DefaultOrganization},
-				Localities:          []string{certificate.DefaultLocality},
-				Provinces:           []string{certificate.DefaultProvince},
-				Countries:           []string{certificate.DefaultCountry},
-			},
-			Duration:    &apimetav1.Duration{Duration: r.certConfig.Duration},
-			RenewBefore: &apimetav1.Duration{Duration: r.certConfig.RenewBefore},
-			DNSNames:    dnsNames,
-			SecretName:  name,
-			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
-				Labels: certificate.GetCertificateLabels(),
-			},
-			IssuerRef: certmanagermetav1.IssuerReference{
-				Name: r.issuerName,
-				Kind: certmanagerv1.IssuerKind,
-			},
-			IsCA: false,
-			Usages: []certmanagerv1.KeyUsage{
+	// Patch instead of Create + IgnoreAlreadyExists for cases where we change the config of certificates, e.g. duration
+	certApply := certmanagerapplyv1.Certificate(name, r.certConfig.Namespace).
+		WithSpec(certmanagerapplyv1.CertificateSpec().
+			WithCommonName(commonName).
+			WithSubject(certmanagerapplyv1.X509Subject().
+				WithOrganizationalUnits(certificate.DefaultOrganizationalUnit).
+				WithOrganizations(certificate.DefaultOrganization).
+				WithLocalities(certificate.DefaultLocality).
+				WithProvinces(certificate.DefaultProvince).
+				WithCountries(certificate.DefaultCountry),
+			).
+			WithDuration(apimetav1.Duration{Duration: r.certConfig.Duration}).
+			WithRenewBefore(apimetav1.Duration{Duration: r.certConfig.RenewBefore}).
+			WithDNSNames(dnsNames...).
+			WithSecretName(name).
+			WithSecretTemplate(certmanagerapplyv1.CertificateSecretTemplate().
+				WithLabels(certificate.GetCertificateLabels()),
+			).
+			WithIssuerRef(certmanagerapplymetav1.IssuerReference().
+				WithName(r.issuerName).
+				WithKind(certmanagerv1.IssuerKind),
+			).
+			WithIsCA(false).
+			WithUsages(
 				certmanagerv1.UsageDigitalSignature,
 				certmanagerv1.UsageKeyEncipherment,
-			},
-			PrivateKey: &certmanagerv1.CertificatePrivateKey{
-				RotationPolicy: certmanagerv1.RotationPolicyAlways,
-				Encoding:       certmanagerv1.PKCS1,
-				Algorithm:      certmanagerv1.RSAKeyAlgorithm,
-				Size:           r.certConfig.KeySize,
-			},
-		},
-	}
+			).
+			WithPrivateKey(certmanagerapplyv1.CertificatePrivateKey().
+				WithRotationPolicy(certmanagerv1.RotationPolicyAlways).
+				WithEncoding(certmanagerv1.PKCS1).
+				WithAlgorithm(certmanagerv1.RSAKeyAlgorithm).
+				WithSize(r.certConfig.KeySize),
+			),
+		)
 
-	// Patch instead of Create + IgnoreAlreadyExists for cases where we change the config of certificates, e.g. duration
-	err := r.kcpClient.Patch(ctx,
-		cert,
-		//nolint: staticcheck // issues: #2706, #2707
-		client.Apply,
-		client.ForceOwnership,
-		fieldowners.LifecycleManager,
-	)
-	if err != nil {
+	if err := r.kcpClient.Apply(ctx, certApply, client.ForceOwnership, fieldowners.LifecycleManager); err != nil {
 		return fmt.Errorf("failed to patch certificate: %w", err)
 	}
 

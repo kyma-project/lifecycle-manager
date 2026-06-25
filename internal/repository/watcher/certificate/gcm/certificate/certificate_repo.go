@@ -9,6 +9,8 @@ import (
 
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
@@ -92,14 +94,12 @@ func (r *Repository) Create(ctx context.Context, name, commonName string, dnsNam
 	}
 
 	// Patch instead of Create + IgnoreAlreadyExists for cases where we change the config of certificates, e.g. duration
-	err := r.kcpClient.Patch(ctx,
-		cert,
-		//nolint: staticcheck // issues: #2706, #2707
-		client.Apply,
-		client.ForceOwnership,
-		fieldowners.LifecycleManager,
-	)
+	unstructuredCert, err := machineryruntime.DefaultUnstructuredConverter.ToUnstructured(cert)
 	if err != nil {
+		return fmt.Errorf("failed to convert certificate to unstructured: %w", err)
+	}
+	applyConfig := client.ApplyConfigurationFromUnstructured(&unstructured.Unstructured{Object: unstructuredCert})
+	if err := r.kcpClient.Apply(ctx, applyConfig, client.ForceOwnership, fieldowners.LifecycleManager); err != nil {
 		return fmt.Errorf("failed to patch certificate: %w", err)
 	}
 

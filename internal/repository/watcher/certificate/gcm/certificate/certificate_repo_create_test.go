@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate"
@@ -43,7 +44,7 @@ func TestCreate_ClientCallSucceeds_Returns(t *testing.T) {
 		},
 	}
 
-	clientStub := &patchClientStub{}
+	clientStub := &applyClientStub{}
 	certificateRepository, err := gcmcertificate.NewRepository(
 		clientStub,
 		issuerName,
@@ -70,7 +71,7 @@ func TestCreate_ClientCallSucceeds_Returns(t *testing.T) {
 }
 
 func TestCreate_ClientReturnsAnError_ReturnsError(t *testing.T) {
-	clientStub := &patchClientStub{
+	clientStub := &applyClientStub{
 		err: assert.AnError,
 	}
 	certificateRepository, err := gcmcertificate.NewRepository(
@@ -97,7 +98,7 @@ func TestCreate_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	assert.True(t, clientStub.called)
 }
 
-type patchClientStub struct {
+type applyClientStub struct {
 	client.Client
 
 	called bool
@@ -105,8 +106,16 @@ type patchClientStub struct {
 	err    error
 }
 
-func (c *patchClientStub) Patch(_ context.Context, obj client.Object, _ client.Patch, _ ...client.PatchOption) error {
+func (c *applyClientStub) Apply(
+	_ context.Context, obj machineryruntime.ApplyConfiguration, _ ...client.ApplyOption,
+) error {
 	c.called = true
-	c.object = obj.(*gcertv1alpha1.Certificate)
+	if u, ok := obj.(interface{ UnstructuredContent() map[string]any }); ok {
+		cert := &gcertv1alpha1.Certificate{}
+		err := machineryruntime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), cert)
+		if err == nil {
+			c.object = cert
+		}
+	}
 	return c.err
 }

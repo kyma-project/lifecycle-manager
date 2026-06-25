@@ -7,11 +7,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	apiconfigsv1beta2 "github.com/kyma-project/lifecycle-manager/api/applyconfigurations/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
 	skrkymastatusrepo "github.com/kyma-project/lifecycle-manager/internal/repository/skr/kyma/status"
@@ -35,18 +36,19 @@ func TestSetStateDeleting_ClientCallSucceeds(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.True(t, statusClientStub.called)
-	assert.NotNil(t, statusClientStub.patchedObject)
+	require.NotNil(t, statusClientStub.appliedConfig)
+	require.NotNil(t, statusClientStub.appliedConfig.Status)
 	// kcpKymaName used to get the client
 	assert.Equal(t, kcpKymaName, clientRetrieverStub.receivedKey)
 	// standard Kyma name used to get the Kyma from SKR
-	assert.Equal(t, shared.DefaultRemoteKymaName, statusClientStub.patchedObject.Name)
-	assert.Equal(t, shared.DefaultRemoteNamespace, statusClientStub.patchedObject.Namespace)
+	assert.Equal(t, shared.DefaultRemoteKymaName, *statusClientStub.appliedConfig.GetName())
+	assert.Equal(t, shared.DefaultRemoteNamespace, *statusClientStub.appliedConfig.GetNamespace())
 	// correct state set
-	assert.Equal(t, shared.StateDeleting, statusClientStub.patchedObject.Status.State)
-	assert.Equal(t, ".status.State set to Deleting", statusClientStub.patchedObject.Status.LastOperation.Operation)
+	assert.Equal(t, shared.StateDeleting, *statusClientStub.appliedConfig.Status.State)
+	assert.Equal(t, ".status.State set to Deleting", statusClientStub.appliedConfig.Status.LastOperation.Operation)
 	assert.WithinDuration(t,
 		time.Now(),
-		statusClientStub.patchedObject.Status.LastOperation.LastUpdateTime.Time,
+		statusClientStub.appliedConfig.Status.LastOperation.LastUpdateTime.Time,
 		time.Second)
 	// correct options used
 	assert.Contains(t, statusClientStub.opts, fieldowners.LifecycleManager)
@@ -108,17 +110,16 @@ type statusClientStub struct {
 	err error
 
 	called        bool
-	patchedObject *v1beta2.Kyma
-	opts          []client.SubResourcePatchOption
+	appliedConfig *apiconfigsv1beta2.KymaApplyConfiguration
+	opts          []client.SubResourceApplyOption
 }
 
-func (c *statusClientStub) Patch(_ context.Context,
-	obj client.Object,
-	_ client.Patch,
-	opts ...client.SubResourcePatchOption,
+func (c *statusClientStub) Apply(_ context.Context,
+	obj machineryruntime.ApplyConfiguration,
+	opts ...client.SubResourceApplyOption,
 ) error {
 	c.called = true
-	c.patchedObject = obj.(*v1beta2.Kyma)
+	c.appliedConfig = obj.(*apiconfigsv1beta2.KymaApplyConfiguration)
 	c.opts = opts
 
 	return c.err
