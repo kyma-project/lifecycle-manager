@@ -22,7 +22,19 @@ var _ = Describe("2 Block Non Deployer Module Image Pull Secret Injection", Orde
 	CleanupKymaAfterAll(kyma)
 
 	Context("Given SKR Cluster", func() {
-		It("Then the not-deployer module is installed as a restricted default module", func() {
+		It("Then the not-deployer module is installed on the matching Kyma", func() {
+			By("When the not-deployer module is enabled on the SKR cluster")
+			Eventually(EnableModule).
+				WithContext(ctx).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace,
+					v1beta2.Module{
+						Name:    notDeployerModuleName,
+						Channel: v1beta2.DefaultChannel,
+						Managed: true,
+					}).
+				Should(Succeed())
+
+			By("Then the not-deployer module appears in the KCP Kyma spec")
 			Eventually(ContainsModuleInSpec).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), notDeployerModuleName).
