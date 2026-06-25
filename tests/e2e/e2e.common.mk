@@ -216,6 +216,11 @@ MODULE_DEPLOYMENT_NEWER_VERSION   := template-operator-v2-controller-manager
 MODULE_MANDATORY_OLDER_VERSION := 1.1.0-smoke-test
 MODULE_MANDATORY_NEWER_VERSION := 2.4.1-smoke-test
 
+# Explicit aliases for tests that align with the Go NewerVersion/OlderVersion constants
+# in tests/e2e/utils_test.go and the env vars in .github/workflows/test-e2e.yml.
+MODULE_OLDER_VERSION_E2E := 1.1.1-e2e-test
+MODULE_NEWER_VERSION_E2E := 2.4.2-e2e-test
+
 ##@ Test helpers
 
 .PHONY: log-tool-versions
