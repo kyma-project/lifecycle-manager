@@ -188,11 +188,12 @@ func Test_CertificateClient_GetValidity_GetCertificateError(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	renewalTime, err := certificateRepository.GetRenewalTime(t.Context(), certName)
+	notBefore, notAfter, err := certificateRepository.GetValidity(t.Context(), certName)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get certificate")
-	assert.True(t, renewalTime.IsZero())
+	assert.Zero(t, notBefore)
+	assert.Zero(t, notAfter)
 	assert.True(t, clientStub.called)
 }
 
