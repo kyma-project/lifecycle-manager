@@ -93,7 +93,7 @@ func (r *Repository) Create(ctx context.Context, name, commonName string, dnsNam
 		},
 	}
 
-	// Apply (SSA) instead of Create + IgnoreAlreadyExists for cases where we change the config of certificates, e.g. duration
+	// Apply (SSA) instead of Create + IgnoreAlreadyExists for config changes, e.g. duration
 	unstructuredCert, err := machineryruntime.DefaultUnstructuredConverter.ToUnstructured(cert)
 	if err != nil {
 		return fmt.Errorf("failed to convert certificate to unstructured: %w", err)

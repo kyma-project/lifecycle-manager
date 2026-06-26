@@ -55,7 +55,7 @@ func NewRepository(
 }
 
 func (r *Repository) Create(ctx context.Context, name, commonName string, dnsNames []string) error {
-	// Apply (SSA) instead of Create + IgnoreAlreadyExists for cases where we change the config of certificates, e.g. duration
+	// Apply (SSA) instead of Create + IgnoreAlreadyExists for config changes, e.g. duration
 	certApply := certmanagerapplyv1.Certificate(name, r.certConfig.Namespace).
 		WithSpec(certmanagerapplyv1.CertificateSpec().
 			WithCommonName(commonName).
