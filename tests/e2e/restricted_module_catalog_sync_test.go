@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Restricted Default Module Catalog Sync", Ordered, func() {
+var _ = Describe("Restricted Module Catalog Sync", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewDeployer(v1beta2.DefaultChannel)
 

@@ -51,6 +51,10 @@ linters:
           alias: certmanagerv1
         - pkg: github.com/cert-manager/cert-manager/pkg/apis/meta/v1
           alias: certmanagermetav1
+        - pkg: github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/certmanager/v1
+          alias: certmanagerapplyv1
+        - pkg: github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1
+          alias: certmanagerapplymetav1
         - pkg: github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1
           alias: certmanagerclientv1
         - pkg: github.com/google/go-containerregistry/pkg/v1
@@ -105,6 +109,8 @@ linters:
           alias: machineryaml
         - pkg: k8s.io/client-go/kubernetes/scheme
           alias: k8sclientscheme
+        - pkg: k8s.io/client-go/applyconfigurations/core/v1
+          alias: corev1apply
         - pkg: k8s.io/client-go/kubernetes/typed/core/v1
           alias: k8scorev1
         - pkg: sigs.k8s.io/controller-runtime
@@ -125,8 +131,6 @@ linters:
           alias: kymalookupcmpse
         - pkg: github.com/kyma-project/lifecycle-manager/cmd/composition/watch
           alias: watchcmpse
-        - pkg: github.com/kyma-project/lifecycle-manager/cmd/composition/service/restrictedmodule
-          alias: restrictedmodulecmpse
         - pkg: github.com/kyma-project/lifecycle-manager/cmd/composition/service/manifest/render
           alias: manifestrendercmpse
         - pkg: github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrsync
@@ -187,6 +191,8 @@ linters:
           alias: gcmcertificate
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache
           alias: skrclientcache
+        - pkg: github.com/kyma-project/lifecycle-manager/api/applyconfigurations/api/v1beta2
+          alias: apiconfigsv1beta2
         - pkg: github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/installation
           alias: installerrors
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule/installation

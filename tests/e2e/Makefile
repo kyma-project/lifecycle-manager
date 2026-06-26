@@ -165,13 +165,13 @@ labelling:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Labelling SKR resources"
 
 maintenance-windows:
-	$(GO_TEST) "Maintenance Windows - Wait for Maintenance Window"
+	$(MAKE) -f $(MAKEFILE_DIR)/maintenance_windows_test.mk test "GINKGO_FOCUS=Maintenance Windows - Wait for Maintenance Window"
 
 maintenance-windows-initial-installation:
-	$(GO_TEST) "Maintenance Windows - No Wait for Maintenance Window on Initial Installation"
+	$(MAKE) -f $(MAKEFILE_DIR)/maintenance_windows_test.mk test "GINKGO_FOCUS=Maintenance Windows - No Wait for Maintenance Window on Initial Installation"
 
 maintenance-windows-skip:
-	$(GO_TEST) "Maintenance Windows - No Wait for Maintenance Widnow on Skip"
+	$(MAKE) -f $(MAKEFILE_DIR)/maintenance_windows_test.mk test "GINKGO_FOCUS=Maintenance Windows - No Wait for Maintenance Widnow on Skip"
 
 watcher-zero-downtime:
 	$(MAKE) -f $(MAKEFILE_DIR)/watcher_zero_downtime_test.mk
@@ -215,14 +215,11 @@ skr-image-pull-secret-sync:
 module-api-upgrade-under-blocked-deletion:
 	$(MAKE) -f $(MAKEFILE_DIR)/module_api_upgrade_under_blocked_deletion_test.mk test
 
-restricted-default-module:
-	$(MAKE) -f $(MAKEFILE_DIR)/restricted_default_module_test.mk test
+restricted-module-catalog-sync:
+	$(MAKE) -f $(MAKEFILE_DIR)/restricted_module_catalog_sync_test.mk test
 
-restricted-default-module-catalog-sync:
-	$(MAKE) -f $(MAKEFILE_DIR)/restricted_default_module_catalog_sync_test.mk test
-
-restricted-module-normal-installation:
-	$(MAKE) -f $(MAKEFILE_DIR)/restricted_module_normal_module_installation_test.mk test
+restricted-modules:
+	$(MAKE) -f $(MAKEFILE_DIR)/restricted_modules_test.mk test
 
 deployer-module-image-pull-secret-injection:
 	$(MAKE) -f $(MAKEFILE_DIR)/deployer_module_image_pull_secret_injection_test.mk test

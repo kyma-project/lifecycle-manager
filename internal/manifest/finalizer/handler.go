@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	apiconfigsv1beta2 "github.com/kyma-project/lifecycle-manager/api/applyconfigurations/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -58,18 +59,11 @@ func EnsureCRFinalizer(ctx context.Context, kcp client.Client, manifest *v1beta2
 	if !manifest.GetDeletionTimestamp().IsZero() {
 		return nil
 	}
-	oMeta := &apimetav1.PartialObjectMetadata{}
-	oMeta.SetName(manifest.GetName())
-	oMeta.SetGroupVersionKind(manifest.GetObjectKind().GroupVersionKind())
-	oMeta.SetNamespace(manifest.GetNamespace())
-	oMeta.SetFinalizers(manifest.GetFinalizers())
 
-	if added := controllerutil.AddFinalizer(oMeta, CustomResourceManagerFinalizer); added {
-		if err := kcp.Patch(
-			//nolint: staticcheck // issues: #2706, #2707
-			ctx, oMeta, client.Apply, client.ForceOwnership,
-			fieldowners.CustomResourceFinalizer,
-		); err != nil {
+	if !slices.Contains(manifest.GetFinalizers(), CustomResourceManagerFinalizer) {
+		applyConfig := apiconfigsv1beta2.Manifest(manifest.GetName(), manifest.GetNamespace()).
+			WithFinalizers(append(manifest.GetFinalizers(), CustomResourceManagerFinalizer)...)
+		if err := kcp.Apply(ctx, applyConfig, client.ForceOwnership, fieldowners.CustomResourceFinalizer); err != nil {
 			return fmt.Errorf("failed to patch resource: %w", err)
 		}
 		return ErrRequeueRequired

@@ -542,6 +542,11 @@ type clientStub struct {
 	called bool
 }
 
+func (c *clientStub) Apply(_ context.Context, _ machineryruntime.ApplyConfiguration, _ ...client.ApplyOption) error {
+	c.called = true
+	return c.err
+}
+
 func (c *clientStub) Patch(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
 	c.called = true
 	return c.err
