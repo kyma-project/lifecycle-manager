@@ -41,7 +41,7 @@ module-setup-in-newer-version-e2e-with-crd-upgrade:
 	@echo "::endgroup::"
 
 .PHONY: module-setup
-module-setup: module-setup-latest module-setup-in-older-version-e2e module-setup-in-newer-version-e2e-with-crd-upgrade
+module-setup: module-setup-in-older-version-e2e module-setup-in-newer-version-e2e-with-crd-upgrade
 	@echo "::group::Test-specific module metadata setup"
 	@export PATH=$(LOCALBIN):$$PATH
 	$(SCRIPTS_DIR)/deploy_modulereleasemeta.sh $(MODULE_NAME) fast:$(MODULE_NEWER_VERSION_E2E) regular:$(MODULE_OLDER_VERSION_E2E)
