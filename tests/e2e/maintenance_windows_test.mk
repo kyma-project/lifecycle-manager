@@ -14,8 +14,22 @@ klm-patch:
 		$(LIFECYCLE_MANAGER_DIR)/config/maintenance_windows/policy.json
 	@echo "::endgroup::"
 
+.PHONY: module-setup-in-newer-version-requires-downtime
+module-setup-in-newer-version-requires-downtime:
+	@echo "::group::Module setup with $(MODULE_NEWER_VERSION) (requires-downtime)"
+	@export PATH=$(LOCALBIN):$$PATH
+	@pushd $(TEMPLATE_OPERATOR_DIR) > /dev/null
+	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh \
+		--module-name $(MODULE_NAME) \
+		--version $(MODULE_NEWER_VERSION) \
+		--deployment-name $(MODULE_DEPLOYMENT_NEWER_VERSION) \
+		--deployable-version $(MODULE_DEPLOYABLE_VERSION) \
+		--requires-downtime
+	@popd > /dev/null
+	@echo "::endgroup::"
+
 .PHONY: module-setup
-module-setup: module-setup-latest module-setup-in-older-version module-setup-in-newer-version-requires-downtime
+module-setup: module-setup-in-older-version module-setup-in-newer-version-requires-downtime
 	@echo "::group::Test-specific ModuleReleaseMeta setup"
 	@export PATH=$(LOCALBIN):$$PATH
 	$(SCRIPTS_DIR)/deploy_modulereleasemeta.sh $(MODULE_NAME) fast:$(MODULE_NEWER_VERSION) regular:$(MODULE_OLDER_VERSION)
