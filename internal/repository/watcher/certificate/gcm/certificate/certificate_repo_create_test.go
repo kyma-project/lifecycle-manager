@@ -94,7 +94,7 @@ func TestCreate_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	)
 
 	require.ErrorIs(t, err, assert.AnError)
-	assert.Contains(t, err.Error(), "failed to patch certificate")
+	assert.Contains(t, err.Error(), "failed to apply certificate")
 	assert.True(t, clientStub.called)
 }
 

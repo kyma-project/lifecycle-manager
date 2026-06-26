@@ -55,7 +55,7 @@ func NewRepository(
 }
 
 func (r *Repository) Create(ctx context.Context, name, commonName string, dnsNames []string) error {
-	// Patch instead of Create + IgnoreAlreadyExists for cases where we change the config of certificates, e.g. duration
+	// Apply (SSA) instead of Create + IgnoreAlreadyExists for cases where we change the config of certificates, e.g. duration
 	certApply := certmanagerapplyv1.Certificate(name, r.certConfig.Namespace).
 		WithSpec(certmanagerapplyv1.CertificateSpec().
 			WithCommonName(commonName).
@@ -91,7 +91,7 @@ func (r *Repository) Create(ctx context.Context, name, commonName string, dnsNam
 		)
 
 	if err := r.kcpClient.Apply(ctx, certApply, client.ForceOwnership, fieldowners.LifecycleManager); err != nil {
-		return fmt.Errorf("failed to patch certificate: %w", err)
+		return fmt.Errorf("failed to apply certificate: %w", err)
 	}
 
 	return nil

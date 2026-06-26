@@ -93,14 +93,14 @@ func (r *Repository) Create(ctx context.Context, name, commonName string, dnsNam
 		},
 	}
 
-	// Patch instead of Create + IgnoreAlreadyExists for cases where we change the config of certificates, e.g. duration
+	// Apply (SSA) instead of Create + IgnoreAlreadyExists for cases where we change the config of certificates, e.g. duration
 	unstructuredCert, err := machineryruntime.DefaultUnstructuredConverter.ToUnstructured(cert)
 	if err != nil {
 		return fmt.Errorf("failed to convert certificate to unstructured: %w", err)
 	}
 	applyConfig := client.ApplyConfigurationFromUnstructured(&unstructured.Unstructured{Object: unstructuredCert})
 	if err := r.kcpClient.Apply(ctx, applyConfig, client.ForceOwnership, fieldowners.LifecycleManager); err != nil {
-		return fmt.Errorf("failed to patch certificate: %w", err)
+		return fmt.Errorf("failed to apply certificate: %w", err)
 	}
 
 	return nil

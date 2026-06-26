@@ -29,7 +29,7 @@ func AddValidityToCertificateStatus(ctx context.Context,
 		certApply,
 		fieldowners.LifecycleManager,
 	); err != nil {
-		return fmt.Errorf("failed to add NotBefore to certificate status: %w", err)
+		return fmt.Errorf("failed to apply certificate validity to status: %w", err)
 	}
 
 	return nil
