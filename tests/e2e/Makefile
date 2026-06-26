@@ -165,13 +165,13 @@ labelling:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Labelling SKR resources"
 
 maintenance-windows:
-	$(GO_TEST) "Maintenance Windows - Wait for Maintenance Window"
+	$(MAKE) -f $(MAKEFILE_DIR)/maintenance_windows_test.mk test "GINKGO_FOCUS=Maintenance Windows - Wait for Maintenance Window"
 
 maintenance-windows-initial-installation:
-	$(GO_TEST) "Maintenance Windows - No Wait for Maintenance Window on Initial Installation"
+	$(MAKE) -f $(MAKEFILE_DIR)/maintenance_windows_test.mk test "GINKGO_FOCUS=Maintenance Windows - No Wait for Maintenance Window on Initial Installation"
 
 maintenance-windows-skip:
-	$(GO_TEST) "Maintenance Windows - No Wait for Maintenance Widnow on Skip"
+	$(MAKE) -f $(MAKEFILE_DIR)/maintenance_windows_test.mk test "GINKGO_FOCUS=Maintenance Windows - No Wait for Maintenance Widnow on Skip"
 
 watcher-zero-downtime:
 	$(MAKE) -f $(MAKEFILE_DIR)/watcher_zero_downtime_test.mk
