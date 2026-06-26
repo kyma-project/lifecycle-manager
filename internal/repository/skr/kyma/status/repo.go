@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	apiconfigsv1beta2 "github.com/kyma-project/lifecycle-manager/api/applyconfigurations/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
@@ -57,29 +58,18 @@ func (r *Repository) SetStateDeleting(ctx context.Context, kymaName types.Namesp
 		return err
 	}
 
-	kyma := &v1beta2.Kyma{
-		TypeMeta: apimetav1.TypeMeta{
-			Kind:       string(shared.KymaKind),
-			APIVersion: v1beta2.GroupVersion.String(),
-		},
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      shared.DefaultRemoteKymaName,
-			Namespace: shared.DefaultRemoteNamespace,
-		},
-		Status: v1beta2.KymaStatus{
-			State: shared.StateDeleting,
-			LastOperation: shared.LastOperation{
+	applyConfig := apiconfigsv1beta2.Kyma(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace).
+		WithStatus(apiconfigsv1beta2.KymaStatus().
+			WithState(shared.StateDeleting).
+			WithLastOperation(shared.LastOperation{
 				Operation:      operationSetStateDeleting,
 				LastUpdateTime: apimetav1.NewTime(time.Now()),
-			},
-		},
-	}
+			}),
+		)
 
-	if err := skrClient.Status().Patch(
+	if err := skrClient.Status().Apply(
 		ctx,
-		kyma,
-		//nolint: staticcheck // issues: #2706, #2707
-		client.Apply,
+		applyConfig,
 		client.ForceOwnership,
 		fieldowners.LifecycleManager,
 	); err != nil {

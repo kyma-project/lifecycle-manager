@@ -7,14 +7,13 @@ import (
 	"time"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	apiconfigsv1beta2 "github.com/kyma-project/lifecycle-manager/api/applyconfigurations/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
-	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -304,24 +303,12 @@ func KymaIsInState(ctx context.Context, name, namespace string, clnt client.Clie
 }
 
 func SetKymaState(ctx context.Context, kyma *v1beta2.Kyma, clnt client.Client, state shared.State) error {
-	kyma.Status = v1beta2.KymaStatus{
-		State:         state,
-		Conditions:    nil,
-		Modules:       nil,
-		ActiveChannel: "",
-		LastOperation: shared.LastOperation{LastUpdateTime: apimetav1.NewTime(time.Now())},
-	}
-	kyma.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   v1beta2.GroupVersion.Group,
-		Version: v1beta2.GroupVersion.Version,
-		Kind:    string(shared.KymaKind),
-	})
-	kyma.ManagedFields = nil
-
-	//nolint: staticcheck // issues: #2706, #2707
-	return clnt.Status().Patch(ctx, kyma, client.Apply,
-		status.SubResourceOpts(client.ForceOwnership),
-		fieldowners.LegacyLifecycleManager)
+	applyConfig := apiconfigsv1beta2.Kyma(kyma.GetName(), kyma.GetNamespace()).
+		WithStatus(apiconfigsv1beta2.KymaStatus().
+			WithState(state).
+			WithLastOperation(shared.LastOperation{LastUpdateTime: apimetav1.NewTime(time.Now())}),
+		)
+	return clnt.Status().Apply(ctx, applyConfig, client.ForceOwnership, fieldowners.LegacyLifecycleManager)
 }
 
 func ContainsKymaManagerField(
