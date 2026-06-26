@@ -213,7 +213,7 @@ skr-image-pull-secret-sync:
 	$(MAKE) -f $(MAKEFILE_DIR)/skr_image_pull_secret_sync_test.mk test
 
 module-api-upgrade-under-blocked-deletion:
-	$(GO_TEST) "Module API Upgrade Under Blocked Deletion"
+	$(MAKE) -f $(MAKEFILE_DIR)/module_api_upgrade_under_blocked_deletion_test.mk test
 
 restricted-module-catalog-sync:
 	$(MAKE) -f $(MAKEFILE_DIR)/restricted_module_catalog_sync_test.mk test
