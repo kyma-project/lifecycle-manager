@@ -64,7 +64,7 @@ func TestModuleReleaseMetaSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:du
 		}
 	}
 
-	syncWorkerFactoryFn := func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncWorker {
+	syncWorkerFactoryFn := func(skrClient client.Client, settings *Settings) moduleReleaseMetaSyncWorker {
 		return &fakeModuleReleaseMetaSyncWorker{
 			namespace:            settings.Namespace,
 			onSyncConcurrently:   onSyncConcurrentlyFn,
@@ -124,7 +124,7 @@ func TestModuleReleaseMetaSyncer_SyncToSKR_nilList(t *testing.T) {
 		}
 	}
 
-	syncWorkerFactoryFn := func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncWorker {
+	syncWorkerFactoryFn := func(skrClient client.Client, settings *Settings) moduleReleaseMetaSyncWorker {
 		return &fakeModuleReleaseMetaSyncWorker{
 			namespace:            settings.Namespace,
 			onSyncConcurrently:   onSyncConcurrentlyFn,

@@ -90,9 +90,8 @@ jobs:
           - simulate-skr-secret-rotation-evict-client-cache
           - skr-image-pull-secret-sync
           - gateway-secret-server-cert-metric
-          - restricted-default-module
-          - restricted-default-module-catalog-sync
-          - restricted-module-normal-installation
+          - restricted-module-catalog-sync
+          - restricted-modules
           - deployer-module-image-pull-secret-injection
           - block-non-deployer-module-image-pull-secret-injection
 
@@ -130,9 +129,8 @@ jobs:
             mandatory-module | \
             mandatory-module-metrics | \
             gateway-secret-server-cert-metric | \
-            restricted-default-module | \
-            restricted-module-normal-installation | \
-            restricted-default-module-catalog-sync | \
+            restricted-modules | \
+            restricted-module-catalog-sync | \
             deployer-module-image-pull-secret-injection | \
             block-non-deployer-module-image-pull-secret-injection | \
             kyma-deprovision-with-foreground-propagation | \

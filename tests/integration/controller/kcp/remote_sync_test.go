@@ -3,10 +3,6 @@ package kcp_test
 import (
 	"errors"
 	"fmt"
-	"maps"
-	"slices"
-	"strconv"
-	"strings"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +13,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
-	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -26,12 +21,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var (
-	ErrNotContainsExpectedCondition  = errors.New("kyma CR not contains expected condition")
-	ErrNotContainsExpectedAnnotation = errors.New("kyma CR not contains expected CRD annotation")
-	ErrContainsUnexpectedAnnotation  = errors.New("kyma CR contains unexpected CRD annotation")
-	ErrAnnotationNotUpdated          = errors.New("kyma CR annotation not updated")
-)
+var ErrNotContainsExpectedCondition = errors.New("kyma CR does not contain expected condition")
 
 var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	var err error
@@ -361,7 +351,6 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 			Channel: moduleInKCP.Channel,
 		},
 	}
-	skrKyma := NewSKRKyma()
 	var skrClient client.Client
 	var err error
 	BeforeAll(func() {
@@ -394,63 +383,19 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 		DeleteModuleTemplates(ctx, kcpClient, kyma)
 	})
 
-	injectedAnnotations := []string{
-		"modulereleasemeta-skr-crd-generation",
-		"modulereleasemeta-kcp-crd-generation",
-		"moduletemplate-skr-crd-generation",
-		"moduletemplate-kcp-crd-generation",
-		"kyma-skr-crd-generation",
-		"kyma-kcp-crd-generation",
-	}
-
-	It("CRDs generation annotation should exist in KCP kyma", func() {
-		Eventually(func() error {
+	It("Kyma CRDsSync condition should be set to true", func() {
+		Eventually(func() bool {
 			kcpKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
 			if err != nil {
-				return err
+				return false
 			}
-
-			relevantKymaAnnotations := collections.Filter(slices.Collect(maps.Keys(kcpKyma.Annotations)),
-				func(val string) bool {
-					return strings.HasSuffix(val, "crd-generation")
-				})
-			if len(relevantKymaAnnotations) < len(injectedAnnotations) {
-				return fmt.Errorf("%w: expected: %d, actual: %d", ErrNotContainsExpectedAnnotation,
-					len(injectedAnnotations), len(relevantKymaAnnotations))
-			}
-			for _, expectedAnnotation := range injectedAnnotations {
-				if _, ok := kcpKyma.Annotations[expectedAnnotation]; !ok {
-					return fmt.Errorf("%w: %s is missing", ErrNotContainsExpectedAnnotation, expectedAnnotation)
-				}
-			}
-
-			return nil
-		}, Timeout, Interval).Should(Succeed())
+			return kcpKyma.ContainsCondition(v1beta2.ConditionTypeCRDsSync, apimetav1.ConditionTrue)
+		}, Timeout, Interval).Should(BeTrue())
 	})
 
-	It("CRDs generation annotation shouldn't exist in SKR kyma", func() {
-		Eventually(func() error {
-			skrKyma, err := GetKyma(ctx, skrClient, skrKyma.GetName(), flags.DefaultRemoteSyncNamespace)
-			if err != nil {
-				return err
-			}
-
-			for _, unwantedAnnotation := range injectedAnnotations {
-				if _, ok := skrKyma.Annotations[unwantedAnnotation]; ok {
-					return fmt.Errorf("%w: %s is present but it should not", ErrContainsUnexpectedAnnotation,
-						unwantedAnnotation)
-				}
-			}
-
-			return nil
-		}, Timeout, Interval).Should(Succeed())
-	})
-
-	It("Kyma CRD should sync to SKR and annotations get updated", func() {
+	It("Kyma CRD should sync to SKR", func() {
 		var kcpKymaCrd *apiextensionsv1.CustomResourceDefinition
 		var skrKymaCrd *apiextensionsv1.CustomResourceDefinition
-		var skrModuleTemplateCrd *apiextensionsv1.CustomResourceDefinition
-		var kcpModuleTemplateCrd *apiextensionsv1.CustomResourceDefinition
 		var skrModuleReleaseMetaCrd *apiextensionsv1.CustomResourceDefinition
 		var kcpModuleReleaseMetaCrd *apiextensionsv1.CustomResourceDefinition
 
@@ -497,91 +442,35 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 
 			return skrModuleReleaseMetaCrd.Spec.Versions[0].Schema
 		}, Timeout, Interval).Should(Equal(kcpModuleReleaseMetaCrd.Spec.Versions[0].Schema))
-
-		By("Read ModuleTemplate CRDs")
-		Eventually(func() error {
-			var err error
-			skrModuleTemplateCrd, err = fetchCrd(skrClient, shared.ModuleTemplateKind)
-			if err != nil {
-				return err
-			}
-			kcpModuleTemplateCrd, err = fetchCrd(kcpClient, shared.ModuleTemplateKind)
-			if err != nil {
-				return err
-			}
-			return nil
-		}, Timeout, Interval).Should(Succeed())
-
-		By("Kyma CR generation annotations should be updated")
-		Eventually(func() error {
-			kcpKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
-			if err != nil {
-				return err
-			}
-
-			if err = assertCrdGenerationAnnotations(kcpKyma, "kyma-skr-crd-generation", skrKymaCrd); err != nil {
-				return err
-			}
-			if err = assertCrdGenerationAnnotations(kcpKyma, "kyma-kcp-crd-generation", kcpKymaCrd); err != nil {
-				return err
-			}
-			if err = assertCrdGenerationAnnotations(kcpKyma, "moduletemplate-skr-crd-generation",
-				skrModuleTemplateCrd); err != nil {
-				return err
-			}
-			if err = assertCrdGenerationAnnotations(kcpKyma, "moduletemplate-kcp-crd-generation",
-				kcpModuleTemplateCrd); err != nil {
-				return err
-			}
-			if err = assertCrdGenerationAnnotations(kcpKyma, "modulereleasemeta-skr-crd-generation",
-				skrModuleReleaseMetaCrd); err != nil {
-				return err
-			}
-			if err = assertCrdGenerationAnnotations(kcpKyma, "modulereleasemeta-kcp-crd-generation",
-				kcpModuleReleaseMetaCrd); err != nil {
-				return err
-			}
-
-			return nil
-		}, Timeout, Interval).Should(Succeed())
 	})
 
-	It("Should regenerate Kyma CRD in SKR when deleted", func() {
+	It("Should re-apply Kyma CRD on SKR after it is deleted", func() {
 		kymaCrd, err := fetchCrd(skrClient, shared.KymaKind)
 		Expect(err).NotTo(HaveOccurred())
+
 		Eventually(skrClient.Delete, Timeout, Interval).
-			WithArguments(ctx, kymaCrd).
 			WithContext(ctx).
+			WithArguments(ctx, kymaCrd).
 			Should(Succeed())
 
 		Eventually(func() error {
 			_, err := fetchCrd(skrClient, shared.KymaKind)
 			return err
-		}, Timeout, Interval).WithContext(ctx).Should(Not(HaveOccurred()))
+		}, Timeout, Interval).WithContext(ctx).Should(Succeed())
 	})
 
-	It("Should regenerate ModuleTemplate CRD in SKR when deleted", func() {
+	It("Should re-apply ModuleTemplate CRD on SKR after it is deleted", func() {
 		moduleTemplateCrd, err := fetchCrd(skrClient, shared.ModuleTemplateKind)
 		Expect(err).NotTo(HaveOccurred())
+
 		Eventually(skrClient.Delete, Timeout, Interval).
-			WithArguments(ctx, moduleTemplateCrd).
 			WithContext(ctx).
+			WithArguments(ctx, moduleTemplateCrd).
 			Should(Succeed())
 
 		Eventually(func() error {
 			_, err := fetchCrd(skrClient, shared.ModuleTemplateKind)
 			return err
-		}, Timeout, Interval).WithContext(ctx).Should(Not(HaveOccurred()))
+		}, Timeout, Interval).WithContext(ctx).Should(Succeed())
 	})
 })
-
-func assertCrdGenerationAnnotations(kcpKyma *v1beta2.Kyma, annotationName string,
-	targetCrd *apiextensionsv1.CustomResourceDefinition,
-) error {
-	annotationValue := kcpKyma.Annotations[annotationName]
-	targetCrdGeneration := strconv.FormatInt(targetCrd.Generation, 10)
-	if annotationValue != targetCrdGeneration {
-		return fmt.Errorf("%w: expected: %s, actual: %s", ErrAnnotationNotUpdated, targetCrdGeneration, annotationValue)
-	}
-	return nil
-}

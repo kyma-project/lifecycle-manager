@@ -20,26 +20,24 @@ type moduleTemplateSyncWorker interface {
 }
 
 // moduleTemplateSyncWorkerFunc is a factory function for creating new moduleTemplateSyncWorker instance.
-type moduleTemplateSyncWorkerFunc func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncWorker
+type moduleTemplateSyncWorkerFunc func(skrClient client.Client, settings *Settings) moduleTemplateSyncWorker
 
 // moduleTemplateSyncer provides a top-level API for synchronizing ModuleTemplates from KCP to SKR.
-// It expects a ready-to-use client to the KCP and SKR cluster.
+// It expects a ready-to-use client to the SKR cluster.
 type moduleTemplateSyncer struct {
-	kcpClient           client.Client
 	skrClient           client.Client
 	settings            *Settings
 	syncWorkerFactoryFn moduleTemplateSyncWorkerFunc
 }
 
-func newModuleTemplateSyncer(kcpClient, skrClient client.Client, settings *Settings) *moduleTemplateSyncer {
-	var syncWokerFactoryFn moduleTemplateSyncWorkerFunc = func(kcpClient,
+func newModuleTemplateSyncer(skrClient client.Client, settings *Settings) *moduleTemplateSyncer {
+	var syncWokerFactoryFn moduleTemplateSyncWorkerFunc = func(
 		skrClient client.Client, settings *Settings,
 	) moduleTemplateSyncWorker {
-		return newModuleTemplateConcurrentWorker(kcpClient, skrClient, settings)
+		return newModuleTemplateConcurrentWorker(skrClient, settings)
 	}
 
 	return &moduleTemplateSyncer{
-		kcpClient:           kcpClient,
 		skrClient:           skrClient,
 		settings:            settings,
 		syncWorkerFactoryFn: syncWokerFactoryFn,
@@ -53,7 +51,7 @@ func newModuleTemplateSyncer(kcpClient, skrClient client.Client, settings *Setti
 // 2. All ModuleTemplates that have to be removed as they are not existing in the Control Plane.
 // It uses Server-Side-Apply Patches to optimize the turnaround required.
 func (mts *moduleTemplateSyncer) SyncToSKR(ctx context.Context, kcpModules []v1beta2.ModuleTemplate) error {
-	worker := mts.syncWorkerFactoryFn(mts.kcpClient, mts.skrClient, mts.settings)
+	worker := mts.syncWorkerFactoryFn(mts.skrClient, mts.settings)
 
 	if err := worker.SyncConcurrently(ctx, kcpModules); err != nil {
 		return err

@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1apply "k8s.io/client-go/applyconfigurations/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -24,7 +22,6 @@ import (
 var ErrNotFoundAndKCPKymaUnderDeleting = errors.New("not found and kcp kyma under deleting")
 
 const (
-	crdInstallation     event.Reason = "CRDInstallation"
 	remoteInstallation  event.Reason = "RemoteInstallation"
 	metadataSyncFailure event.Reason = "MetadataSynchronization"
 	statusSyncFailure   event.Reason = "StatusSynchronization"
@@ -88,16 +85,9 @@ func (s *SkrContext) CreateKymaNamespace(ctx context.Context) error {
 }
 
 func (s *SkrContext) CreateOrFetchKyma(
-	ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma,
+	ctx context.Context, kyma *v1beta2.Kyma,
 ) (*v1beta2.Kyma, error) {
 	remoteKyma, err := s.getRemoteKyma(ctx)
-	if meta.IsNoMatchError(err) || CRDNotFoundErr(err) {
-		if err := s.createOrUpdateCRD(ctx, kcpClient, shared.KymaKind.Plural()); err != nil {
-			return nil, err
-		}
-		s.event.Normal(kyma, crdInstallation, "CRDs were installed to SKR")
-	}
-
 	if util.IsNotFound(err) {
 		if !kyma.DeletionTimestamp.IsZero() {
 			return nil, ErrNotFoundAndKCPKymaUnderDeleting
@@ -164,37 +154,6 @@ func ReplaceSpec(controlPlaneKyma *v1beta2.Kyma, remoteKyma *v1beta2.Kyma) {
 	controlPlaneKyma.Spec.Modules = []v1beta2.Module{}
 	controlPlaneKyma.Spec.Modules = append(controlPlaneKyma.Spec.Modules, remoteKyma.Spec.Modules...)
 	controlPlaneKyma.Spec.Channel = remoteKyma.Spec.Channel
-}
-
-func (s *SkrContext) createOrUpdateCRD(ctx context.Context, kcpClient client.Client, plural string) error {
-	crd := &apiextensionsv1.CustomResourceDefinition{}
-	crdFromRuntime := &apiextensionsv1.CustomResourceDefinition{}
-	var err error
-	err = kcpClient.Get(ctx, client.ObjectKey{
-		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
-		// name changes, this also has to be adjusted here. We can think of making this configurable later
-		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-	}, crd,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to get kyma CRDs on kcp: %w", err)
-	}
-
-	err = s.Get(
-		ctx, client.ObjectKey{
-			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-		}, crdFromRuntime,
-	)
-
-	if util.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta2.GroupVersion.Version) {
-		return PatchCRD(ctx, s.Client, crd)
-	}
-
-	if err != nil {
-		return fmt.Errorf("failed to get kyma CRDs on remote: %w", err)
-	}
-
-	return nil
 }
 
 func (s *SkrContext) getRemoteKyma(ctx context.Context) (*v1beta2.Kyma, error) {
