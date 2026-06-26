@@ -15,7 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
@@ -23,9 +22,9 @@ import (
 )
 
 func TestSyncImagePullSecret_WhenSecretNameIsNotConfigured_ReturnsError(t *testing.T) {
-	skrSyncService := skrsync.NewService(nil, nil, nil, "")
+	svc := skrsync.NewService(nil, nil, nil, nil, "")
 
-	err := skrSyncService.SyncImagePullSecret(t.Context(), random.NamespacedName())
+	err := svc.SyncImagePullSecret(t.Context(), random.NamespacedName())
 
 	require.ErrorIs(t, err, skrsync.ErrImagePullSecretNotConfigured)
 }
@@ -33,9 +32,9 @@ func TestSyncImagePullSecret_WhenSecretNameIsNotConfigured_ReturnsError(t *testi
 func TestSyncImagePullSecret_WhenSecretRepositoryReturnsError_ReturnsError(t *testing.T) {
 	expectedError := errors.New("secret not found in repository")
 	secretRepo := &secretRepositoryStub{err: expectedError}
-	skrSyncService := skrsync.NewService(nil, secretRepo, nil, "test-secret")
+	svc := skrsync.NewService(nil, nil, nil, secretRepo, "test-secret")
 
-	err := skrSyncService.SyncImagePullSecret(t.Context(), random.NamespacedName())
+	err := svc.SyncImagePullSecret(t.Context(), random.NamespacedName())
 
 	require.ErrorIs(t, err, skrsync.ErrImagePullSecretNotFound)
 	require.ErrorIs(t, err, expectedError)
@@ -50,9 +49,9 @@ func TestSyncImagePullSecret_WhenSkrContextFactoryReturnsError_ReturnsError(t *t
 	}
 	secretRepo := &secretRepositoryStub{secret: secret}
 	skrContextFactory := &skrContextProviderStub{err: expectedError}
-	skrSyncService := skrsync.NewService(skrContextFactory, secretRepo, nil, "test-secret")
+	svc := skrsync.NewService(nil, nil, skrContextFactory, secretRepo, "test-secret")
 
-	err := skrSyncService.SyncImagePullSecret(t.Context(), random.NamespacedName())
+	err := svc.SyncImagePullSecret(t.Context(), random.NamespacedName())
 
 	require.ErrorIs(t, err, expectedError)
 	require.True(t, secretRepo.called)
@@ -72,9 +71,9 @@ func TestSyncImagePullSecret_WhenSkrContextPatchReturnsError_ReturnsError(t *tes
 	secretRepo := &secretRepositoryStub{secret: secret}
 	mockClient := &mockSkrClient{patchError: patchError}
 	skrContextFactory := &skrContextProviderStub{mockClient: mockClient}
-	skrSyncService := skrsync.NewService(skrContextFactory, secretRepo, nil, "test-secret")
+	svc := skrsync.NewService(nil, nil, skrContextFactory, secretRepo, "test-secret")
 
-	err := skrSyncService.SyncImagePullSecret(t.Context(), random.NamespacedName())
+	err := svc.SyncImagePullSecret(t.Context(), random.NamespacedName())
 
 	require.ErrorIs(t, err, skrsync.ErrFailedToSyncImagePullSecret)
 	require.ErrorIs(t, err, patchError)
@@ -82,7 +81,6 @@ func TestSyncImagePullSecret_WhenSkrContextPatchReturnsError_ReturnsError(t *tes
 	require.True(t, skrContextFactory.called)
 	require.True(t, mockClient.patchCalled)
 
-	// Verify that the secret was properly prepared (metadata cleared)
 	patchedSecret := mockClient.patchedObject.(*apicorev1.Secret)
 	require.Equal(t, shared.DefaultRemoteNamespace, patchedSecret.Namespace)
 	require.Empty(t, patchedSecret.ResourceVersion)
@@ -106,80 +104,33 @@ func TestSyncImagePullSecret_WhenSuccessful_SyncsSecretToSkr(t *testing.T) {
 	secretRepo := &secretRepositoryStub{secret: secret}
 	mockClient := &mockSkrClient{}
 	skrContextFactory := &skrContextProviderStub{mockClient: mockClient}
-	skrSyncService := skrsync.NewService(skrContextFactory, secretRepo, nil, "test-secret")
+	svc := skrsync.NewService(nil, nil, skrContextFactory, secretRepo, "test-secret")
 
-	err := skrSyncService.SyncImagePullSecret(t.Context(), random.NamespacedName())
+	err := svc.SyncImagePullSecret(t.Context(), random.NamespacedName())
 
 	require.NoError(t, err)
 	require.True(t, secretRepo.called)
 	require.True(t, skrContextFactory.called)
 	require.True(t, mockClient.patchCalled)
 
-	// Verify the secret was correctly modified before syncing
 	patchedSecret := mockClient.patchedObject.(*apicorev1.Secret)
 	require.Equal(t, "test-secret", patchedSecret.Name)
 	require.Equal(t, shared.DefaultRemoteNamespace, patchedSecret.Namespace)
 	require.Equal(t, map[string][]byte{"dockerconfigjson": []byte("config")}, patchedSecret.Data)
 	require.Equal(t, map[string]string{"label": "value"}, patchedSecret.Labels)
 
-	// Verify cluster-specific metadata was cleared
 	require.Empty(t, patchedSecret.ResourceVersion)
 	require.Empty(t, patchedSecret.UID)
 	require.Nil(t, patchedSecret.ManagedFields)
 	require.Zero(t, patchedSecret.CreationTimestamp)
 	require.Zero(t, patchedSecret.Generation)
 
-	// Verify patch options were correctly set
 	require.Len(t, mockClient.patchOptions, 2)
 	require.Contains(t, mockClient.patchOptions, client.ForceOwnership)
 	require.Contains(t, mockClient.patchOptions, fieldowners.LegacyLifecycleManager)
 }
 
-func TestSyncCrds_WhenCalled_ShouldInvokeUseCase(t *testing.T) {
-	syncCrdsUseCase := &syncCrdsUseCaseStub{}
-	skrSyncService := skrsync.NewService(nil, nil, syncCrdsUseCase, "")
-
-	_, err := skrSyncService.SyncCrds(t.Context(), &v1beta2.Kyma{})
-
-	require.NoError(t, err)
-	require.True(t, syncCrdsUseCase.called)
-}
-
-func TestSyncCrds_WhenUseCaseReturnsError_ReturnsError(t *testing.T) {
-	expectedError := errors.New("usecase execution failed")
-	syncCrdsUseCase := &syncCrdsUseCaseStub{err: expectedError}
-	skrSyncService := skrsync.NewService(nil, nil, syncCrdsUseCase, "")
-
-	result, err := skrSyncService.SyncCrds(t.Context(), &v1beta2.Kyma{})
-
-	require.ErrorIs(t, err, expectedError)
-	require.False(t, result)
-	require.True(t, syncCrdsUseCase.called)
-}
-
-func TestSyncCrds_WhenUseCaseSucceeds_ReturnsResult(t *testing.T) {
-	syncCrdsUseCase := &syncCrdsUseCaseStub{result: true}
-	skrSyncService := skrsync.NewService(nil, nil, syncCrdsUseCase, "")
-
-	result, err := skrSyncService.SyncCrds(t.Context(), &v1beta2.Kyma{})
-
-	require.NoError(t, err)
-	require.True(t, result)
-	require.True(t, syncCrdsUseCase.called)
-}
-
-// Test Stubs
-
-type syncCrdsUseCaseStub struct {
-	called bool
-	result bool
-	err    error
-}
-
-func (s *syncCrdsUseCaseStub) Execute(_ context.Context, _ *v1beta2.Kyma) (bool, error) {
-	s.called = true
-	return s.result, s.err
-}
+// --- stubs ---
 
 type secretRepositoryStub struct {
 	called bool
@@ -187,7 +138,7 @@ type secretRepositoryStub struct {
 	err    error
 }
 
-func (s *secretRepositoryStub) Get(ctx context.Context, name string) (*apicorev1.Secret, error) {
+func (s *secretRepositoryStub) Get(_ context.Context, _ string) (*apicorev1.Secret, error) {
 	s.called = true
 	return s.secret, s.err
 }
@@ -198,20 +149,16 @@ type skrContextProviderStub struct {
 	err        error
 }
 
-func (s *skrContextProviderStub) Get(kyma types.NamespacedName) (*remote.SkrContext, error) {
+func (s *skrContextProviderStub) Get(_ types.NamespacedName) (*remote.SkrContext, error) {
 	s.called = true
 	if s.err != nil {
 		return nil, s.err
 	}
-	// Create a real SkrContext using our mock client
 	return remote.NewSkrContext(s.mockClient, nil), nil
 }
 
-func (s *skrContextProviderStub) Init(_ context.Context, _ types.NamespacedName) error {
-	return nil
-}
-
-func (s *skrContextProviderStub) InvalidateCache(_ types.NamespacedName) {}
+func (s *skrContextProviderStub) Init(_ context.Context, _ types.NamespacedName) error { return nil }
+func (s *skrContextProviderStub) InvalidateCache(_ types.NamespacedName)               {}
 
 type mockSkrClient struct {
 	client.Client
@@ -222,9 +169,9 @@ type mockSkrClient struct {
 	patchError    error
 }
 
-func (m *mockSkrClient) Patch(ctx context.Context,
+func (m *mockSkrClient) Patch(_ context.Context,
 	obj client.Object,
-	patch client.Patch,
+	_ client.Patch,
 	opts ...client.PatchOption,
 ) error {
 	m.patchCalled = true
@@ -233,7 +180,6 @@ func (m *mockSkrClient) Patch(ctx context.Context,
 	return m.patchError
 }
 
-// Implement minimal methods for client.Client interface that might be called.
 func (m *mockSkrClient) Create(_ context.Context, _ client.Object, _ ...client.CreateOption) error {
 	return nil
 }
@@ -262,14 +208,8 @@ func (m *mockSkrClient) DeleteAllOf(_ context.Context, _ client.Object, _ ...cli
 	return nil
 }
 
-func (m *mockSkrClient) Scheme() *machineryruntime.Scheme {
-	return nil
-}
-
-func (m *mockSkrClient) RESTMapper() meta.RESTMapper {
-	return nil
-}
-
+func (m *mockSkrClient) Scheme() *machineryruntime.Scheme { return nil }
+func (m *mockSkrClient) RESTMapper() meta.RESTMapper      { return nil }
 func (m *mockSkrClient) GroupVersionKindFor(_ machineryruntime.Object) (schema.GroupVersionKind, error) {
 	return schema.GroupVersionKind{}, nil
 }
@@ -277,11 +217,5 @@ func (m *mockSkrClient) GroupVersionKindFor(_ machineryruntime.Object) (schema.G
 func (m *mockSkrClient) IsObjectNamespaced(_ machineryruntime.Object) (bool, error) {
 	return false, nil
 }
-
-func (m *mockSkrClient) Status() client.SubResourceWriter {
-	return nil
-}
-
-func (m *mockSkrClient) SubResource(_ string) client.SubResourceClient {
-	return nil
-}
+func (m *mockSkrClient) Status() client.SubResourceWriter              { return nil }
+func (m *mockSkrClient) SubResource(_ string) client.SubResourceClient { return nil }

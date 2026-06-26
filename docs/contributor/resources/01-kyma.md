@@ -194,9 +194,6 @@ The most important labels include, but are not limited to:
 ## Annotations
 
 * `skr-domain`: The domain of the Kyma runtime instance.
-* `kyma-[kcp|skr]-crd-generation`: The generation of the Kyma CRD in both KCP and the Kyma runtime instance. Used to determine if the CRD must be updated in the Kyma runtime instance.
-* `modulereleasemeta-[kcp|skr]-crd-generation`: The generation of the ModuleReleaseMeta CRD in both KCP and the Kyma runtime instance. Used to determine if the CRD must be updated in the Kyma runtime instance.
-* `moduletemplate-[kcp|skr]-crd-generation`: The generation of the ModuleTemplate CRD in both KCP and the Kyma runtime instance. Used to determine if the CRD must be updated in the Kyma runtime instance.
 
 ## `operator.kyma-project.io` Finalizers
 
