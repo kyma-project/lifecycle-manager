@@ -47,8 +47,8 @@ const (
 	moduleCRFinalizer       = "cr-finalizer"
 	NewerVersion            = "2.4.2-e2e-test"
 	MisconfiguredModuleName = "template-operator-misconfigured"
-	// GlobalAccountID1 must match GLOBAL_ACCOUNT_ID_1 in
-	// restricted_modules_test.mk.
+	// GlobalAccountID1 is used to test uninstallation when the Kyma's
+	// global-account-id no longer matches the deployer module's kymaSelector.
 	GlobalAccountID1 = "a1c1d2e3-4a5b-6c7d-8e9f-0a1b2c3d4e5f"
 	GlobalAccountID2 = "f6e5d4c3-b2a1-9087-6543-210fedcba987"
 )
