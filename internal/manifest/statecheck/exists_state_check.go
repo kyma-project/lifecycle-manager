@@ -1,4 +1,4 @@
-package v2
+package statecheck
 
 import (
 	"context"
@@ -9,10 +9,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
-type StateCheck interface {
-	GetState(ctx context.Context, clnt client.Client, resources []client.Object) (shared.State, error)
-}
-
+// ExistsStateCheck reports StateReady once every resource passed in is
+// retrievable from the SKR cluster. Used by integration suites that don't
+// have a Deployment/StatefulSet manager to track.
 type ExistsStateCheck struct{}
 
 func NewExistsStateCheck() *ExistsStateCheck {

@@ -121,7 +121,7 @@ spec:
 
 The config reference used an image layer reference that contains configuration data that could be used to further
 influence any potential rendering process while the resources are processed by
-the [declarative library](https://github.com/kyma-project/lifecycle-manager/tree/main/internal/declarative). It was resolved through a
+the [render service](https://github.com/kyma-project/lifecycle-manager/tree/main/internal/service/manifest/render). It was resolved through a
 translation of the ModuleTemplate CR to the Manifest CR during
 the [resolution of the modules](https://github.com/kyma-project/lifecycle-manager/blob/main/internal/manifest/parser/template_to_module.go) in the Kyma CR control loop.
 

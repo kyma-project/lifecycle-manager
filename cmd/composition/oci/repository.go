@@ -5,9 +5,9 @@ import (
 
 	"github.com/go-logr/logr"
 
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/ocm"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/ocm/oci"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 )
 

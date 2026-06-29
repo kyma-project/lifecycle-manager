@@ -1,4 +1,4 @@
-package v2_test
+package render_test
 
 import (
 	"context"
@@ -10,11 +10,10 @@ import (
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/render"
 )
 
 const (
@@ -23,7 +22,6 @@ const (
 	testOtherModule    = "other-module"
 )
 
-// secretRepoStub satisfies declarativev2.SecretRepository for the unit tests.
 type secretRepoStub struct {
 	secrets  map[string]*apicorev1.Secret
 	getError error
@@ -93,7 +91,7 @@ func TestDeployerModuleImagePullSecretTransform_ReplacesData_WhenDeployerAndAnno
 		map[string]string{shared.InjectDataFromKCPAnnotation: shared.EnableLabelValue},
 		map[string]any{".dockerconfigjson": base64.StdEncoding.EncodeToString([]byte("dummy"))})
 
-	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
+	transform := render.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(testDeployerModule), []*unstructured.Unstructured{resource})
 	require.NoError(t, err)
 
@@ -116,7 +114,7 @@ func TestDeployerModuleImagePullSecretTransform_NoOp_WhenManifestIsNotDeployer(t
 		map[string]string{shared.InjectDataFromKCPAnnotation: shared.EnableLabelValue},
 		originalData)
 
-	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
+	transform := render.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(testOtherModule), []*unstructured.Unstructured{resource})
 	require.NoError(t, err)
 
@@ -132,7 +130,7 @@ func TestDeployerModuleImagePullSecretTransform_NoOp_WhenManifestHasNoModuleName
 	resource := newSecretResource(testKCPSecretName,
 		map[string]string{shared.InjectDataFromKCPAnnotation: shared.EnableLabelValue}, nil)
 
-	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
+	transform := render.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(""), []*unstructured.Unstructured{resource})
 	require.NoError(t, err)
 }
@@ -144,7 +142,7 @@ func TestDeployerModuleImagePullSecretTransform_IgnoresSecret_WhenAnnotationMiss
 	originalData := map[string]any{"k": base64.StdEncoding.EncodeToString([]byte("dummy"))}
 	resource := newSecretResource(testKCPSecretName, nil, originalData)
 
-	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
+	transform := render.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(testDeployerModule), []*unstructured.Unstructured{resource})
 	require.NoError(t, err)
 
@@ -166,7 +164,7 @@ func TestDeployerModuleImagePullSecretTransform_IgnoresNonSecretResource_WithAnn
 		},
 	}}
 
-	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
+	transform := render.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(testDeployerModule), []*unstructured.Unstructured{configMap})
 	require.NoError(t, err)
 }
@@ -180,10 +178,10 @@ func TestDeployerModuleImagePullSecretTransform_Errors_WhenKCPSecretMissingModul
 	resource := newSecretResource(testKCPSecretName,
 		map[string]string{shared.InjectDataFromKCPAnnotation: shared.EnableLabelValue}, nil)
 
-	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
+	transform := render.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(testDeployerModule), []*unstructured.Unstructured{resource})
-	require.ErrorIs(t, err, declarativev2.ErrInjectFromKCPSecretMissingModuleLabel)
-	require.ErrorIs(t, err, declarativev2.ErrInjectDataFromKCP)
+	require.ErrorIs(t, err, render.ErrInjectFromKCPSecretMissingModuleLabel)
+	require.ErrorIs(t, err, render.ErrInjectDataFromKCP)
 }
 
 func TestDeployerModuleImagePullSecretTransform_Errors_WhenKCPSecretLabelMismatch(t *testing.T) {
@@ -195,10 +193,10 @@ func TestDeployerModuleImagePullSecretTransform_Errors_WhenKCPSecretLabelMismatc
 	resource := newSecretResource(testKCPSecretName,
 		map[string]string{shared.InjectDataFromKCPAnnotation: shared.EnableLabelValue}, nil)
 
-	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
+	transform := render.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(testDeployerModule), []*unstructured.Unstructured{resource})
-	require.ErrorIs(t, err, declarativev2.ErrInjectFromKCPSecretModuleLabelMismatch)
-	require.ErrorIs(t, err, declarativev2.ErrInjectDataFromKCP)
+	require.ErrorIs(t, err, render.ErrInjectFromKCPSecretModuleLabelMismatch)
+	require.ErrorIs(t, err, render.ErrInjectDataFromKCP)
 }
 
 func TestDeployerModuleImagePullSecretTransform_Errors_WhenKCPSecretInWrongNamespace(t *testing.T) {
@@ -210,9 +208,9 @@ func TestDeployerModuleImagePullSecretTransform_Errors_WhenKCPSecretInWrongNames
 	resource := newSecretResource(testKCPSecretName,
 		map[string]string{shared.InjectDataFromKCPAnnotation: shared.EnableLabelValue}, nil)
 
-	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
+	transform := render.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(testDeployerModule), []*unstructured.Unstructured{resource})
-	require.ErrorIs(t, err, declarativev2.ErrInjectDataFromKCP)
+	require.ErrorIs(t, err, render.ErrInjectDataFromKCP)
 }
 
 func TestDeployerModuleImagePullSecretTransform_PropagatesRepositoryError(t *testing.T) {
@@ -223,10 +221,10 @@ func TestDeployerModuleImagePullSecretTransform_PropagatesRepositoryError(t *tes
 	resource := newSecretResource(testKCPSecretName,
 		map[string]string{shared.InjectDataFromKCPAnnotation: shared.EnableLabelValue}, nil)
 
-	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
+	transform := render.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(testDeployerModule), []*unstructured.Unstructured{resource})
 	require.ErrorIs(t, err, repoErr)
-	require.ErrorIs(t, err, declarativev2.ErrInjectDataFromKCP)
+	require.ErrorIs(t, err, render.ErrInjectDataFromKCP)
 }
 
 func TestDeployerModuleImagePullSecretTransform_ReplacesAllAnnotatedSecrets(t *testing.T) {
@@ -241,7 +239,7 @@ func TestDeployerModuleImagePullSecretTransform_ReplacesAllAnnotatedSecrets(t *t
 	resourceB := newSecretResource("secret-b",
 		map[string]string{shared.InjectDataFromKCPAnnotation: shared.EnableLabelValue}, nil)
 
-	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
+	transform := render.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(testDeployerModule),
 		[]*unstructured.Unstructured{resourceA, resourceB})
 	require.NoError(t, err)
@@ -270,7 +268,7 @@ func TestDeployerModuleImagePullSecretTransform_SkipsNilResource(t *testing.T) {
 	resource := newSecretResource(testKCPSecretName,
 		map[string]string{shared.InjectDataFromKCPAnnotation: shared.EnableLabelValue}, nil)
 
-	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
+	transform := render.CreateDeployerModuleImagePullSecretTransform(repo)
 	err := transform(t.Context(), newManifest(testDeployerModule), []*unstructured.Unstructured{nil, resource})
 	require.NoError(t, err)
 
@@ -278,26 +276,4 @@ func TestDeployerModuleImagePullSecretTransform_SkipsNilResource(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, found)
 	require.Equal(t, base64.StdEncoding.EncodeToString(srcData[".dockerconfigjson"]), gotData[".dockerconfigjson"])
-}
-
-func TestDeployerModuleImagePullSecretTransform_Errors_WhenObjectIsNotManifest(t *testing.T) {
-	t.Parallel()
-
-	repo := &secretRepoStub{}
-	transform := declarativev2.CreateDeployerModuleImagePullSecretTransform(repo)
-
-	err := transform(t.Context(), &nonManifestObject{}, nil)
-	require.ErrorIs(t, err, declarativev2.ErrResourceTransformExpectedManifestType)
-}
-
-// nonManifestObject implements declarativev2.Object without being a *v1beta2.Manifest,
-// to exercise the type assertion guard inside the transform.
-type nonManifestObject struct {
-	apicorev1.ConfigMap
-}
-
-func (n *nonManifestObject) GetStatus() shared.Status  { return shared.Status{} }
-func (n *nonManifestObject) SetStatus(_ shared.Status) {}
-func (n *nonManifestObject) DeepCopyObject() machineryruntime.Object {
-	return &nonManifestObject{ConfigMap: n.ConfigMap}
 }

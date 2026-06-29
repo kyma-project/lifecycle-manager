@@ -1,8 +1,7 @@
-package v2
+package render
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -17,12 +16,9 @@ const (
 	DisclaimerAnnotation      = shared.OperatorGroup + shared.Separator + "managed-by-reconciler-disclaimer"
 	DisclaimerAnnotationValue = "DO NOT EDIT - This resource is managed by Kyma.\n" +
 		"Any modifications are discarded and the resource is reverted to the original state."
-	OwnedByFormat = "%s/%s"
 )
 
-var ErrInvalidManifestType = errors.New("invalid object type, expected *v1beta2.Manifest")
-
-func DisclaimerTransform(_ context.Context, _ Object, resources []*unstructured.Unstructured) error {
+func DisclaimerTransform(_ context.Context, _ *v1beta2.Manifest, resources []*unstructured.Unstructured) error {
 	for _, resource := range resources {
 		annotations := resource.GetAnnotations()
 		if annotations == nil {
@@ -36,14 +32,9 @@ func DisclaimerTransform(_ context.Context, _ Object, resources []*unstructured.
 
 // DockerImageLocalizationTransform rewrites Docker images in the provided resources
 // according to the Spec.LocalizedImages field in the Manifest object.
-func DockerImageLocalizationTransform(_ context.Context, obj Object,
+func DockerImageLocalizationTransform(_ context.Context, manifest *v1beta2.Manifest,
 	resources []*unstructured.Unstructured,
 ) error {
-	manifest, ok := obj.(*v1beta2.Manifest)
-	if !ok {
-		return fmt.Errorf("%T: %w", obj, ErrInvalidManifestType)
-	}
-
 	if len(manifest.Spec.LocalizedImages) == 0 {
 		return nil // No images to rewrite
 	}
@@ -71,24 +62,28 @@ func DockerImageLocalizationTransform(_ context.Context, obj Object,
 	return nil
 }
 
-func KymaComponentTransform(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
+func KymaComponentTransform(_ context.Context, manifest *v1beta2.Manifest,
+	resources []*unstructured.Unstructured,
+) error {
 	for _, resource := range resources {
 		resource.SetLabels(collections.MergeMapsSilent(resource.GetLabels(), map[string]string{
-			"app.kubernetes.io/component": obj.GetName(),
+			"app.kubernetes.io/component": manifest.GetName(),
 			"app.kubernetes.io/part-of":   "Kyma",
 		}))
 	}
 	return nil
 }
 
-func ManagedByOwnedBy(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
+func ManagedByOwnedBy(_ context.Context, manifest *v1beta2.Manifest,
+	resources []*unstructured.Unstructured,
+) error {
 	for _, resource := range resources {
 		resource.SetLabels(collections.MergeMapsSilent(resource.GetLabels(), map[string]string{
 			shared.ManagedBy: shared.ManagedByLabelValue,
 		}))
 
 		resource.SetAnnotations(collections.MergeMapsSilent(resource.GetAnnotations(), map[string]string{
-			shared.OwnedByAnnotation: fmt.Sprintf(OwnedByFormat, obj.GetNamespace(), obj.GetName()),
+			shared.OwnedByAnnotation: fmt.Sprintf(shared.OwnedByFormat, manifest.GetNamespace(), manifest.GetName()),
 		}))
 	}
 	return nil

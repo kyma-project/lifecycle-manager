@@ -1,6 +1,7 @@
 packages:
   internal/controller: 100
   internal/controller/istiogatewaysecret: 35.5
+  internal/controller/manifest: 4.4
   internal/crd: 88
   internal/descriptor/cache: 90
   internal/descriptor/provider: 100
@@ -16,7 +17,7 @@ packages:
   internal/manifest/manifestclient: 5
   internal/manifest/modulecr: 56.9
   internal/manifest/skrresources: 30.1
-  internal/manifest/statecheck: 71.9
+  internal/manifest/statecheck: 74.2
   internal/manifest/status: 73.8
   internal/maintenancewindows: 91.2
   internal/pkg/metrics: 39.3
@@ -42,7 +43,9 @@ packages:
   internal/service/kyma/status/modules/generator/fromerror: 100
   internal/service/kyma/lookup: 100
   internal/service/manifest/orphan: 100
-  internal/service/manifest/render: 96.7
+  internal/service/manifest/parser: 17.6
+  internal/service/manifest/render: 92.5
+  internal/service/manifest/spec: 92.3
   internal/service/watcher/certificate: 100
   internal/service/watcher/certificate/secret/data: 100
   internal/service/watcher/chartreader: 100

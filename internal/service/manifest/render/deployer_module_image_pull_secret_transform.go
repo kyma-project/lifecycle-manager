@@ -1,4 +1,4 @@
-package v2
+package render
 
 import (
 	"context"
@@ -23,9 +23,8 @@ const secretKind = "Secret"
 
 var (
 	// ErrInjectDataFromKCP is the umbrella sentinel for every error returned by
-	// CreateDeployerModuleImagePullSecretTransform. The Manifest
-	// reconciler keys on it (errors.Is) to mark the manifest as StateError and
-	// short-circuit SSA — see renderResourcesForInstall in reconciler.go.
+	// CreateDeployerModuleImagePullSecretTransform. The Manifest reconciler keys
+	// on it (errors.Is) to mark the manifest as StateError and short-circuit SSA.
 	ErrInjectDataFromKCP = errors.New("inject-data-from-kcp transform failed")
 
 	ErrInjectFromKCPSecretMissingModuleLabel = fmt.Errorf(
@@ -50,14 +49,7 @@ type SecretRepository interface {
 // The transform is a no-op for any module other than the hardcoded
 // DeployerModuleName.
 func CreateDeployerModuleImagePullSecretTransform(secretRepo SecretRepository) ResourceTransform {
-	return func(ctx context.Context, obj Object, resources []*unstructured.Unstructured) error {
-		manifest, ok := obj.(*v1beta2.Manifest)
-		if !ok {
-			return fmt.Errorf("%w, got %T", ErrResourceTransformExpectedManifestType, obj)
-		}
-
-		// Hardcoded module-name gate: only the deployer module is allowed to inject
-		// secret data from KCP. See DeployerModuleName above.
+	return func(ctx context.Context, manifest *v1beta2.Manifest, resources []*unstructured.Unstructured) error {
 		moduleName := manifest.GetLabels()[shared.ModuleName]
 		if moduleName != DeployerModuleName {
 			return nil
@@ -70,7 +62,6 @@ func CreateDeployerModuleImagePullSecretTransform(secretRepo SecretRepository) R
 			if resource == nil {
 				continue
 			}
-
 			if !isInjectableSecret(resource) {
 				continue
 			}

@@ -1,5 +1,5 @@
 //nolint:testpackage // test private functions
-package v2
+package manifest
 
 import (
 	"testing"
@@ -32,7 +32,7 @@ func TestPruneResource(t *testing.T) {
 		t.Parallel()
 
 		diff := ResourceList{kubeNs, service, kymaNs, deployment}
-		result := pruneResource(diff, "Namespace", namespaceNotBeRemoved)
+		result := pruneResource(diff, "Namespace", shared.DefaultRemoteNamespace)
 
 		require.Len(t, result, 3)
 		require.NotContains(t, result, kymaNs)
@@ -52,7 +52,7 @@ func TestPruneResource(t *testing.T) {
 		t.Parallel()
 
 		diff := ResourceList{kubeNs, service, deployment}
-		result := pruneResource(diff, "Namespace", namespaceNotBeRemoved)
+		result := pruneResource(diff, "Namespace", shared.DefaultRemoteNamespace)
 
 		require.Len(t, result, 3)
 		require.Contains(t, result, kubeNs)
