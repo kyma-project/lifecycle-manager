@@ -10,7 +10,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 )
@@ -21,48 +20,36 @@ var (
 	ErrFailedToSyncImagePullSecret  = errors.New("failed to sync image pull secret to SKR")
 )
 
-type SecretRepository interface {
-	Get(ctx context.Context, name string) (*apicorev1.Secret, error)
+// imagePullSecretSync copies the configured image pull secret from KCP to the SKR cluster of a Kyma.
+// Cluster-specific metadata is stripped before applying the secret on the SKR via Server-Side Apply.
+type imagePullSecretSync struct {
+	secretRepository  SecretRepository
+	skrContextFactory remote.SkrContextProvider
+	secretName        string
 }
 
-type SyncCrdsUseCase interface {
-	Execute(ctx context.Context, kyma *v1beta2.Kyma) (bool, error)
-}
-
-type Service struct {
-	skrContextFactory   remote.SkrContextProvider
-	secretRepository    SecretRepository
-	syncCrdsUseCase     SyncCrdsUseCase
-	imagePullSecretName string
-}
-
-func NewService(
-	skrContextFactory remote.SkrContextProvider,
+func newImagePullSecretSync(
 	secretRepository SecretRepository,
-	syncCrdsUseCase SyncCrdsUseCase,
-	imagePullSecretName string,
-) *Service {
-	return &Service{
-		skrContextFactory:   skrContextFactory,
-		secretRepository:    secretRepository,
-		syncCrdsUseCase:     syncCrdsUseCase,
-		imagePullSecretName: imagePullSecretName,
+	skrContextFactory remote.SkrContextProvider,
+	secretName string,
+) *imagePullSecretSync {
+	return &imagePullSecretSync{
+		secretRepository:  secretRepository,
+		skrContextFactory: skrContextFactory,
+		secretName:        secretName,
 	}
 }
 
-func (s *Service) SyncCrds(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
-	return s.syncCrdsUseCase.Execute(ctx, kyma)
-}
-
-func (s *Service) SyncImagePullSecret(ctx context.Context, kyma types.NamespacedName) error {
-	if s.imagePullSecretName == "" {
+func (s *imagePullSecretSync) execute(ctx context.Context, kyma types.NamespacedName) error {
+	if s.secretName == "" {
 		return ErrImagePullSecretNotConfigured
 	}
 
-	secret, err := s.secretRepository.Get(ctx, s.imagePullSecretName)
+	secret, err := s.secretRepository.Get(ctx, s.secretName)
 	if err != nil {
 		return errors.Join(ErrImagePullSecretNotFound, err)
 	}
+
 	skrContext, err := s.skrContextFactory.Get(kyma)
 	if err != nil {
 		return err
@@ -71,6 +58,7 @@ func (s *Service) SyncImagePullSecret(ctx context.Context, kyma types.Namespaced
 	remoteSecret := secret.DeepCopy()
 	remoteSecret.Namespace = shared.DefaultRemoteNamespace
 	clearClusterSpecificMetadata(remoteSecret)
+
 	err = skrContext.Patch(ctx, remoteSecret,
 		//nolint: staticcheck // issues: #2706, #2707
 		client.Apply,

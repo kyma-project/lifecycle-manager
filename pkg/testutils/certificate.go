@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerapplyv1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/certmanager/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -18,33 +18,18 @@ func AddValidityToCertificateStatus(ctx context.Context,
 	notBeforeTime time.Time,
 	notAfterTime time.Time,
 ) error {
-	certificate := &certmanagerv1.Certificate{
-		TypeMeta: apimetav1.TypeMeta{
-			Kind:       certmanagerv1.CertificateKind,
-			APIVersion: certmanagerv1.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      cert.Name,
-			Namespace: cert.Namespace,
-		},
-		Status: certmanagerv1.CertificateStatus{
-			NotBefore: &apimetav1.Time{
-				Time: notBeforeTime,
-			},
-			NotAfter: &apimetav1.Time{
-				Time: notAfterTime,
-			},
-		},
-	}
+	certApply := certmanagerapplyv1.Certificate(cert.Name, cert.Namespace).
+		WithStatus(certmanagerapplyv1.CertificateStatus().
+			WithNotBefore(apimetav1.Time{Time: notBeforeTime}).
+			WithNotAfter(apimetav1.Time{Time: notAfterTime}),
+		)
 
-	if err := kcpClient.Status().Patch(
+	if err := kcpClient.Status().Apply(
 		ctx,
-		certificate,
-		//nolint: staticcheck // issues: #2706, #2707
-		client.Apply,
+		certApply,
 		fieldowners.LifecycleManager,
 	); err != nil {
-		return fmt.Errorf("failed to add NotBefore to certificate status: %w", err)
+		return fmt.Errorf("failed to apply certificate validity to status: %w", err)
 	}
 
 	return nil

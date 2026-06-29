@@ -90,9 +90,8 @@ jobs:
           - simulate-skr-secret-rotation-evict-client-cache
           - skr-image-pull-secret-sync
           - gateway-secret-server-cert-metric
-          - restricted-default-module
-          - restricted-default-module-catalog-sync
-          - restricted-module-normal-installation
+          - restricted-module-catalog-sync
+          - restricted-modules
           - deployer-module-image-pull-secret-injection
           - block-non-deployer-module-image-pull-secret-injection
 
@@ -130,9 +129,8 @@ jobs:
             mandatory-module | \
             mandatory-module-metrics | \
             gateway-secret-server-cert-metric | \
-            restricted-default-module | \
-            restricted-module-normal-installation | \
-            restricted-default-module-catalog-sync | \
+            restricted-modules | \
+            restricted-module-catalog-sync | \
             deployer-module-image-pull-secret-injection | \
             block-non-deployer-module-image-pull-secret-injection | \
             kyma-deprovision-with-foreground-propagation | \
@@ -148,6 +146,8 @@ jobs:
             module-deletion-blocking-with-default-cr-with-finalizer | \
             module-deletion-blocking-with-cross-namespace-ignore-policy | \
             module-deletion-blocking-with-cross-namespace-create-and-delete-policy | \
+            module-deletion-blocking-with-cluster-scoped-crs-ignore-policy | \
+            module-deletion-blocking-with-cluster-scoped-crs-create-and-delete-policy | \
             module-status-decoupling-with-statefulset | \
             module-status-decoupling-with-deployment | \
             module-without-default-cr | \
@@ -168,7 +168,11 @@ jobs:
             module-status-on-skr-connection-lost | \
             modulereleasemeta-not-allowed-installation | \
             simulate-skr-secret-rotation-evict-client-cache | \
-            non-blocking-deletion)
+            non-blocking-deletion | \
+            maintenance-windows | \
+            maintenance-windows-initial-installation | \
+            maintenance-windows-skip | \
+            module-api-upgrade-under-blocked-deletion)
               echo "self-contained=true" >> $GITHUB_OUTPUT ;;
             *)
               echo "self-contained=false" >> $GITHUB_OUTPUT ;;

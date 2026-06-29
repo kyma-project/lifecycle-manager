@@ -35,12 +35,15 @@ var _ = Describe("1 Deployer Module Image Pull Secret Injection", Ordered, func(
 	CleanupKymaAfterAll(kyma)
 
 	Context("Given SKR Cluster", func() {
-		It("Then the deployer module is enabled as a restricted default module", func() {
-			Eventually(ContainsModuleInSpec).
+		It("Then the deployer module is enabled on the matching Kyma", func() {
+			By("When the deployer module is enabled on the SKR cluster")
+			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), DeployerModuleName).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace,
+					NewDeployer(v1beta2.DefaultChannel)).
 				Should(Succeed())
-			By("And the Module CR has been installed on the SKR cluster")
+
+			By("Then the Module CR has been installed on the SKR cluster")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(skrClient, moduleCR).

@@ -14,9 +14,8 @@ import (
 )
 
 var (
-	errModuleTemplateCRDNotReady = errors.New("catalog sync: ModuleTemplate CRD is not ready")
-	errModuleTemplateCleanup     = errors.New("catalog sync: Failed to delete obsolete ModuleTemplates")
-	errCatModuleTemplatesApply   = errors.New("catalog sync: Could not apply ModuleTemplates")
+	errModuleTemplateCleanup   = errors.New("catalog sync: Failed to delete obsolete ModuleTemplates")
+	errCatModuleTemplatesApply = errors.New("catalog sync: Could not apply ModuleTemplates")
 )
 
 // moduleTemplateConcurrentWorker performs ModuleTemplate synchronization using multiple goroutines.
@@ -24,12 +23,11 @@ type moduleTemplateConcurrentWorker struct {
 	namespace  string
 	patchDiff  func(ctx context.Context, obj *v1beta2.ModuleTemplate) error
 	deleteDiff func(ctx context.Context, obj *v1beta2.ModuleTemplate) error
-	createCRD  func(ctx context.Context) error
 }
 
 // newModuleTemplateConcurrentWorker returns a new moduleTemplateConcurrentWorker instance with default dependencies.
 func newModuleTemplateConcurrentWorker(
-	kcpClient, skrClient client.Client,
+	skrClient client.Client,
 	settings *Settings,
 ) *moduleTemplateConcurrentWorker {
 	patchDiffFn := func(ctx context.Context, obj *v1beta2.ModuleTemplate) error {
@@ -40,20 +38,18 @@ func newModuleTemplateConcurrentWorker(
 		return deleteModuleTemplate(ctx, obj, skrClient)
 	}
 
-	createCRDFn := func(ctx context.Context) error {
-		return createModuleTemplateCRDInRuntime(ctx, kcpClient, skrClient)
-	}
-
 	return &moduleTemplateConcurrentWorker{
 		namespace:  settings.Namespace,
 		patchDiff:  patchDiffFn,
 		deleteDiff: deleteDiffFn,
-		createCRD:  createCRDFn,
 	}
 }
 
 // SyncConcurrently synchronizes ModuleTemplates from KCP to SKR.
 // kcpModules are the ModuleTemplates to be synced from the KCP cluster.
+// CRDs are expected to be installed beforehand by the central CRD sync. If the SKR API server reports
+// a no-match error for the ModuleTemplate kind, the error is propagated so the controller can requeue
+// with backoff and re-enter the reconciliation where CRDs are tried to be installed again.
 func (c *moduleTemplateConcurrentWorker) SyncConcurrently(
 	ctx context.Context,
 	kcpModules []v1beta2.ModuleTemplate,
@@ -70,13 +66,6 @@ func (c *moduleTemplateConcurrentWorker) SyncConcurrently(
 	for range channelLength {
 		if err := <-results; err != nil {
 			errs = append(errs, err)
-		}
-	}
-
-	// retry if ModuleTemplate CRD is not existing in SKR cluster
-	if containsCRDNotFoundError(errs) {
-		if err := c.createCRD(ctx); err != nil {
-			return err
 		}
 	}
 
@@ -110,10 +99,6 @@ func (c *moduleTemplateConcurrentWorker) DeleteConcurrently(ctx context.Context,
 		return errors.Join(errs...)
 	}
 	return nil
-}
-
-func createModuleTemplateCRDInRuntime(ctx context.Context, kcpClient client.Client, skrClient client.Client) error {
-	return createCRDInRuntime(ctx, shared.ModuleTemplateKind, errModuleTemplateCRDNotReady, kcpClient, skrClient)
 }
 
 func prepareModuleTemplateForSSA(moduleTemplate *v1beta2.ModuleTemplate, namespace string) {

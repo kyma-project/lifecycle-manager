@@ -1,21 +1,16 @@
 package remote
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
-	apicorev1 "k8s.io/api/core/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/types"
+	corev1apply "k8s.io/client-go/applyconfigurations/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	apiconfigsv1beta2 "github.com/kyma-project/lifecycle-manager/api/applyconfigurations/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
@@ -27,7 +22,6 @@ import (
 var ErrNotFoundAndKCPKymaUnderDeleting = errors.New("not found and kcp kyma under deleting")
 
 const (
-	crdInstallation     event.Reason = "CRDInstallation"
 	remoteInstallation  event.Reason = "RemoteInstallation"
 	metadataSyncFailure event.Reason = "MetadataSynchronization"
 	statusSyncFailure   event.Reason = "StatusSynchronization"
@@ -76,28 +70,14 @@ func (s *SkrContext) DeleteKyma(ctx context.Context) error {
 }
 
 func (s *SkrContext) CreateKymaNamespace(ctx context.Context) error {
-	namespace := &apicorev1.Namespace{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name: shared.DefaultRemoteNamespace,
-			Labels: map[string]string{
-				shared.ManagedBy:           shared.ManagedByLabelValue,
-				shared.IstioInjectionLabel: shared.EnabledValue,
-				shared.WardenLabel:         shared.EnabledValue,
-			},
-		},
-		// setting explicit type meta is required for SSA on Namespaces
-		TypeMeta: apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
-	}
+	namespace := corev1apply.Namespace(shared.DefaultRemoteNamespace).
+		WithLabels(map[string]string{
+			shared.ManagedBy:           shared.ManagedByLabelValue,
+			shared.IstioInjectionLabel: shared.EnabledValue,
+			shared.WardenLabel:         shared.EnabledValue,
+		})
 
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(namespace); err != nil {
-		return fmt.Errorf("failed to encode namespace: %w", err)
-	}
-
-	patch := client.RawPatch(types.ApplyPatchType, buf.Bytes())
-	force := true
-	patchOpts := &client.PatchOptions{Force: &force, FieldManager: string(fieldowners.KymaSyncContextProvider)}
-	if err := s.Patch(ctx, namespace, patch, patchOpts); err != nil {
+	if err := s.Apply(ctx, namespace, client.ForceOwnership, fieldowners.KymaSyncContextProvider); err != nil {
 		return fmt.Errorf("failed to ensure remote namespace exists: %w", err)
 	}
 
@@ -105,16 +85,9 @@ func (s *SkrContext) CreateKymaNamespace(ctx context.Context) error {
 }
 
 func (s *SkrContext) CreateOrFetchKyma(
-	ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma,
+	ctx context.Context, kyma *v1beta2.Kyma,
 ) (*v1beta2.Kyma, error) {
 	remoteKyma, err := s.getRemoteKyma(ctx)
-	if meta.IsNoMatchError(err) || CRDNotFoundErr(err) {
-		if err := s.createOrUpdateCRD(ctx, kcpClient, shared.KymaKind.Plural()); err != nil {
-			return nil, err
-		}
-		s.event.Normal(kyma, crdInstallation, "CRDs were installed to SKR")
-	}
-
 	if util.IsNotFound(err) {
 		if !kyma.DeletionTimestamp.IsZero() {
 			return nil, ErrNotFoundAndKCPKymaUnderDeleting
@@ -147,20 +120,11 @@ func (s *SkrContext) SynchronizeKymaMetadata(ctx context.Context, kcpKyma, skrKy
 		return nil
 	}
 
-	metadataToSync := &unstructured.Unstructured{}
-	metadataToSync.SetName(skrKyma.GetName())
-	metadataToSync.SetNamespace(skrKyma.GetNamespace())
-	metadataToSync.SetGroupVersionKind(kcpKyma.GroupVersionKind()) // use KCP GVK as SKR GVK may not be available
-	metadataToSync.SetLabels(skrKyma.GetLabels())
-	metadataToSync.SetAnnotations(skrKyma.GetAnnotations())
+	applyConfig := apiconfigsv1beta2.Kyma(skrKyma.GetName(), skrKyma.GetNamespace()).
+		WithLabels(skrKyma.GetLabels()).
+		WithAnnotations(skrKyma.GetAnnotations())
 
-	forceOwnership := true
-	err := s.Patch(ctx,
-		metadataToSync,
-		//nolint: staticcheck // issues: #2706, #2707
-		client.Apply,
-		&client.PatchOptions{FieldManager: string(fieldowners.KymaSyncContextProvider), Force: &forceOwnership})
-	if err != nil {
+	if err := s.Apply(ctx, applyConfig, client.ForceOwnership, fieldowners.KymaSyncContextProvider); err != nil {
 		err = fmt.Errorf("failed to synchronise Kyma metadata to SKR: %w", err)
 		s.event.Warning(kcpKyma, metadataSyncFailure, err)
 		return err
@@ -190,37 +154,6 @@ func ReplaceSpec(controlPlaneKyma *v1beta2.Kyma, remoteKyma *v1beta2.Kyma) {
 	controlPlaneKyma.Spec.Modules = []v1beta2.Module{}
 	controlPlaneKyma.Spec.Modules = append(controlPlaneKyma.Spec.Modules, remoteKyma.Spec.Modules...)
 	controlPlaneKyma.Spec.Channel = remoteKyma.Spec.Channel
-}
-
-func (s *SkrContext) createOrUpdateCRD(ctx context.Context, kcpClient client.Client, plural string) error {
-	crd := &apiextensionsv1.CustomResourceDefinition{}
-	crdFromRuntime := &apiextensionsv1.CustomResourceDefinition{}
-	var err error
-	err = kcpClient.Get(ctx, client.ObjectKey{
-		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
-		// name changes, this also has to be adjusted here. We can think of making this configurable later
-		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-	}, crd,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to get kyma CRDs on kcp: %w", err)
-	}
-
-	err = s.Get(
-		ctx, client.ObjectKey{
-			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-		}, crdFromRuntime,
-	)
-
-	if util.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta2.GroupVersion.Version) {
-		return PatchCRD(ctx, s.Client, crd)
-	}
-
-	if err != nil {
-		return fmt.Errorf("failed to get kyma CRDs on remote: %w", err)
-	}
-
-	return nil
 }
 
 func (s *SkrContext) getRemoteKyma(ctx context.Context) (*v1beta2.Kyma, error) {

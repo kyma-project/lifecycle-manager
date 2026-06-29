@@ -40,12 +40,11 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	restrictedmodulecmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/restrictedmodule"
+	skrsynccmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	kymadeletionctrl "github.com/kyma-project/lifecycle-manager/internal/controller/kyma/deletion"
-	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
@@ -54,12 +53,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
-	mrmrepo "github.com/kyma-project/lifecycle-manager/internal/repository/modulereleasemeta"
 	resultevent "github.com/kyma-project/lifecycle-manager/internal/result/event"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
-	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -192,8 +189,7 @@ var _ = BeforeSuite(func() {
 		OCIRegistry:         staticOCIRegistryHost,
 	}
 
-	syncCrdsUseCase := remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crd.NewCache(nil))
-	skrSyncService := skrsync.NewService(nil, nil, &syncCrdsUseCase, "")
+	skrSyncService := skrsynccmpse.ComposeService(kcpClient, skrClientCache, testSkrContextFactory, nil, "")
 
 	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
 	Expect(err).ToNot(HaveOccurred())
@@ -223,10 +219,6 @@ var _ = BeforeSuite(func() {
 		flagVar,
 	)
 
-	restrictedModuleDefaulter := restrictedmodulecmpse.ComposeDefaulter(flagVar.GetRestrictedDefaultModules(),
-		mrmrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
-		kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace))
-
 	err = (&kyma.Reconciler{
 		Client:               kcpClient,
 		Event:                testEventRec,
@@ -241,10 +233,9 @@ var _ = BeforeSuite(func() {
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
 			moduletemplateinfolookup.NewLookup(kcpClient), nil),
 		Config:            kymaReconcilerConfig,
-		DeletionMetrics:   deletionMetrics,
-		DeletionEvents:    deletionEvents,
-		DeletionService:   deletionService,
-		RestrictedModules: restrictedModuleDefaulter,
+		DeletionMetrics: deletionMetrics,
+		DeletionEvents:  deletionEvents,
+		DeletionService: deletionService,
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: randomPort},
 		watchcmpse.ComposeTemplateChangeHandlerMapFunc(

@@ -165,13 +165,13 @@ labelling:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Labelling SKR resources"
 
 maintenance-windows:
-	$(GO_TEST) "Maintenance Windows - Wait for Maintenance Window"
+	$(MAKE) -f $(MAKEFILE_DIR)/maintenance_windows_test.mk test "GINKGO_FOCUS=Maintenance Windows - Wait for Maintenance Window"
 
 maintenance-windows-initial-installation:
-	$(GO_TEST) "Maintenance Windows - No Wait for Maintenance Window on Initial Installation"
+	$(MAKE) -f $(MAKEFILE_DIR)/maintenance_windows_test.mk test "GINKGO_FOCUS=Maintenance Windows - No Wait for Maintenance Window on Initial Installation"
 
 maintenance-windows-skip:
-	$(GO_TEST) "Maintenance Windows - No Wait for Maintenance Widnow on Skip"
+	$(MAKE) -f $(MAKEFILE_DIR)/maintenance_windows_test.mk test "GINKGO_FOCUS=Maintenance Windows - No Wait for Maintenance Widnow on Skip"
 
 watcher-zero-downtime:
 	$(MAKE) -f $(MAKEFILE_DIR)/watcher_zero_downtime_test.mk
@@ -192,10 +192,10 @@ module-deletion-blocking-with-cross-namespace-create-and-delete-policy:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Blocking Module Deletion With Module CRs in Different Namespaces with CreateAndDelete Policy"
 
 module-deletion-blocking-with-cluster-scoped-crs-ignore-policy:
-	$(GO_TEST) "Blocking Module Deletion With Cluster-Scoped CRs with Ignore Policy"
+	$(MAKE) -f $(MAKEFILE_DIR)/module_deletion_blocking_cluster_scoped_test.mk test "GINKGO_FOCUS=Blocking Module Deletion With Cluster-Scoped CRs with Ignore Policy"
 
 module-deletion-blocking-with-cluster-scoped-crs-create-and-delete-policy:
-	$(GO_TEST) "Blocking Module Deletion With Cluster-Scoped CRs with CreateAndDelete Policy"
+	$(MAKE) -f $(MAKEFILE_DIR)/module_deletion_blocking_cluster_scoped_test.mk test "GINKGO_FOCUS=Blocking Module Deletion With Cluster-Scoped CRs with CreateAndDelete Policy"
 
 module-transferred-to-another-oci-registry:
 	$(GO_TEST) "Module Transferred to Another OCI Registry"
@@ -213,16 +213,13 @@ skr-image-pull-secret-sync:
 	$(MAKE) -f $(MAKEFILE_DIR)/skr_image_pull_secret_sync_test.mk test
 
 module-api-upgrade-under-blocked-deletion:
-	$(GO_TEST) "Module API Upgrade Under Blocked Deletion"
+	$(MAKE) -f $(MAKEFILE_DIR)/module_api_upgrade_under_blocked_deletion_test.mk test
 
-restricted-default-module:
-	$(MAKE) -f $(MAKEFILE_DIR)/restricted_default_module_test.mk test
+restricted-module-catalog-sync:
+	$(MAKE) -f $(MAKEFILE_DIR)/restricted_module_catalog_sync_test.mk test
 
-restricted-default-module-catalog-sync:
-	$(MAKE) -f $(MAKEFILE_DIR)/restricted_default_module_catalog_sync_test.mk test
-
-restricted-module-normal-installation:
-	$(MAKE) -f $(MAKEFILE_DIR)/restricted_module_normal_module_installation_test.mk test
+restricted-modules:
+	$(MAKE) -f $(MAKEFILE_DIR)/restricted_modules_test.mk test
 
 deployer-module-image-pull-secret-injection:
 	$(MAKE) -f $(MAKEFILE_DIR)/deployer_module_image_pull_secret_injection_test.mk test
