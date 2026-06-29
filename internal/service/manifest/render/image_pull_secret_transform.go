@@ -1,4 +1,4 @@
-package v2
+package render
 
 import (
 	"context"
@@ -13,17 +13,11 @@ import (
 //nolint:gosec // This is not sensitive information.
 const SkrImagePullSecretEnvName = "SKR_IMG_PULL_SECRET"
 
-var ErrResourceTransformExpectedManifestType = errors.New("resource transform expected Manifest type")
-
 var ErrSkrImagePullSecretEnvAlreadyExists = errors.New(SkrImagePullSecretEnvName +
 	" environment variable already exits in raw manifest")
 
 func CreateSkrImagePullSecretTransform(secretName string) ResourceTransform {
-	return func(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
-		manifest, ok := obj.(*v1beta2.Manifest)
-		if !ok {
-			return fmt.Errorf("%w, got %T", ErrResourceTransformExpectedManifestType, obj)
-		}
+	return func(_ context.Context, manifest *v1beta2.Manifest, resources []*unstructured.Unstructured) error {
 		for _, resource := range resources {
 			if !isWorkloadResource(resource.GetKind()) {
 				continue

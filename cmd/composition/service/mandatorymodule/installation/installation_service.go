@@ -4,11 +4,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	mrmrepo "github.com/kyma-project/lifecycle-manager/internal/repository/modulereleasemeta"
 	mtrepo "github.com/kyma-project/lifecycle-manager/internal/repository/moduletemplate"
 	installservice "github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule/installation"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 )
 

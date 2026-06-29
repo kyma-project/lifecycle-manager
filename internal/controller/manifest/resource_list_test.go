@@ -1,4 +1,4 @@
-package v2_test
+package manifest_test
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	manifestctrl "github.com/kyma-project/lifecycle-manager/internal/controller/manifest"
 )
 
 func makeResource(name, namespace, kind string) shared.Resource {
@@ -27,11 +27,12 @@ func makeObj(name, namespace, kind string) client.Object {
 }
 
 func TestResourceList_Difference(t *testing.T) {
+	t.Parallel()
 	dummyPod := makeResource("foo", "default", "Pod")
 	dummyService := makeResource("bar", "default", "Service")
 	dummyDeploy := makeResource("baz", "default", "Deployment")
 
-	list1 := declarativev2.ResourceList{dummyPod, dummyService, dummyDeploy}
+	list1 := manifestctrl.ResourceList{dummyPod, dummyService, dummyDeploy}
 	target := []client.Object{makeObj("bar", "default", "Service")}
 
 	diff := list1.Difference(target)

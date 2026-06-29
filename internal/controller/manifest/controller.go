@@ -1,4 +1,4 @@
-package v2
+package manifest
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -17,7 +16,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/finalizer"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/labelsremoval"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/modulecr"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/skrresources"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/status"
@@ -25,6 +23,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/resources"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/render"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -32,26 +32,44 @@ import (
 )
 
 var (
-	ErrManagerInErrorState            = errors.New("manager is in error state")
+	errManagerInErrorState            = errors.New("manager is in error state")
 	errStateRequireUpdate             = errors.New("manifest state requires update")
-	ErrResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
+	errResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
 		"same oci layer, prevent sync resource to be deleted")
 )
 
-const (
-	DefaultInMemoryParseTTL = 24 * time.Hour
+// SyncedOCIRefAnnotation is the annotation key on a Manifest CR that records
+// the OCI ref last successfully synced to the SKR. The reconciler uses it to
+// detect re-renders triggered by an OCI ref change.
+const SyncedOCIRefAnnotation = "sync-oci-ref"
 
-	namespaceNotBeRemoved  = "kyma-system"
-	SyncedOCIRefAnnotation = "sync-oci-ref"
-)
-
-type ManagedByLabelRemoval interface {
-	RemoveManagedByLabel(ctx context.Context,
-		manifest *v1beta2.Manifest,
-		skrClient client.Client,
-	) error
+// stepResult is the outcome of a reconciliation step that may short-circuit
+// the surrounding install/delete pipeline. A nil *stepResult means "continue
+// to the next step"; a non-nil value carries the (ctrl.Result, error) tuple
+// the controller-runtime caller must return immediately.
+//
+// We use a dedicated type rather than the previous (ctrl.Result, bool, error)
+// triple, and we deliberately do NOT overload error, because several
+// short-circuits in this controller are successful requeues (Err == nil).
+type stepResult struct {
+	Result ctrl.Result
+	Err    error
 }
 
+// stopReconcile constructs a *stepResult signalling the caller should return
+// (res, err) immediately. It exists so step bodies can compose directly with
+// helpers that return (ctrl.Result, error): stopReconcile(r.finishReconcile(…)).
+func stopReconcile(res ctrl.Result, err error) *stepResult {
+	return &stepResult{Result: res, Err: err}
+}
+
+// SpecResolver resolves a Manifest CR to the location and identity of its
+// installation layer (OCI ref, manifest YAML path).
+type SpecResolver interface {
+	GetSpec(ctx context.Context, manifest *v1beta2.Manifest) (*spec.Spec, error)
+}
+
+// ManifestAPIClient writes Manifest CRs and their statuses back to KCP.
 type ManifestAPIClient interface {
 	UpdateManifest(ctx context.Context, manifest *v1beta2.Manifest) error
 	PatchStatusIfDiffExist(ctx context.Context, manifest *v1beta2.Manifest,
@@ -60,29 +78,44 @@ type ManifestAPIClient interface {
 	SsaSpec(ctx context.Context, obj client.Object) error
 }
 
+// OrphanDetectionService classifies a Manifest as orphaned when its owning
+// Kyma CR no longer exists.
 type OrphanDetectionService interface {
 	DetectOrphanedManifest(ctx context.Context, manifest *v1beta2.Manifest) error
 }
 
+// SKRClientCache holds Kubernetes clients for SKR clusters keyed by the
+// manifest's cache key.
 type SKRClientCache interface {
 	GetClient(key string) *skrclient.SKRClient
 	AddClient(key string, client *skrclient.SKRClient)
 	DeleteClient(key string)
 }
 
+// SKRClient resolves the Kubernetes client for the SKR if the SKRClientCache doesn't hold it already.
 type SKRClient interface {
 	ResolveClient(ctx context.Context, manifest *v1beta2.Manifest) (*skrclient.SKRClient, error)
 }
-
-type ResourceTransform = func(context.Context, Object, []*unstructured.Unstructured) error
 
 // ResourceRenderService renders the target resources for a Manifest by parsing
 // the manifest layer and applying any configured transforms. EvictCache drops
 // the cached parse result for a Spec, forcing the next render to re-parse.
 type ResourceRenderService interface {
 	RenderTargetResources(ctx context.Context, skrClient skrclient.Client,
-		manifest *v1beta2.Manifest, spec *Spec) ([]client.Object, error)
-	EvictCache(spec *Spec)
+		manifest *v1beta2.Manifest, spec *spec.Spec) ([]client.Object, error)
+	EvictCache(spec *spec.Spec)
+}
+
+// StateCheck reports the aggregated readiness state of a set of resources
+// applied to the SKR.
+type StateCheck interface {
+	GetState(ctx context.Context, clnt client.Client, resources []client.Object) (shared.State, error)
+}
+
+// ManagedByLabelRemoval handles the cleanup of the managed-by label from
+// resources when a Manifest CR transitions to unmanaged.
+type ManagedByLabelRemoval interface {
+	RemoveManagedByLabel(ctx context.Context, manifest *v1beta2.Manifest, skrClient client.Client) error
 }
 
 type Reconciler struct {
@@ -104,7 +137,7 @@ type Reconciler struct {
 
 func NewReconciler(requeueIntervals queue.RequeueIntervals,
 	rateLimiter workqueue.TypedRateLimiter[ctrl.Request],
-	metrics *metrics.ManifestMetrics,
+	manifestMetrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
 	manifestAPIClient ManifestAPIClient,
 	orphanDetectionService OrphanDetectionService,
@@ -114,24 +147,23 @@ func NewReconciler(requeueIntervals queue.RequeueIntervals,
 	kcpClient client.Client,
 	renderService ResourceRenderService,
 	stateCheck StateCheck,
+	managedLabelRemovalService ManagedByLabelRemoval,
 ) *Reconciler {
-	reconciler := &Reconciler{}
-	reconciler.manifestMetrics = metrics
-	reconciler.mandatoryModuleMetrics = mandatoryModulesMetrics
-	reconciler.requeueIntervals = requeueIntervals
-	reconciler.rateLimiter = rateLimiter
-	reconciler.specResolver = specResolver
-	reconciler.manifestClient = manifestAPIClient
-	reconciler.managedLabelRemovalService = labelsremoval.NewManagedByLabelRemovalService(manifestAPIClient)
-	reconciler.orphanDetectionService = orphanDetectionService
-	reconciler.skrClientCache = clientCache
-	reconciler.skrClient = skrClient
-
-	reconciler.kcpClient = kcpClient
-	reconciler.renderService = renderService
-
-	reconciler.customStateCheck = stateCheck
-	return reconciler
+	return &Reconciler{
+		requeueIntervals:           requeueIntervals,
+		rateLimiter:                rateLimiter,
+		kcpClient:                  kcpClient,
+		renderService:              renderService,
+		customStateCheck:           stateCheck,
+		manifestMetrics:            manifestMetrics,
+		mandatoryModuleMetrics:     mandatoryModulesMetrics,
+		specResolver:               specResolver,
+		manifestClient:             manifestAPIClient,
+		managedLabelRemovalService: managedLabelRemovalService,
+		orphanDetectionService:     orphanDetectionService,
+		skrClientCache:             clientCache,
+		skrClient:                  skrClient,
+	}
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -159,59 +191,25 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if manifest.GetDeletionTimestamp().IsZero() {
 		return r.install(ctx, req, manifest)
-	} else {
-		return r.delete(ctx, req, manifest)
 	}
+	return r.delete(ctx, req, manifest)
 }
 
 // install handles the reconciliation in all conditions except when the manifest is being deleted.
 // invariant: manifest.GetDeletionTimestamp().IsZero() == true
-//
-//nolint:funlen // Declarative pkg will be removed soon
 func (r *Reconciler) install(ctx context.Context, req ctrl.Request,
 	manifest *v1beta2.Manifest,
 ) (ctrl.Result, error) {
 	manifestStatus := manifest.GetStatus()
 
-	if err := status.Initialize(manifest); err != nil {
-		return r.finishReconcile(ctx, manifest, metrics.ManifestInit, manifestStatus, err)
+	skrClient, stop := r.prepareReconcile(ctx, req, manifest, manifestStatus)
+	if stop != nil {
+		return stop.Result, stop.Err
 	}
 
-	recordMandatoryModuleState(manifest, r)
-
-	skrClient, err := r.getTargetClient(ctx, manifest)
-	if err != nil {
-		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
-		return r.finishReconcile(ctx, manifest, metrics.ManifestClientInit, manifestStatus, err)
-	}
-
-	if manifest.IsUnmanaged() {
-		return r.handleUnmanagedManifest(ctx, req, skrClient, manifest)
-	}
-
-	err = r.orphanDetectionService.DetectOrphanedManifest(ctx, manifest)
-	if err != nil {
-		if errors.Is(err, orphan.ErrOrphanedManifest) {
-			previousStatus := manifest.GetStatus()
-			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
-			return r.finishReconcile(ctx, manifest, metrics.ManifestOrphaned, previousStatus, err)
-		}
-		return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
-	}
-
-	if finalizer.FinalizersUpdateRequired(manifest) {
-		return r.ssaSpec(ctx, req, manifest, metrics.ManifestAddFinalizer)
-	}
-
-	spec, err := r.specResolver.GetSpec(ctx, manifest)
-	if err != nil {
-		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
-		return r.finishReconcile(ctx, manifest, metrics.ManifestParseSpec, manifestStatus, err)
-	}
-
-	if notContainsSyncedOCIRefAnnotation(manifest) {
-		updateSyncedOCIRefAnnotation(manifest, spec.OCIRef)
-		return r.updateManifest(ctx, req, manifest, metrics.ManifestInitSyncedOCIRef)
+	spec, stop := r.resolveAndTrackSpec(ctx, req, manifest, manifestStatus)
+	if stop != nil {
+		return stop.Result, stop.Err
 	}
 
 	target, current, err := r.renderResourcesForInstall(ctx, skrClient, manifest, spec)
@@ -219,22 +217,15 @@ func (r *Reconciler) install(ctx context.Context, req ctrl.Request,
 		// The inject-data-from-kcp transform marks an unrecoverable misconfiguration
 		// of the deployer module's secret wiring. Surface it as StateError so the
 		// Kyma CR reflects the failure; the early return below already skips SSA.
-		if errors.Is(err, ErrInjectDataFromKCP) {
+		if errors.Is(err, render.ErrInjectDataFromKCP) {
 			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
 		}
 		return r.finishReconcile(ctx, manifest, metrics.ManifestRenderResources, manifestStatus, err)
 	}
 
-	if err := r.pruneDiff(ctx, skrClient, manifest, current, target, spec); errors.Is(err,
-		resources.ErrDeletionNotFinished) {
-		r.manifestMetrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
-		return ctrl.Result{RequeueAfter: r.rateLimiter.When(req)}, nil
-	} else if err != nil {
-		return r.finishReconcile(ctx, manifest, metrics.ManifestPruneDiff, manifestStatus, err)
-	}
-
-	if err := skrresources.SyncResources(ctx, skrClient, manifest, target); err != nil {
-		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncResources, manifestStatus, err)
+	if stop := r.pruneAndSync(ctx, req, skrClient, manifest, manifestStatus,
+		current, target, spec); stop != nil {
+		return stop.Result, stop.Err
 	}
 
 	if err := r.syncDefaultModuleCR(ctx, skrClient, manifest); err != nil {
@@ -264,44 +255,103 @@ func (r *Reconciler) install(ctx context.Context, req ctrl.Request,
 	return r.finishReconcile(ctx, manifest, metrics.ManifestReconcileFinished, manifestStatus, nil)
 }
 
-// delete handles the reconciliation when the manifest is being deleted.
-// invariant: manifest.GetDeletionTimestamp().IsZero() == false
-//
-//nolint:funlen // Declarative pkg will be removed soon
-func (r *Reconciler) delete(ctx context.Context, req ctrl.Request,
-	manifest *v1beta2.Manifest,
-) (ctrl.Result, error) {
-	manifestStatus := manifest.GetStatus()
-
+// prepareReconcile runs the preparatory steps at the start of the install
+// pipeline — status init, mandatory-module metric, SKR client resolution,
+// unmanaged short-circuit, orphan detection, and finalizer SSA — before the
+// spec is resolved or resources are rendered. A non-nil *stepResult signals
+// the caller must return immediately.
+func (r *Reconciler) prepareReconcile(ctx context.Context, req ctrl.Request,
+	manifest *v1beta2.Manifest, manifestStatus shared.Status,
+) (skrclient.Client, *stepResult) {
 	if err := status.Initialize(manifest); err != nil {
-		return r.finishReconcile(ctx, manifest, metrics.ManifestInit, manifestStatus, err)
+		return nil, stopReconcile(r.finishReconcile(ctx, manifest, metrics.ManifestInit, manifestStatus, err))
 	}
 
 	recordMandatoryModuleState(manifest, r)
 
 	skrClient, err := r.getTargetClient(ctx, manifest)
 	if err != nil {
-		if errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
-			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestClientInit, err)
-		}
-
 		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
-		return r.finishReconcile(ctx, manifest, metrics.ManifestClientInit, manifestStatus, err)
+		return nil, stopReconcile(r.finishReconcile(ctx, manifest, metrics.ManifestClientInit, manifestStatus, err))
 	}
 
 	if manifest.IsUnmanaged() {
-		return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestUnmanagedUpdate, nil)
+		return nil, stopReconcile(r.handleUnmanagedManifest(ctx, req, skrClient, manifest))
 	}
 
+	if err := r.orphanDetectionService.DetectOrphanedManifest(ctx, manifest); err != nil {
+		if errors.Is(err, orphan.ErrOrphanedManifest) {
+			previousStatus := manifest.GetStatus()
+			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
+			return nil, stopReconcile(r.finishReconcile(ctx, manifest, metrics.ManifestOrphaned, previousStatus, err))
+		}
+		return nil, stopReconcile(ctrl.Result{}, fmt.Errorf("manifestController: %w", err))
+	}
+
+	if finalizer.FinalizersUpdateRequired(manifest) {
+		return nil, stopReconcile(r.ssaSpec(ctx, req, manifest, metrics.ManifestAddFinalizer))
+	}
+
+	return skrClient, nil
+}
+
+// resolveAndTrackSpec resolves the install spec and persists the initial
+// synced-OCI-ref annotation. A non-nil *stepResult signals the caller must
+// return immediately.
+func (r *Reconciler) resolveAndTrackSpec(ctx context.Context, req ctrl.Request,
+	manifest *v1beta2.Manifest, manifestStatus shared.Status,
+) (*spec.Spec, *stepResult) {
 	spec, err := r.specResolver.GetSpec(ctx, manifest)
 	if err != nil {
 		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
-		return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestParseSpec, err)
+		return nil, stopReconcile(r.finishReconcile(ctx, manifest, metrics.ManifestParseSpec, manifestStatus, err))
 	}
 
 	if notContainsSyncedOCIRefAnnotation(manifest) {
 		updateSyncedOCIRefAnnotation(manifest, spec.OCIRef)
-		return r.updateManifest(ctx, req, manifest, metrics.ManifestInitSyncedOCIRef)
+		return nil, stopReconcile(r.updateManifest(ctx, req, manifest, metrics.ManifestInitSyncedOCIRef))
+	}
+
+	return spec, nil
+}
+
+// pruneAndSync runs the diff prune followed by an SSA sync of the target
+// resources. A non-nil *stepResult signals the caller must return immediately
+// (either because pruning is still in progress or because pruning/sync errored).
+func (r *Reconciler) pruneAndSync(ctx context.Context, req ctrl.Request, skrClient skrclient.Client,
+	manifest *v1beta2.Manifest, manifestStatus shared.Status,
+	current ResourceList, target []client.Object, spec *spec.Spec,
+) *stepResult {
+	if err := r.pruneDiff(ctx, skrClient, manifest, current, target, spec); errors.Is(err,
+		resources.ErrDeletionNotFinished) {
+		r.manifestMetrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
+		return stopReconcile(ctrl.Result{RequeueAfter: r.rateLimiter.When(req)}, nil)
+	} else if err != nil {
+		return stopReconcile(r.finishReconcile(ctx, manifest, metrics.ManifestPruneDiff, manifestStatus, err))
+	}
+
+	if err := skrresources.SyncResources(ctx, skrClient, manifest, target); err != nil {
+		return stopReconcile(r.finishReconcile(ctx, manifest, metrics.ManifestSyncResources, manifestStatus, err))
+	}
+
+	return nil
+}
+
+// delete handles the reconciliation when the manifest is being deleted.
+// invariant: manifest.GetDeletionTimestamp().IsZero() == false
+func (r *Reconciler) delete(ctx context.Context, req ctrl.Request,
+	manifest *v1beta2.Manifest,
+) (ctrl.Result, error) {
+	manifestStatus := manifest.GetStatus()
+
+	skrClient, stop := r.prepareDeleteReconcile(ctx, req, manifest, manifestStatus)
+	if stop != nil {
+		return stop.Result, stop.Err
+	}
+
+	spec, stop := r.resolveAndTrackSpecForDelete(ctx, req, manifest, manifestStatus)
+	if stop != nil {
+		return stop.Result, stop.Err
 	}
 
 	target, current, err := r.renderResourcesForDelete(ctx, skrClient, manifest, spec)
@@ -346,6 +396,60 @@ func (r *Reconciler) delete(ctx context.Context, req ctrl.Request,
 	}
 
 	return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestReconcileFinished, nil)
+}
+
+// prepareDeleteReconcile runs the preparatory steps at the start of the
+// delete pipeline — status init, mandatory-module metric, SKR client
+// resolution (with access-secret cleanup short-circuit), and unmanaged
+// cleanup — before the spec is resolved or resources are rendered. A non-nil
+// *stepResult signals the caller must return immediately.
+func (r *Reconciler) prepareDeleteReconcile(ctx context.Context, req ctrl.Request,
+	manifest *v1beta2.Manifest, manifestStatus shared.Status,
+) (skrclient.Client, *stepResult) {
+	if err := status.Initialize(manifest); err != nil {
+		return nil, stopReconcile(r.finishReconcile(ctx, manifest, metrics.ManifestInit, manifestStatus, err))
+	}
+
+	recordMandatoryModuleState(manifest, r)
+
+	skrClient, err := r.getTargetClient(ctx, manifest)
+	if err != nil {
+		if errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
+			return nil, stopReconcile(r.cleanupManifest(ctx, req, manifest, manifestStatus,
+				metrics.ManifestClientInit, err))
+		}
+
+		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
+		return nil, stopReconcile(r.finishReconcile(ctx, manifest, metrics.ManifestClientInit, manifestStatus, err))
+	}
+
+	if manifest.IsUnmanaged() {
+		return nil, stopReconcile(r.cleanupManifest(ctx, req, manifest, manifestStatus,
+			metrics.ManifestUnmanagedUpdate, nil))
+	}
+
+	return skrClient, nil
+}
+
+// resolveAndTrackSpecForDelete is the delete-path equivalent of
+// resolveAndTrackSpec — error path routes through cleanupManifest because
+// we're tearing down.
+func (r *Reconciler) resolveAndTrackSpecForDelete(ctx context.Context, req ctrl.Request,
+	manifest *v1beta2.Manifest, manifestStatus shared.Status,
+) (*spec.Spec, *stepResult) {
+	spec, err := r.specResolver.GetSpec(ctx, manifest)
+	if err != nil {
+		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
+		return nil, stopReconcile(r.cleanupManifest(ctx, req, manifest, manifestStatus,
+			metrics.ManifestParseSpec, err))
+	}
+
+	if notContainsSyncedOCIRefAnnotation(manifest) {
+		updateSyncedOCIRefAnnotation(manifest, spec.OCIRef)
+		return nil, stopReconcile(r.updateManifest(ctx, req, manifest, metrics.ManifestInitSyncedOCIRef))
+	}
+
+	return spec, nil
 }
 
 // Normally after all resources have been deleted, the manifest should be cleared as well.
@@ -428,7 +532,7 @@ func (r *Reconciler) evictSKRClientCache(ctx context.Context, manifest *v1beta2.
 }
 
 func (r *Reconciler) renderResourcesForInstall(ctx context.Context, skrClient skrclient.Client,
-	manifest *v1beta2.Manifest, spec *Spec,
+	manifest *v1beta2.Manifest, spec *spec.Spec,
 ) ([]client.Object, ResourceList, error) {
 	manifestStatus := manifest.GetStatus()
 	current := ResourceList(manifestStatus.Synced)
@@ -443,7 +547,7 @@ func (r *Reconciler) renderResourcesForInstall(ctx context.Context, skrClient sk
 }
 
 func (r *Reconciler) renderResourcesForDelete(ctx context.Context, skrClient skrclient.Client,
-	manifest *v1beta2.Manifest, spec *Spec,
+	manifest *v1beta2.Manifest, spec *spec.Spec,
 ) ([]client.Object, ResourceList, error) {
 	manifestStatus := manifest.GetStatus()
 	current := ResourceList(manifestStatus.Synced)
@@ -540,15 +644,15 @@ func (r *Reconciler) checkManagerState(ctx context.Context, clnt skrclient.Clien
 		return shared.StateError, err
 	}
 	if managerState == shared.StateError {
-		return shared.StateError, ErrManagerInErrorState
+		return shared.StateError, errManagerInErrorState
 	}
 	return managerState, nil
 }
 
 func (r *Reconciler) pruneDiff(ctx context.Context, clnt skrclient.Client, manifest *v1beta2.Manifest,
-	current ResourceList, target []client.Object, spec *Spec,
+	current ResourceList, target []client.Object, spec *spec.Spec,
 ) error {
-	diff := pruneResource(current.Difference(target), "Namespace", namespaceNotBeRemoved)
+	diff := pruneResource(current.Difference(target), "Namespace", shared.DefaultRemoteNamespace)
 	if len(diff) == 0 {
 		return nil
 	}
@@ -559,10 +663,10 @@ func (r *Reconciler) pruneDiff(ctx context.Context, clnt skrclient.Client, manif
 		manifest.SetStatus(
 			manifest.GetStatus().
 				WithState(shared.StateWarning).
-				WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()),
+				WithOperation(errResourceSyncDiffInSameOCILayer.Error()),
 		)
 		r.renderService.EvictCache(spec)
-		return ErrResourceSyncDiffInSameOCILayer
+		return errResourceSyncDiffInSameOCILayer
 	}
 
 	err := resources.NewConcurrentCleanup(clnt, manifest).DeleteDiffResources(ctx, diff)
@@ -573,7 +677,7 @@ func (r *Reconciler) pruneDiff(ctx context.Context, clnt skrclient.Client, manif
 }
 
 func manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff ResourceList, manifest *v1beta2.Manifest,
-	spec *Spec,
+	spec *spec.Spec,
 ) bool {
 	return len(diff) > 0 && ociRefNotChanged(manifest, spec.OCIRef) && manifest.GetDeletionTimestamp().IsZero()
 }

@@ -1,4 +1,4 @@
-package v2_test
+package render_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/render"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
@@ -15,7 +15,7 @@ func TestImagePullSecretTransform_WhenNoImagePullSecretsExists_CreatesNew(t *tes
 	t.Parallel()
 	secretName := random.Name()
 
-	transform := declarativev2.CreateSkrImagePullSecretTransform(secretName)
+	transform := render.CreateSkrImagePullSecretTransform(secretName)
 	manifest := &v1beta2.Manifest{
 		Spec: v1beta2.ManifestSpec{},
 	}
@@ -62,7 +62,7 @@ func TestImagePullSecretTransform_WhenImagePullSecretsExists_Appends(t *testing.
 	t.Parallel()
 	secretName := random.Name()
 
-	transform := declarativev2.CreateSkrImagePullSecretTransform(secretName)
+	transform := render.CreateSkrImagePullSecretTransform(secretName)
 	manifest := &v1beta2.Manifest{
 		Spec: v1beta2.ManifestSpec{},
 	}
@@ -117,7 +117,7 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvDoesntExist_AddsEnv(t *testing
 	t.Parallel()
 	secretName := random.Name()
 
-	transform := declarativev2.CreateSkrImagePullSecretTransform(secretName)
+	transform := render.CreateSkrImagePullSecretTransform(secretName)
 	manifest := &v1beta2.Manifest{
 		Spec: v1beta2.ManifestSpec{
 			Manager: &v1beta2.Manager{
@@ -190,7 +190,7 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvDoesntExist_AddsEnv(t *testing
 				var skrEnvFound bool
 				for _, envVar := range envSlice {
 					envVarMap := envVar.(map[string]any)
-					if envVarMap["name"] == declarativev2.SkrImagePullSecretEnvName {
+					if envVarMap["name"] == render.SkrImagePullSecretEnvName {
 						skrEnvFound = true
 						require.Equal(t, secretName, envVarMap["value"])
 					}
@@ -205,7 +205,7 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvDoesntExist_AndManagerNotSpeci
 	t.Parallel()
 	secretName := random.Name()
 
-	transform := declarativev2.CreateSkrImagePullSecretTransform(secretName)
+	transform := render.CreateSkrImagePullSecretTransform(secretName)
 	manifest := &v1beta2.Manifest{
 		Spec: v1beta2.ManifestSpec{},
 	}
@@ -253,7 +253,7 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvDoesntExist_AndManagerNotSpeci
 			var skrEnvFound bool
 			for _, envVar := range envSlice {
 				envVarMap := envVar.(map[string]any)
-				if envVarMap["name"] == declarativev2.SkrImagePullSecretEnvName {
+				if envVarMap["name"] == render.SkrImagePullSecretEnvName {
 					skrEnvFound = true
 					require.Equal(t, secretName, envVarMap["value"])
 				}
@@ -267,7 +267,7 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvExists_ReturnsError(t *testing
 	t.Parallel()
 	secretName := random.Name()
 
-	transform := declarativev2.CreateSkrImagePullSecretTransform(secretName)
+	transform := render.CreateSkrImagePullSecretTransform(secretName)
 	manifest := &v1beta2.Manifest{
 		Spec: v1beta2.ManifestSpec{
 			Manager: &v1beta2.Manager{
@@ -297,7 +297,7 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvExists_ReturnsError(t *testing
 									"image": "controller:latest",
 									"env": []any{
 										map[string]any{
-											"name":  declarativev2.SkrImagePullSecretEnvName,
+											"name":  render.SkrImagePullSecretEnvName,
 											"value": "some_value",
 										},
 									},
@@ -311,14 +311,14 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvExists_ReturnsError(t *testing
 	}
 
 	err := transform(t.Context(), manifest, resources)
-	require.ErrorIs(t, err, declarativev2.ErrSkrImagePullSecretEnvAlreadyExists)
+	require.ErrorIs(t, err, render.ErrSkrImagePullSecretEnvAlreadyExists)
 }
 
 func TestCreateSkrImagePullSecretTransform_DoesntAddEnvVarToNonManagerDeployment(t *testing.T) {
 	t.Parallel()
 	secretName := random.Name()
 
-	transform := declarativev2.CreateSkrImagePullSecretTransform(secretName)
+	transform := render.CreateSkrImagePullSecretTransform(secretName)
 	manifest := &v1beta2.Manifest{
 		Spec: v1beta2.ManifestSpec{
 			Manager: &v1beta2.Manager{

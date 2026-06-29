@@ -4,7 +4,7 @@ package render
 import (
 	"slices"
 
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/render"
 )
 
@@ -12,22 +12,22 @@ import (
 // transform chain, plus optional transforms enabled by configuration.
 //
 // The SkrImagePullSecret transform is appended when skrImagePullSecretName is non-empty.
-// The RestrictedDefaultModuleImagePullSecret transform is appended only when the
+// The DeployerModuleImagePullSecret transform is appended only when the
 // deployer module is configured as a restricted default module — see issue #3345.
 func ComposeRenderService(
-	parser declarativev2.CachedManifestParser,
+	cachedParser *parser.CachedManifestParser,
 	skrImagePullSecretName string,
-	secretRepo declarativev2.SecretRepository,
+	secretRepo render.SecretRepository,
 	restrictedDefaultModules []string,
 ) *render.Service {
-	transforms := declarativev2.GetDefaultResourceTransforms()
+	transforms := render.GetDefaultResourceTransforms()
 	if skrImagePullSecretName != "" {
 		transforms = append(transforms,
-			declarativev2.CreateSkrImagePullSecretTransform(skrImagePullSecretName))
+			render.CreateSkrImagePullSecretTransform(skrImagePullSecretName))
 	}
-	if slices.Contains(restrictedDefaultModules, declarativev2.DeployerModuleName) {
+	if slices.Contains(restrictedDefaultModules, render.DeployerModuleName) {
 		transforms = append(transforms,
-			declarativev2.CreateDeployerModuleImagePullSecretTransform(secretRepo))
+			render.CreateDeployerModuleImagePullSecretTransform(secretRepo))
 	}
-	return render.NewService(parser, transforms)
+	return render.NewService(cachedParser, transforms)
 }

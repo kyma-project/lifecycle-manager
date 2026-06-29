@@ -7,7 +7,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/componentdescriptor"
 	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 )
 

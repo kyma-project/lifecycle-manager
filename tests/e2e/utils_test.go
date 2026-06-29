@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/render"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -382,14 +382,14 @@ func DeploymentContainersHaveImagePullSecretEnv(ctx context.Context,
 	for _, container := range containers {
 		found := false
 		for _, envVar := range container.Env {
-			if envVar.Name == declarativev2.SkrImagePullSecretEnvName && envVar.Value == secretName {
+			if envVar.Name == render.SkrImagePullSecretEnvName && envVar.Value == secretName {
 				found = true
 				break
 			}
 		}
 		if !found {
 			return fmt.Errorf("env var %s with value %s not found in container %s of deployment %s",
-				declarativev2.SkrImagePullSecretEnvName, secretName, container.Name, deploymentName)
+				render.SkrImagePullSecretEnvName, secretName, container.Name, deploymentName)
 		}
 	}
 	return nil

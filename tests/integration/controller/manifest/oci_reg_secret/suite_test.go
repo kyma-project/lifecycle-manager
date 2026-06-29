@@ -42,12 +42,15 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	manifestctrl "github.com/kyma-project/lifecycle-manager/internal/controller/manifest"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/labelsremoval"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/parser"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/spec"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
@@ -60,10 +63,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -72,7 +74,7 @@ import (
 var (
 	testEnv          *envtest.Environment
 	mgr              ctrl.Manager
-	reconciler       *declarativev2.Reconciler
+	reconciler       *manifestctrl.Reconciler
 	cfg              *rest.Config
 	ctx              context.Context
 	cancel           context.CancelFunc
@@ -146,11 +148,12 @@ var _ = BeforeSuite(func() {
 	orphanDetectionClient := kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
 	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
 	accessManagerService := testskrcontext.NewFakeAccessManagerService(testEnv, cfg)
-	cachedManifestParser := declarativev2.NewInMemoryCachedManifestParser(declarativev2.DefaultInMemoryParseTTL)
-	renderService := render.NewService(cachedManifestParser, declarativev2.GetDefaultResourceTransforms())
+	cachedManifestParser := parser.NewCachedManifestParser(parser.DefaultInMemoryParseTTL)
+	renderService := render.NewService(cachedManifestParser, render.GetDefaultResourceTransforms())
 
 	rateLimiter := internal.RateLimiter(1*time.Second, 5*time.Second, 30, 200)
-	reconciler = declarativev2.NewReconciler(queue.RequeueIntervals{
+	managedLabelRemovalService := labelsremoval.NewManagedByLabelRemovalService(manifestClient)
+	reconciler = manifestctrl.NewReconciler(queue.RequeueIntervals{
 		Success: 1 * time.Second,
 		Busy:    1 * time.Second,
 		Error:   1 * time.Second,
@@ -166,7 +169,8 @@ var _ = BeforeSuite(func() {
 		skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService),
 		kcpClient,
 		renderService,
-		declarativev2.NewExistsStateCheck(),
+		statecheck.NewExistsStateCheck(),
+		managedLabelRemovalService,
 	)
 
 	err = ctrl.NewControllerManagedBy(mgr).
