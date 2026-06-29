@@ -4,7 +4,7 @@ package render
 import (
 	"slices"
 
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/render"
 )
 

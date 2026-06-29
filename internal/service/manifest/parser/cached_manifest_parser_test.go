@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/parser"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/spec"
 )
 
 const sampleManifest = `apiVersion: v1

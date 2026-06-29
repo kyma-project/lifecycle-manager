@@ -12,8 +12,8 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/render"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/spec"
 )
 
 type stubParser struct {

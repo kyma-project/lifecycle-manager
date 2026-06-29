@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/spec"
 )
 
 const (

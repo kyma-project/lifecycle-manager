@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/spec"
 )
 
 const (

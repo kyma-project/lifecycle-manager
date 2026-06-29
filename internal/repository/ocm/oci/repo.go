@@ -8,7 +8,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/crane"
 	containerregistryv1 "github.com/google/go-containerregistry/pkg/v1"
 
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/spec"
 )
 
 var ErrKeyChainNotNil = errors.New("keychain lookup must not be nil")
