@@ -37,7 +37,6 @@ cat <<EOF > module-config-for-e2e.yaml
 name: kyma-project.io/module/${MODULE_NAME}
 team: kyma/Jellyfish
 version: ${RELEASE_VERSION}
-security: sec-scanners-config.yaml
 manifest: template-operator.yaml
 repository: https://github.com/kyma-project/template-operator
 documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
@@ -58,9 +57,6 @@ if [ "${MANDATORY}" == "true" ]; then
 mandatory: true
 EOF
 fi
-
-# Add moduleversion to `bdba` list in sec-scanners-config.yaml
-yq eval '.bdba += ["europe-docker.pkg.dev/kyma-project/prod/template-operator:'"${RELEASE_VERSION}"'"]' -i sec-scanners-config.yaml
 
 # Helper function to handle sed -i differences between GNU and BSD (macOS)
 sedi() {
