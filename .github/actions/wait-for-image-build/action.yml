@@ -25,7 +25,7 @@ runs:
         statusName: ${{ inputs.statusName }}
         timeoutSeconds: ${{ inputs.timeoutSeconds }}
         intervalSeconds: ${{ inputs.intervalSeconds }}
-      uses: autotelic/action-wait-for-status-check@v1
+      uses: autotelic/action-wait-for-status-check@94f8fe5d73f4431cc825594f21d832044a08f635 # v1.1.1
     - name: Exit if build failed
       if: steps.wait-for-build.outputs.state != 'success'
       shell: bash
