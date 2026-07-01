@@ -119,7 +119,6 @@ runs:
         echo "creating ModuleTemplate"
         modulectl create \
           --config-file "${MODULE_CONFIG}" \
-          --disable-ocm-registry-push \
           --output-constructor-file "${COMPONENT_CONSTRUCTOR_FILE}"
 
         echo "pushing OCM components..."
