@@ -6,14 +6,12 @@ include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))e2e.common.mk
 .PHONY: klm-patch
 klm-patch:
 	@echo "::group::KLM patch - OCI registry credential secret"
-	@export PATH=$(LOCALBIN):$$PATH
-	@pushd $(LIFECYCLE_MANAGER_DIR)/config/watcher_local_test > /dev/null
+	@pushd $(LIFECYCLE_MANAGER_DIR)/config/watcher_local_test/patches > /dev/null
 	printf '%s\n' \
 		'- op: add' \
 		'  path: /spec/template/spec/containers/0/args/-' \
 		'  value: --oci-registry-cred-secret=private-oci-reg-creds' \
-		>> oci_registry_cred_secret.yaml
-	kustomize edit add patch --path oci_registry_cred_secret.yaml --kind Deployment
+		> oci_registry_host.yaml
 	@popd > /dev/null
 	@echo "::endgroup::"
 
