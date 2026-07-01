@@ -172,6 +172,8 @@ jobs:
             maintenance-windows | \
             maintenance-windows-initial-installation | \
             maintenance-windows-skip | \
+            oci-reg-cred-secret | \
+            module-transferred-to-another-oci-registry | \
             module-api-upgrade-under-blocked-deletion)
               echo "self-contained=true" >> $GITHUB_OUTPUT ;;
             *)
@@ -184,10 +186,6 @@ jobs:
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
           cert_manager_version: ${{ steps.configuration.outputs.cert_manager_version }}
-
-      - name: Setup private registry
-        if: ${{ matrix.e2e-test == 'oci-reg-cred-secret' }}
-        uses: ./lifecycle-manager/.github/actions/setup-private-registry
 
       - name: Deploy lifecycle-manager
         if: ${{ steps.setup-check.outputs.self-contained == 'false' }}
