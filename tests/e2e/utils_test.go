@@ -45,7 +45,8 @@ const (
 	ConsistentDuration      = 20 * time.Second
 	interval                = 500 * time.Millisecond
 	moduleCRFinalizer       = "cr-finalizer"
-	NewerVersion            = "2.4.2-e2e-test"
+	e2eVersionSuffix        = "-e2e"
+	smokeTestVersionSuffix  = "-smoke-test"
 	MisconfiguredModuleName = "template-operator-misconfigured"
 	// GlobalAccountID1 is used to test uninstallation when the Kyma's
 	// global-account-id no longer matches the deployer module's kymaSelector.
@@ -53,9 +54,15 @@ const (
 	GlobalAccountID2 = "f6e5d4c3-b2a1-9087-6543-210fedcba987"
 )
 
-// ModuleVersionToBeUsed is the template-operator version used in tests.
-// It is read from versions.yaml to stay in sync with the version deployed by the test setup.
-var ModuleVersionToBeUsed = mustReadTemplateOperatorVersion()
+var (
+	// OlderVersion and NewerVersion are read from tests/e2e/versions.yaml to stay
+	// in sync with the versions deployed by the Makefile test setup.
+	OlderVersion                = readE2EVersionFromFile("module-version-older") + e2eVersionSuffix
+	NewerVersion                = readE2EVersionFromFile("module-version-newer") + e2eVersionSuffix
+	MandatoryModuleOlderVersion = readE2EVersionFromFile("module-version-older") + smokeTestVersionSuffix
+	MandatoryModuleNewerVersion = readE2EVersionFromFile("module-version-newer") + smokeTestVersionSuffix
+	ModuleVersionToBeUsed       = mustReadTemplateOperatorVersion()
+)
 
 func mustReadTemplateOperatorVersion() string {
 	content, err := os.ReadFile("../../versions.yaml")
@@ -71,6 +78,22 @@ func mustReadTemplateOperatorVersion() string {
 		panic("template-operator version not found in versions.yaml")
 	}
 	return version
+}
+
+func readE2EVersionFromFile(key string) string {
+	content, err := os.ReadFile("versions.yaml")
+	if err != nil {
+		panic(fmt.Sprintf("failed to read versions.yaml: %v", err))
+	}
+	var versions map[string]string
+	if err := yaml.Unmarshal(content, &versions); err != nil {
+		panic(fmt.Sprintf("failed to parse versions.yaml: %v", err))
+	}
+	v, ok := versions[key]
+	if !ok {
+		panic(fmt.Sprintf("%q not found in versions.yaml", key))
+	}
+	return v
 }
 
 func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {

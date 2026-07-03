@@ -193,6 +193,15 @@ jobs:
         with:
           klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
           klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
+      - name: Read e2e module versions
+        id: e2e-versions
+        working-directory: lifecycle-manager
+        shell: bash
+        run: |
+          BASE_OLDER=$(yq -e '.["module-version-older"]' tests/e2e/versions.yaml)
+          BASE_NEWER=$(yq -e '.["module-version-newer"]' tests/e2e/versions.yaml)
+          echo "older=${BASE_OLDER}-e2e" >> "$GITHUB_OUTPUT"
+          echo "newer=${BASE_NEWER}-e2e" >> "$GITHUB_OUTPUT"
       - name: Deploy template-operator
         if: ${{ steps.setup-check.outputs.self-contained == 'false' }}
         uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
@@ -202,8 +211,8 @@ jobs:
           ModuleDeploymentName: template-operator-controller-manager
           ModuleDeploymentNameInNewerVersion: template-operator-v2-controller-manager
           ModuleDeploymentNameInOlderVersion: template-operator-v1-controller-manager
-          NewerVersion: 2.4.2-e2e-test
-          OlderVersion: 1.1.1-e2e-test
+          NewerVersion: ${{ steps.e2e-versions.outputs.newer }}
+          OlderVersion: ${{ steps.e2e-versions.outputs.older }}
           VersionForStatefulSetInWarning: 1.0.0-warning-statefulset
           VersionForDeploymentInWarning: 1.0.0-warning-deployment
           VersionForMisconfiguredDeploymentImage: 1.0.0-misconfigured-deployment

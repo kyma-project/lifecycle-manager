@@ -1,0 +1,4 @@
+# Base versions for synthetic OCM component-descriptor test module templates.
+# Only relative ordering matters (older < newer). All call sites append a suffix.
+module-version-older: "1.0.0"
+module-version-newer: "2.0.0"

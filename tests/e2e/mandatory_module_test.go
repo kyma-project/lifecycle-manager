@@ -38,7 +38,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 			By("And the Mandatory ModuleReleaseMeta is configured correctly", func() {
 				Eventually(MandatoryModuleReleaseMetaHasVersion).
 					WithContext(ctx).
-					WithArguments(kcpClient, "template-operator", "1.1.0-smoke-test").
+					WithArguments(kcpClient, "template-operator", MandatoryModuleOlderVersion).
 					Should(Succeed())
 			})
 
@@ -60,7 +60,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 			By("And the mandatory module manifest is installed with the correct version", func() {
 				Consistently(MandatoryModuleManifestExistWithCorrectVersion).
 					WithContext(ctx).
-					WithArguments(kcpClient, "template-operator", "1.1.0-smoke-test").
+					WithArguments(kcpClient, "template-operator", MandatoryModuleOlderVersion).
 					Should(Succeed())
 			})
 
@@ -120,7 +120,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 
 		It("When new module version is assigned to the ModuleReleaseMeta", func() {
 			err := SetMandatoryModuleReleaseMetaVersion(ctx, kcpClient, "template-operator", ControlPlaneNamespace,
-				"2.4.1-smoke-test")
+				MandatoryModuleNewerVersion)
 			Expect(err).NotTo(HaveOccurred())
 		})
 		It("Then Kyma mandatory Module is updated on SKR Cluster", func() {
@@ -147,7 +147,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 			By("And the mandatory module manifest is installed with the correct version", func() {
 				Eventually(MandatoryModuleManifestExistWithCorrectVersion).
 					WithContext(ctx).
-					WithArguments(kcpClient, "template-operator", "2.4.1-smoke-test").
+					WithArguments(kcpClient, "template-operator", MandatoryModuleNewerVersion).
 					Should(Succeed())
 			})
 		})
@@ -182,7 +182,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 			By("And the mandatory module manifest is not present in the KCP cluster", func() {
 				Eventually(MandatoryModuleManifestExistWithCorrectVersion).
 					WithContext(ctx).
-					WithArguments(kcpClient, "template-operator", "2.4.1-smoke-test").
+					WithArguments(kcpClient, "template-operator", MandatoryModuleNewerVersion).
 					Should(Equal(ErrManifestNotFound))
 			})
 		})
