@@ -200,8 +200,8 @@ jobs:
         run: |
           BASE_OLDER=$(yq -e '.["module-version-older"]' tests/e2e/versions.yaml)
           BASE_NEWER=$(yq -e '.["module-version-newer"]' tests/e2e/versions.yaml)
-          echo "older=${BASE_OLDER}-e2e" >> "$GITHUB_OUTPUT"
-          echo "newer=${BASE_NEWER}-e2e" >> "$GITHUB_OUTPUT"
+          echo "older=${BASE_OLDER}" >> "$GITHUB_OUTPUT"
+          echo "newer=${BASE_NEWER}" >> "$GITHUB_OUTPUT"
       - name: Deploy template-operator
         if: ${{ steps.setup-check.outputs.self-contained == 'false' }}
         uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
@@ -209,15 +209,15 @@ jobs:
           module_version: ${{ steps.configuration.outputs.template_operator_version }}
         env:
           ModuleDeploymentName: template-operator-controller-manager
-          ModuleDeploymentNameInNewerVersion: template-operator-v2-controller-manager
-          ModuleDeploymentNameInOlderVersion: template-operator-v1-controller-manager
-          NewerVersion: ${{ steps.e2e-versions.outputs.newer }}
-          OlderVersion: ${{ steps.e2e-versions.outputs.older }}
-          VersionForStatefulSetInWarning: 1.0.0-warning-statefulset
-          VersionForDeploymentInWarning: 1.0.0-warning-deployment
-          VersionForMisconfiguredDeploymentImage: 1.0.0-misconfigured-deployment
-          VersionForMisconfiguredStatefulSetImage: 1.0.0-misconfigured-statefulset
-          VersionForNoDefaultCR: 1.0.0-no-default-cr
+          ModuleDeploymentNameInNewerVersion: template-operator-${{ steps.e2e-versions.outputs.newer }}-controller-manager
+          ModuleDeploymentNameInOlderVersion: template-operator-${{ steps.e2e-versions.outputs.older }}-controller-manager
+          NewerVersion: ${{ steps.e2e-versions.outputs.newer }}-e2e
+          OlderVersion: ${{ steps.e2e-versions.outputs.older }}-e2e
+          VersionForStatefulSetInWarning: ${{ steps.e2e-versions.outputs.older }}-warning-statefulset
+          VersionForDeploymentInWarning: ${{ steps.e2e-versions.outputs.older }}-warning-deployment
+          VersionForMisconfiguredDeploymentImage: ${{ steps.e2e-versions.outputs.older }}-misconfigured-deployment
+          VersionForMisconfiguredStatefulSetImage: ${{ steps.e2e-versions.outputs.older }}-misconfigured-statefulset
+          VersionForNoDefaultCR: ${{ steps.e2e-versions.outputs.older }}-no-default-cr
           MisconfiguredModuleName: template-operator-misconfigured
           ModuleName: template-operator
       - name: Run '${{ matrix.e2e-test }}' test
