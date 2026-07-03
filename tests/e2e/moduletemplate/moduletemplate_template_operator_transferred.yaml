@@ -149,7 +149,7 @@ spec:
             value: 40e5276a429d2603aac0c9df64dc6517634421e0d2eb4f0bc69ad778280912d3
           name: moduletemplate
           relation: local
-          type: PlainText
+          type: plainText
           version: 1.0.5
       sources:
         - access:
