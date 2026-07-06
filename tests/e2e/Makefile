@@ -144,7 +144,7 @@ rbac-privileges:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.no_module_setup.mk test "GINKGO_FOCUS=RBAC Privileges"
 
 oci-reg-cred-secret:
-	$(GO_TEST) "OCI Registry Credentials Secret"
+	$(MAKE) -f $(MAKEFILE_DIR)/oci_reg_cred_secret_test.mk test
 
 modulereleasemeta-with-obsolete-moduletemplate:
 	$(GO_TEST) "ModuleReleaseMeta With Obsolete ModuleTemplate"
@@ -198,7 +198,7 @@ module-deletion-blocking-with-cluster-scoped-crs-create-and-delete-policy:
 	$(MAKE) -f $(MAKEFILE_DIR)/module_deletion_blocking_cluster_scoped_test.mk test "GINKGO_FOCUS=Blocking Module Deletion With Cluster-Scoped CRs with CreateAndDelete Policy"
 
 module-transferred-to-another-oci-registry:
-	$(GO_TEST) "Module Transferred to Another OCI Registry"
+	$(MAKE) -f $(MAKEFILE_DIR)/module_transferred_to_another_oci_registry_test.mk test
 
 fips-mode-metric:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.no_module_setup.mk test "GINKGO_FOCUS=FIPS Mode metric"
