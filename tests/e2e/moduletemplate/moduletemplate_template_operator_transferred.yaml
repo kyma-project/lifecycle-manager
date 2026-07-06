@@ -1,13 +1,13 @@
 apiVersion: operator.kyma-project.io/v1beta2
 kind: ModuleTemplate
 metadata:
-  name: template-operator-1.0.3
+  name: template-operator-1.0.5
   namespace: kcp-system
   annotations:
     "operator.kyma-project.io/is-cluster-scoped": "false"
 spec:
   moduleName: template-operator
-  version: 1.0.3
+  version: 1.0.5
   mandatory: false
   requiresDowntime: false
   info:
@@ -32,9 +32,28 @@ spec:
   descriptor:
     component:
       componentReferences: [ ]
+      creationTime: "2026-03-04T19:29:06Z"
       labels:
+        - name: operator.kyma-project.io/beta
+          value: "false"
+          version: v1
+        - name: operator.kyma-project.io/internal
+          value: "false"
+          version: v1
+        - name: operator.kyma-project.io/requiresDowntime
+          value: "false"
+          version: v1
+        - name: operator.kyma-project.io/is-cluster-scoped
+          value: "false"
+          version: v1
         - name: security.kyma-project.io/scan
           value: enabled
+          version: v1
+        - name: cloud.gardener.cnudie/responsibles
+          value:
+            - github_hostname: github.tools.sap
+              teamname: kyma/Jellyfish
+              type: githubTeam
           version: v1
       name: kyma-project.io/module/template-operator
       provider: '{"name":"kyma-project.io","labels":[{"name":"kyma-project.io/built-by","value":"modulectl","version":"v1"}]}'
@@ -48,36 +67,6 @@ spec:
           subPath: sap-kyma-jellyfish-dev/restricted-market
           type: OCIRegistry
       resources:
-        - access:
-            imageReference: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market/kyma-project/prod/template-operator:1.0.3@sha256:e48f087538b17336d6e84c5e276d010158a482ef823f04f296df11c9ca2a047a
-            type: ociArtifact
-          digest:
-            hashAlgorithm: SHA-256
-            normalisationAlgorithm: ociArtifactDigest/v1
-            value: e48f087538b17336d6e84c5e276d010158a482ef823f04f296df11c9ca2a047a
-          labels:
-            - name: scan.security.kyma-project.io/type
-              value: third-party-image
-              version: v1
-          name: template-operator
-          relation: external
-          type: ociArtifact
-          version: 1.0.3
-        - access:
-            imageReference: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market/kyma-project/prod/telemetry-manager:1.43.1@sha256:3d820e3d9e9a5a036cbde12c38ece8805558046de4b190c0cb213e9bab6bec95
-            type: ociArtifact
-          digest:
-            hashAlgorithm: SHA-256
-            normalisationAlgorithm: ociArtifactDigest/v1
-            value: 3d820e3d9e9a5a036cbde12c38ece8805558046de4b190c0cb213e9bab6bec95
-          labels:
-            - name: scan.security.kyma-project.io/type
-              value: third-party-image
-              version: v1
-          name: telemetry-manager
-          relation: external
-          type: ociArtifact
-          version: 1.43.1
         - access:
             imageReference: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market/kyma-project/prod/keda-manager:1.7.0@sha256:43b4efb42a08ffb4d463db4a2d859d22407316a813ff2e45e34437cb218bd143
             type: ociArtifact
@@ -94,75 +83,86 @@ spec:
           type: ociArtifact
           version: 1.7.0
         - access:
-            localReference: sha256:38ed6a1d39fe4719dac3066767e810f162f473880b77834be6ad026c27ca3fd4
-            mediaType: application/x-yaml
-            referenceName: metadata
-            type: localBlob
+            imageReference: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market/kyma-project/prod/telemetry-manager:1.43.1@sha256:3d820e3d9e9a5a036cbde12c38ece8805558046de4b190c0cb213e9bab6bec95
+            type: ociArtifact
           digest:
             hashAlgorithm: SHA-256
-            normalisationAlgorithm: genericBlobDigest/v1
-            value: 38ed6a1d39fe4719dac3066767e810f162f473880b77834be6ad026c27ca3fd4
-          name: metadata
-          relation: local
-          type: plainText
-          version: 1.0.3
+            normalisationAlgorithm: ociArtifactDigest/v1
+            value: 3d820e3d9e9a5a036cbde12c38ece8805558046de4b190c0cb213e9bab6bec95
+          labels:
+            - name: scan.security.kyma-project.io/type
+              value: third-party-image
+              version: v1
+          name: telemetry-manager
+          relation: external
+          type: ociArtifact
+          version: 1.43.1
         - access:
-            localReference: sha256:6ad36201c41d49b81ad5b75182d46bf6b00a285bae8b109a8d06459ac38b0a29
+            imageReference: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market/kyma-project/prod/template-operator:1.0.5@sha256:c4bb6cae028ee580295d527663d62d5b1ac23a70dd73f7efed2c7ecbdc48a834
+            type: ociArtifact
+          digest:
+            hashAlgorithm: SHA-256
+            normalisationAlgorithm: ociArtifactDigest/v1
+            value: c4bb6cae028ee580295d527663d62d5b1ac23a70dd73f7efed2c7ecbdc48a834
+          labels:
+            - name: scan.security.kyma-project.io/type
+              value: third-party-image
+              version: v1
+          name: template-operator
+          relation: external
+          type: ociArtifact
+          version: 1.0.5
+        - access:
+            localReference: sha256:6c84d645777c6bc22c319c5220a429f92b323d3a9496c00956f07ee23d12e2ab
             mediaType: application/x-tar
             referenceName: raw-manifest
             type: localBlob
           digest:
             hashAlgorithm: SHA-256
             normalisationAlgorithm: genericBlobDigest/v1
-            value: 6ad36201c41d49b81ad5b75182d46bf6b00a285bae8b109a8d06459ac38b0a29
+            value: 6c84d645777c6bc22c319c5220a429f92b323d3a9496c00956f07ee23d12e2ab
           name: raw-manifest
           relation: local
           type: directoryTree
-          version: 1.0.3
+          version: 1.0.5
         - access:
-            localReference: sha256:1e0e4c7c02fbf1c1dbad130033125fb69d66d9e72f4ffd303bcd7d6686c8340d
+            localReference: sha256:e7560ba17168c3ea1f8ad00039d8899aefb2de9f42464b1cc722d5a76bc36698
             mediaType: application/x-tar
             referenceName: default-cr
             type: localBlob
           digest:
             hashAlgorithm: SHA-256
             normalisationAlgorithm: genericBlobDigest/v1
-            value: 1e0e4c7c02fbf1c1dbad130033125fb69d66d9e72f4ffd303bcd7d6686c8340d
+            value: e7560ba17168c3ea1f8ad00039d8899aefb2de9f42464b1cc722d5a76bc36698
           name: default-cr
           relation: local
           type: directoryTree
-          version: 1.0.3
+          version: 1.0.5
+        - access:
+            localReference: sha256:40e5276a429d2603aac0c9df64dc6517634421e0d2eb4f0bc69ad778280912d3
+            mediaType: application/octet-stream
+            referenceName: moduletemplate
+            type: localBlob
+          digest:
+            hashAlgorithm: SHA-256
+            normalisationAlgorithm: genericBlobDigest/v1
+            value: 40e5276a429d2603aac0c9df64dc6517634421e0d2eb4f0bc69ad778280912d3
+          name: moduletemplate
+          relation: local
+          type: plainText
+          version: 1.0.5
       sources:
         - access:
-            localReference: sha256:1c664cb44580949877d281d4a49d41c02dbed4bc6c961740c740358a9ac511ef
-            mediaType: application/x-tgz
-            type: localBlob
-          labels:
-            - name: git.kyma-project.io/ref
-              value: HEAD
-              version: v1
-            - name: scan.security.kyma-project.io/rc-tag
-              value: ""
-              version: v1
-            - name: scan.security.kyma-project.io/language
-              value: golang-mod
-              version: v1
-            - name: scan.security.kyma-project.io/dev-branch
-              value: ""
-              version: v1
-            - name: scan.security.kyma-project.io/subprojects
-              value: ""
-              version: v1
-            - name: scan.security.kyma-project.io/exclude
-              value: '**/test/**,**/*_test.go'
-              version: v1
+            commit: d04757ab29f1c52bd79a99c49668c41ba0b581eb
+            repoUrl: https://github.com/kyma-project/template-operator
+            type: gitHub
           name: module-sources
           type: Github
-          version: 1.0.3
-      version: 1.0.3
+          version: 1.0.5
+      version: 1.0.5
     meta:
       schemaVersion: v2
 
   resources:
     - name: rawManifest
-      link: https://github.com/kyma-project/template-operator/releases/download/1.0.3/template-operator.yaml
+      link: https://github.com/kyma-project/template-operator/releases/download/1.0.5/template-operator.yaml
