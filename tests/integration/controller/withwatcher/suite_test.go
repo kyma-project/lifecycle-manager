@@ -210,7 +210,7 @@ var _ = BeforeSuite(func() {
 		Metrics:              kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace, nil),
-		Config:            kymaReconcilerConfig,
+		Config:          kymaReconcilerConfig,
 		DeletionMetrics: deletionMetrics,
 		DeletionEvents:  deletionEvents,
 		DeletionService: deletionService,

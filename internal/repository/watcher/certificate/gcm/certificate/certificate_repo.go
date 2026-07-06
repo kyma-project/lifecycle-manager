@@ -9,10 +9,9 @@ import (
 
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	gcmcertapplyv1alpha1 "github.com/kyma-project/lifecycle-manager/api/applyconfigurations/cert/gardener/cert/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
@@ -66,40 +65,26 @@ func (r *Repository) Create(ctx context.Context, name, commonName string, dnsNam
 	keySize := gcertv1alpha1.PrivateKeySize(int32(r.certConfig.KeySize))
 	rsaKeyAlgorithm := gcertv1alpha1.RSAKeyAlgorithm
 
-	cert := &gcertv1alpha1.Certificate{
-		TypeMeta: apimetav1.TypeMeta{
-			Kind:       gcertv1alpha1.CertificateKind,
-			APIVersion: gcertv1alpha1.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      name,
-			Namespace: r.certConfig.Namespace,
-		},
-		Spec: gcertv1alpha1.CertificateSpec{
-			CommonName:   &commonName,
-			Duration:     &apimetav1.Duration{Duration: r.certConfig.Duration},
-			RenewBefore:  &apimetav1.Duration{Duration: r.certConfig.RenewBefore},
-			DNSNames:     dnsNames,
-			SecretName:   &name,
-			SecretLabels: certificate.GetCertificateLabels(),
-			IssuerRef: &gcertv1alpha1.IssuerRef{
-				Name:      r.issuerName,
-				Namespace: r.issuerNamespace,
-			},
-			PrivateKey: &gcertv1alpha1.CertificatePrivateKey{
-				Algorithm: &rsaKeyAlgorithm,
-				Size:      &keySize,
-			},
-		},
-	}
+	cert := gcmcertapplyv1alpha1.Certificate(name, r.certConfig.Namespace).
+		WithSpec(gcmcertapplyv1alpha1.CertificateSpec().
+			WithCommonName(commonName).
+			WithDuration(apimetav1.Duration{Duration: r.certConfig.Duration}).
+			WithRenewBefore(apimetav1.Duration{Duration: r.certConfig.RenewBefore}).
+			WithDNSNames(dnsNames...).
+			WithSecretName(name).
+			WithSecretLabels(certificate.GetCertificateLabels()).
+			WithIssuerRef(gcmcertapplyv1alpha1.IssuerRef().
+				WithName(r.issuerName).
+				WithNamespace(r.issuerNamespace),
+			).
+			WithPrivateKey(gcmcertapplyv1alpha1.CertificatePrivateKey().
+				WithAlgorithm(rsaKeyAlgorithm).
+				WithSize(keySize),
+			),
+		)
 
 	// Apply (SSA) instead of Create + IgnoreAlreadyExists for config changes, e.g. duration
-	unstructuredCert, err := machineryruntime.DefaultUnstructuredConverter.ToUnstructured(cert)
-	if err != nil {
-		return fmt.Errorf("failed to convert certificate to unstructured: %w", err)
-	}
-	applyConfig := client.ApplyConfigurationFromUnstructured(&unstructured.Unstructured{Object: unstructuredCert})
-	if err := r.kcpClient.Apply(ctx, applyConfig, client.ForceOwnership, fieldowners.LifecycleManager); err != nil {
+	if err := r.kcpClient.Apply(ctx, cert, client.ForceOwnership, fieldowners.LifecycleManager); err != nil {
 		return fmt.Errorf("failed to apply certificate: %w", err)
 	}
 
