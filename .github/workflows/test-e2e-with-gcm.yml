@@ -43,6 +43,7 @@ jobs:
         e2e-test:
           - watcher-enqueue
           - modulereleasemeta-watch-trigger
+          - watcher-zero-downtime
 
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -80,6 +81,10 @@ jobs:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
           gardener_cert_manager_version: ${{ steps.configuration.outputs.gardener_cert_manager_version }}
           gardener_cert_manager_renewal_window: ${{ env.E2E_GARDENER_CERT_MANAGER_RENEWAL_WINDOW }}
+      - name: KLM patch for watcher-zero-downtime
+        if: ${{ matrix.e2e-test == 'watcher-zero-downtime' }}
+        working-directory: lifecycle-manager
+        run: make -f tests/e2e/watcher_zero_downtime_gcm_test.mk klm-patch
       - name: Deploy lifecycle-manager
         uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
         with:
@@ -112,6 +117,8 @@ jobs:
             make -f tests/e2e/e2e.no_module_setup.mk test-run "GINKGO_FOCUS=Enqueue Event from Watcher"
           elif [[ "${{ matrix.e2e-test }}" == "modulereleasemeta-watch-trigger" ]]; then
             make -f tests/e2e/modulereleasemeta_watch_trigger_test.mk test-run
+          elif [[ "${{ matrix.e2e-test }}" == "watcher-zero-downtime" ]]; then
+            make -f tests/e2e/watcher_zero_downtime_gcm_test.mk test-run
           else
             make -C tests/e2e ${{ matrix.e2e-test }}
           fi
