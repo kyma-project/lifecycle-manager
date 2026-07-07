@@ -25,7 +25,6 @@ module-setup:
 	@pushd $(TEMPLATE_OPERATOR_DIR) > /dev/null
 	cp $(SCRIPTS_DIR)/ocm-config-private-registry.yaml .
 	modulectl create --config-file ./module-config.yaml \
-		--disable-ocm-registry-push \
 		--output-constructor-file ./component-constructor.yaml
 	ocm --config ./ocm-config-private-registry.yaml add componentversions \
 		--create --file ./component-ctf --skip-digest-generation ./component-constructor.yaml

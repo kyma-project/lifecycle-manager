@@ -88,7 +88,6 @@ OCM_CONFIG="$(dirname "$0")/ocm-config-local-registry.yaml"
 echo "Generating CTF with modulectl..."
 modulectl create \
   --config-file "${MODULE_CONFIG}" \
-  --disable-ocm-registry-push \
   --output-constructor-file "${COMPONENT_CONSTRUCTOR_FILE}"
 
 echo "=== Component Constructor file ==="
