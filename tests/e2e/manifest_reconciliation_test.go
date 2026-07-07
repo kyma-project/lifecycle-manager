@@ -122,6 +122,11 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 					shared.StateDeleting).
 				Should(Succeed())
 			By("And Manifest CR has message about waiting for finalizers")
+			Eventually(ManifestStatusOperationContainsMessage).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
+					waitingForFinalizersOperationMsg).
+				Should(Succeed())
 			Consistently(ManifestStatusOperationContainsMessage).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
