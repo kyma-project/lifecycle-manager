@@ -12,8 +12,6 @@ klm-patch: kustomize-install
 	# Verify the arg index there if this patch breaks silently after changing the base args list.
 	kustomize edit add patch --kind Deployment --patch \
 		'[{"op":"replace","path":"/spec/template/spec/containers/0/args/11","value":"--kyma-requeue-success-interval=1s"},{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--istio-gateway-server-cert-switch-grace-period=30s"},{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--istio-gateway-secret-requeue-success-interval=1s"}]'
-	kustomize edit add patch --kind Certificate --group cert.gardener.cloud --version v1alpha1 --name watcher-serving --patch \
-		'[{"op":"replace","path":"/spec/renewBefore","value":"59m"},{"op":"replace","path":"/spec/duration","value":"1h"}]'
 	@popd > /dev/null
 	@echo "::endgroup::"
 
