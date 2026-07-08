@@ -111,6 +111,9 @@ jobs:
           ModuleName: template-operator
       - name: Run '${{ matrix.e2e-test }}' test
         working-directory: lifecycle-manager
+        env:
+          KLM_VERSION_TAG: ${{ steps.configuration.outputs.klm_version_tag }}
+          KLM_IMAGE_REPO: ${{ steps.configuration.outputs.klm_image_repo }}
         run: |
           if [[ "${{ matrix.e2e-test }}" == "watcher-enqueue" ]]; then
             make -f tests/e2e/e2e.no_module_setup.mk test-run "GINKGO_FOCUS=Enqueue Event from Watcher"

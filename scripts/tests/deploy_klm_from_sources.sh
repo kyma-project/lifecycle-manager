@@ -17,10 +17,16 @@ export TAG=$(date +%Y%m%d%H%M%S)
 make docker-build IMG=${LOCAL_IMG}:${TAG}
 make docker-push IMG=${LOCAL_IMG}:${TAG}
 
+if [[ -n "${E2E_USE_GARDENER_CERT_MANAGER:-}" ]]; then
+  DEPLOY_TARGET=local-deploy-with-watcher-gcm
+else
+  DEPLOY_TARGET=local-deploy-with-watcher
+fi
+
 maxRetry=5
 for retry in $(seq 1 $maxRetry)
 do
-  if make local-deploy-with-watcher IMG=${CLUSTER_IMG}:${TAG}; then
+  if make "${DEPLOY_TARGET}" IMG=${CLUSTER_IMG}:${TAG}; then
     set +e
     kubectl wait pods -n kcp-system -l app.kubernetes.io/name=lifecycle-manager --for condition=Ready --timeout=20s
     status=$?

@@ -182,10 +182,10 @@ deploy-klm: ## Deploy KLM into the KCP test cluster.
 	fi
 	@kustomize edit add patch --path patches/oci_registry_host.yaml --kind Deployment
 	@popd > /dev/null
-	@if [ -z "$$GITHUB_ACTIONS" ]; then
-		$(SCRIPTS_DIR)/deploy_klm_from_sources.sh
-	else
-		$(SCRIPTS_DIR)/deploy_klm_from_registry.sh --image-registry $${KLM_IMAGE_REPO} --image-tag $${KLM_VERSION_TAG}
+	@if [ -z "$$GITHUB_ACTIONS" ]; then \
+		E2E_USE_GARDENER_CERT_MANAGER=$(if $(filter true,$(USE_GCM)),1) $(SCRIPTS_DIR)/deploy_klm_from_sources.sh; \
+	else \
+		E2E_USE_GARDENER_CERT_MANAGER=$(if $(filter true,$(USE_GCM)),1) $(SCRIPTS_DIR)/deploy_klm_from_registry.sh --image-registry $${KLM_IMAGE_REPO} --image-tag $${KLM_VERSION_TAG}; \
 	fi
 	@echo "::endgroup::"
 	@echo "::group::Patching KCP metrics endpoint"

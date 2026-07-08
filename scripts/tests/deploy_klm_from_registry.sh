@@ -44,10 +44,16 @@ case "${KLM_IMAGE_REGISTRY}" in
     ;;
 esac
 
+if [[ -n "${E2E_USE_GARDENER_CERT_MANAGER:-}" ]]; then
+  DEPLOY_TARGET=local-deploy-with-watcher-gcm
+else
+  DEPLOY_TARGET=local-deploy-with-watcher
+fi
+
 maxRetry=5
 for retry in $(seq 1 $maxRetry)
 do
-  if make local-deploy-with-watcher IMG="${IMG}"; then
+  if make "${DEPLOY_TARGET}" IMG="${IMG}"; then
     set +e
     kubectl wait pods -n kcp-system -l app.kubernetes.io/name=lifecycle-manager --for condition=Ready --timeout=20s
     status=$?
