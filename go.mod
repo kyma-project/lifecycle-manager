@@ -4,7 +4,7 @@ go 1.26.4
 
 replace (
 	//required as of OCM v0.34.3
-	github.com/ThalesIgnite/crypto11 => github.com/ThalesGroup/crypto11 v1.6.1
+	github.com/ThalesIgnite/crypto11 => github.com/ThalesGroup/crypto11 v1.6.2
 	github.com/kyma-project/lifecycle-manager/api => ./api
 	github.com/kyma-project/lifecycle-manager/maintenancewindows => ./maintenancewindows
 )
@@ -29,7 +29,7 @@ require (
 	github.com/prometheus/client_golang v1.23.3-0.20260602051030-3537b20ac86b
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/zap v1.28.0
-	golang.org/x/sync v0.21.0
+	golang.org/x/sync v0.22.0
 	golang.org/x/time v0.15.0
 	k8s.io/utils v0.0.0-20260507154919-ff6756f316d2 // indirect
 	ocm.software/ocm v0.45.0
