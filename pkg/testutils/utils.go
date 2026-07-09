@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -215,8 +216,16 @@ func ToStringList[T any](list []T, toString func(T) string) []string {
 	return result
 }
 
+// MustReadVersionFromFileOf reads a version value by key from the repo-root versions.yaml.
+// It resolves the path relative to this source file so it works regardless of the test's
+// working directory.
 func MustReadVersionFromFileOf(key string) string {
-	content, err := os.ReadFile("../../versions.yaml")
+	_, currentFile, _, ok := runtime.Caller(0)
+	if !ok {
+		panic(errors.New("could not determine current execution caller path"))
+	}
+	versionsPath := filepath.Join(filepath.Dir(currentFile), "..", "..", "versions.yaml")
+	content, err := os.ReadFile(versionsPath)
 	if err != nil {
 		panic(fmt.Sprintf("failed to read versions.yaml: %v", err))
 	}

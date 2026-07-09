@@ -17,6 +17,7 @@ import (
 )
 
 const (
+	semVerPartsCount            = 2
 	TestModuleCRName            = "sample-yaml"
 	TestModuleName              = "template-operator"
 	TestModuleResourceNamespace = "template-operator-system"
@@ -32,8 +33,10 @@ const (
 )
 
 var (
+	//nolint:gochecknoglobals // derived from versions.yaml at init
 	ModuleDeploymentNameInOlderVersion = fmt.Sprintf("template-operator-v%s-controller-manager",
 		extractMajorVersionFromSemVer(MustReadVersionFromFileOf("module-version-older")))
+	//nolint:gochecknoglobals // derived from versions.yaml at init
 	ModuleDeploymentNameInNewerVersion = fmt.Sprintf("template-operator-v%s-controller-manager",
 		extractMajorVersionFromSemVer(MustReadVersionFromFileOf("module-version-newer")))
 
@@ -163,5 +166,5 @@ func ModuleCRIsInExpectedState(ctx context.Context,
 }
 
 func extractMajorVersionFromSemVer(version string) string {
-	return strings.SplitN(version, ".", 2)[0]
+	return strings.SplitN(version, ".", semVerPartsCount)[0]
 }
