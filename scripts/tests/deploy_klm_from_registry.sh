@@ -6,9 +6,9 @@ set -E
 set -o pipefail
 
 
-if [ "$#" -ne 4 ]; then
-  echo "Error: Exactly 2 arguments are required for both flags."
-  echo "Usage: $0 --image-registry [dev|prod|ghcr] --image-tag latest"
+if [ "$#" -lt 4 ]; then
+  echo "Error: At least 2 arguments are required for both flags."
+  echo "Usage: $0 --image-registry [dev|prod|ghcr] --image-tag latest [--use-gcm]"
   exit 1
 fi
 
@@ -19,9 +19,10 @@ while [[ "$#" -gt 0 ]]; do
   case $1 in
     --image-registry) KLM_IMAGE_REGISTRY="$2"; shift ;;
     --image-tag) KLM_IMAGE_TAG="$2"; shift ;;
+    --use-gcm) USE_GCM="true" ;;
     *)
       echo "Unknown parameter passed: $1";
-      echo "Usage: $0 --image-registry [dev|prod|ghcr] --image-tag latest";
+      echo "Usage: $0 --image-registry [dev|prod|ghcr] --image-tag latest [--use-gcm]";
       exit 1 ;;
   esac
   shift
@@ -44,7 +45,7 @@ case "${KLM_IMAGE_REGISTRY}" in
     ;;
 esac
 
-if [[ -n "${E2E_USE_GARDENER_CERT_MANAGER:-}" ]]; then
+if [[ "${USE_GCM:-}" == "true" ]]; then
   DEPLOY_TARGET=local-deploy-with-watcher-gcm
 else
   DEPLOY_TARGET=local-deploy-with-watcher

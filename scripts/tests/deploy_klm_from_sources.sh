@@ -8,6 +8,17 @@ set -o pipefail
 # Changing current directory to the root of the project
 cd $(git rev-parse --show-toplevel)
 
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --use-gcm) USE_GCM="true" ;;
+    *)
+      echo "Unknown parameter passed: $1";
+      echo "Usage: $0 [--use-gcm]";
+      exit 1 ;;
+  esac
+  shift
+done
+
 # Export necessary environment variables
 export KUBECONFIG=${HOME}/.k3d/kcp-local.yaml
 export LOCAL_IMG="localhost:5111/lifecycle-manager"
@@ -17,7 +28,7 @@ export TAG=$(date +%Y%m%d%H%M%S)
 make docker-build IMG=${LOCAL_IMG}:${TAG}
 make docker-push IMG=${LOCAL_IMG}:${TAG}
 
-if [[ -n "${E2E_USE_GARDENER_CERT_MANAGER:-}" ]]; then
+if [[ "${USE_GCM:-}" == "true" ]]; then
   DEPLOY_TARGET=local-deploy-with-watcher-gcm
 else
   DEPLOY_TARGET=local-deploy-with-watcher

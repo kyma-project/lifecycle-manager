@@ -33,7 +33,7 @@ var _ = Describe("Watcher Zero Downtime", Ordered, func() {
 			Consistently(triggerWatcherAndCheckDowntime).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace).
-				WithTimeout(4 * time.Minute).
+				WithTimeout(12 * time.Minute).
 				WithPolling(10 * time.Second).
 				Should(Succeed())
 		})

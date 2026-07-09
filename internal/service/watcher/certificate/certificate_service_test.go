@@ -14,6 +14,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/errors"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/secret/data"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -275,6 +276,21 @@ func TestIsSkrCertificateRenewalOverdue_CertRepositoryReturnsError_ReturnsError(
 	require.Error(t, err)
 	require.ErrorContains(t, err, "failed to determine if SKR certificate needs renewal")
 	require.True(t, overdue)
+	require.True(t, certRepo.getValidityCalled)
+}
+
+func TestIsSkrCertificateRenewalOverdue_WhenCertValidityNotAvailable_ReturnsFalseNoError(t *testing.T) {
+	certRepo := &certRepoStub{
+		getValidityErr: certerror.ErrCertValidityNotAvailable,
+	}
+	certService := certificate.NewService(certRepo, &secretRepoStub{}, certificate.Config{
+		RenewBuffer: renewBuffer,
+	})
+
+	overdue, err := certService.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
+
+	require.NoError(t, err)
+	require.False(t, overdue)
 	require.True(t, certRepo.getValidityCalled)
 }
 

@@ -161,11 +161,13 @@ func (r *Repository) GetValidity(ctx context.Context, name string) (time.Time, t
 	}
 
 	if cert.Status.NotBefore == nil {
-		return time.Time{}, time.Time{}, certerror.ErrNoNotBefore
+		return time.Time{}, time.Time{}, fmt.Errorf("%w: %w",
+			certerror.ErrCertValidityNotAvailable, certerror.ErrNoNotBefore)
 	}
 
 	if cert.Status.NotAfter == nil {
-		return time.Time{}, time.Time{}, certerror.ErrNoNotAfter
+		return time.Time{}, time.Time{}, fmt.Errorf("%w: %w",
+			certerror.ErrCertValidityNotAvailable, certerror.ErrNoNotAfter)
 	}
 
 	return cert.Status.NotBefore.Time, cert.Status.NotAfter.Time, nil
