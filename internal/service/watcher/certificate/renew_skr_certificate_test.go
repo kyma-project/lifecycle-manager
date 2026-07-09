@@ -11,6 +11,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/errors"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 )
 
@@ -98,6 +99,27 @@ func TestRenewSkrCertificate_WhenCertRepoGetValidityReturnsError_RenewalServiceR
 
 	require.ErrorIs(t, err, assert.AnError)
 	assert.Contains(t, err.Error(), "failed to determine SKR client certificate validity")
+	assert.True(t, certRepo.getValidityCalled)
+	assert.False(t, secretRepo.getCalled)
+	assert.False(t, certRepo.renewCalled)
+}
+
+func TestRenewSkrCertificate_WhenCertValidityNotAvailable_ReturnsNoErrorAndDoesNotRenew(t *testing.T) {
+	certRepo := &certRepoStub{
+		getValidityErr: certerror.ErrCertValidityNotAvailable,
+	}
+	secretRepo := &secretRepoStub{}
+
+	certService := certificate.NewService(certRepo,
+		secretRepo,
+		certificate.Config{
+			GatewaySecretName: gatewaySecretName,
+		},
+	)
+
+	err := certService.RenewSkrCertificate(t.Context(), kymaName)
+
+	require.NoError(t, err)
 	assert.True(t, certRepo.getValidityCalled)
 	assert.False(t, secretRepo.getCalled)
 	assert.False(t, certRepo.renewCalled)

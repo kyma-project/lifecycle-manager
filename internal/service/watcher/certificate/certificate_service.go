@@ -11,6 +11,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/errors"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/name"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/secret/data"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -202,6 +203,9 @@ func (c *Service) constructDNSNames(kyma *v1beta2.Kyma) ([]string, error) {
 func (s *Service) skrCertificateNeedsRenewal(ctx context.Context, certName string) (bool, error) {
 	certNotBefore, _, err := s.certRepo.GetValidity(ctx, certName)
 	if err != nil {
+		if errors.Is(err, certerror.ErrCertValidityNotAvailable) {
+			return false, nil
+		}
 		return false, fmt.Errorf("failed to determine SKR client certificate validity: %w", err)
 	}
 

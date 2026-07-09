@@ -170,7 +170,8 @@ func (r *Repository) GetValidity(ctx context.Context, name string) (time.Time, t
 
 	if cert.Status.IssuanceDate == nil || cert.Status.ExpirationDate == nil ||
 		*cert.Status.IssuanceDate == "" || *cert.Status.ExpirationDate == "" {
-		return time.Time{}, time.Time{}, ErrCertificateStatusNotContainValidity
+		return time.Time{}, time.Time{}, fmt.Errorf("%w: %w",
+			certerror.ErrCertValidityNotAvailable, ErrCertificateStatusNotContainValidity)
 	}
 
 	notBefore, notAfter, err := parseValidityStrings(*cert.Status.IssuanceDate, *cert.Status.ExpirationDate)
