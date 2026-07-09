@@ -14,9 +14,10 @@ klm-patch: kustomize-install
 	# Verify the arg index there if this patch breaks silently after changing the base args list.
 	kustomize edit add patch --kind Deployment --patch \
 		'[{"op":"replace","path":"/spec/template/spec/containers/0/args/11","value":"--kyma-requeue-success-interval=1s"},{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--istio-gateway-server-cert-switch-grace-period=30s"},{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--istio-gateway-secret-requeue-success-interval=1s"}]'
-	# GCM enforces renewBefore <= (duration - 5m); with duration=1h the maximum valid value is 55m.
+	# GCM requires duration >= 1440h and enforces renewBefore <= (duration - 5m).
+	# duration=1464h (61d), renewBefore=1463h55m0s (= duration - 5m) → rotation every 5 minutes.
 	kustomize edit add patch --kind Certificate --group cert.gardener.cloud --version v1alpha1 --name watcher-serving --patch \
-		'[{"op":"replace","path":"/spec/renewBefore","value":"55m"},{"op":"replace","path":"/spec/duration","value":"1h"}]'
+		'[{"op":"replace","path":"/spec/renewBefore","value":"1463h55m0s"},{"op":"replace","path":"/spec/duration","value":"1464h"}]'
 	@popd > /dev/null
 	@echo "::endgroup::"
 
