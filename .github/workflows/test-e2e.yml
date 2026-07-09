@@ -200,8 +200,12 @@ jobs:
         run: |
           BASE_OLDER=$(yq -e '.["module-version-older"]' versions.yaml)
           BASE_NEWER=$(yq -e '.["module-version-newer"]' versions.yaml)
+          BASE_OLDER_MAJOR=$(echo "$BASE_OLDER" | cut -d. -f1)
+          BASE_NEWER_MAJOR=$(echo "$BASE_NEWER" | cut -d. -f1)
           echo "older=${BASE_OLDER}" >> "$GITHUB_OUTPUT"
           echo "newer=${BASE_NEWER}" >> "$GITHUB_OUTPUT"
+          echo "older_major=${BASE_OLDER_MAJOR}" >> "$GITHUB_OUTPUT"
+          echo "newer_major=${BASE_NEWER_MAJOR}" >> "$GITHUB_OUTPUT"
       - name: Deploy template-operator
         if: ${{ steps.setup-check.outputs.self-contained == 'false' }}
         uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
@@ -209,8 +213,8 @@ jobs:
           module_version: ${{ steps.configuration.outputs.template_operator_version }}
         env:
           ModuleDeploymentName: template-operator-controller-manager
-          ModuleDeploymentNameInNewerVersion: template-operator-${{ steps.e2e-versions.outputs.newer }}-controller-manager
-          ModuleDeploymentNameInOlderVersion: template-operator-${{ steps.e2e-versions.outputs.older }}-controller-manager
+          ModuleDeploymentNameInNewerVersion: template-operator-v${{ steps.e2e-versions.outputs.newer_major }}-controller-manager
+          ModuleDeploymentNameInOlderVersion: template-operator-v${{ steps.e2e-versions.outputs.older_major }}-controller-manager
           NewerVersion: ${{ steps.e2e-versions.outputs.newer }}-e2e
           OlderVersion: ${{ steps.e2e-versions.outputs.older }}-e2e
           VersionForStatefulSetInWarning: ${{ steps.e2e-versions.outputs.older }}-warning-statefulset
