@@ -3,13 +3,19 @@ package e2e_test
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
@@ -33,7 +39,7 @@ var _ = Describe("Watcher Zero Downtime", Ordered, func() {
 			Consistently(triggerWatcherAndCheckDowntime).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace).
-				WithTimeout(4 * time.Minute).
+				WithTimeout(12 * time.Minute).
 				WithPolling(10 * time.Second).
 				Should(Succeed())
 		})
@@ -43,6 +49,13 @@ var _ = Describe("Watcher Zero Downtime", Ordered, func() {
 func triggerWatcherAndCheckDowntime(ctx context.Context, skrClient client.Client,
 	kymaName, kymaNamespace string,
 ) error {
+	// Bump an annotation on the serving cert to trigger immediate GCM reconciliation.
+	// GCM's own requeue interval can be longer than the 5-minute rotation window, so
+	// without this nudge the cert would not rotate within the observation window.
+	if err := bumpServingCertAnnotation(ctx); err != nil {
+		return err
+	}
+
 	// Triggering watcher request
 	kyma, err := GetKyma(ctx, skrClient, kymaName, kymaNamespace)
 	if err != nil {
@@ -67,6 +80,29 @@ func triggerWatcherAndCheckDowntime(ctx context.Context, skrClient client.Client
 	}
 	if count > 0 {
 		return errors.New("watcher is experiencing downtime")
+	}
+	return nil
+}
+
+func bumpServingCertAnnotation(ctx context.Context) error {
+	cert := &gcertv1alpha1.Certificate{}
+	if err := kcpClient.Get(ctx, client.ObjectKey{
+		Name:      shared.CACertificateName,
+		Namespace: shared.IstioNamespace,
+	}, cert); err != nil {
+		if meta.IsNoMatchError(err) {
+			return nil // not a GCM cluster; cert-manager rotates on its own schedule
+		}
+		return fmt.Errorf("failed to get serving cert: %w", err)
+	}
+	base := cert.DeepCopy()
+	if cert.Annotations == nil {
+		cert.Annotations = map[string]string{}
+	}
+	count, _ := strconv.Atoi(cert.Annotations["watcher-zero-downtime/rotation-trigger"])
+	cert.Annotations["watcher-zero-downtime/rotation-trigger"] = strconv.Itoa(count + 1)
+	if err := kcpClient.Patch(ctx, cert, client.MergeFrom(base)); err != nil {
+		return fmt.Errorf("failed to bump serving cert annotation: %w", err)
 	}
 	return nil
 }

@@ -58,13 +58,17 @@ $(if $(TEMPLATE_OPERATOR_DIR),,$(error TEMPLATE_OPERATOR_DIR not found: $(LIFECY
 ##@ Tool versions
 # Note: no "v" prefix — the install scripts expect bare version numbers.
 
-GINKGO_VERSION        ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_ginkgo_version.sh)
-K8S_VERSION           ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_k8s_version.sh)
-CERT_MANAGER_VERSION  ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_cert_manager_version.sh)
-ISTIOCTL_VERSION      ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_istioctl_version.sh)
-KUSTOMIZE_VERSION     ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_kustomize_version.sh)
-MODULECTL_VERSION     ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_modulectl_version.sh)
-OCM_VERSION           ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_ocm_version.sh)
+GINKGO_VERSION                  ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_ginkgo_version.sh)
+K8S_VERSION                     ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_k8s_version.sh)
+CERT_MANAGER_VERSION            ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_cert_manager_version.sh)
+GARDENER_CERT_MANAGER_VERSION   ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_gardener_cert_manager_version.sh)
+ISTIOCTL_VERSION                ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_istioctl_version.sh)
+KUSTOMIZE_VERSION               ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_kustomize_version.sh)
+MODULECTL_VERSION               ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_modulectl_version.sh)
+OCM_VERSION                     ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_ocm_version.sh)
+
+# Set USE_GCM=true in a test Makefile to use Gardener CertManager instead of cert-manager.
+USE_GCM ?= false
 
 # Ginkgo binary path.
 GINKGO_CMD ?= $(LOCALBIN)/ginkgo
@@ -157,7 +161,11 @@ tools-install: istioctl-install kustomize-install modulectl-install ocm-install 
 create-clusters: tools-install ## Create KCP and SKR test clusters.
 	@echo "::group::Creating test clusters"
 	@export PATH=$(LOCALBIN):$$PATH
-	@$(SCRIPTS_DIR)/create_test_clusters.sh --k8s-version $(K8S_VERSION) --cert-manager-version $(CERT_MANAGER_VERSION)
+	@if [ "$(USE_GCM)" = "true" ]; then \
+		$(SCRIPTS_DIR)/create_test_clusters.sh --k8s-version $(K8S_VERSION) --gardener-cert-manager-version $(GARDENER_CERT_MANAGER_VERSION); \
+	else \
+		$(SCRIPTS_DIR)/create_test_clusters.sh --k8s-version $(K8S_VERSION) --cert-manager-version $(CERT_MANAGER_VERSION); \
+	fi
 	@$(SCRIPTS_DIR)/setup_cluster_context.sh
 	@echo "::endgroup::"
 
@@ -167,13 +175,17 @@ deploy-klm: ## Deploy KLM into the KCP test cluster.
 	@echo "::group::Deploying KLM"
 	@export PATH=$(LOCALBIN):$$PATH
 	@echo "Applying kustomize oci-registry-host patch"
-	@pushd $(LIFECYCLE_MANAGER_DIR)/config/watcher_local_test > /dev/null
+	@if [ "$(USE_GCM)" = "true" ]; then \
+		pushd $(LIFECYCLE_MANAGER_DIR)/config/watcher_local_test_gcm > /dev/null; \
+	else \
+		pushd $(LIFECYCLE_MANAGER_DIR)/config/watcher_local_test > /dev/null; \
+	fi
 	@kustomize edit add patch --path patches/oci_registry_host.yaml --kind Deployment
 	@popd > /dev/null
-	@if [ -z "$$GITHUB_ACTIONS" ]; then
-		$(SCRIPTS_DIR)/deploy_klm_from_sources.sh
-	else
-		$(SCRIPTS_DIR)/deploy_klm_from_registry.sh --image-registry $${KLM_IMAGE_REPO} --image-tag $${KLM_VERSION_TAG}
+	@if [ -z "$$GITHUB_ACTIONS" ]; then \
+		$(SCRIPTS_DIR)/deploy_klm_from_sources.sh $(if $(filter true,$(USE_GCM)),--use-gcm); \
+	else \
+		$(SCRIPTS_DIR)/deploy_klm_from_registry.sh --image-registry $${KLM_IMAGE_REPO} --image-tag $${KLM_VERSION_TAG} $(if $(filter true,$(USE_GCM)),--use-gcm); \
 	fi
 	@echo "::endgroup::"
 	@echo "::group::Patching KCP metrics endpoint"
