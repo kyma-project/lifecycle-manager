@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -16,14 +17,12 @@ import (
 )
 
 const (
-	TestModuleCRName                   = "sample-yaml"
-	TestModuleName                     = "template-operator"
-	TestModuleResourceNamespace        = "template-operator-system"
-	ModuleResourceName                 = "template-operator-controller-manager"
-	ModuleServiceAccountName           = "template-operator-controller-manager"
-	ModuleManagedCRName                = "template-operator-managed-resource"
-	ModuleDeploymentNameInNewerVersion = "template-operator-v2-controller-manager"
-	ModuleDeploymentNameInOlderVersion = "template-operator-v1-controller-manager"
+	TestModuleCRName            = "sample-yaml"
+	TestModuleName              = "template-operator"
+	TestModuleResourceNamespace = "template-operator-system"
+	ModuleResourceName          = "template-operator-controller-manager"
+	ModuleServiceAccountName    = "template-operator-controller-manager"
+	ModuleManagedCRName         = "template-operator-managed-resource"
 
 	DeployerModuleName = "deployer"
 	// DeployerDeploymentName must match MODULE_DEPLOYMENT_DEPLOYER_VERSION in
@@ -33,6 +32,11 @@ const (
 )
 
 var (
+	ModuleDeploymentNameInOlderVersion = fmt.Sprintf("template-operator-v%s-controller-manager",
+		extractMajorVersionFromSemVer(MustReadVersionFromFileOf("module-version-older")))
+	ModuleDeploymentNameInNewerVersion = fmt.Sprintf("template-operator-v%s-controller-manager",
+		extractMajorVersionFromSemVer(MustReadVersionFromFileOf("module-version-newer")))
+
 	errSampleCRDeletionTimestampSet    = errors.New("sample CR has set DeletionTimeStamp")
 	errSampleCRDeletionTimestampNotSet = errors.New("sample CR has not set DeletionTimeStamp")
 	errFinalizerStillExists            = errors.New("finalizer still exists after purge timeout")
@@ -156,4 +160,8 @@ func ModuleCRIsInExpectedState(ctx context.Context,
 		return false
 	}
 	return state == string(expectedState)
+}
+
+func extractMajorVersionFromSemVer(version string) string {
+	return strings.SplitN(version, ".", 2)[0]
 }

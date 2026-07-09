@@ -202,19 +202,21 @@ teardown: ## Delete KCP and SKR test clusters.
 
 ##@ Module Metadata Variables
 
-E2E_VERSIONS_FILE			:= $(E2E_TESTS_DIR)/versions.yaml
+E2E_VERSIONS_FILE			:= $(LIFECYCLE_MANAGER_DIR)/versions.yaml
 E2E_SUFFIX					:= -e2e
 SMOKE_TEST_SUFFIX			:= -smoke-test
 MODULE_VERSION_OLDER_BASE	:= $(shell yq -e e '."module-version-older"' $(E2E_VERSIONS_FILE))
 MODULE_VERSION_NEWER_BASE	:= $(shell yq -e e '."module-version-newer"' $(E2E_VERSIONS_FILE))
+MODULE_VERSION_OLDER_BASE_MAJOR := $(shell echo "$(MODULE_VERSION_OLDER_BASE)" | cut -d. -f1)
+MODULE_VERSION_NEWER_BASE_MAJOR := $(shell echo "$(MODULE_VERSION_NEWER_BASE)" | cut -d. -f1)
 
 MODULE_NAME                       := template-operator
 MODULE_DEPLOYABLE_VERSION         ?= $(shell yq -e e '."template-operator"' $(LIFECYCLE_MANAGER_DIR)/versions.yaml)
 MODULE_DEPLOYMENT_CURRENT_VERSION := template-operator-controller-manager
 MODULE_OLDER_VERSION              := $(MODULE_VERSION_OLDER_BASE)$(E2E_SUFFIX)
-MODULE_DEPLOYMENT_OLDER_VERSION   := template-operator-v1-controller-manager
+MODULE_DEPLOYMENT_OLDER_VERSION   := template-operator-$(MODULE_VERSION_OLDER_BASE_MAJOR)-controller-manager
 MODULE_NEWER_VERSION              := $(MODULE_VERSION_NEWER_BASE)$(E2E_SUFFIX)
-MODULE_DEPLOYMENT_NEWER_VERSION   := template-operator-v2-controller-manager
+MODULE_DEPLOYMENT_NEWER_VERSION   := template-operator-$(MODULE_VERSION_NEWER_BASE_MAJOR)-controller-manager
 MODULE_MANDATORY_OLDER_VERSION    := $(MODULE_VERSION_OLDER_BASE)$(SMOKE_TEST_SUFFIX)
 MODULE_MANDATORY_NEWER_VERSION    := $(MODULE_VERSION_NEWER_BASE)$(SMOKE_TEST_SUFFIX)
 

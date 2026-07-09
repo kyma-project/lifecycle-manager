@@ -198,8 +198,8 @@ jobs:
         working-directory: lifecycle-manager
         shell: bash
         run: |
-          BASE_OLDER=$(yq -e '.["module-version-older"]' tests/e2e/versions.yaml)
-          BASE_NEWER=$(yq -e '.["module-version-newer"]' tests/e2e/versions.yaml)
+          BASE_OLDER=$(yq -e '.["module-version-older"]' versions.yaml)
+          BASE_NEWER=$(yq -e '.["module-version-newer"]' versions.yaml)
           echo "older=${BASE_OLDER}" >> "$GITHUB_OUTPUT"
           echo "newer=${BASE_NEWER}" >> "$GITHUB_OUTPUT"
       - name: Deploy template-operator

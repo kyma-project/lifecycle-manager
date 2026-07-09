@@ -20,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -212,4 +213,20 @@ func ToStringList[T any](list []T, toString func(T) string) []string {
 		result[i] = toString(item)
 	}
 	return result
+}
+
+func MustReadVersionFromFileOf(key string) string {
+	content, err := os.ReadFile("../../versions.yaml")
+	if err != nil {
+		panic(fmt.Sprintf("failed to read versions.yaml: %v", err))
+	}
+	var versions map[string]string
+	if err := yaml.Unmarshal(content, &versions); err != nil {
+		panic(fmt.Sprintf("failed to parse versions.yaml: %v", err))
+	}
+	v, ok := versions[key]
+	if !ok {
+		panic(fmt.Sprintf("%q not found in versions.yaml", key))
+	}
+	return v
 }

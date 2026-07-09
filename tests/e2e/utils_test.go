@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -15,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/render"
 
@@ -57,46 +55,14 @@ const (
 )
 
 var (
-	// OlderVersion and NewerVersion are read from tests/e2e/versions.yaml to stay
+	// OlderVersion and NewerVersion are read from `versions.yaml` to stay
 	// in sync with the versions deployed by the Makefile test setup.
-	OlderVersion                = readE2EVersionFromFile(oldVersionYamlKey) + e2eVersionSuffix
-	NewerVersion                = readE2EVersionFromFile(newVersionYamlKey) + e2eVersionSuffix
-	MandatoryModuleOlderVersion = readE2EVersionFromFile(oldVersionYamlKey) + smokeTestVersionSuffix
-	MandatoryModuleNewerVersion = readE2EVersionFromFile(newVersionYamlKey) + smokeTestVersionSuffix
-	ModuleVersionToBeUsed       = mustReadTemplateOperatorVersion()
+	OlderVersion                = MustReadVersionFromFileOf(oldVersionYamlKey) + e2eVersionSuffix
+	NewerVersion                = MustReadVersionFromFileOf(newVersionYamlKey) + e2eVersionSuffix
+	MandatoryModuleOlderVersion = MustReadVersionFromFileOf(oldVersionYamlKey) + smokeTestVersionSuffix
+	MandatoryModuleNewerVersion = MustReadVersionFromFileOf(newVersionYamlKey) + smokeTestVersionSuffix
+	ModuleVersionToBeUsed       = MustReadVersionFromFileOf("template-operator")
 )
-
-func mustReadTemplateOperatorVersion() string {
-	content, err := os.ReadFile("../../versions.yaml")
-	if err != nil {
-		panic(fmt.Sprintf("failed to read versions.yaml: %v", err))
-	}
-	var versions map[string]string
-	if err := yaml.Unmarshal(content, &versions); err != nil {
-		panic(fmt.Sprintf("failed to parse versions.yaml: %v", err))
-	}
-	version, ok := versions["template-operator"]
-	if !ok {
-		panic("template-operator version not found in versions.yaml")
-	}
-	return version
-}
-
-func readE2EVersionFromFile(key string) string {
-	content, err := os.ReadFile("versions.yaml")
-	if err != nil {
-		panic(fmt.Sprintf("failed to read versions.yaml: %v", err))
-	}
-	var versions map[string]string
-	if err := yaml.Unmarshal(content, &versions); err != nil {
-		panic(fmt.Sprintf("failed to parse versions.yaml: %v", err))
-	}
-	v, ok := versions[key]
-	if !ok {
-		panic(fmt.Sprintf("%q not found in versions.yaml", key))
-	}
-	return v
-}
 
 func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
