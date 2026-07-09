@@ -10,6 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -89,6 +90,9 @@ func bumpServingCertAnnotation(ctx context.Context) error {
 		Name:      shared.CACertificateName,
 		Namespace: shared.IstioNamespace,
 	}, cert); err != nil {
+		if meta.IsNoMatchError(err) {
+			return nil // not a GCM cluster; cert-manager rotates on its own schedule
+		}
 		return fmt.Errorf("failed to get serving cert: %w", err)
 	}
 	base := cert.DeepCopy()
