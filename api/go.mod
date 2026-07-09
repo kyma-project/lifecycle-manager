@@ -3,6 +3,7 @@ module github.com/kyma-project/lifecycle-manager/api
 go 1.26.4
 
 require (
+	github.com/gardener/cert-management/pkg/apis v0.25.0
 	github.com/stretchr/testify v1.11.1
 	k8s.io/apimachinery v0.36.2
 	k8s.io/client-go v0.36.2
@@ -17,7 +18,6 @@ require (
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
-	github.com/gardener/cert-management/pkg/apis v0.25.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
