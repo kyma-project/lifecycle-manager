@@ -42,7 +42,6 @@ jobs:
       matrix:
         e2e-test:
           - watcher-enqueue
-          - modulereleasemeta-watch-trigger
           - watcher-zero-downtime
 
     runs-on: ubuntu-latest
@@ -71,57 +70,6 @@ jobs:
           modulectl_version: ${{ steps.configuration.outputs.modulectl_version }}
           go-version-file: lifecycle-manager/go.mod
           cache-dependency-path: lifecycle-manager/go.sum
-      - name: Setup Gardener CertManager Variables
-        if: ${{ matrix.e2e-test != 'watcher-zero-downtime' }}
-        run: |
-          echo "E2E_USE_GARDENER_CERT_MANAGER=1" >> $GITHUB_ENV
-          echo "E2E_GARDENER_CERT_MANAGER_RENEWAL_WINDOW=720h1m" >> $GITHUB_ENV
-      - name: Setup test clusters
-        if: ${{ matrix.e2e-test != 'watcher-zero-downtime' }}
-        uses: ./lifecycle-manager/.github/actions/setup-test-clusters-gcm
-        with:
-          k8s_version: ${{ steps.configuration.outputs.k8s_version }}
-          gardener_cert_manager_version: ${{ steps.configuration.outputs.gardener_cert_manager_version }}
-          gardener_cert_manager_renewal_window: ${{ env.E2E_GARDENER_CERT_MANAGER_RENEWAL_WINDOW }}
-      - name: Deploy lifecycle-manager
-        if: ${{ matrix.e2e-test != 'watcher-zero-downtime' }}
-        uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
-        with:
-          klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
-          klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
-      - name: Read e2e module versions
-        id: e2e-versions
-        working-directory: lifecycle-manager
-        shell: bash
-        run: |
-          BASE_OLDER=$(yq -e '.["module-version-older"]' versions.yaml)
-          BASE_NEWER=$(yq -e '.["module-version-newer"]' versions.yaml)
-          BASE_OLDER_MAJOR=$(echo "$BASE_OLDER" | cut -d. -f1)
-          BASE_NEWER_MAJOR=$(echo "$BASE_NEWER" | cut -d. -f1)
-          echo "older=${BASE_OLDER}" >> "$GITHUB_OUTPUT"
-          echo "newer=${BASE_NEWER}" >> "$GITHUB_OUTPUT"
-          echo "older_major=${BASE_OLDER_MAJOR}" >> "$GITHUB_OUTPUT"
-          echo "newer_major=${BASE_NEWER_MAJOR}" >> "$GITHUB_OUTPUT"
-      - name: Deploy template-operator
-        if: ${{ matrix.e2e-test == 'modulereleasemeta-watch-trigger' }}
-        uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
-        with:
-          module_version: ${{ steps.configuration.outputs.template_operator_version }}
-        env:
-          ModuleDeploymentName: template-operator-controller-manager
-          ModuleDeploymentNameInNewerVersion: template-operator-v${{ steps.e2e-versions.outputs.newer_major }}-controller-manager
-          ModuleDeploymentNameInOlderVersion: template-operator-v${{ steps.e2e-versions.outputs.older_major }}-controller-manager
-          NewerVersion: ${{ steps.e2e-versions.outputs.newer }}-e2e
-          OlderVersion: ${{ steps.e2e-versions.outputs.older }}-e2e
-          OlderVersionForMandatoryModule: ${{ steps.e2e-versions.outputs.older }}-smoke-test
-          NewerVersionForMandatoryModule: ${{ steps.e2e-versions.outputs.newer }}-smoke-test
-          VersionForStatefulSetInWarning: ${{ steps.e2e-versions.outputs.older }}-warning-statefulset
-          VersionForDeploymentInWarning: ${{ steps.e2e-versions.outputs.older }}-warning-deployment
-          VersionForMisconfiguredDeploymentImage: ${{ steps.e2e-versions.outputs.older }}-misconfigured-deployment
-          VersionForMisconfiguredStatefulSetImage: ${{ steps.e2e-versions.outputs.older }}-misconfigured-statefulset
-          VersionForNoDefaultCR: ${{ steps.e2e-versions.outputs.older }}-no-default-cr
-          MisconfiguredModuleName: template-operator-misconfigured
-          ModuleName: template-operator
       - name: Run '${{ matrix.e2e-test }}' test
         working-directory: lifecycle-manager
         env:
@@ -129,9 +77,7 @@ jobs:
           KLM_IMAGE_REPO: ${{ steps.configuration.outputs.klm_image_repo }}
         run: |
           if [[ "${{ matrix.e2e-test }}" == "watcher-enqueue" ]]; then
-            make -f tests/e2e/e2e.no_module_setup.mk test-run "GINKGO_FOCUS=Enqueue Event from Watcher"
-          elif [[ "${{ matrix.e2e-test }}" == "modulereleasemeta-watch-trigger" ]]; then
-            make -f tests/e2e/modulereleasemeta_watch_trigger_test.mk test-run
+            make -f tests/e2e/watcher_enqueue_gcm_test.mk test
           elif [[ "${{ matrix.e2e-test }}" == "watcher-zero-downtime" ]]; then
             make -f tests/e2e/watcher_zero_downtime_gcm_test.mk test
           fi
