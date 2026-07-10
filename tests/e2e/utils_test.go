@@ -6,26 +6,27 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
+	"gopkg.in/yaml.v2"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/yaml"
-
-	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/render"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/render"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
-	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -39,39 +40,37 @@ var (
 
 const (
 	localHostname           = "0.0.0.0"
+	semVerPartsCount            = 2
 	skrHostname             = "skr.cluster.local"
 	defaultRemoteKymaName   = "default"
 	EventuallyTimeout       = 10 * time.Second
 	ConsistentDuration      = 20 * time.Second
 	interval                = 500 * time.Millisecond
 	moduleCRFinalizer       = "cr-finalizer"
-	NewerVersion            = "2.4.2-e2e-test"
+	e2eVersionSuffix        = "-e2e"
+	smokeTestVersionSuffix  = "-smoke-test"
 	MisconfiguredModuleName = "template-operator-misconfigured"
 	// GlobalAccountID1 is used to test uninstallation when the Kyma's
 	// global-account-id no longer matches the deployer module's kymaSelector.
-	GlobalAccountID1 = "a1c1d2e3-4a5b-6c7d-8e9f-0a1b2c3d4e5f"
-	GlobalAccountID2 = "f6e5d4c3-b2a1-9087-6543-210fedcba987"
+	GlobalAccountID1  = "a1c1d2e3-4a5b-6c7d-8e9f-0a1b2c3d4e5f"
+	GlobalAccountID2  = "f6e5d4c3-b2a1-9087-6543-210fedcba987"
+	oldVersionYamlKey = "module-version-older"
+	newVersionYamlKey = "module-version-newer"
 )
 
-// ModuleVersionToBeUsed is the template-operator version used in tests.
-// It is read from versions.yaml to stay in sync with the version deployed by the test setup.
-var ModuleVersionToBeUsed = mustReadTemplateOperatorVersion()
-
-func mustReadTemplateOperatorVersion() string {
-	content, err := os.ReadFile("../../versions.yaml")
-	if err != nil {
-		panic(fmt.Sprintf("failed to read versions.yaml: %v", err))
-	}
-	var versions map[string]string
-	if err := yaml.Unmarshal(content, &versions); err != nil {
-		panic(fmt.Sprintf("failed to parse versions.yaml: %v", err))
-	}
-	version, ok := versions["template-operator"]
-	if !ok {
-		panic("template-operator version not found in versions.yaml")
-	}
-	return version
-}
+var (
+	// OlderVersion and NewerVersion are read from `versions.yaml` to stay
+	// in sync with the versions deployed by the Makefile test setup.
+	OlderVersion                       = MustReadVersionFromFileOf(oldVersionYamlKey) + e2eVersionSuffix
+	NewerVersion                       = MustReadVersionFromFileOf(newVersionYamlKey) + e2eVersionSuffix
+	MandatoryModuleOlderVersion        = MustReadVersionFromFileOf(oldVersionYamlKey) + smokeTestVersionSuffix
+	MandatoryModuleNewerVersion        = MustReadVersionFromFileOf(newVersionYamlKey) + smokeTestVersionSuffix
+	ModuleVersionToBeUsed              = MustReadVersionFromFileOf("template-operator")
+	ModuleDeploymentNameInOlderVersion = fmt.Sprintf("template-operator-v%s-controller-manager",
+		extractMajorVersionFromSemVer(MustReadVersionFromFileOf("module-version-older")))
+	ModuleDeploymentNameInNewerVersion = fmt.Sprintf("template-operator-v%s-controller-manager",
+		extractMajorVersionFromSemVer(MustReadVersionFromFileOf("module-version-newer")))
+)
 
 func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
@@ -393,4 +392,32 @@ func DeploymentContainersHaveImagePullSecretEnv(ctx context.Context,
 		}
 	}
 	return nil
+}
+
+// MustReadVersionFromFileOf reads a version value by key from the repo-root versions.yaml.
+// It resolves the path relative to this source file so it works regardless of the test's
+// working directory.
+func MustReadVersionFromFileOf(key string) string {
+	_, currentFile, _, ok := runtime.Caller(0)
+	if !ok {
+		panic(errors.New("could not determine current execution caller path"))
+	}
+	versionsPath := filepath.Join(filepath.Dir(currentFile), "..", "..", "versions.yaml")
+	content, err := os.ReadFile(versionsPath)
+	if err != nil {
+		panic(fmt.Sprintf("failed to read versions.yaml: %v", err))
+	}
+	var versions map[string]string
+	if err := yaml.Unmarshal(content, &versions); err != nil {
+		panic(fmt.Sprintf("failed to parse versions.yaml: %v", err))
+	}
+	v, ok := versions[key]
+	if !ok {
+		panic(fmt.Sprintf("%q not found in versions.yaml", key))
+	}
+	return v
+}
+
+func extractMajorVersionFromSemVer(version string) string {
+	return strings.SplitN(version, ".", semVerPartsCount)[0]
 }

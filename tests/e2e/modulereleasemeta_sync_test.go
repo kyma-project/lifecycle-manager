@@ -16,8 +16,8 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	var skrKyma *v1beta2.Kyma
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
-	v1Version := "1.1.1-e2e-test"
-	v2Version := "2.4.2-e2e-test"
+	v1Version := OlderVersion
+	v2Version := NewerVersion
 	InitEmptyKymaBeforeAll(kyma)
 
 	Context("Given SKR Cluster", func() {

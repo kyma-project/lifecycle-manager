@@ -3,7 +3,7 @@
 
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))e2e.common.mk
 
-VERSION_NO_DEFAULT_CR := 1.0.0-no-default-cr
+VERSION_NO_DEFAULT_CR := $(MODULE_VERSION_OLDER_BASE)-no-default-cr
 
 .PHONY: klm-patch
 klm-patch:
