@@ -1,6 +1,6 @@
 module github.com/kyma-project/lifecycle-manager/maintenancewindows
 
-go 1.26.4
+go 1.26.5
 
 require github.com/stretchr/testify v1.11.1
 
