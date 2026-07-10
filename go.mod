@@ -19,7 +19,7 @@ require (
 require (
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/cert-manager/cert-manager v1.20.3
-	github.com/gardener/cert-management v0.24.1
+	github.com/gardener/cert-management v0.25.0
 	github.com/go-logr/logr v1.4.3
 	github.com/go-logr/zapr v1.3.0
 	github.com/google/go-containerregistry v0.21.7
