@@ -232,7 +232,7 @@ var _ = BeforeSuite(func() {
 		Metrics: kymaMetrics,
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
 			moduletemplateinfolookup.NewLookup(kcpClient), nil),
-		Config:            kymaReconcilerConfig,
+		Config:          kymaReconcilerConfig,
 		DeletionMetrics: deletionMetrics,
 		DeletionEvents:  deletionEvents,
 		DeletionService: deletionService,

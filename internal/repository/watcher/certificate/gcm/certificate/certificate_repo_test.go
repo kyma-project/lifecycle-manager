@@ -15,8 +15,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
-var rsaKeyAlgorithm = gcertv1alpha1.RSAKeyAlgorithm
-
 var (
 	issuerName                                   = random.Name()
 	issuerNamespace                              = random.Name()

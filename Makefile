@@ -53,7 +53,7 @@ help: ## Display this help.
 
 .PHONY: manifests
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=controller-manager crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases output:rbac:dir=config/rbac/common
+	$(CONTROLLER_GEN) rbac:roleName=controller-manager crd webhook paths="./..." paths="!./api/applyconfigurations/gardener/..." output:crd:artifacts:config=config/crd/bases output:rbac:dir=config/rbac/common
 
 .PHONY: test-crd
 test-crd: controller-gen ## Generate crd for test
@@ -71,10 +71,16 @@ generate-applyconfiguration: applyconfiguration-gen manifests generate-openapi-s
 		--go-header-file ../hack/boilerplate.go.txt \
 		--openapi-schema ../hack/crd-to-openapi/openapi.json \
 		./v1beta2
+	cd api && $(APPLYCONFIGURATION_GEN) \
+		--output-dir ./applyconfigurations/gardener \
+		--output-pkg github.com/kyma-project/lifecycle-manager/api/applyconfigurations/gardener \
+		--go-header-file ../hack/boilerplate.go.txt \
+		--external-applyconfigurations k8s.io/api/core/v1.SecretReference:k8s.io/client-go/applyconfigurations/core/v1 \
+		github.com/gardener/cert-management/pkg/apis/cert/v1alpha1
 
 .PHONY: generate
 generate: controller-gen generate-applyconfiguration ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..." paths="!./api/applyconfigurations/gardener/..."
 
 .PHONY: vet
 vet: ## Run go vet against code.

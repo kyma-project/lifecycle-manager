@@ -11,38 +11,30 @@ import (
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	gcmcertapplyv1alpha1 "github.com/kyma-project/lifecycle-manager/api/applyconfigurations/gardener/cert/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
 	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
 )
 
 func TestCreate_ClientCallSucceeds_Returns(t *testing.T) {
-	expectedCertificate := &gcertv1alpha1.Certificate{
-		TypeMeta: apimetav1.TypeMeta{
-			Kind:       gcertv1alpha1.CertificateKind,
-			APIVersion: gcertv1alpha1.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      certName,
-			Namespace: certNamespace,
-		},
-		Spec: gcertv1alpha1.CertificateSpec{
-			CommonName:   &certCommonName,
-			Duration:     &apimetav1.Duration{Duration: certDuration},
-			RenewBefore:  &apimetav1.Duration{Duration: certRenewBefore},
-			DNSNames:     certDNSNames,
-			SecretName:   &certName,
-			SecretLabels: certificate.GetCertificateLabels(),
-			IssuerRef: &gcertv1alpha1.IssuerRef{
-				Name:      issuerName,
-				Namespace: issuerNamespace,
-			},
-			PrivateKey: &gcertv1alpha1.CertificatePrivateKey{
-				Algorithm: &rsaKeyAlgorithm,
-				Size:      &certKeySize,
-			},
-		},
-	}
+	expectedCertificate := gcmcertapplyv1alpha1.Certificate(certName, certNamespace).
+		WithSpec(gcmcertapplyv1alpha1.CertificateSpec().
+			WithCommonName(certCommonName).
+			WithDuration(apimetav1.Duration{Duration: certDuration}).
+			WithRenewBefore(apimetav1.Duration{Duration: certRenewBefore}).
+			WithDNSNames(certDNSNames...).
+			WithSecretName(certName).
+			WithSecretLabels(certificate.GetCertificateLabels()).
+			WithIssuerRef(gcmcertapplyv1alpha1.IssuerRef().
+				WithName(issuerName).
+				WithNamespace(issuerNamespace),
+			).
+			WithPrivateKey(gcmcertapplyv1alpha1.CertificatePrivateKey().
+				WithAlgorithm(gcertv1alpha1.RSAKeyAlgorithm).
+				WithSize(certKeySize),
+			),
+		)
 
 	clientStub := &applyClientStub{}
 	certificateRepository, err := gcmcertificate.NewRepository(
@@ -102,7 +94,7 @@ type applyClientStub struct {
 	client.Client
 
 	called bool
-	object *gcertv1alpha1.Certificate
+	object *gcmcertapplyv1alpha1.CertificateApplyConfiguration
 	err    error
 }
 
@@ -110,12 +102,6 @@ func (c *applyClientStub) Apply(
 	_ context.Context, obj machineryruntime.ApplyConfiguration, _ ...client.ApplyOption,
 ) error {
 	c.called = true
-	if u, ok := obj.(interface{ UnstructuredContent() map[string]any }); ok {
-		cert := &gcertv1alpha1.Certificate{}
-		err := machineryruntime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), cert)
-		if err == nil {
-			c.object = cert
-		}
-	}
+	c.object = obj.(*gcmcertapplyv1alpha1.CertificateApplyConfiguration)
 	return c.err
 }
