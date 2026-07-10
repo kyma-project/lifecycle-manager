@@ -19,8 +19,8 @@ package gardener
 
 import (
 	v1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	certv1alpha1 "github.com/kyma-project/lifecycle-manager/api/applyconfigurations/cert/gardener/cert/v1alpha1"
-	internal "github.com/kyma-project/lifecycle-manager/api/applyconfigurations/cert/gardener/internal"
+	certv1alpha1 "github.com/kyma-project/lifecycle-manager/api/applyconfigurations/gardener/cert/v1alpha1"
+	internal "github.com/kyma-project/lifecycle-manager/api/applyconfigurations/gardener/internal"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	managedfields "k8s.io/apimachinery/pkg/util/managedfields"

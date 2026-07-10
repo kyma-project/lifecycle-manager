@@ -11,7 +11,7 @@ import (
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	gcmcertapplyv1alpha1 "github.com/kyma-project/lifecycle-manager/api/applyconfigurations/cert/gardener/cert/v1alpha1"
+	gcmcertapplyv1alpha1 "github.com/kyma-project/lifecycle-manager/api/applyconfigurations/gardener/cert/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
 	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
