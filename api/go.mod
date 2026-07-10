@@ -1,6 +1,6 @@
 module github.com/kyma-project/lifecycle-manager/api
 
-go 1.26.4
+go 1.26.5
 
 require (
 	github.com/gardener/cert-management/pkg/apis v0.25.0
