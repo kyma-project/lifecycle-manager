@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strings"
 
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -17,7 +16,6 @@ import (
 )
 
 const (
-	semVerPartsCount            = 2
 	TestModuleCRName            = "sample-yaml"
 	TestModuleName              = "template-operator"
 	TestModuleResourceNamespace = "template-operator-system"
@@ -33,13 +31,6 @@ const (
 )
 
 var (
-	//nolint:gochecknoglobals // derived from versions.yaml at init
-	ModuleDeploymentNameInOlderVersion = fmt.Sprintf("template-operator-v%s-controller-manager",
-		extractMajorVersionFromSemVer(MustReadVersionFromFileOf("module-version-older")))
-	//nolint:gochecknoglobals // derived from versions.yaml at init
-	ModuleDeploymentNameInNewerVersion = fmt.Sprintf("template-operator-v%s-controller-manager",
-		extractMajorVersionFromSemVer(MustReadVersionFromFileOf("module-version-newer")))
-
 	errSampleCRDeletionTimestampSet    = errors.New("sample CR has set DeletionTimeStamp")
 	errSampleCRDeletionTimestampNotSet = errors.New("sample CR has not set DeletionTimeStamp")
 	errFinalizerStillExists            = errors.New("finalizer still exists after purge timeout")
@@ -163,8 +154,4 @@ func ModuleCRIsInExpectedState(ctx context.Context,
 		return false
 	}
 	return state == string(expectedState)
-}
-
-func extractMajorVersionFromSemVer(version string) string {
-	return strings.SplitN(version, ".", semVerPartsCount)[0]
 }

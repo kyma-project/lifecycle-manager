@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -21,7 +20,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -214,28 +212,4 @@ func ToStringList[T any](list []T, toString func(T) string) []string {
 		result[i] = toString(item)
 	}
 	return result
-}
-
-// MustReadVersionFromFileOf reads a version value by key from the repo-root versions.yaml.
-// It resolves the path relative to this source file so it works regardless of the test's
-// working directory.
-func MustReadVersionFromFileOf(key string) string {
-	_, currentFile, _, ok := runtime.Caller(0)
-	if !ok {
-		panic(errors.New("could not determine current execution caller path"))
-	}
-	versionsPath := filepath.Join(filepath.Dir(currentFile), "..", "..", "versions.yaml")
-	content, err := os.ReadFile(versionsPath)
-	if err != nil {
-		panic(fmt.Sprintf("failed to read versions.yaml: %v", err))
-	}
-	var versions map[string]string
-	if err := yaml.Unmarshal(content, &versions); err != nil {
-		panic(fmt.Sprintf("failed to parse versions.yaml: %v", err))
-	}
-	v, ok := versions[key]
-	if !ok {
-		panic(fmt.Sprintf("%q not found in versions.yaml", key))
-	}
-	return v
 }

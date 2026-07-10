@@ -5,25 +5,28 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
+	"gopkg.in/yaml.v2"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/render"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/render"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
-	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -37,6 +40,7 @@ var (
 
 const (
 	localHostname           = "0.0.0.0"
+	semVerPartsCount            = 2
 	skrHostname             = "skr.cluster.local"
 	defaultRemoteKymaName   = "default"
 	EventuallyTimeout       = 10 * time.Second
@@ -57,11 +61,15 @@ const (
 var (
 	// OlderVersion and NewerVersion are read from `versions.yaml` to stay
 	// in sync with the versions deployed by the Makefile test setup.
-	OlderVersion                = MustReadVersionFromFileOf(oldVersionYamlKey) + e2eVersionSuffix
-	NewerVersion                = MustReadVersionFromFileOf(newVersionYamlKey) + e2eVersionSuffix
-	MandatoryModuleOlderVersion = MustReadVersionFromFileOf(oldVersionYamlKey) + smokeTestVersionSuffix
-	MandatoryModuleNewerVersion = MustReadVersionFromFileOf(newVersionYamlKey) + smokeTestVersionSuffix
-	ModuleVersionToBeUsed       = MustReadVersionFromFileOf("template-operator")
+	OlderVersion                       = MustReadVersionFromFileOf(oldVersionYamlKey) + e2eVersionSuffix
+	NewerVersion                       = MustReadVersionFromFileOf(newVersionYamlKey) + e2eVersionSuffix
+	MandatoryModuleOlderVersion        = MustReadVersionFromFileOf(oldVersionYamlKey) + smokeTestVersionSuffix
+	MandatoryModuleNewerVersion        = MustReadVersionFromFileOf(newVersionYamlKey) + smokeTestVersionSuffix
+	ModuleVersionToBeUsed              = MustReadVersionFromFileOf("template-operator")
+	ModuleDeploymentNameInOlderVersion = fmt.Sprintf("template-operator-v%s-controller-manager",
+		extractMajorVersionFromSemVer(MustReadVersionFromFileOf("module-version-older")))
+	ModuleDeploymentNameInNewerVersion = fmt.Sprintf("template-operator-v%s-controller-manager",
+		extractMajorVersionFromSemVer(MustReadVersionFromFileOf("module-version-newer")))
 )
 
 func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
@@ -384,4 +392,32 @@ func DeploymentContainersHaveImagePullSecretEnv(ctx context.Context,
 		}
 	}
 	return nil
+}
+
+// MustReadVersionFromFileOf reads a version value by key from the repo-root versions.yaml.
+// It resolves the path relative to this source file so it works regardless of the test's
+// working directory.
+func MustReadVersionFromFileOf(key string) string {
+	_, currentFile, _, ok := runtime.Caller(0)
+	if !ok {
+		panic(errors.New("could not determine current execution caller path"))
+	}
+	versionsPath := filepath.Join(filepath.Dir(currentFile), "..", "..", "versions.yaml")
+	content, err := os.ReadFile(versionsPath)
+	if err != nil {
+		panic(fmt.Sprintf("failed to read versions.yaml: %v", err))
+	}
+	var versions map[string]string
+	if err := yaml.Unmarshal(content, &versions); err != nil {
+		panic(fmt.Sprintf("failed to parse versions.yaml: %v", err))
+	}
+	v, ok := versions[key]
+	if !ok {
+		panic(fmt.Sprintf("%q not found in versions.yaml", key))
+	}
+	return v
+}
+
+func extractMajorVersionFromSemVer(version string) string {
+	return strings.SplitN(version, ".", semVerPartsCount)[0]
 }
