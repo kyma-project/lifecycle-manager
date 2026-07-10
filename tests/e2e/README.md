@@ -127,6 +127,7 @@ Tests that validate certificate rotation behavior use Gardener CertManager (GCM)
 The GCM variant tests are:
 
 - `watcher-zero-downtime` — uses `watcher_zero_downtime_gcm_test.mk`
+- `watcher-enqueue` — uses `watcher_enqueue_gcm_test.mk`
 
 You can identify GCM makefiles by the `USE_GCM := true` line near the top of the file.
 
