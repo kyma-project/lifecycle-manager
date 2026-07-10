@@ -4,14 +4,14 @@ This directory contains the end-to-end tests for Kyma Lifecycle Manager (KLM). T
 
 ## Prerequisites
 
-You need the following tools before running the tests:
+Before running the tests, install the following tools:
 
 - [Docker](https://www.docker.com/)
 - [Go](https://go.dev/) (see [`versions.yaml`](../../versions.yaml) for the required version)
 - GNU Make ≥ 3.82 — macOS ships Make 3.81, which is not supported. Install a newer version with `brew install make` and use `gmake` instead of `make` in all commands below.
 - The [`template-operator`](https://github.com/kyma-project/template-operator) repository checked out at the same level as this repository — the makefiles resolve it at `../template-operator/` relative to the `lifecycle-manager` root.
 
-All other tools (ginkgo, kustomize, modulectl, istioctl, ocm) are installed automatically into `tests/e2e/bin/` the first time you run any test target.
+All other required tools (ginkgo, kustomize, modulectl, istioctl, ocm) are installed automatically into `tests/e2e/bin/` the first time you run any test target.
 
 ## Structure
 
@@ -22,8 +22,8 @@ The test infrastructure uses a layered makefile design:
 | `Makefile` | Top-level entry point. Contains a named target for every test scenario, for example `watcher-enqueue` or `mandatory-module`. Run `make help` to list all targets. |
 | `e2e.common.mk` | Shared infrastructure included by every test-specific `.mk` file. Defines tool installation, cluster lifecycle, and module setup helpers. |
 | `<name>_test.mk` | Per-test makefile. Includes `e2e.common.mk` and defines the four required targets (see [Test-Specific Makefiles](#test-specific-makefiles)). |
-| `e2e.no_module_setup.mk` | Shared makefile for tests that don't need module setup. Requires the `GINKGO_FOCUS` variable. |
-| `e2e.standard_module_setup.mk` | Shared makefile for tests that use the standard template-operator setup. Requires the `GINKGO_FOCUS` variable. |
+| `e2e.no_module_setup.mk` | Shared makefile for tests that don't need module setup. Requires the **GINKGO_FOCUS** variable. |
+| `e2e.standard_module_setup.mk` | Shared makefile for tests that use the standard template-operator setup. Requires the **GINKGO_FOCUS** variable. |
 | `e2e_test_template.mk` | Blank template for creating a new test makefile. |
 | `*_test.go` | Go test files with the actual Ginkgo test specs. |
 
@@ -79,7 +79,7 @@ You can also call the test makefile directly:
 make -f tests/e2e/mandatory_module_test.mk test
 ```
 
-For tests that use a shared parameterized makefile, you must pass a `GINKGO_FOCUS` value:
+For tests that use a shared parameterized makefile, pass a **GINKGO_FOCUS** value:
 
 ```bash
 make -f tests/e2e/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Labelling SKR resources"

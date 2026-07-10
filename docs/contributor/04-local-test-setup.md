@@ -4,7 +4,7 @@
 
 Learn how to quickly provision and manage a local end-to-end test environment using Visual Studio Code or GoLand. You get ready-to-use scripts and IDE launch configurations for a seamless developer experience.
 
-For full details on the E2E test structure, how to run individual test stages, and how to add new tests, see the [E2E tests README](../../tests/e2e/README.md).
+For full details on the E2E test structure, how to run individual test stages, and how to add new tests, see [E2E Tests](../../tests/e2e/README.md).
 
 ## Prerequisites
 
