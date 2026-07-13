@@ -45,7 +45,7 @@ require (
 require (
 	github.com/distribution/reference v0.6.0
 	github.com/gardener/cert-management/pkg/apis v0.25.0
-	github.com/go-co-op/gocron/v2 v2.21.2
+	github.com/go-co-op/gocron/v2 v2.22.0
 	github.com/prometheus/client_model v0.6.2
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
