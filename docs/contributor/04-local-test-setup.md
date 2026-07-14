@@ -75,7 +75,7 @@ You have installed the following tools (for the required versions, see [`version
 | Deploy template-operator    | Deploy template-operator    | Deploy template-operator    | `kubectl apply -f ./tests/e2e/moduletemplate/...`|
 | Deploy kyma                 | Deploy kyma                 | Deploy kyma                 | `./scripts/tests/deploy_kyma.sh`                 |
 | Un-Deploy kyma              | Un-Deploy kyma              | Un-Deploy kyma              | `./scripts/tests/undeploy_kyma.sh`               |
-| E2E Tests                   | E2E Tests                   | E2E Tests                   | `./scripts/tests/e2e.sh`                         |
+| E2E Tests                   | E2E Tests                   | E2E Tests                   | `make -C tests/e2e <test-name>`                  |
 | Install CRDs                | Install CRDs                | Install CRDs                | `./scripts/tests/install_crds.sh`                |
 
 ## Task Inputs

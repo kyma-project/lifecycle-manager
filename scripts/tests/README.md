@@ -49,11 +49,5 @@ Use the script to deploy Kyma using one of the **required** parameters:
 ## Undeploy Kyma: `undeploy_kyma.sh`
 The script undeploys Kyma from the cluster by deleting the Kyma and the corresponding Secret from the `kcp-system` namespace.
 
-## End-To-End Tests: `e2e.sh`
-The script runs end-to-end tests taking the test target as input.
-The test targets are defined in the `tests` directory of the project root.
-The script runs the test target and outputs the results to the console.
-The errors that occurred during the test are handled directly by `make`.
-
 ## Installing CRDs: `install_crds.sh`
 The script installs Custom Resource Definitions (CRDs) required for Lifecycle Manager. The CRDs' set is the same as in the `make install` of the Makefile in the project root directory.
