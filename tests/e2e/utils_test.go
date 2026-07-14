@@ -54,22 +54,20 @@ const (
 	// global-account-id no longer matches the deployer module's kymaSelector.
 	GlobalAccountID1  = "a1c1d2e3-4a5b-6c7d-8e9f-0a1b2c3d4e5f"
 	GlobalAccountID2  = "f6e5d4c3-b2a1-9087-6543-210fedcba987"
-	oldVersionYamlKey = "module-version-older"
-	newVersionYamlKey = "module-version-newer"
+	moduleVersionOlder = "1.0.0"
+	moduleVersionNewer = "2.0.0"
 )
 
 var (
-	// OlderVersion and NewerVersion are read from `versions.yaml` to stay
-	// in sync with the versions deployed by the Makefile test setup.
-	OlderVersion                       = MustReadVersionFromFileOf(oldVersionYamlKey) + e2eVersionSuffix
-	NewerVersion                       = MustReadVersionFromFileOf(newVersionYamlKey) + e2eVersionSuffix
-	MandatoryModuleOlderVersion        = MustReadVersionFromFileOf(oldVersionYamlKey) + smokeTestVersionSuffix
-	MandatoryModuleNewerVersion        = MustReadVersionFromFileOf(newVersionYamlKey) + smokeTestVersionSuffix
+	OlderVersion                       = moduleVersionOlder + e2eVersionSuffix
+	NewerVersion                       = moduleVersionNewer + e2eVersionSuffix
+	MandatoryModuleOlderVersion        = moduleVersionOlder + smokeTestVersionSuffix
+	MandatoryModuleNewerVersion        = moduleVersionNewer + smokeTestVersionSuffix
 	ModuleVersionToBeUsed              = MustReadVersionFromFileOf("template-operator")
 	ModuleDeploymentNameInOlderVersion = fmt.Sprintf("template-operator-v%s-controller-manager",
-		extractMajorVersionFromSemVer(MustReadVersionFromFileOf("module-version-older")))
+		extractMajorVersionFromSemVer(moduleVersionOlder))
 	ModuleDeploymentNameInNewerVersion = fmt.Sprintf("template-operator-v%s-controller-manager",
-		extractMajorVersionFromSemVer(MustReadVersionFromFileOf("module-version-newer")))
+		extractMajorVersionFromSemVer(moduleVersionNewer))
 )
 
 func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
