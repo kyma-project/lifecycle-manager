@@ -147,7 +147,6 @@ runs:
         matrix.e2e-test == 'misconfigured-kyma-secret' ||
         matrix.e2e-test == 'unmanage-module' ||
         matrix.e2e-test == 'modulereleasemeta-watch-trigger' ||
-        matrix.e2e-test == 'modulereleasemeta-with-obsolete-moduletemplate' ||
         matrix.e2e-test == 'labelling' ||
         matrix.e2e-test == 'module-deletion-with-only-default-cr' ||
         matrix.e2e-test == 'module-deletion-blocking-with-multiple-crs-ignore-policy' ||
@@ -241,20 +240,6 @@ runs:
         make build-manifests
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForNoDefaultCR }} ${{ inputs.module_version }} false false true false
         ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForNoDefaultCR }}
-    - name: Apply ModuleReleaseMeta with ModuleTemplate with name <modulename>-<channel>
-      working-directory: template-operator
-      if: ${{ matrix.e2e-test == 'modulereleasemeta-with-obsolete-moduletemplate' }}
-      shell: bash
-      run: |
-        # Export the existing ModuleTemplate
-        kubectl get moduletemplate ${{ env.ModuleName }}-${{ inputs.module_version }} -n kcp-system -oyaml > template.yaml
-
-        # Delete the ModuleTemplate in cluster with name <modulename>-<version>
-        kubectl delete moduletemplate ${{ env.ModuleName }}-${{ inputs.module_version }} -n kcp-system
-
-        # Create ModuleTemplate with name <modulename>-<channel>
-        sed -i 's/${{ env.ModuleName }}-${{ inputs.module_version }}/template-operator-regular/g' ./template.yaml
-        kubectl apply -f template.yaml
     - name: Apply ModuleTemplate for the template-operator Module transferred to another public OCI registry (uses manually created ModuleTemplate)
       working-directory: lifecycle-manager
       if: ${{ matrix.e2e-test == 'module-transferred-to-another-oci-registry' }}

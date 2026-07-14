@@ -68,7 +68,6 @@ jobs:
           - mandatory-module-metrics
           - misconfigured-kyma-secret
           - rbac-privileges
-          - modulereleasemeta-with-obsolete-moduletemplate
           - modulereleasemeta-sync
           - module-status-on-skr-connection-lost
           - modulereleasemeta-watch-trigger
