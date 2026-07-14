@@ -41,7 +41,7 @@ it propagates changes from the ModuleTemplate CR to the Manifest CR. The mandato
 ## Manifest Controller
 
 Manifest controller deals with the reconciliation and installation of data desired through a Manifest CR, a representation of a single module desired in a cluster.
-The reconciler lives in `internal/controller/manifest`. It resolves the SKR client, renders the target resources via [`internal/service/manifest/render`](../../internal/service/manifest/render/), prunes obsolete resources, and applies the rendered set to the SKR using server-side apply.
+The reconciler lives in `internal/controller/manifest`. It resolves the Kyma runtime client (`SKRClient`), renders the target resources using [`internal/service/manifest/render`](../../internal/service/manifest/render/), prunes obsolete resources, and applies the rendered set to the Kyma runtime using server-side apply.
 
 ## Purge Controller
 
