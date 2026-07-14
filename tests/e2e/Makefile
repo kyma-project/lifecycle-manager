@@ -75,8 +75,6 @@ e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the t
     done
 
 ##@ E2E Tests
-GO_TEST := $(GO) test -timeout 20m -ginkgo.v -ginkgo.focus
-
 kyma-deprovision-with-foreground-propagation:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=KCP Kyma CR Deprovision With Foreground Propagation After SKR Cluster Removal"
 
@@ -145,9 +143,6 @@ rbac-privileges:
 
 oci-reg-cred-secret:
 	$(MAKE) -f $(MAKEFILE_DIR)/oci_reg_cred_secret_test.mk test
-
-modulereleasemeta-with-obsolete-moduletemplate:
-	$(GO_TEST) "ModuleReleaseMeta With Obsolete ModuleTemplate"
 
 modulereleasemeta-watch-trigger:
 	$(MAKE) -f $(MAKEFILE_DIR)/modulereleasemeta_watch_trigger_test.mk

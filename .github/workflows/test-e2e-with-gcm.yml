@@ -51,15 +51,15 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           path: lifecycle-manager
+      - name: Get configuration
+        uses: ./lifecycle-manager/.github/actions/get-configuration
+        id: configuration
       - name: Checkout template-operator
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: kyma-project/template-operator
           path: template-operator
           ref: ${{ steps.configuration.outputs.template_operator_version }}
-      - name: Get configuration
-        uses: ./lifecycle-manager/.github/actions/get-configuration
-        id: configuration
       - name: Setup tools
         uses: ./lifecycle-manager/.github/actions/setup-tools
         with:
