@@ -1,9 +1,0 @@
-name: Setup private registry
-description: Creates and configures a private registry.
-runs:
-  using: composite
-  steps:
-    - name: Setup private registry
-      shell: bash
-      run: |
-        "${{ github.action_path }}/../../../scripts/tests/setup_private_registry.sh"
