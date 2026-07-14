@@ -202,8 +202,8 @@ teardown: ## Delete KCP and SKR test clusters.
 
 ##@ Module Metadata Variables
 
-E2E_SUFFIX			:= -e2e
-SMOKE_TEST_SUFFIX		:= -smoke-test
+E2E_SUFFIX					:= -e2e
+SMOKE_TEST_SUFFIX			:= -smoke-test
 MODULE_VERSION_OLDER_BASE	:= $(shell grep -E '^\s*moduleVersionOlder\s*=' $(LIFECYCLE_MANAGER_DIR)/tests/e2e/utils_test.go | sed 's/.*"\(.*\)".*/\1/')
 MODULE_VERSION_NEWER_BASE	:= $(shell grep -E '^\s*moduleVersionNewer\s*=' $(LIFECYCLE_MANAGER_DIR)/tests/e2e/utils_test.go | sed 's/.*"\(.*\)".*/\1/')
 MODULE_VERSION_OLDER_BASE_MAJOR := $(shell echo "$(MODULE_VERSION_OLDER_BASE)" | cut -d. -f1)
