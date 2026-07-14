@@ -197,8 +197,8 @@ jobs:
         working-directory: lifecycle-manager
         shell: bash
         run: |
-          BASE_OLDER=$(grep -E '^\s*ModuleVersionOlder\s*=' tests/e2e/utils_test.go | sed 's/.*"\(.*\)".*/\1/')
-          BASE_NEWER=$(grep -E '^\s*ModuleVersionNewer\s*=' tests/e2e/utils_test.go | sed 's/.*"\(.*\)".*/\1/')
+          BASE_OLDER=$(grep -E '^\s*moduleVersionOlder\s*=' tests/e2e/utils_test.go | sed 's/.*"\(.*\)".*/\1/')
+          BASE_NEWER=$(grep -E '^\s*moduleVersionNewer\s*=' tests/e2e/utils_test.go | sed 's/.*"\(.*\)".*/\1/')
           BASE_OLDER_MAJOR=$(echo "$BASE_OLDER" | cut -d. -f1)
           BASE_NEWER_MAJOR=$(echo "$BASE_NEWER" | cut -d. -f1)
           echo "older=${BASE_OLDER}" >> "$GITHUB_OUTPUT"
