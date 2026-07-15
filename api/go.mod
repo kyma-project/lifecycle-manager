@@ -8,7 +8,7 @@ require (
 	k8s.io/apimachinery v0.36.2
 	k8s.io/client-go v0.36.2
 	sigs.k8s.io/controller-runtime v0.24.1
-	sigs.k8s.io/structured-merge-diff/v6 v6.4.0
+	sigs.k8s.io/structured-merge-diff/v6 v6.4.2
 )
 
 require github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
