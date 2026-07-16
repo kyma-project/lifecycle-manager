@@ -158,6 +158,20 @@ func TestCreateModuleName(t *testing.T) {
 			moduleName:    "module1",
 			expected:      "default-id-simple-component-3590401810",
 		},
+		{
+			testName:      "Component name landing at exactly 62 chars",
+			componentName: "simple-compone",
+			prefix:        "9b9437b0-e148-430b-9ad6-4537adc41557",
+			moduleName:    "module1",
+			expected:      "9b9437b0-e148-430b-9ad6-4537adc41557-simple-compone-3786713812",
+		},
+		{
+			testName:      "Component name leading to trailing dashes after length truncation",
+			componentName: "simple-component-----------------------------------------",
+			prefix:        "default-id",
+			moduleName:    "module1",
+			expected:      "default-id-simple-component",
+		},
 	}
 
 	for _, tt := range tests {

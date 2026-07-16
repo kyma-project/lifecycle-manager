@@ -79,12 +79,15 @@ func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
 	return false
 }
 
+// maxModuleNameLength is the DNS label limit (63 chars). The manifest name is written as a label value on SKR
+// resources (app.kubernetes.io/component), so it must conform to this stricter limit.
 const maxModuleNameLength = validation.DNS1035LabelMaxLength
 
-// CreateModuleName takes an OCM Component Name and a prefix and generates a human-readable unique interpretation of
-// a name combination.
-// e.g. kyma-project.io/module/some-module and default-id => "default-id-some-module-34180237"
-// e.g. domain.com/some-module and default-id => "default-id-some-module-1238916".
+// CreateModuleName generates a Manifest name in the format "{prefix}-{lastSegment}-{hash}", where lastSegment is the
+// part of compName after the last "/". moduleName is not part of the visible name but is included in the FNV-32 hash
+// together with compName to ensure uniqueness across different module names sharing the same component name.
+// e.g. kyma-project.io/module/some-module, default-id => "default-id-some-module-34180237"
+// e.g. domain.com/some-module, default-id => "default-id-some-module-1238916".
 func CreateModuleName(compName, prefix, moduleName string) string {
 	lastSeparatorIdx := strings.LastIndexByte(compName, '/')
 	var lastPart string
@@ -97,8 +100,10 @@ func CreateModuleName(compName, prefix, moduleName string) string {
 	_, _ = hash.Write([]byte(compName + moduleName))
 	hashed := hash.Sum32()
 	name := fmt.Sprintf("%s-%s-%v", prefix, lastPart, hashed)
+	// this is truncating to 62 instead of 63 chars for unknown reasons
 	if len(name) >= maxModuleNameLength {
 		name = name[:maxModuleNameLength-1]
+		name = strings.TrimRight(name, "-")
 	}
 	return name
 }
