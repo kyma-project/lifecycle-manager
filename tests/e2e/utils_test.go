@@ -12,7 +12,7 @@ import (
 	"time"
 
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
