@@ -14,6 +14,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	mrmwatch "github.com/kyma-project/lifecycle-manager/internal/watch/modulereleasemeta"
+	"github.com/kyma-project/lifecycle-manager/internal/watch/modulereleasemeta/events"
 )
 
 type stubKymaRepo struct {
@@ -111,7 +112,7 @@ func TestTypedEventHandler_Delete(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := mrmwatch.NewEventHandler(tt.kymaRepo, 0)
+			h := mrmwatch.NewEventHandler(tt.kymaRepo, events.RegularResolver{}, 0)
 			q := &fakeQueue{}
 			h.Delete(t.Context(), event.DeleteEvent{Object: tt.mrm}, q)
 			require.Len(t, q.all(), tt.wantCount)
@@ -120,7 +121,7 @@ func TestTypedEventHandler_Delete(t *testing.T) {
 }
 
 func TestTypedEventHandler_Delete_NonMRMObject_IsNoop(t *testing.T) {
-	h := mrmwatch.NewEventHandler(&stubKymaRepo{kymaList: kymaListWith("kyma-1")}, 0)
+	h := mrmwatch.NewEventHandler(&stubKymaRepo{kymaList: kymaListWith("kyma-1")}, events.RegularResolver{}, 0)
 	q := &fakeQueue{}
 	h.Delete(t.Context(), event.DeleteEvent{
 		Object: &v1beta2.Kyma{ObjectMeta: apimetav1.ObjectMeta{Name: "some-kyma"}},
@@ -161,7 +162,7 @@ func TestTypedEventHandler_Update(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := mrmwatch.NewEventHandler(tt.kymaRepo, 0)
+			h := mrmwatch.NewEventHandler(tt.kymaRepo, events.RegularResolver{}, 0)
 			q := &fakeQueue{}
 			h.Update(t.Context(), event.UpdateEvent{ObjectOld: tt.oldMRM, ObjectNew: tt.newMRM}, q)
 			require.Len(t, q.all(), tt.wantCount)
@@ -170,7 +171,7 @@ func TestTypedEventHandler_Update(t *testing.T) {
 }
 
 func TestTypedEventHandler_Update_NonMRMObject_IsNoop(t *testing.T) {
-	h := mrmwatch.NewEventHandler(&stubKymaRepo{kymaList: kymaListWith("kyma-1")}, 0)
+	h := mrmwatch.NewEventHandler(&stubKymaRepo{kymaList: kymaListWith("kyma-1")}, events.RegularResolver{}, 0)
 	q := &fakeQueue{}
 	h.Update(t.Context(), event.UpdateEvent{
 		ObjectOld: &v1beta2.Kyma{ObjectMeta: apimetav1.ObjectMeta{Name: "kyma"}},
@@ -180,7 +181,8 @@ func TestTypedEventHandler_Update_NonMRMObject_IsNoop(t *testing.T) {
 }
 
 func TestTypedEventHandler_Update_WithDelay_UsesAddAfter(t *testing.T) {
-	h := mrmwatch.NewEventHandler(&stubKymaRepo{kymaList: kymaListWith("kyma-1")}, 10*time.Second)
+	h := mrmwatch.NewEventHandler(&stubKymaRepo{kymaList: kymaListWith("kyma-1")}, events.RegularResolver{},
+		10*time.Second)
 	q := &fakeQueue{}
 	h.Update(t.Context(), event.UpdateEvent{
 		ObjectOld: newMrmWithRegularChannel("1.0.0"),
@@ -191,15 +193,53 @@ func TestTypedEventHandler_Update_WithDelay_UsesAddAfter(t *testing.T) {
 }
 
 func TestTypedEventHandler_Create_IsNoop(t *testing.T) {
-	h := mrmwatch.NewEventHandler(&stubKymaRepo{kymaList: kymaListWith("kyma-1")}, 0)
+	h := mrmwatch.NewEventHandler(&stubKymaRepo{kymaList: kymaListWith("kyma-1")}, events.RegularResolver{}, 0)
 	q := &fakeQueue{}
 	h.Create(t.Context(), event.CreateEvent{Object: newMrmWithRegularChannel("1.0.0")}, q)
 	require.Empty(t, q.all())
 }
 
 func TestTypedEventHandler_Generic_IsNoop(t *testing.T) {
-	h := mrmwatch.NewEventHandler(&stubKymaRepo{kymaList: kymaListWith("kyma-1")}, 0)
+	h := mrmwatch.NewEventHandler(&stubKymaRepo{kymaList: kymaListWith("kyma-1")}, events.RegularResolver{}, 0)
 	q := &fakeQueue{}
 	h.Generic(t.Context(), event.GenericEvent{Object: newMrmWithRegularChannel("1.0.0")}, q)
+	require.Empty(t, q.all())
+}
+
+func mandatoryMrm() *v1beta2.ModuleReleaseMeta {
+	return &v1beta2.ModuleReleaseMeta{
+		Spec: v1beta2.ModuleReleaseMetaSpec{
+			ModuleName: "module",
+			Mandatory:  &v1beta2.Mandatory{Version: "1.0.0"},
+		},
+	}
+}
+
+func TestTypedEventHandler_Mandatory_Update_SpreadsAllManagedKymas(t *testing.T) {
+	repo := &stubKymaRepo{kymaList: kymaListWith("kyma-1", "kyma-2")}
+	h := mrmwatch.NewEventHandler(repo, events.MandatoryResolver{}, 10*time.Second)
+	q := &fakeQueue{}
+	h.Update(t.Context(), event.UpdateEvent{ObjectOld: mandatoryMrm(), ObjectNew: mandatoryMrm()}, q)
+	require.Len(t, q.afterItems, 2)
+	require.Empty(t, q.items)
+}
+
+func TestTypedEventHandler_Mandatory_Delete_EnqueuesAllManagedKymas(t *testing.T) {
+	repo := &stubKymaRepo{kymaList: kymaListWith("kyma-1", "kyma-2")}
+	h := mrmwatch.NewEventHandler(repo, events.MandatoryResolver{}, 10*time.Second)
+	q := &fakeQueue{}
+	h.Delete(t.Context(), event.DeleteEvent{Object: mandatoryMrm()}, q)
+	require.Len(t, q.items, 2)
+	require.Empty(t, q.afterItems)
+}
+
+func TestTypedEventHandler_Mandatory_NonMandatoryMrm_IsNoop(t *testing.T) {
+	repo := &stubKymaRepo{kymaList: kymaListWith("kyma-1")}
+	h := mrmwatch.NewEventHandler(repo, events.MandatoryResolver{}, 10*time.Second)
+	q := &fakeQueue{}
+	h.Update(t.Context(), event.UpdateEvent{
+		ObjectOld: newMrmWithRegularChannel("1.0.0"),
+		ObjectNew: newMrmWithRegularChannel("1.1.0"),
+	}, q)
 	require.Empty(t, q.all())
 }

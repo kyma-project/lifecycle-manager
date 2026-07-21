@@ -14,6 +14,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldindex"
+	mrmwatch "github.com/kyma-project/lifecycle-manager/internal/watch/modulereleasemeta"
 )
 
 const (
@@ -22,7 +23,7 @@ const (
 )
 
 func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options,
-	mandatoryMrmChangeHandlerMapFunc handler.MapFunc,
+	mandatoryMrmEventHandler *mrmwatch.EventHandler,
 ) error {
 	err := setupFieldIndexForMandatoryMrm(mgr)
 	if err != nil {
@@ -39,7 +40,7 @@ func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlrun
 		Named(installationControllerName).
 		WithOptions(opts).
 		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})).
-		Watches(&v1beta2.ModuleReleaseMeta{}, handler.EnqueueRequestsFromMapFunc(mandatoryMrmChangeHandlerMapFunc)).
+		Watches(&v1beta2.ModuleReleaseMeta{}, mandatoryMrmEventHandler).
 		Watches(&apicorev1.Secret{}, handler.Funcs{}).
 		Complete(reconcile.AsReconciler[*v1beta2.Kyma](mgr.GetClient(), r)); err != nil {
 		return fmt.Errorf("failed to setup manager for mandatory module installation controller: %w", err)
