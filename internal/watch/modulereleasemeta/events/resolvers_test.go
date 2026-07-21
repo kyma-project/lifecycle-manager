@@ -44,6 +44,35 @@ func TestRegularResolver_OnCreate_ReturnsNothing(t *testing.T) {
 	require.Empty(t, got)
 }
 
+func TestRegularResolver_OnUpdate_ReturnsKymasOnChangedChannel(t *testing.T) {
+	kymas := &v1beta2.KymaList{Items: []v1beta2.Kyma{{
+		ObjectMeta: apimetav1.ObjectMeta{Name: "kyma-1", Namespace: "kcp-system"},
+		Status:     v1beta2.KymaStatus{Modules: []v1beta2.ModuleStatus{{Name: "module", Channel: "regular"}}},
+	}}}
+	oldMRM := regularMrm()
+	newMRM := &v1beta2.ModuleReleaseMeta{
+		Spec: v1beta2.ModuleReleaseMetaSpec{
+			ModuleName: "module",
+			Channels:   []v1beta2.ChannelVersionAssignment{{Channel: "regular", Version: "2.0.0"}},
+		},
+	}
+
+	got := events.RegularResolver{}.OnUpdate(oldMRM, newMRM, kymas)
+
+	require.Equal(t, []*types.NamespacedName{{Name: "kyma-1", Namespace: "kcp-system"}}, got)
+}
+
+func TestRegularResolver_OnDelete_ReturnsKymasUsingModule(t *testing.T) {
+	kymas := &v1beta2.KymaList{Items: []v1beta2.Kyma{{
+		ObjectMeta: apimetav1.ObjectMeta{Name: "kyma-1", Namespace: "kcp-system"},
+		Status:     v1beta2.KymaStatus{Modules: []v1beta2.ModuleStatus{{Name: "module", Channel: "regular"}}},
+	}}}
+
+	got := events.RegularResolver{}.OnDelete(regularMrm(), kymas)
+
+	require.Equal(t, []*types.NamespacedName{{Name: "kyma-1", Namespace: "kcp-system"}}, got)
+}
+
 func TestMandatoryResolver_ReturnsAllManagedKymas(t *testing.T) {
 	kymas := kymaList("kyma-1", "kyma-2")
 	want := []*types.NamespacedName{
