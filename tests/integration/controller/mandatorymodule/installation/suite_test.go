@@ -37,9 +37,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/installation"
+	watchcmpse "github.com/kyma-project/lifecycle-manager/cmd/composition/watch"
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -50,6 +50,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	mrmrepo "github.com/kyma-project/lifecycle-manager/internal/repository/modulereleasemeta"
 	mtrepo "github.com/kyma-project/lifecycle-manager/internal/repository/moduletemplate"
+	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -141,11 +142,9 @@ var _ = BeforeSuite(func() {
 		flags.DefaultRemoteSyncNamespace, metrics.NewMandatoryModulesMetrics())
 	installationReconciler := mandatorymodule.NewInstallationReconciler(installationService, intervals)
 
-	err = installationReconciler.SetupWithManager(mgr, ctrlruntime.Options{}, func(_ context.Context,
-		_ client.Object,
-	) []reconcile.Request {
-		return nil
-	})
+	err = installationReconciler.SetupWithManager(mgr, ctrlruntime.Options{},
+		watchcmpse.ComposeMandatoryMrmEventHandler(
+			kymarepo.NewRepository(mgr.GetClient(), shared.DefaultControlPlaneNamespace), 0))
 	Expect(err).ToNot(HaveOccurred())
 
 	kcpClient = mgr.GetClient()
