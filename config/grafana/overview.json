@@ -1619,17 +1619,20 @@
         "x": 0,
         "y": 83
       },
-      "id": 23763571993,
+      "id": 80,
+      "options": {
+        "showHeader": true
+      },
       "pluginVersion": "7.5.47",
       "targets": [
         {
-          "expr": "lifecycle_mgr_self_signed_cert_not_renew{service=\"klm-controller-manager-metrics\"}",
-          "legendFormat": "{{kyma_name}}",
-          "interval": "",
           "exemplar": true,
-          "refId": "A",
-          "instant": false,
-          "format": "table"
+          "expr": "lifecycle_mgr_self_signed_cert_not_renew{service=\"klm-controller-manager-metrics\"}",
+          "format": "table",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "{{kyma_name}}",
+          "refId": "A"
         }
       ],
       "timeFrom": null,
