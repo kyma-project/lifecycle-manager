@@ -37,8 +37,10 @@ func Test_NewService_ReturnsError_WhenUseCasesAreOutOfOrder(t *testing.T) {
 
 	require.Nil(t, svc)
 	require.ErrorIs(t, err, kymadeletionsvc.ErrUseCasesOutOfOrder)
-	require.Contains(t, err.Error(), "expected use case DeleteCertificateSetup at position 2 but found DeleteSkrWebhookResources")
-	require.Contains(t, err.Error(), "expected use case DeleteSkrWebhookResources at position 3 but found DeleteCertificateSetup")
+	require.Contains(t, err.Error(),
+		"expected use case DeleteCertificateSetup at position 2 but found DeleteSkrWebhookResources")
+	require.Contains(t, err.Error(),
+		"expected use case DeleteSkrWebhookResources at position 3 but found DeleteCertificateSetup")
 }
 
 func Test_NewService_ReturnsError_WhenSameUseCaseTwice(t *testing.T) {
