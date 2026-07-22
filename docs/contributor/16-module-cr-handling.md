@@ -1,6 +1,6 @@
 # Module CR Handling
 
-**Status:** Research complete. Track A and Track B items are ready for implementation tickets. Track C items require team decisions — see [Open Questions](#open-questions).
+**Status:** Research complete. Bug Fix and Refactoring items are ready for implementation tickets. Design Decision items require team decisions — see [Open Questions](#open-questions).
 
 ## Table of Contents
 
@@ -20,9 +20,9 @@
   - [Correctness Bugs](#correctness-bugs)
   - [Architectural Gaps](#architectural-gaps)
 - [Proposed Changes](#proposed-changes)
-  - [Track A — Correctness](#track-a--correctness)
-  - [Track B — Architectural Alignment](#track-b--architectural-alignment)
-  - [Track C — Design Decisions Required](#track-c--design-decisions-required)
+  - [Bug Fixes](#bug-fixes)
+  - [Refactoring](#refactoring)
+  - [Design Decisions](#design-decisions)
 - [Open Questions](#open-questions)
 - [Implementation History](#implementation-history)
 - [References](#references)
@@ -357,9 +357,9 @@ The package sits at `internal/manifest/modulecr/`, not under `service/` or `repo
 
 ## Proposed Changes
 
-### Track A — Correctness
+### Bug Fixes
 
-Items in this track do not require an architectural decision and are ready to ticket.
+Items in this group address broken behavior and are ready to ticket. Each maps to a `kind/bug` issue.
 
 - **A1.** Stop defaulting namespace for cluster-scoped Module CRs at the parser layer. Depends on the cluster-scope signal decision (G1). Blocked on C1.
 - **A2.** Consolidate `CheckDefaultCRDeletion` and `CheckModuleCRsDeletion` into a single CRP-independent "any CR of the GroupKind exists?" gate, eliminating the duplicate list traversal and the distributed CRP branching. (G5)
@@ -369,18 +369,18 @@ Items in this track do not require an architectural decision and are ready to ti
 - **A6.** Fix `removeFromDefaultCR` to tolerate NotFound on `GetDefaultCR` — if the Default CR is already gone, the label-removal step must succeed rather than leaving `LabelRemovalFinalizer` stuck. (G11)
 - **A7.** Fix `SyncDefaultModuleCR` to return non-NotFound `Get` errors: change the condition so that any error that is not NotFound-class is returned rather than silently discarded. (G12)
 
-### Track B — Architectural Alignment
+### Refactoring
 
-Items in this track align the package with ADRs 001–005. No architectural decisions are required.
+Items in this group align the package with ADRs 001–005 without changing observable behavior. Each maps to a `kind/cleanup` issue.
 
 - **B1.** Extract a consumer-defined interface (`ModuleCRService` or narrower) at each caller; make callers depend on interfaces, not the concrete struct. (G7, ADR 001)
 - **B2.** Split into `internal/service/manifest/modulecr` (orchestration) and `internal/repository/manifest/modulecr` (Kubernetes I/O). (G9, ADR 004)
 - **B3.** Wire the service once at composition root; remove the five inline `NewClient` sites. (G8, ADR 002)
 - **B4.** Rename `SyncDefaultModuleCR` to `EnsureDefaultCRCreated`; unexport or remove `GetAllModuleCRsExcludingDefaultCR`. (G10, ADR 005)
 
-### Track C — Design Decisions Required
+### Design Decisions
 
-Items in this track require an explicit team decision before implementation can begin. Each item is a candidate for an ADR.
+Items in this group require an explicit team decision before implementation can begin. Each is a candidate for an ADR and maps to a `goal/architecture` issue.
 
 - **C1.** Decide the authoritative cluster-scope signal — annotation, RESTMapper, or both — and where to enforce it. (G1)
 - **C2.** Define the "safe to drop version" contract with module operators. Write the spec (Options A, B, or C from G4), then implement. ([#2807](https://github.com/kyma-project/lifecycle-manager/issues/2807), [#2905](https://github.com/kyma-project/lifecycle-manager/issues/2905))
@@ -392,7 +392,7 @@ Items in this track require an explicit team decision before implementation can 
 
 ## Open Questions
 
-These questions require a team decision before the corresponding Track C items can be implemented. They are tracked in [discussion #3442](https://github.com/kyma-project/lifecycle-manager/discussions/3442).
+These questions require a team decision before the corresponding Design Decision items can be implemented. They are tracked in [discussion #3442](https://github.com/kyma-project/lifecycle-manager/discussions/3442).
 
 1. **Cluster-scope signal authority (C1):** Three signals currently disagree — the `is-cluster-scoped` annotation on `ModuleTemplate`, the SKR RESTMapper scope, and the empty-namespace observation. Which one is authoritative? Should the fix happen at the parser layer, the client layer, or both?
 
