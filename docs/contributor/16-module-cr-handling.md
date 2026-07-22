@@ -260,7 +260,7 @@ The bug is **partially mitigated** but the mitigations are inconsistent across t
 
 Neither `GetDefaultCR` at [client.go:56](../../internal/manifest/modulecr/client.go#L56) nor `SyncDefaultModuleCR` at [client.go:130](../../internal/manifest/modulecr/client.go#L130) contains an application-level cluster-scope check. Controller-runtime's `NamespaceIfScoped` omits the namespace from HTTP URL paths for cluster-scoped resources, so the GET and Create requests reach the API server at the correct cluster-scoped endpoint. For `Create`, however, the `resource` object is passed with its `metadata.namespace` field set to the polluted value; that field is present in the HTTP request body. Whether the Kubernetes API server strips or rejects a non-empty `metadata.namespace` in the body of a cluster-scoped Create has not been empirically verified.
 
-Team decision required: which signal is authoritative and where to fix — at the parser layer, the client layer, or both. See [C1](#c1-decide-the-authoritative-cluster-scope-signal).
+Team decision required: which signal is authoritative and where to fix — at the parser layer, the client layer, or both. See Design Decision 1 below.
 
 #### G2. `IsNotFound` broad aggregation and ambiguous error semantics
 
@@ -275,7 +275,7 @@ The current strategy for cross-version safety is to iterate every version report
 - Read the CRD from the SKR and pick the storage version or served versions explicitly.
 - Persist the installed version in `Manifest.Status` and query that version directly.
 
-Today `shared.Status` has no `InstalledVersion` field ([`api/shared/status.go:11-30`](../../api/shared/status.go#L11-L30)). Choice deferred — see [C6](#c6).
+Today `shared.Status` has no `InstalledVersion` field ([`api/shared/status.go:11-30`](../../api/shared/status.go#L11-L30)). Choice deferred — see Design Decision 6 below.
 
 #### G4. Dropping a CRD version safely
 
@@ -285,7 +285,7 @@ KLM cannot know whether the module operator has migrated all CR instances on a g
 
 - **Option A — Per-instance annotation (primary contract):** The module operator stamps `operator.kyma-project.io/current-storage-version: "<new-version>"` on every CR instance after migration. KLM verifies all instances carry this annotation before calling `DropStoredVersion`.
 - **Option B — CRD-level annotation (secondary contract):** The module operator adds `operator.kyma-project.io/dropping-storage-version: "<old-version>"` to the CRD itself as an explicit "migration complete, drop this version" signal. Lower verification granularity but simpler to implement.
-- **Option C — No KLM-managed dropping:** Module teams handle version drops through their own means. KLM documents the constraint. Options A and B can be combined: B as the intent gate, A as the per-instance verification. The choice is deferred — see [C2](#c2-define-the-safe-to-drop-version-contract).
+- **Option C — No KLM-managed dropping:** Module teams handle version drops through their own means. KLM documents the constraint. Options A and B can be combined: B as the intent gate, A as the per-instance verification. The choice is deferred — see Design Decision 2 below.
 
 #### G5. Redundant list traversals and distributed CRP branching in the deletion gate
 
@@ -296,13 +296,13 @@ The CRP logic is split across both functions:
 - `CheckDefaultCRDeletion` short-circuits immediately for `CRP: Ignore` at [client.go:67](../../internal/manifest/modulecr/client.go#L67).
 - `GetAllModuleCRsExcludingDefaultCR` (called by `CheckModuleCRsDeletion`) includes all CRs — not filtering out the Default CR — for `CRP: Ignore` at [client.go:157-162](../../internal/manifest/modulecr/client.go#L157-L162).
 
-The two branches cancel each other out; the combined gate is R1-compliant. However, the distributed branching is opaque and risks regressions in future edits. The two checks can be collapsed into a single CRP-independent "any CR of the GroupKind exists?" function. See [B5](#b5).
+The two branches cancel each other out; the combined gate is R1-compliant. However, the distributed branching is opaque and risks regressions in future edits. The two checks can be collapsed into a single CRP-independent "any CR of the GroupKind exists?" function. See Refactoring 5 below.
 
 #### G6. Renamed or moved Default Module CR
 
 If a module team changes `ModuleTemplate.Spec.Data.metadata.name` or `metadata.namespace` between versions, the Manifest's new `Spec.Resource` no longer points at the previously created CR. `SyncDefaultModuleCR` would create a new CR alongside the old one. `RemoveDefaultModuleCR` would target only the new one; the old CR becomes a "customer CR" from KLM's perspective and blocks the deletion gate until it is removed manually. No error is produced — the user only sees `StateDeleting` indefinitely.
 
-Options: reject the change via admission validation, support the rename explicitly with previous-name tracking, or document it as a known limitation for module teams. See [C3](#c3-define-behavior-for-a-renamed-or-moved-default-module-cr).
+Options: reject the change via admission validation, support the rename explicitly with previous-name tracking, or document it as a known limitation for module teams. See Design Decision 3 below.
 
 #### G11. `LabelRemovalFinalizer` permanently stuck if the Default CR is manually deleted
 
@@ -316,7 +316,7 @@ if err != nil {
 }
 ```
 
-If the Default CR is manually deleted before the module is unmanaged, `GetDefaultCR` returns a wrapped NotFound error. `RemoveManagedByLabel` receives that error and returns it without removing `LabelRemovalFinalizer`. The Manifest is stuck indefinitely; every subsequent reconcile repeats the same failure. See [A2](#a2).
+If the Default CR is manually deleted before the module is unmanaged, `GetDefaultCR` returns a wrapped NotFound error. `RemoveManagedByLabel` receives that error and returns it without removing `LabelRemovalFinalizer`. The Manifest is stuck indefinitely; every subsequent reconcile repeats the same failure. See Bug Fix 2 below.
 
 #### G12. `SyncDefaultModuleCR` silently swallows non-NotFound errors from `Get`
 
@@ -325,7 +325,7 @@ If the Default CR is manually deleted before the module is unmanaged, `GetDefaul
 if err := c.Get(ctx, client.ObjectKeyFromObject(resource), resource); err != nil && util.IsNotFound(err) {
 ```
 
-When `Get` returns a non-NotFound error (transient API failure, network timeout, RBAC denial), the condition evaluates to `false`. The create block is skipped, the function returns `nil`, and the error is never surfaced. The `ModuleCR` condition remains `False`; subsequent reconciles retry silently. Persistent failures — for example, a permanent RBAC misconfiguration — loop indefinitely without the Manifest ever entering `StateError`. See [A3](#a3).
+When `Get` returns a non-NotFound error (transient API failure, network timeout, RBAC denial), the condition evaluates to `false`. The create block is skipped, the function returns `nil`, and the error is never surfaced. The `ModuleCR` condition remains `False`; subsequent reconciles retry silently. Persistent failures — for example, a permanent RBAC misconfiguration — loop indefinitely without the Manifest ever entering `StateError`. See Bug Fix 3 below.
 
 #### G13. Shared Module CRD between two modules
 
@@ -361,31 +361,31 @@ The package sits at `internal/manifest/modulecr/`, not under `service/` or `repo
 
 Items in this group address confirmed, code-verified broken behavior. Each maps to a `kind/bug` issue.
 
-- **A1.** Fix `setNameAndNamespaceIfEmpty` at [template_to_module.go:141–144](../../internal/service/manifest/parser/template_to_module.go#L141-L144) to not write `remoteSyncNamespace` onto cluster-scoped Module CR data. The parser unconditionally stamps the namespace field regardless of CRD scope — confirmed from code. As part of this fix, verify empirically whether the Kubernetes API server strips or retains the `metadata.namespace` field in the Create request body for cluster-scoped resources. Blocked on C1 (cluster-scope signal decision). (G1)
-- **A2.** Fix `removeFromDefaultCR` to tolerate `NotFound` on `GetDefaultCR` — if the Default CR is already gone, the label-removal step must succeed rather than leaving `LabelRemovalFinalizer` stuck. (G11)
-- **A3.** Fix `SyncDefaultModuleCR` to return non-`NotFound` `Get` errors: change the condition at [client.go:126](../../internal/manifest/modulecr/client.go#L126) so that any error that is not NotFound-class is returned rather than silently discarded. (G12)
+1. Fix `setNameAndNamespaceIfEmpty` at [template_to_module.go:141–144](../../internal/service/manifest/parser/template_to_module.go#L141-L144) to not write `remoteSyncNamespace` onto cluster-scoped Module CR data. The parser unconditionally stamps the namespace field regardless of CRD scope — confirmed from code. As part of this fix, verify empirically whether the Kubernetes API server strips or retains the `metadata.namespace` field in the Create request body for cluster-scoped resources. Blocked on Design Decision 1 (cluster-scope signal). (G1)
+2. Fix `removeFromDefaultCR` to tolerate `NotFound` on `GetDefaultCR` — if the Default CR is already gone, the label-removal step must succeed rather than leaving `LabelRemovalFinalizer` stuck. (G11)
+3. Fix `SyncDefaultModuleCR` to return non-`NotFound` `Get` errors: change the condition at [client.go:126](../../internal/manifest/modulecr/client.go#L126) so that any error that is not NotFound-class is returned rather than silently discarded. (G12)
 
 ### Refactoring
 
 Items in this group align the package with ADRs 001–005 without changing observable behavior. Each maps to a `kind/cleanup` issue.
 
-- **B1.** Extract a consumer-defined interface (`ModuleCRService` or narrower) at each caller; make callers depend on interfaces, not the concrete struct. (G7, ADR 001)
-- **B2.** Split into `internal/service/manifest/modulecr` (orchestration) and `internal/repository/manifest/modulecr` (Kubernetes I/O). (G9, ADR 004)
-- **B3.** Wire the service once at composition root; remove the five inline `NewClient` sites. (G8, ADR 002)
-- **B4.** Rename `SyncDefaultModuleCR` to `EnsureDefaultCRCreated`; unexport or remove `GetAllModuleCRsExcludingDefaultCR`. (G10, ADR 005)
-- **B5.** Consolidate `CheckDefaultCRDeletion` and `CheckModuleCRsDeletion` into a single CRP-independent "any CR of the GroupKind exists?" gate, eliminating the duplicate list traversal and the distributed CRP branching. The current behavior is R1-compliant; this is a readability and regression-safety improvement. (G5)
-- **B6.** Clarify the expected error semantics per `util.IsNotFound` call site; distinguish "CRD absent, treat as no CRs exist" from "transient API failure, surface as error". The current string-based fallbacks are structurally fragile but no production misclassification has been confirmed. (G2)
+1. Extract a consumer-defined interface (`ModuleCRService` or narrower) at each caller; make callers depend on interfaces, not the concrete struct. (G7, ADR 001)
+2. Split into `internal/service/manifest/modulecr` (orchestration) and `internal/repository/manifest/modulecr` (Kubernetes I/O). (G9, ADR 004)
+3. Wire the service once at composition root; remove the five inline `NewClient` sites. (G8, ADR 002)
+4. Rename `SyncDefaultModuleCR` to `EnsureDefaultCRCreated`; unexport or remove `GetAllModuleCRsExcludingDefaultCR`. (G10, ADR 005)
+5. Consolidate `CheckDefaultCRDeletion` and `CheckModuleCRsDeletion` into a single CRP-independent "any CR of the GroupKind exists?" gate, eliminating the duplicate list traversal and the distributed CRP branching. The current behavior is R1-compliant; this is a readability and regression-safety improvement. (G5)
+6. Clarify the expected error semantics per `util.IsNotFound` call site; distinguish "CRD absent, treat as no CRs exist" from "transient API failure, surface as error". The current string-based fallbacks are structurally fragile but no production misclassification has been confirmed. (G2)
 
 ### Design Decisions
 
 Items in this group require an explicit team decision before implementation can begin. Each is a candidate for an ADR and maps to a `goal/architecture` issue.
 
-- **C1.** Decide the authoritative cluster-scope signal — annotation, RESTMapper, or both — and where to enforce it. (G1)
-- **C2.** Define the "safe to drop version" contract with module operators. Write the spec (Options A, B, or C from G4), then implement. ([#2807](https://github.com/kyma-project/lifecycle-manager/issues/2807), [#2905](https://github.com/kyma-project/lifecycle-manager/issues/2905))
-- **C3.** Define behavior for a renamed or moved Default Module CR — reject via validation, support explicitly, or document as a known limitation. (G6)
-- **C4.** Follow up on [#2428](https://github.com/kyma-project/lifecycle-manager/issues/2428) — evolution of `CRP: CreateAndDelete` with UI/CLI-driven module configuration.
-- **C5.** Define and implement the formal two-phase delete state machine (`await-for-cr-removal` → `deprovision-resources`) as explicit Manifest states with observable transitions. ([discussion #3442](https://github.com/kyma-project/lifecycle-manager/discussions/3442), [#833](https://github.com/kyma-project/lifecycle-manager/issues/833))
-- **C6.** Decide whether to add a `Manifest.Status.InstalledVersion` field and query that version directly, or to read the CRD storage version from the SKR, rather than iterating all RESTMapper versions. The current RESTMapper-based approach is functional; this is an enhancement to query precision and auditability. (G3)
+1. Decide the authoritative cluster-scope signal — annotation, RESTMapper, or both — and where to enforce it. (G1)
+2. Define the "safe to drop version" contract with module operators. Write the spec (Options A, B, or C from G4), then implement. ([#2807](https://github.com/kyma-project/lifecycle-manager/issues/2807), [#2905](https://github.com/kyma-project/lifecycle-manager/issues/2905))
+3. Define behavior for a renamed or moved Default Module CR — reject via validation, support explicitly, or document as a known limitation. (G6)
+4. Follow up on [#2428](https://github.com/kyma-project/lifecycle-manager/issues/2428) — evolution of `CRP: CreateAndDelete` with UI/CLI-driven module configuration.
+5. Define and implement the formal two-phase delete state machine (`await-for-cr-removal` → `deprovision-resources`) as explicit Manifest states with observable transitions. ([discussion #3442](https://github.com/kyma-project/lifecycle-manager/discussions/3442), [#833](https://github.com/kyma-project/lifecycle-manager/issues/833))
+6. Decide whether to add a `Manifest.Status.InstalledVersion` field and query that version directly, or to read the CRD storage version from the SKR, rather than iterating all RESTMapper versions. The current RESTMapper-based approach is functional; this is an enhancement to query precision and auditability. (G3)
 
 ---
 
@@ -393,13 +393,13 @@ Items in this group require an explicit team decision before implementation can 
 
 These questions require a team decision before the corresponding Design Decision items can be implemented. They are tracked in [discussion #3442](https://github.com/kyma-project/lifecycle-manager/discussions/3442).
 
-1. **Cluster-scope signal authority (C1):** Three signals currently disagree — the `is-cluster-scoped` annotation on `ModuleTemplate`, the SKR RESTMapper scope, and the empty-namespace observation. Which one is authoritative? Should the fix happen at the parser layer, the client layer, or both?
+1. **Cluster-scope signal authority (Design Decision 1):** Three signals currently disagree — the `is-cluster-scoped` annotation on `ModuleTemplate`, the SKR RESTMapper scope, and the empty-namespace observation. Which one is authoritative? Should the fix happen at the parser layer, the client layer, or both?
 
-2. **Version-drop contract design (C2):** Should KLM support dropping old CRD API versions on behalf of module operators? If yes, which contract model — per-instance annotation (Option A), CRD-level annotation (Option B), or a combination? If no, how is the constraint communicated clearly to module teams?
+2. **Version-drop contract design (Design Decision 2):** Should KLM support dropping old CRD API versions on behalf of module operators? If yes, which contract model — per-instance annotation (Option A), CRD-level annotation (Option B), or a combination? If no, how is the constraint communicated clearly to module teams?
 
-3. **Renamed Default CR handling (C3):** Should KLM reject a Default CR name or namespace change via admission validation, support renames with previous-name tracking, or document the gap as a module-team responsibility?
+3. **Renamed Default CR handling (Design Decision 3):** Should KLM reject a Default CR name or namespace change via admission validation, support renames with previous-name tracking, or document the gap as a module-team responsibility?
 
-4. **Two-phase delete formalization (C5):** Should the current Path A/B/C behavior be formalized as an explicit Manifest state machine? If yes, what are the exact state names, transitions, and timeout semantics?
+4. **Two-phase delete formalization (Design Decision 5):** Should the current Path A/B/C behavior be formalized as an explicit Manifest state machine? If yes, what are the exact state names, transitions, and timeout semantics?
 
 ---
 
