@@ -47,17 +47,10 @@ func ComposeKymaDeletionService(kcpClient client.Client,
 		}
 		return skrClient, nil
 	}
-
 	setSkrKymaStateDeleting := usecases.NewSetSkrKymaStateDeleting(
 		skrkymastatusrepo.NewRepository(skrClientRetrieverFunc),
 		accessSecretRepository,
 	)
-
-	deleteSkrKyma := usecases.NewDeleteSkrKyma(
-		skrkymarepo.NewRepository(skrClientRetrieverFunc),
-		accessSecretRepository,
-	)
-
 	istioSystemSecretRepo := secretrepo.NewRepository(
 		kcpClient,
 		shared.IstioNamespace,
@@ -66,11 +59,9 @@ func ComposeKymaDeletionService(kcpClient client.Client,
 		certificateRepository,
 		istioSystemSecretRepo,
 	)
-
 	skrWebhookResourcesRepo := webhook.NewResourceRepository(skrClientRetrieverFunc, shared.DefaultRemoteNamespace,
 		skrWebhookManager.BaseResources)
 	deleteSkrWebhookResources := usecases.NewDeleteSkrWebhookResources(skrWebhookResourcesRepo)
-
 	deleteSkrMtCrd := usecases.NewDeleteSkrCrd(
 		skrcrdrepo.NewRepository(skrClientRetrieverFunc,
 			fmt.Sprintf("%s.%s", shared.ModuleTemplateKind.Plural(), shared.OperatorGroup)),
@@ -81,20 +72,21 @@ func ComposeKymaDeletionService(kcpClient client.Client,
 			fmt.Sprintf("%s.%s", shared.ModuleReleaseMetaKind.Plural(), shared.OperatorGroup)),
 		accessSecretRepository,
 		usecase.DeleteSkrModuleReleaseMetaCrd)
-	deleteSkrKymaCrd := usecases.NewDeleteSkrCrd(
-		skrcrdrepo.NewRepository(skrClientRetrieverFunc,
-			fmt.Sprintf("%s.%s", shared.KymaKind.Plural(), shared.OperatorGroup)),
-		accessSecretRepository,
-		usecase.DeleteSkrKymaCrd)
-
 	deleteManifests := usecases.NewDeleteManifests(
 		manifestrepo.NewRepository(
 			kcpClient,
 			shared.DefaultControlPlaneNamespace),
 	)
-
+	deleteSkrKyma := usecases.NewDeleteSkrKyma(
+		skrkymarepo.NewRepository(skrClientRetrieverFunc),
+		accessSecretRepository,
+	)
+	deleteSkrKymaCrd := usecases.NewDeleteSkrCrd(
+		skrcrdrepo.NewRepository(skrClientRetrieverFunc,
+			fmt.Sprintf("%s.%s", shared.KymaKind.Plural(), shared.OperatorGroup)),
+		accessSecretRepository,
+		usecase.DeleteSkrKymaCrd)
 	deleteMetrics := usecases.NewDeleteMetrics(kymaMetrics)
-
 	dropKymaFinalizer := usecases.NewDropKymaFinalizer(kymaRepo)
 
 	svc, err := kymadeletionsvc.NewService(
