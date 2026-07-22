@@ -37,7 +37,7 @@ This document captures the outcome of research spike [#3029](https://github.com/
 
 Key findings:
 
-- A **parser-level namespace pollution bug** writes a namespaced value onto cluster-scoped Module CR data. The bug is partially mitigated in the deletion path but unmitigated in the install path.
+- A **parser-level namespace pollution bug** writes a namespaced value onto cluster-scoped Module CR data. The bug is partially mitigated in the deletion path. In the install path, controller-runtime omits the namespace from HTTP URL paths for cluster-scoped resources, but the `metadata.namespace` field is present in the Create request body; whether the Kubernetes API server strips or rejects it has not been empirically verified.
 - A **silent error swallow** in `SyncDefaultModuleCR` prevents non-transient install failures from surfacing in the Manifest status.
 - A **stuck-finalizer bug** causes the Manifest to be permanently blocked when the Default Module CR is manually deleted before the module is unmanaged.
 - The **CRD version-drop contract** with module operators is undefined, blocking safe API version removal.
@@ -51,7 +51,7 @@ Three production bugs ([#3005](https://github.com/kyma-project/lifecycle-manager
 
 Without this research, the following failure modes remain active:
 
-- Module operators using cluster-scoped CRDs receive a spurious namespace in their Default CR at install time. The behavior depends on whether the Kubernetes API server strips the namespace field — it is undefined and has not been empirically verified.
+- Module operators using cluster-scoped CRDs have a spurious namespace written into `Manifest.Spec.Resource` at parse time. Controller-runtime omits this from HTTP URL paths, but the value is present in the Create request body. Whether the Kubernetes API server strips or rejects that field, and whether the Default CR on the SKR is created with or without a namespace, has not been empirically verified.
 - A permanent RBAC misconfiguration or transient API failure during Default CR creation returns no error to the caller. The Manifest never enters `StateError`; the failure loops silently until manually investigated.
 - A user who manually deletes the Default CR before unmanaging a module leaves the Manifest stuck indefinitely with `LabelRemovalFinalizer` never removed.
 - There is no safe code path for a module team to drop an old API version from their CRD without risking orphaned instances in `status.storedVersions`.
@@ -258,7 +258,7 @@ The bug is **partially mitigated** but the mitigations are inconsistent across t
 | RESTMapper `meta.RESTScopeNameRoot` | `isResourceTheDefaultCR` ([client.go:226](../../internal/manifest/modulecr/client.go#L226)) | Deletion and filter path only |
 | Empty-namespace observation on a returned resource | Same `isResourceTheDefaultCR` | Deletion and filter path only |
 
-`GetDefaultCR` at [client.go:56](../../internal/manifest/modulecr/client.go#L56) and `SyncDefaultModuleCR` at [client.go:130](../../internal/manifest/modulecr/client.go#L130) — the install path — are unmitigated. Whether Kubernetes strips the namespace field when creating a cluster-scoped CR from a namespaced spec has not been empirically verified.
+Neither `GetDefaultCR` at [client.go:56](../../internal/manifest/modulecr/client.go#L56) nor `SyncDefaultModuleCR` at [client.go:130](../../internal/manifest/modulecr/client.go#L130) contains an application-level cluster-scope check. Controller-runtime's `NamespaceIfScoped` omits the namespace from HTTP URL paths for cluster-scoped resources, so the GET and Create requests reach the API server at the correct cluster-scoped endpoint. For `Create`, however, the `resource` object is passed with its `metadata.namespace` field set to the polluted value; that field is present in the HTTP request body. Whether the Kubernetes API server strips or rejects a non-empty `metadata.namespace` in the body of a cluster-scoped Create has not been empirically verified.
 
 Team decision required: which signal is authoritative and where to fix — at the parser layer, the client layer, or both. See [C1](#c1-decide-the-authoritative-cluster-scope-signal).
 
@@ -275,7 +275,7 @@ The current strategy for cross-version safety is to iterate every version report
 - Read the CRD from the SKR and pick the storage version or served versions explicitly.
 - Persist the installed version in `Manifest.Status` and query that version directly.
 
-Today `shared.Status` has no `InstalledVersion` field ([`api/shared/status.go:11-30`](../../api/shared/status.go#L11-L30)). Choice deferred — see [A4](#a4).
+Today `shared.Status` has no `InstalledVersion` field ([`api/shared/status.go:11-30`](../../api/shared/status.go#L11-L30)). Choice deferred — see [C6](#c6).
 
 #### G4. Dropping a CRD version safely
 
@@ -296,7 +296,7 @@ The CRP logic is split across both functions:
 - `CheckDefaultCRDeletion` short-circuits immediately for `CRP: Ignore` at [client.go:67](../../internal/manifest/modulecr/client.go#L67).
 - `GetAllModuleCRsExcludingDefaultCR` (called by `CheckModuleCRsDeletion`) includes all CRs — not filtering out the Default CR — for `CRP: Ignore` at [client.go:157-162](../../internal/manifest/modulecr/client.go#L157-L162).
 
-The two branches cancel each other out; the combined gate is R1-compliant. However, the distributed branching is opaque and risks regressions in future edits. The two checks can be collapsed into a single CRP-independent "any CR of the GroupKind exists?" function. See [A2](#a2).
+The two branches cancel each other out; the combined gate is R1-compliant. However, the distributed branching is opaque and risks regressions in future edits. The two checks can be collapsed into a single CRP-independent "any CR of the GroupKind exists?" function. See [B5](#b5).
 
 #### G6. Renamed or moved Default Module CR
 
@@ -316,7 +316,7 @@ if err != nil {
 }
 ```
 
-If the Default CR is manually deleted before the module is unmanaged, `GetDefaultCR` returns a wrapped NotFound error. `RemoveManagedByLabel` receives that error and returns it without removing `LabelRemovalFinalizer`. The Manifest is stuck indefinitely; every subsequent reconcile repeats the same failure. See [A6](#a6).
+If the Default CR is manually deleted before the module is unmanaged, `GetDefaultCR` returns a wrapped NotFound error. `RemoveManagedByLabel` receives that error and returns it without removing `LabelRemovalFinalizer`. The Manifest is stuck indefinitely; every subsequent reconcile repeats the same failure. See [A2](#a2).
 
 #### G12. `SyncDefaultModuleCR` silently swallows non-NotFound errors from `Get`
 
@@ -325,7 +325,7 @@ If the Default CR is manually deleted before the module is unmanaged, `GetDefaul
 if err := c.Get(ctx, client.ObjectKeyFromObject(resource), resource); err != nil && util.IsNotFound(err) {
 ```
 
-When `Get` returns a non-NotFound error (transient API failure, network timeout, RBAC denial), the condition evaluates to `false`. The create block is skipped, the function returns `nil`, and the error is never surfaced. The `ModuleCR` condition remains `False`; subsequent reconciles retry silently. Persistent failures — for example, a permanent RBAC misconfiguration — loop indefinitely without the Manifest ever entering `StateError`. See [A7](#a7).
+When `Get` returns a non-NotFound error (transient API failure, network timeout, RBAC denial), the condition evaluates to `false`. The create block is skipped, the function returns `nil`, and the error is never surfaced. The `ModuleCR` condition remains `False`; subsequent reconciles retry silently. Persistent failures — for example, a permanent RBAC misconfiguration — loop indefinitely without the Manifest ever entering `StateError`. See [A3](#a3).
 
 #### G13. Shared Module CRD between two modules
 
@@ -359,15 +359,11 @@ The package sits at `internal/manifest/modulecr/`, not under `service/` or `repo
 
 ### Bug Fixes
 
-Items in this group address broken behavior and are ready to ticket. Each maps to a `kind/bug` issue.
+Items in this group address confirmed, code-verified broken behavior. Each maps to a `kind/bug` issue.
 
-- **A1.** Stop defaulting namespace for cluster-scoped Module CRs at the parser layer. Depends on the cluster-scope signal decision (G1). Blocked on C1.
-- **A2.** Consolidate `CheckDefaultCRDeletion` and `CheckModuleCRsDeletion` into a single CRP-independent "any CR of the GroupKind exists?" gate, eliminating the duplicate list traversal and the distributed CRP branching. (G5)
-- **A3.** Clarify the expected error semantics per `util.IsNotFound` call site; distinguish "CRD absent, treat as no CRs" from "transient API failure, surface as error". (G2)
-- **A4.** Add `Manifest.Status.InstalledVersion` or equivalent and query that version directly instead of iterating RESTMappings. Depends on team decision between a status field and reading the CRD storage version directly. (G3)
-- **A5.** Empirically verify `SyncDefaultModuleCR` behavior for cluster-scoped CRs; fix if the create currently fails or misbehaves with a namespaced spec. (G1)
-- **A6.** Fix `removeFromDefaultCR` to tolerate NotFound on `GetDefaultCR` — if the Default CR is already gone, the label-removal step must succeed rather than leaving `LabelRemovalFinalizer` stuck. (G11)
-- **A7.** Fix `SyncDefaultModuleCR` to return non-NotFound `Get` errors: change the condition so that any error that is not NotFound-class is returned rather than silently discarded. (G12)
+- **A1.** Fix `setNameAndNamespaceIfEmpty` at [template_to_module.go:141–144](../../internal/service/manifest/parser/template_to_module.go#L141-L144) to not write `remoteSyncNamespace` onto cluster-scoped Module CR data. The parser unconditionally stamps the namespace field regardless of CRD scope — confirmed from code. As part of this fix, verify empirically whether the Kubernetes API server strips or retains the `metadata.namespace` field in the Create request body for cluster-scoped resources. Blocked on C1 (cluster-scope signal decision). (G1)
+- **A2.** Fix `removeFromDefaultCR` to tolerate `NotFound` on `GetDefaultCR` — if the Default CR is already gone, the label-removal step must succeed rather than leaving `LabelRemovalFinalizer` stuck. (G11)
+- **A3.** Fix `SyncDefaultModuleCR` to return non-`NotFound` `Get` errors: change the condition at [client.go:126](../../internal/manifest/modulecr/client.go#L126) so that any error that is not NotFound-class is returned rather than silently discarded. (G12)
 
 ### Refactoring
 
@@ -377,6 +373,8 @@ Items in this group align the package with ADRs 001–005 without changing obser
 - **B2.** Split into `internal/service/manifest/modulecr` (orchestration) and `internal/repository/manifest/modulecr` (Kubernetes I/O). (G9, ADR 004)
 - **B3.** Wire the service once at composition root; remove the five inline `NewClient` sites. (G8, ADR 002)
 - **B4.** Rename `SyncDefaultModuleCR` to `EnsureDefaultCRCreated`; unexport or remove `GetAllModuleCRsExcludingDefaultCR`. (G10, ADR 005)
+- **B5.** Consolidate `CheckDefaultCRDeletion` and `CheckModuleCRsDeletion` into a single CRP-independent "any CR of the GroupKind exists?" gate, eliminating the duplicate list traversal and the distributed CRP branching. The current behavior is R1-compliant; this is a readability and regression-safety improvement. (G5)
+- **B6.** Clarify the expected error semantics per `util.IsNotFound` call site; distinguish "CRD absent, treat as no CRs exist" from "transient API failure, surface as error". The current string-based fallbacks are structurally fragile but no production misclassification has been confirmed. (G2)
 
 ### Design Decisions
 
@@ -387,6 +385,7 @@ Items in this group require an explicit team decision before implementation can 
 - **C3.** Define behavior for a renamed or moved Default Module CR — reject via validation, support explicitly, or document as a known limitation. (G6)
 - **C4.** Follow up on [#2428](https://github.com/kyma-project/lifecycle-manager/issues/2428) — evolution of `CRP: CreateAndDelete` with UI/CLI-driven module configuration.
 - **C5.** Define and implement the formal two-phase delete state machine (`await-for-cr-removal` → `deprovision-resources`) as explicit Manifest states with observable transitions. ([discussion #3442](https://github.com/kyma-project/lifecycle-manager/discussions/3442), [#833](https://github.com/kyma-project/lifecycle-manager/issues/833))
+- **C6.** Decide whether to add a `Manifest.Status.InstalledVersion` field and query that version directly, or to read the CRD storage version from the SKR, rather than iterating all RESTMapper versions. The current RESTMapper-based approach is functional; this is an enhancement to query precision and auditability. (G3)
 
 ---
 
