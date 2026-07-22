@@ -37,8 +37,8 @@ func Test_NewService_ReturnsError_WhenUseCasesAreOutOfOrder(t *testing.T) {
 
 	require.Nil(t, svc)
 	require.ErrorIs(t, err, kymadeletionsvc.ErrUseCasesOutOfOrder)
-	require.Contains(t, err.Error(), "expected use case DeleteSkrKyma at position 2 but found DeleteCertificateSetup")
-	require.Contains(t, err.Error(), "expected use case DeleteCertificateSetup at position 3 but found DeleteSkrKyma")
+	require.Contains(t, err.Error(), "expected use case DeleteCertificateSetup at position 2 but found DeleteSkrWebhookResources")
+	require.Contains(t, err.Error(), "expected use case DeleteSkrWebhookResources at position 3 but found DeleteCertificateSetup")
 }
 
 func Test_NewService_ReturnsError_WhenSameUseCaseTwice(t *testing.T) {
@@ -246,7 +246,7 @@ func Test_Delete_ExecutesCorrectOrderOfUseCases(t *testing.T) {
 	recordedOrder := []string{}
 	uc1 := &orderRecordingUseCaseStub{recorder: &recordedOrder, name: usecase.SetKcpKymaStateDeleting}
 	uc2 := &orderRecordingUseCaseStub{recorder: &recordedOrder, name: usecase.SetSkrKymaStateDeleting}
-	uc3 := &orderRecordingUseCaseStub{recorder: &recordedOrder, name: usecase.DeleteSkrKyma}
+	uc3 := &orderRecordingUseCaseStub{recorder: &recordedOrder, name: usecase.DeleteWatcherCertificateSetup}
 
 	executionOrder := []string{
 		fmt.Sprintf("%s-%s", uc1.Name(), "isApplicable"),
@@ -356,13 +356,13 @@ func setupUseCases() []*useCaseStub {
 	return []*useCaseStub{
 		{isApplicable: false, err: nil, name: usecase.SetKcpKymaStateDeleting},
 		{isApplicable: false, err: nil, name: usecase.SetSkrKymaStateDeleting},
-		{isApplicable: false, err: nil, name: usecase.DeleteSkrKyma},
 		{isApplicable: false, err: nil, name: usecase.DeleteWatcherCertificateSetup},
 		{isApplicable: false, err: nil, name: usecase.DeleteSkrWebhookResources},
 		{isApplicable: false, err: nil, name: usecase.DeleteSkrModuleTemplateCrd},
 		{isApplicable: false, err: nil, name: usecase.DeleteSkrModuleReleaseMetaCrd},
-		{isApplicable: false, err: nil, name: usecase.DeleteSkrKymaCrd},
 		{isApplicable: false, err: nil, name: usecase.DeleteManifests},
+		{isApplicable: false, err: nil, name: usecase.DeleteSkrKyma},
+		{isApplicable: false, err: nil, name: usecase.DeleteSkrKymaCrd},
 		{isApplicable: false, err: nil, name: usecase.DeleteMetrics},
 		{isApplicable: false, err: nil, name: usecase.DropKymaFinalizer},
 	}
