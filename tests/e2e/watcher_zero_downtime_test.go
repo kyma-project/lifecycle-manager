@@ -8,17 +8,17 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Watcher Zero Downtime", Ordered, func() {
@@ -88,7 +88,7 @@ func triggerWatcherAndCheckDowntime(ctx context.Context, skrClient client.Client
 }
 
 // For GCM the minimum rotation interval is 5m.
-// This is too infrequent for proper testing => force the rotation
+// This is too infrequent for proper testing => force the rotation.
 func forceRotateGCMCert(ctx context.Context) error {
 	cert := &gcertv1alpha1.Certificate{}
 	if err := kcpClient.Get(ctx, client.ObjectKey{

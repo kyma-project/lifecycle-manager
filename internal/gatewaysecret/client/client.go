@@ -15,10 +15,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
-const (
-	kcpCACertName = "klm-watcher-serving"
-)
-
 var errInvalidGatewaySecret = errors.New("invalid gateway secret")
 
 type CertificateInterface interface {
