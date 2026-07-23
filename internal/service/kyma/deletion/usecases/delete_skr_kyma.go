@@ -33,14 +33,14 @@ func (u *DeleteSkrKyma) IsApplicable(ctx context.Context, kcpKyma *v1beta2.Kyma)
 		return false, nil
 	}
 
-	_, err := u.skrKymaRepo.Exists(ctx, kcpKyma.GetNamespacedName())
+	exists, err := u.skrKymaRepo.Exists(ctx, kcpKyma.GetNamespacedName())
 	if errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
 		return false, nil
 	}
 	if err != nil {
 		return false, err
 	}
-	return true, nil
+	return exists, nil
 }
 
 func (u *DeleteSkrKyma) Execute(ctx context.Context, kcpKyma *v1beta2.Kyma) result.Result {
