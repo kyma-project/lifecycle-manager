@@ -77,7 +77,7 @@ This spike covers:
 - **Mandatory module handling.** Mandatory modules have no Default Module CR and follow a different code path.
 - **Community module handling.** Community modules are not installed by KLM; the Default CR concept applies only to regular Kyma modules.
 - **Market-specific Module CRs.** Multiple Default CRs per market are not supported and out of scope.
-- **Module configuration status reporting.** KLM reports installation state, not module business state. This is an accepted non-requirement per community#972 (R2).
+- **Module instance business status reporting.** KLM reports installation state, not the business status of a Module instance. This is an accepted non-requirement per community#972 (R2).
 
 ---
 
@@ -106,9 +106,9 @@ Both `CreateAndDelete` and `Ignore` treat every Module CR of the Module CRD's `G
 - Implemented by [PR #2543](https://github.com/kyma-project/lifecycle-manager/pull/2543) (block deletion until Module CRs removed) and [PR #3012](https://github.com/kyma-project/lifecycle-manager/pull/3012) (list all namespaces).
 - Code: [`CheckModuleCRsDeletion`](../../internal/manifest/modulecr/client.go#L82) and [`CheckDefaultCRDeletion`](../../internal/manifest/modulecr/client.go#L63).
 
-### R2 — KLM does not report module configuration status
+### R2 — KLM does not report Module instance business status
 
-KLM tracks installation state, not module business state. If misconfigured customer CRs exist alongside the Default CR, this is a concern for the UI or CLI, not for KLM's status reporting.
+KLM tracks installation state, not the business status of a Module instance. The Module Operator reflects business status in Module CRs — KLM does not read or propagate that status. If misconfigured customer CRs exist alongside the Default CR, this is a concern for the UI or CLI, not for KLM's status reporting.
 
 - Accepted 2025-03-12 in community#972.
 - `Kyma.Status.Modules[].Resource` exposes the tracked Default CR via [`ModuleStatusGenerator.GenerateModuleStatus`](../../internal/service/kyma/status/modules/generator/generator.go#L83-L100), but no configuration-level status is reported.
