@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"context"
+	"errors"
 
 	"k8s.io/apimachinery/pkg/types"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -18,16 +20,13 @@ type SkrKymaStatusRepo interface {
 }
 
 type SetSkrKymaStateDeleting struct {
-	skrKymaStatusRepo   SkrKymaStatusRepo
-	skrAccessSecretRepo SkrAccessSecretRepo
+	skrKymaStatusRepo SkrKymaStatusRepo
 }
 
 func NewSetSkrKymaStateDeleting(kymaStatusRepo SkrKymaStatusRepo,
-	skrAccessSecretRepo SkrAccessSecretRepo,
 ) *SetSkrKymaStateDeleting {
 	return &SetSkrKymaStateDeleting{
-		skrKymaStatusRepo:   kymaStatusRepo,
-		skrAccessSecretRepo: skrAccessSecretRepo,
+		skrKymaStatusRepo: kymaStatusRepo,
 	}
 }
 
@@ -36,14 +35,10 @@ func (u *SetSkrKymaStateDeleting) IsApplicable(ctx context.Context, kcpKyma *v1b
 		return false, nil
 	}
 
-	if exists, err := u.skrAccessSecretRepo.ExistsForKyma(ctx, kcpKyma.GetName()); !exists || err != nil {
-		return false, err
-	}
-
 	status, err := u.skrKymaStatusRepo.Get(ctx, kcpKyma.GetNamespacedName())
 
 	// SKR kyma is already gone
-	if util.IsNotFound(err) {
+	if errors.Is(err, accessmanager.ErrAccessSecretNotFound) || util.IsNotFound(err) {
 		return false, nil
 	}
 
