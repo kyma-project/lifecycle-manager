@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	apicorev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/cabundle"
@@ -30,66 +31,13 @@ const (
 	gatewayServerCertExpiryWindow      = 14 * 24 * time.Hour
 )
 
-var (
-	notBefore = time.Now().Add(-1 * time.Hour)
-	notAfter  = time.Now().Add(2 * time.Hour)
-)
-
-// With the above notBefore and notAfter, the "new" CA cert is valid from 1 hour ago till the next two hours.
-// In the good path, we bundle the CA cert immediately, since the "new" CA cert is already valid since 1 hour.
-// And we will switch the TLS cert and key 30 minutes from now, since the grace period is 90 minutes from the notBefore.
-
 type noopMetrics struct{}
 
 func (noopMetrics) ServerCertificateCloseToExpiry(_ bool) {}
 
-func TestManageGatewaySecret_WhenGetWatcherServingCertValidityReturnsError_ReturnsError(t *testing.T) {
-	// ARRANGE
-	mockClient := &testutils.ClientMock{}
-	someError := errors.New("some-error")
-	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(time.Time{}, time.Time{}, someError)
-
-	handler := cabundle.NewGatewaySecretHandler(mockClient,
-		gatewayServerCertSwitchGracePeriod,
-		gatewayServerCertExpiryWindow,
-		certificate.NewBundler(),
-		noopMetrics{},
-	)
-
-	// ACT
-	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
-
-	// ASSERT
-	require.Error(t, err)
-	require.ErrorIs(t, err, someError)
-	mockClient.AssertNumberOfCalls(t, "GetWatcherServingCertValidity", 1)
-}
-
-func TestManageGatewaySecret_WhenGetWatcherServingCertValidityReturnsInvalidNotBefore_ReturnsError(t *testing.T) {
-	// ARRANGE
-	mockClient := &testutils.ClientMock{}
-	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(time.Time{}, time.Now(), nil)
-
-	handler := cabundle.NewGatewaySecretHandler(mockClient,
-		gatewayServerCertSwitchGracePeriod,
-		gatewayServerCertExpiryWindow,
-		certificate.NewBundler(),
-		noopMetrics{},
-	)
-
-	// ACT
-	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
-
-	// ASSERT
-	require.Error(t, err)
-	require.ErrorIs(t, err, cabundle.ErrCACertificateNotReady)
-	mockClient.AssertNumberOfCalls(t, "GetWatcherServingCertValidity", 1)
-}
-
 func TestManageGatewaySecret_WhenGetGatewaySecretReturnsError_ReturnsError(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
-	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
 	someError := errors.New("some-error")
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(nil, someError)
 
@@ -106,14 +54,12 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsError_ReturnsError(t *te
 	// ASSERT
 	require.Error(t, err)
 	require.ErrorIs(t, err, someError)
-	mockClient.AssertNumberOfCalls(t, "GetWatcherServingCertValidity", 1)
 	mockClient.AssertNumberOfCalls(t, "GetGatewaySecret", 1)
 }
 
 func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGatewaySecretFromRootSecret(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
-	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(nil, notFoundError())
 	mockClient.On("CreateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	rootSecret := &apicorev1.Secret{
@@ -155,7 +101,6 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGat
 func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundErrorAndCreationFailed_ReturnError(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
-	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(nil, notFoundError())
 	expectedError := errors.New("some-error")
 	mockClient.On("CreateGatewaySecret", mock.Anything, mock.Anything).Return(expectedError)
@@ -180,7 +125,6 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundErrorAndCreation
 func TestManageGatewaySecret_WhenLegacySecret_BootstrapsLegacyGatewaySecret(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
-	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
 		Data: map[string][]byte{
 			apicorev1.TLSCertKey:       certificates.Cert1,
@@ -214,7 +158,6 @@ func TestManageGatewaySecret_WhenLegacySecret_BootstrapsLegacyGatewaySecret(t *t
 func TestManageGatewaySecret_BundlesAndDropsCerts(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
-	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
 		Data: map[string][]byte{
 			apicorev1.TLSCertKey:       certificates.Cert1,
@@ -254,7 +197,6 @@ func TestManageGatewaySecret_BundlesAndDropsCerts(t *testing.T) {
 func TestManageGatewaySecret_WhenUpdateSecretFails_ReturnsError(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
-	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
 		Data: map[string][]byte{
 			apicorev1.TLSCertKey:       certificates.Cert1,
@@ -284,15 +226,91 @@ func TestManageGatewaySecret_WhenUpdateSecretFails_ReturnsError(t *testing.T) {
 	// ASSERT
 	require.Error(t, err)
 	require.ErrorIs(t, err, expectedError)
-	mockClient.AssertNumberOfCalls(t, "GetWatcherServingCertValidity", 1)
 	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 1)
 }
 
+func TestManageGatewaySecret_WhenCaAddedToBundleAtAnnotationMissing_ReturnsError(t *testing.T) {
+	// ARRANGE
+	mockClient := &testutils.ClientMock{}
+	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
+		Data: map[string][]byte{
+			apicorev1.TLSCertKey:       certificates.Cert1,
+			apicorev1.TLSPrivateKeyKey: []byte("key"),
+			"ca.crt":                   certificates.Cert1,
+		},
+	}, nil)
+	handler := cabundle.NewGatewaySecretHandler(mockClient,
+		gatewayServerCertSwitchGracePeriod,
+		gatewayServerCertExpiryWindow,
+		certificate.NewBundler(),
+		noopMetrics{},
+	)
+	rootSecret := &apicorev1.Secret{
+		Data: map[string][]byte{
+			apicorev1.TLSCertKey:       certificates.Cert1,
+			apicorev1.TLSPrivateKeyKey: []byte("key"),
+			"ca.crt":                   certificates.Cert1,
+		},
+	}
+
+	// ACT
+	err := handler.ManageGatewaySecret(t.Context(), rootSecret)
+
+	// ASSERT
+	require.ErrorIs(t, err, cabundle.ErrGatewaySecretMissingBundleTimeAnnotation)
+	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 0)
+}
+
+func TestManageGatewaySecret_WhenCaAddedToBundleAtAnnotationMalformed_ReturnsError(t *testing.T) {
+	// ARRANGE
+	mockClient := &testutils.ClientMock{}
+	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Annotations: map[string]string{
+				shared.CaAddedToBundleAtAnnotation: "not-a-timestamp",
+			},
+		},
+		Data: map[string][]byte{
+			apicorev1.TLSCertKey:       certificates.Cert1,
+			apicorev1.TLSPrivateKeyKey: []byte("key"),
+			"ca.crt":                   certificates.Cert1,
+		},
+	}, nil)
+	handler := cabundle.NewGatewaySecretHandler(mockClient,
+		gatewayServerCertSwitchGracePeriod,
+		gatewayServerCertExpiryWindow,
+		certificate.NewBundler(),
+		noopMetrics{},
+	)
+	rootSecret := &apicorev1.Secret{
+		Data: map[string][]byte{
+			apicorev1.TLSCertKey:       certificates.Cert1,
+			apicorev1.TLSPrivateKeyKey: []byte("key"),
+			"ca.crt":                   certificates.Cert1,
+		},
+	}
+
+	// ACT
+	err := handler.ManageGatewaySecret(t.Context(), rootSecret)
+
+	// ASSERT
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to parse caAddedToBundleAt annotation")
+	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 0)
+}
+
+// When the CA bundle was extended longer ago than the grace period, the server cert must switch
+// so that the new cert (signed by the new CA) is served to SKR pods that already have the new CA.
 func TestManageGatewaySecret_WhenRequiresCertSwitching_SwitchesTLSCertAndKeyWithRootSecret(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
-	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
+	staleAnnotationTime := apimetav1.Now().Add(-1 * time.Hour).Format(time.RFC3339)
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Annotations: map[string]string{
+				shared.CaAddedToBundleAtAnnotation: staleAnnotationTime,
+			},
+		},
 		Data: map[string][]byte{
 			apicorev1.TLSCertKey:       certificates.Cert1,
 			apicorev1.TLSPrivateKeyKey: []byte("value2"),
@@ -332,7 +350,6 @@ func TestManageGatewaySecret_WhenRequiresCertSwitching_SwitchesTLSCertAndKeyWith
 func TestManageGatewaySecret_WhenBundlingFails_ReturnsError(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
-	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
 		Data: map[string][]byte{
 			apicorev1.TLSCertKey:       certificates.Cert1,
@@ -344,7 +361,13 @@ func TestManageGatewaySecret_WhenBundlingFails_ReturnsError(t *testing.T) {
 	handler := cabundle.NewGatewaySecretHandler(mockClient,
 		gatewayServerCertSwitchGracePeriod,
 		gatewayServerCertExpiryWindow,
-		certificate.NewBundler(),
+		certificate.NewBundler(certificate.WithParseX509Function(
+			func(_ []byte) (*x509.Certificate, error) {
+				return &x509.Certificate{
+					NotAfter: time.Time{}, // empty NotAfter triggers error
+				}, nil
+			},
+		)),
 		noopMetrics{},
 	)
 	rootSecret := &apicorev1.Secret{
@@ -366,7 +389,6 @@ func TestManageGatewaySecret_WhenBundlingFails_ReturnsError(t *testing.T) {
 func TestManageGatewaySecret_WhenDroppingExpiredCertsFails_ReturnsError(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
-	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
 		Data: map[string][]byte{
 			apicorev1.TLSCertKey:       certificates.Cert1,
@@ -406,10 +428,14 @@ func TestManageGatewaySecret_WhenDroppingExpiredCertsFails_ReturnsError(t *testi
 func TestManageGatewaySecret_WhenServerCertCloseToExpiry_SetsMetricToTrue(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
-	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
 	// tls.crt expires in 7 days, within the 14-day expiry window
 	expiringCert := generateCertPEM(t, time.Now().Add(-time.Hour), time.Now().Add(7*24*time.Hour))
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Annotations: map[string]string{
+				shared.CaAddedToBundleAtAnnotation: time.Now().Format(time.RFC3339),
+			},
+		},
 		Data: map[string][]byte{
 			apicorev1.TLSCertKey:       expiringCert,
 			apicorev1.TLSPrivateKeyKey: []byte("key"),
@@ -445,7 +471,6 @@ func TestManageGatewaySecret_WhenServerCertCloseToExpiry_SetsMetricToTrue(t *tes
 func TestManageGatewaySecret_WhenServerCertNotCloseToExpiry_SetsMetricToFalse(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
-	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
 	// Cert1 is valid until 2036, well outside the 14-day window
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
 		Data: map[string][]byte{
@@ -483,8 +508,12 @@ func TestManageGatewaySecret_WhenServerCertNotCloseToExpiry_SetsMetricToFalse(t 
 func TestManageGatewaySecret_WhenServerCertIsInvalidPEM_ReturnsError(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
-	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, notAfter, nil)
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Annotations: map[string]string{
+				shared.CaAddedToBundleAtAnnotation: time.Now().Format(time.RFC3339),
+			},
+		},
 		Data: map[string][]byte{
 			apicorev1.TLSCertKey:       []byte("not-valid-pem"),
 			apicorev1.TLSPrivateKeyKey: []byte("key"),

@@ -15,10 +15,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
-const (
-	kcpCACertName = "klm-watcher-serving"
-)
-
 var errInvalidGatewaySecret = errors.New("invalid gateway secret")
 
 type CertificateInterface interface {
@@ -38,15 +34,6 @@ func NewGatewaySecretRotationClient(
 		certificateInterface: certificateInterface,
 		secretInterface:      kubernetes.NewForConfigOrDie(config).CoreV1().Secrets(shared.IstioNamespace),
 	}
-}
-
-func (c *GatewaySecretRotationClient) GetWatcherServingCertValidity(ctx context.Context) (time.Time, time.Time, error) {
-	notBefore, notAfter, err := c.certificateInterface.GetValidity(ctx, kcpCACertName)
-	if err != nil {
-		return time.Time{}, time.Time{}, fmt.Errorf("failed to get watcher serving cert validity: %w", err)
-	}
-
-	return notBefore, notAfter, nil
 }
 
 func (c *GatewaySecretRotationClient) GetGatewaySecret(ctx context.Context) (*apicorev1.Secret, error) {

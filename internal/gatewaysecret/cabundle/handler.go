@@ -19,8 +19,8 @@ import (
 )
 
 var (
-	ErrCACertificateNotReady           = errors.New("watcher-serving ca certificate is not ready")
-	ErrServerCertificateParsingFailure = errors.New("failed to parse server certificate from gateway secret")
+	ErrGatewaySecretMissingBundleTimeAnnotation = errors.New("gateway secret missing caAddedToBundleAt annotation")
+	ErrServerCertificateParsingFailure          = errors.New("failed to parse server certificate from gateway secret")
 )
 
 type Bundler interface {
@@ -56,14 +56,6 @@ func NewGatewaySecretHandler(client gatewaysecret.Client,
 }
 
 func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1.Secret) error {
-	notBefore, _, err := h.client.GetWatcherServingCertValidity(ctx)
-	if err != nil {
-		return err
-	}
-	if notBefore.IsZero() {
-		return ErrCACertificateNotReady
-	}
-
 	gwSecret, err := h.client.GetGatewaySecret(ctx)
 	if util.IsNotFound(err) {
 		return h.createGatewaySecretFromRootSecret(ctx, rootSecret)
@@ -85,11 +77,15 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 		return err
 	}
 
-	if h.requiresCertSwitching(notBefore) {
+	caBundledAt, err := getCaBundledAt(gwSecret)
+	if err != nil {
+		return err
+	}
+	if h.requiresCertSwitching(caBundledAt) {
 		logf.FromContext(ctx).
 			V(log.InfoLevel).
 			Info("Switching gateway secret tls.crt",
-				"caNotBefore", notBefore.Format(time.RFC3339),
+				"caBundledAt", caBundledAt.Format(time.RFC3339),
 				"serverCertSwitchGracePeriod", h.serverCertSwitchGracePeriod,
 			)
 		switchCertificate(gwSecret, rootSecret)
@@ -126,9 +122,20 @@ func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context,
 	return h.client.CreateGatewaySecret(ctx, newSecret)
 }
 
-func (h *Handler) requiresCertSwitching(caCertNotBefore time.Time) bool {
-	// If the grace period after CA rotation has expired, then we need to switch the certificate and private key
-	return time.Now().After(caCertNotBefore.Add(h.serverCertSwitchGracePeriod))
+func (h *Handler) requiresCertSwitching(caBundledAt time.Time) bool {
+	return time.Now().After(caBundledAt.Add(h.serverCertSwitchGracePeriod))
+}
+
+func getCaBundledAt(secret *apicorev1.Secret) (time.Time, error) {
+	value, ok := secret.Annotations[shared.CaAddedToBundleAtAnnotation]
+	if !ok {
+		return time.Time{}, ErrGatewaySecretMissingBundleTimeAnnotation
+	}
+	t, err := time.Parse(time.RFC3339, value)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to parse caAddedToBundleAt annotation: %w", err)
+	}
+	return t, nil
 }
 
 func setCaBundleTimeAnnotationToNow(secret *apicorev1.Secret) {

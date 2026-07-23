@@ -4,21 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
+	"math/rand"
 	"strings"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Watcher Zero Downtime", Ordered, func() {
@@ -40,7 +40,7 @@ var _ = Describe("Watcher Zero Downtime", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace).
 				WithTimeout(12 * time.Minute).
-				WithPolling(10 * time.Second).
+				WithPolling(1 * time.Minute).
 				Should(Succeed())
 		})
 	})
@@ -49,12 +49,15 @@ var _ = Describe("Watcher Zero Downtime", Ordered, func() {
 func triggerWatcherAndCheckDowntime(ctx context.Context, skrClient client.Client,
 	kymaName, kymaNamespace string,
 ) error {
-	// Bump an annotation on the serving cert to trigger immediate GCM reconciliation.
-	// GCM's own requeue interval can be longer than the 5-minute rotation window, so
-	// without this nudge the cert would not rotate within the observation window.
-	if err := bumpServingCertAnnotation(ctx); err != nil {
+	if err := forceRotateGCMCert(ctx); err != nil {
 		return err
 	}
+
+	// Sleep [0,45] seconds to verify at a random point during the rotation.
+	// 45 seconds to finish the circle before next polling (60 seconds).
+	// Must be greater than 30 seconds (server cert switch grace interval) to catch
+	// both, events before and after server cert switch.
+	time.Sleep(time.Duration(rand.Intn(46)) * time.Second) //nolint:gosec // non-security jitter for test pacing
 
 	// Triggering watcher request
 	kyma, err := GetKyma(ctx, skrClient, kymaName, kymaNamespace)
@@ -84,7 +87,9 @@ func triggerWatcherAndCheckDowntime(ctx context.Context, skrClient client.Client
 	return nil
 }
 
-func bumpServingCertAnnotation(ctx context.Context) error {
+// For GCM the minimum rotation interval is 5m.
+// This is too infrequent for proper testing => force the rotation.
+func forceRotateGCMCert(ctx context.Context) error {
 	cert := &gcertv1alpha1.Certificate{}
 	if err := kcpClient.Get(ctx, client.ObjectKey{
 		Name:      shared.CACertificateName,
@@ -96,11 +101,11 @@ func bumpServingCertAnnotation(ctx context.Context) error {
 		return fmt.Errorf("failed to get serving cert: %w", err)
 	}
 	base := cert.DeepCopy()
-	if cert.Annotations == nil {
-		cert.Annotations = map[string]string{}
-	}
-	count, _ := strconv.Atoi(cert.Annotations["watcher-zero-downtime/rotation-trigger"])
-	cert.Annotations["watcher-zero-downtime/rotation-trigger"] = strconv.Itoa(count + 1)
+
+	cert.Spec.EnsureRenewedAfter = nil
+	truePtr := true
+	cert.Spec.Renew = &truePtr
+
 	if err := kcpClient.Patch(ctx, cert, client.MergeFrom(base)); err != nil {
 		return fmt.Errorf("failed to bump serving cert annotation: %w", err)
 	}
