@@ -8,3 +8,4 @@
 
 * @kyma-project/jellyfish
 *.md @kyma-project/technical-writers
+/docs/internal/ @kyma-project/jellyfish
