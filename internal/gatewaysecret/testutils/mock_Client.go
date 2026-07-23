@@ -4,7 +4,6 @@ package testutils
 
 import (
 	context "context"
-	time "time"
 
 	mock "github.com/stretchr/testify/mock"
 
@@ -125,69 +124,6 @@ func (_c *ClientMock_GetGatewaySecret_Call) Return(_a0 *v1.Secret, _a1 error) *C
 }
 
 func (_c *ClientMock_GetGatewaySecret_Call) RunAndReturn(run func(context.Context) (*v1.Secret, error)) *ClientMock_GetGatewaySecret_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetWatcherServingCertValidity provides a mock function with given fields: ctx
-func (_m *ClientMock) GetWatcherServingCertValidity(ctx context.Context) (time.Time, time.Time, error) {
-	ret := _m.Called(ctx)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetWatcherServingCertValidity")
-	}
-
-	var r0 time.Time
-	var r1 time.Time
-	var r2 error
-	if rf, ok := ret.Get(0).(func(context.Context) (time.Time, time.Time, error)); ok {
-		return rf(ctx)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context) time.Time); ok {
-		r0 = rf(ctx)
-	} else {
-		r0 = ret.Get(0).(time.Time)
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context) time.Time); ok {
-		r1 = rf(ctx)
-	} else {
-		r1 = ret.Get(1).(time.Time)
-	}
-
-	if rf, ok := ret.Get(2).(func(context.Context) error); ok {
-		r2 = rf(ctx)
-	} else {
-		r2 = ret.Error(2)
-	}
-
-	return r0, r1, r2
-}
-
-// ClientMock_GetWatcherServingCertValidity_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetWatcherServingCertValidity'
-type ClientMock_GetWatcherServingCertValidity_Call struct {
-	*mock.Call
-}
-
-// GetWatcherServingCertValidity is a helper method to define mock.On call
-//   - ctx context.Context
-func (_e *ClientMock_Expecter) GetWatcherServingCertValidity(ctx any) *ClientMock_GetWatcherServingCertValidity_Call {
-	return &ClientMock_GetWatcherServingCertValidity_Call{Call: _e.mock.On("GetWatcherServingCertValidity", ctx)}
-}
-
-func (_c *ClientMock_GetWatcherServingCertValidity_Call) Run(run func(ctx context.Context)) *ClientMock_GetWatcherServingCertValidity_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context))
-	})
-	return _c
-}
-
-func (_c *ClientMock_GetWatcherServingCertValidity_Call) Return(_a0 time.Time, _a1 time.Time, _a2 error) *ClientMock_GetWatcherServingCertValidity_Call {
-	_c.Call.Return(_a0, _a1, _a2)
-	return _c
-}
-
-func (_c *ClientMock_GetWatcherServingCertValidity_Call) RunAndReturn(run func(context.Context) (time.Time, time.Time, error)) *ClientMock_GetWatcherServingCertValidity_Call {
 	_c.Call.Return(run)
 	return _c
 }
