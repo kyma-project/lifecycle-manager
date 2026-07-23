@@ -40,7 +40,7 @@ var (
 
 const (
 	localHostname           = "0.0.0.0"
-	semVerPartsCount            = 2
+	semVerPartsCount        = 2
 	skrHostname             = "skr.cluster.local"
 	defaultRemoteKymaName   = "default"
 	EventuallyTimeout       = 10 * time.Second
@@ -52,8 +52,8 @@ const (
 	MisconfiguredModuleName = "template-operator-misconfigured"
 	// GlobalAccountID1 is used to test uninstallation when the Kyma's
 	// global-account-id no longer matches the deployer module's kymaSelector.
-	GlobalAccountID1  = "a1c1d2e3-4a5b-6c7d-8e9f-0a1b2c3d4e5f"
-	GlobalAccountID2  = "f6e5d4c3-b2a1-9087-6543-210fedcba987"
+	GlobalAccountID1   = "a1c1d2e3-4a5b-6c7d-8e9f-0a1b2c3d4e5f"
+	GlobalAccountID2   = "f6e5d4c3-b2a1-9087-6543-210fedcba987"
 	moduleVersionOlder = "1.0.0"
 	moduleVersionNewer = "2.0.0"
 )

@@ -289,7 +289,6 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		certificateRepository,
 		kymaMetrics,
 		kymaRepo,
-		secretRepo,
 		remoteClientCache,
 		skrWebhookManager,
 	)
