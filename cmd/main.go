@@ -282,7 +282,8 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	mrmEventHandler := watchcmpse.ComposeMrmEventHandler(kymaRepo, flagVar.ModuleUpgradeRolloutMaxDelay)
 	mtEventHandlerMapFunc := watchcmpse.ComposeTemplateChangeHandlerMapFunc(kymaRepo)
-	mandatoryMrmHandlerMapFunc := watchcmpse.ComposeMandatoryMrmChangeHandlerMapFunc(mrmRepo, kymaRepo)
+	mandatoryMrmEventHandler := watchcmpse.ComposeMandatoryMrmEventHandler(kymaRepo,
+		flagVar.ModuleUpgradeRolloutMaxDelay)
 
 	kymaDeletionSvc := kymadeletioncmpse.ComposeKymaDeletionService(
 		kcpClient,
@@ -302,7 +303,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
 		eventRecorder, kymaRepo, secretRepo)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, mrmRepo, mtRepo, flagVar, options, mandatoryModulesMetrics,
-		logger, ociRegistry.GetReference(), mandatoryMrmHandlerMapFunc)
+		logger, ociRegistry.GetReference(), mandatoryMrmEventHandler)
 	setupMandatoryModuleDeletionReconciler(mgr, eventRecorder, mrmRepo, manifestRepo, flagVar, options, logger)
 
 	setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, logger)
@@ -625,7 +626,7 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager,
 	metrics *metrics.MandatoryModulesMetrics,
 	setupLog logr.Logger,
 	ociRegistry string,
-	mandatoryMrmHandlerMapFunc handler.MapFunc,
+	mandatoryMrmEventHandler *mrmwatch.EventHandler,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -642,7 +643,7 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager,
 			Warning: flagVar.KymaRequeueWarningInterval,
 		})
 
-	if err := installationReconciler.SetupWithManager(mgr, options, mandatoryMrmHandlerMapFunc); err != nil {
+	if err := installationReconciler.SetupWithManager(mgr, options, mandatoryMrmEventHandler); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(bootstrapFailedExitCode)
 	}

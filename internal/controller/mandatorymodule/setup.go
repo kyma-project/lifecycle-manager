@@ -6,6 +6,7 @@ import (
 
 	apicorev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldindex"
+	mrmwatch "github.com/kyma-project/lifecycle-manager/internal/watch/modulereleasemeta"
 )
 
 const (
@@ -22,7 +24,7 @@ const (
 )
 
 func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options,
-	mandatoryMrmChangeHandlerMapFunc handler.MapFunc,
+	mandatoryMrmEventHandler *mrmwatch.EventHandler,
 ) error {
 	err := setupFieldIndexForMandatoryMrm(mgr)
 	if err != nil {
@@ -39,7 +41,8 @@ func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlrun
 		Named(installationControllerName).
 		WithOptions(opts).
 		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})).
-		Watches(&v1beta2.ModuleReleaseMeta{}, handler.EnqueueRequestsFromMapFunc(mandatoryMrmChangeHandlerMapFunc)).
+		Watches(&v1beta2.ModuleReleaseMeta{}, mandatoryMrmEventHandler,
+			builder.WithPredicates(predicate.NewPredicateFuncs(isMandatoryMrm))).
 		Watches(&apicorev1.Secret{}, handler.Funcs{}).
 		Complete(reconcile.AsReconciler[*v1beta2.Kyma](mgr.GetClient(), r)); err != nil {
 		return fmt.Errorf("failed to setup manager for mandatory module installation controller: %w", err)
@@ -92,18 +95,23 @@ func setupFieldIndexForModuleTemplateByModuleVersion(mgr ctrl.Manager) error {
 	return nil
 }
 
+// isMandatoryMrm reports whether obj is a ModuleReleaseMeta for a mandatory module. It is used to
+// filter watch events so only mandatory MRMs reach the mandatory-module controllers, avoiding
+// unnecessary Kyma list lookups on regular module rollouts.
+func isMandatoryMrm(obj client.Object) bool {
+	mrm, ok := obj.(*v1beta2.ModuleReleaseMeta)
+	if !ok {
+		return false
+	}
+	return mrm.Spec.Mandatory != nil
+}
+
 func (r *DeletionReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options) error {
 	if err := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.ModuleReleaseMeta{}).
 		Named(deletionControllerName).
 		WithOptions(opts).
-		WithEventFilter(predicate.NewPredicateFuncs(func(obj client.Object) bool {
-			mrm, ok := obj.(*v1beta2.ModuleReleaseMeta)
-			if !ok {
-				return false
-			}
-			return mrm.Spec.Mandatory != nil
-		})).
+		WithEventFilter(predicate.NewPredicateFuncs(isMandatoryMrm)).
 		Complete(reconcile.AsReconciler[*v1beta2.ModuleReleaseMeta](mgr.GetClient(), r)); err != nil {
 		return fmt.Errorf("failed to setup manager for mandatory module deletion controller: %w", err)
 	}
