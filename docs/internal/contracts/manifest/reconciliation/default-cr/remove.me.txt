@@ -1,0 +1,15 @@
+The idea is to have a list of simple rules that are enough to describe how the system should behave in all situations, without leaving any gaps.
+Every rule should be backed by a decision reference, which is a link to an ADR, an issue, or an existing document that provides justification for the rule, and maybe also a view on possible alternatives.
+
+Rules resulting in non-obvious outcome may be further explained by provindg runtime scenarios (see scenarios.md), but it's not required.
+
+This document is intended to be **minimalistic** and **complete**. It should not contain any implementation details, but only describe the expected behavior of the system. 
+
+What is the benefit of having such a document?
+Currently, in order to understand the behavior of the system, one has to read through multiple ADRs, issues, and documents.
+The problem is, there is no compiled list of: "documents that you have to read in order to understand `Default-Module-CR reconciliation`".
+**This** document is intended to provide such a list.
+In addition, this document presents **refined**, **distilled**, **minimalistic** set of rules, that - in theory - should be enough to re-implement the `Default-Module-CR` reconciliation logic from scratch.
+It should be a first-class reference for both human readers and AI Agents.
+It should also serve as a "source-of-truth" for implementation: Source code is just an artifact derived from an existing, and well-described contract, NOT the other way around.
+
