@@ -3,7 +3,7 @@ module github.com/kyma-project/lifecycle-manager/api
 go 1.26.5
 
 require (
-	github.com/gardener/cert-management/pkg/apis v0.26.0
+	github.com/gardener/cert-management/pkg/apis v0.26.1
 	github.com/stretchr/testify v1.11.1
 	k8s.io/apimachinery v0.36.2
 	k8s.io/client-go v0.36.2

@@ -370,8 +370,8 @@ github.com/fvbommel/sortorder v1.1.0 h1:fUmoe+HLsBTctBDoaBwpQo5N+nrCp8g/BjKb/6ZQ
 github.com/fvbommel/sortorder v1.1.0/go.mod h1:uk88iVf1ovNn1iLfgUVU2F9o5eO30ui720w+kxuqRs0=
 github.com/fxamacker/cbor/v2 v2.9.2 h1:X4Ksno9+x3cz0TZv69ec1hxP/+tymuR8PXQJyDwfh78=
 github.com/fxamacker/cbor/v2 v2.9.2/go.mod h1:vM4b+DJCtHn+zz7h3FFp/hDAI9WNWCsZj23V5ytsSxQ=
-github.com/gardener/cert-management/pkg/apis v0.26.0 h1:oxQKjD5ZxEMv+9GI8myAnVTZqox73WqP1151++tu7Cc=
-github.com/gardener/cert-management/pkg/apis v0.26.0/go.mod h1:Pfb2slFFHY7CI8UDh13D1BQFuWti5b6YazBpPcuPnFc=
+github.com/gardener/cert-management/pkg/apis v0.26.1 h1:3K769gyeGyLQuTmXGNQyufpNPH8iFrhWo4OpK7QL7Bc=
+github.com/gardener/cert-management/pkg/apis v0.26.1/go.mod h1:Pfb2slFFHY7CI8UDh13D1BQFuWti5b6YazBpPcuPnFc=
 github.com/gertd/go-pluralize v0.2.1 h1:M3uASbVjMnTsPb0PNqg+E/24Vwigyo/tvyMTtAlLgiA=
 github.com/gertd/go-pluralize v0.2.1/go.mod h1:rbYaKDbsXxmRfr8uygAEKhOWsjyrrqrkHVpZvoOp8zk=
 github.com/ghodss/yaml v1.0.0 h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=
