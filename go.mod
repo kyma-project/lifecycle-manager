@@ -4,7 +4,7 @@ go 1.26.5
 
 replace (
 	//required as of OCM v0.34.3
-	github.com/ThalesIgnite/crypto11 => github.com/ThalesGroup/crypto11 v1.6.2
+	github.com/ThalesIgnite/crypto11 => github.com/ThalesGroup/crypto11 v1.6.5
 	github.com/kyma-project/lifecycle-manager/api => ./api
 	github.com/kyma-project/lifecycle-manager/maintenancewindows => ./maintenancewindows
 )
