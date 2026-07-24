@@ -2,11 +2,13 @@ package usecases
 
 import (
 	"context"
+	"errors"
 
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 )
 
 //nolint:iface // we accept the duplication for clarity
@@ -16,19 +18,14 @@ type CrdRepo interface {
 }
 
 type DeleteSkrCrd struct {
-	skrCrdRepo          CrdRepo
-	skrAccessSecretRepo SkrAccessSecretRepo
-	useCase             result.UseCase
+	skrCrdRepo CrdRepo
+	useCase    result.UseCase
 }
 
-func NewDeleteSkrCrd(skrCrdRepo CrdRepo,
-	skrAccessSecretRepo SkrAccessSecretRepo,
-	useCase result.UseCase,
-) *DeleteSkrCrd {
+func NewDeleteSkrCrd(skrCrdRepo CrdRepo, useCase result.UseCase) *DeleteSkrCrd {
 	return &DeleteSkrCrd{
-		skrCrdRepo:          skrCrdRepo,
-		skrAccessSecretRepo: skrAccessSecretRepo,
-		useCase:             useCase,
+		skrCrdRepo: skrCrdRepo,
+		useCase:    useCase,
 	}
 }
 
@@ -37,13 +34,14 @@ func (u *DeleteSkrCrd) IsApplicable(ctx context.Context, kcpKyma *v1beta2.Kyma) 
 		return false, nil
 	}
 
-	if exists, err := u.skrAccessSecretRepo.ExistsForKyma(ctx, kcpKyma.GetName()); !exists || err != nil {
+	exists, err := u.skrCrdRepo.Exists(ctx, kcpKyma.GetNamespacedName())
+	if errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
+		return false, nil
+	}
+	if err != nil {
 		return false, err
 	}
-
-	return u.skrCrdRepo.Exists(ctx,
-		kcpKyma.GetNamespacedName(),
-	)
+	return exists, nil
 }
 
 func (u *DeleteSkrCrd) Execute(ctx context.Context, kcpKyma *v1beta2.Kyma) result.Result {

@@ -12,6 +12,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion/usecases"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
@@ -24,7 +25,7 @@ func TestIsApplicable_KcpKymaNotDeleting(t *testing.T) {
 		},
 	}
 
-	uc := usecases.NewDeleteSkrKyma(nil, nil)
+	uc := usecases.NewDeleteSkrKyma(nil)
 
 	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
 
@@ -32,7 +33,7 @@ func TestIsApplicable_KcpKymaNotDeleting(t *testing.T) {
 	assert.False(t, applicable)
 }
 
-func TestIsApplicable_SecretDoesNotExist(t *testing.T) {
+func TestIsApplicable_AccessSecretNotFound(t *testing.T) {
 	kcpKyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:              random.Name(),
@@ -41,42 +42,16 @@ func TestIsApplicable_SecretDoesNotExist(t *testing.T) {
 		},
 	}
 
-	skrAccessSecretRepo := &skrAccessSecretRepoStub{
-		exists: false,
+	skrKymaRepo := &skrKymaRepoStub{
+		err: accessmanager.ErrAccessSecretNotFound,
 	}
 
-	uc := usecases.NewDeleteSkrKyma(nil, skrAccessSecretRepo)
-
+	uc := usecases.NewDeleteSkrKyma(skrKymaRepo)
 	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
 
 	require.NoError(t, err)
 	assert.False(t, applicable)
-	assert.True(t, skrAccessSecretRepo.called)
-	assert.Equal(t, kcpKyma.GetName(), skrAccessSecretRepo.kymaName)
-}
-
-func TestIsApplicable_SecretRepoReturnsError(t *testing.T) {
-	time := apimetav1.NewTime(time.Now())
-	kcpKyma := &v1beta2.Kyma{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:              random.Name(),
-			Namespace:         random.Name(),
-			DeletionTimestamp: &time,
-		},
-	}
-
-	skrAccessSecretRepo := &skrAccessSecretRepoStub{
-		err: assert.AnError,
-	}
-
-	uc := usecases.NewDeleteSkrKyma(nil, skrAccessSecretRepo)
-
-	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
-
-	require.ErrorIs(t, err, assert.AnError)
-	assert.False(t, applicable)
-	assert.True(t, skrAccessSecretRepo.called)
-	assert.Equal(t, kcpKyma.GetName(), skrAccessSecretRepo.kymaName)
+	assert.True(t, skrKymaRepo.called)
 }
 
 func TestIsApplicable_KymaExists(t *testing.T) {
@@ -93,17 +68,12 @@ func TestIsApplicable_KymaExists(t *testing.T) {
 		exists: true,
 	}
 
-	skrAccessSecretRepo := &skrAccessSecretRepoStub{
-		exists: true,
-	}
-
-	uc := usecases.NewDeleteSkrKyma(skrKymaRepo, skrAccessSecretRepo)
+	uc := usecases.NewDeleteSkrKyma(skrKymaRepo)
 
 	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
 
 	require.NoError(t, err)
 	assert.True(t, applicable)
-	assert.True(t, skrAccessSecretRepo.called)
 	assert.True(t, skrKymaRepo.called)
 	assert.Equal(t, kcpKyma.GetNamespacedName(), skrKymaRepo.namespacedName)
 }
@@ -122,17 +92,12 @@ func TestIsApplicable_KymaNotExists(t *testing.T) {
 		exists: false,
 	}
 
-	skrAccessSecretRepo := &skrAccessSecretRepoStub{
-		exists: true,
-	}
-
-	uc := usecases.NewDeleteSkrKyma(skrKymaRepo, skrAccessSecretRepo)
+	uc := usecases.NewDeleteSkrKyma(skrKymaRepo)
 
 	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
 
 	require.NoError(t, err)
 	assert.False(t, applicable)
-	assert.True(t, skrAccessSecretRepo.called)
 	assert.True(t, skrKymaRepo.called)
 	assert.Equal(t, kcpKyma.GetNamespacedName(), skrKymaRepo.namespacedName)
 }
@@ -152,17 +117,12 @@ func TestIsApplicable_ExistsFails(t *testing.T) {
 		err:    assert.AnError,
 	}
 
-	skrAccessSecretRepo := &skrAccessSecretRepoStub{
-		exists: true,
-	}
-
-	uc := usecases.NewDeleteSkrKyma(skrKymaRepo, skrAccessSecretRepo)
+	uc := usecases.NewDeleteSkrKyma(skrKymaRepo)
 
 	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
 
 	require.ErrorIs(t, err, assert.AnError)
-	assert.True(t, applicable)
-	assert.True(t, skrAccessSecretRepo.called)
+	assert.False(t, applicable)
 	assert.True(t, skrKymaRepo.called)
 	assert.Equal(t, kcpKyma.GetNamespacedName(), skrKymaRepo.namespacedName)
 }
@@ -177,7 +137,7 @@ func TestExecute_DeleteSucceeds(t *testing.T) {
 
 	skrKymaRepo := &skrKymaRepoStub{}
 
-	uc := usecases.NewDeleteSkrKyma(skrKymaRepo, nil)
+	uc := usecases.NewDeleteSkrKyma(skrKymaRepo)
 
 	res := uc.Execute(t.Context(), kcpKyma)
 
@@ -199,7 +159,7 @@ func TestExecute_DeleteFails(t *testing.T) {
 		err: assert.AnError,
 	}
 
-	uc := usecases.NewDeleteSkrKyma(skrKymaRepo, nil)
+	uc := usecases.NewDeleteSkrKyma(skrKymaRepo)
 
 	res := uc.Execute(t.Context(), kcpKyma)
 
