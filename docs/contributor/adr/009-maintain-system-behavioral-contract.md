@@ -133,7 +133,7 @@ DL03: https://github.com/kyma-project/lifecycle-manager/issues/3007
 ### Location
 
 The contract documents are stored in a `Lifecycle-Manager` repository under the `docs/internal/contract` directory.
-It is split into multiple documents, each corresponding to a specific scope of the contract.
+The contract consists of multiple documents, each corresponding to a specific scope of the contract.
 The name of each document should correspond to it's scope. For example, the contract for the `Default-Module-CR` and `Module-CRD` is stored in the `docs/internal/contract/module-cr.md` file.
 
 
