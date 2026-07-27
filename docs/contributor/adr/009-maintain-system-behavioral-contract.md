@@ -19,7 +19,7 @@ This ADR is an attempt to address this situation by introducing a systematic way
 ### Solution
 
 Introduce and maintain a behavioral contract for the entire system (Lifecycle-Manager + Runtime Watcher).
-The contract is intended to be a first-class artifact of our architecture documentation: It is the authoritative source of truth for system behavior and takes precedence over the source-code implementation or any other external document.
+The contract is intended to be a first-class artifact of our architecture documentation: It is the authoritative source of truth for system behavior and takes precedence over the source-code implementation.
 
 Every behavior-affecting implementation decision should be captured by the contract. The implementation should not introduce observable behavior that is not captured by the contract.
 The contract is a living document and should be updated as the system evolves.
@@ -28,7 +28,8 @@ The contract is driven by stakeholder requirements. Within those constraints, we
 What exactly is captured by the contract? For example, the answers to the following questions with respect to the `Lifecycle-Manager's` behavior:
 - What does `Lifecycle-Manager` do if OCM artifact for a Kyma module doesn't have a `Default-Module-CR` layer?
 - What does `Lifecycle-Manager` do if user changes the namespace of a `Default-Module-CR` in an SKR cluster?
-See below for more examples of contract items.
+and so on.
+See below for an example of a contract document.
 
 
 ### Contract Characteristics
@@ -50,7 +51,7 @@ The contract should have the following characteristics:
 Why don't we just use ADRs to capture the behavioral contract?
 
 An average ADR in this project, at the time of this writing, is 61 lines long.
-Such an average ADR may result in one, two, or even five contract "items". Let's assume it will be two on average: An average behavior-related ADR will correspond to two contract "items".
+Such an average ADR may result in one, two, or even five contract "items". Let's assume it will be two on average: An average behavior-related ADR corresponds to two contract "items".
 Let's also assume that reconciliation of a `Default-Module-CR` requires 20 contract "items" to be well defined contract-wise. It will be 20 lines to read, if every item spans a single line.
 If we use ADRs for that, it will (20/2)*61 = 610 lines to read. Twenty versus six hundred and ten lines is a huge difference.
 ADRs are great for capturing decisions: They provide room for context, rationale, analysis of alternatives, and so on.
