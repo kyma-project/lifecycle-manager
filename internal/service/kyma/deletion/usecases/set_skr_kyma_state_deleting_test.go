@@ -167,7 +167,7 @@ func TestIsApplicable_False_StatusRetrievalReturnsError(t *testing.T) {
 
 	applicable, err := uc.IsApplicable(t.Context(), kyma)
 
-	assert.ErrorIs(t, err, assert.AnError)
+	require.ErrorIs(t, err, assert.AnError)
 	assert.False(t, applicable)
 	assert.True(t, kymaStatusRepo.called)
 	assert.Equal(t, kyma.GetNamespacedName(), kymaStatusRepo.namespacedName)
