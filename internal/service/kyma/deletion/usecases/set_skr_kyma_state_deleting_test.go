@@ -151,6 +151,28 @@ func TestIsApplicable_False_KymaAlreadyGone(t *testing.T) {
 	assert.Equal(t, kyma.GetNamespacedName(), kymaStatusRepo.namespacedName)
 }
 
+func TestIsApplicable_False_StatusRetrievalReturnsError(t *testing.T) {
+	kyma := &v1beta2.Kyma{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:              random.Name(),
+			Namespace:         random.Name(),
+			DeletionTimestamp: &apimetav1.Time{Time: time.Now()},
+		},
+	}
+	kymaStatusRepo := &skrKymaStatusRepoStub{
+		err: assert.AnError,
+	}
+
+	uc := usecases.NewSetSkrKymaStateDeleting(kymaStatusRepo)
+
+	applicable, err := uc.IsApplicable(t.Context(), kyma)
+
+	assert.ErrorIs(t, err, assert.AnError)
+	assert.False(t, applicable)
+	assert.True(t, kymaStatusRepo.called)
+	assert.Equal(t, kyma.GetNamespacedName(), kymaStatusRepo.namespacedName)
+}
+
 func TestIsApplicable_True(t *testing.T) {
 	kyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{

@@ -59,6 +59,29 @@ func TestDeleteSkrCrd_IsApplicable_False_AccessSecretNotFound(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, applicable)
 	assert.True(t, crdRepo.existsCalled)
+	assert.Equal(t, kcpKyma.GetNamespacedName(), crdRepo.namespacedName)
+}
+
+func TestDeleteSkrCrd_IsApplicable_False_SkrCrdRetrievalReturnsError(t *testing.T) {
+	kcpKyma := &v1beta2.Kyma{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:              random.Name(),
+			Namespace:         random.Name(),
+			DeletionTimestamp: &apimetav1.Time{Time: time.Now()},
+		},
+	}
+
+	crdRepo := &crdRepoStub{
+		err: assert.AnError,
+	}
+
+	uc := usecases.NewDeleteSkrCrd(crdRepo, result.UseCase(random.Name()))
+	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
+
+	require.ErrorIs(t, err, assert.AnError)
+	assert.False(t, applicable)
+	assert.True(t, crdRepo.existsCalled)
+	assert.Equal(t, kcpKyma.GetNamespacedName(), crdRepo.namespacedName)
 }
 
 func TestDeleteSkrCrd_IsApplicable_True_CrdExists(t *testing.T) {

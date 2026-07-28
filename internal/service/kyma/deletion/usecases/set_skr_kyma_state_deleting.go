@@ -23,8 +23,7 @@ type SetSkrKymaStateDeleting struct {
 	skrKymaStatusRepo SkrKymaStatusRepo
 }
 
-func NewSetSkrKymaStateDeleting(kymaStatusRepo SkrKymaStatusRepo,
-) *SetSkrKymaStateDeleting {
+func NewSetSkrKymaStateDeleting(kymaStatusRepo SkrKymaStatusRepo) *SetSkrKymaStateDeleting {
 	return &SetSkrKymaStateDeleting{
 		skrKymaStatusRepo: kymaStatusRepo,
 	}
@@ -37,7 +36,6 @@ func (u *SetSkrKymaStateDeleting) IsApplicable(ctx context.Context, kcpKyma *v1b
 
 	status, err := u.skrKymaStatusRepo.Get(ctx, kcpKyma.GetNamespacedName())
 
-	// SKR kyma is already gone
 	if errors.Is(err, accessmanager.ErrAccessSecretNotFound) || util.IsNotFound(err) {
 		return false, nil
 	}
