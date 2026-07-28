@@ -45,7 +45,7 @@ The contract should have the following characteristics:
 - **Easy to read and maintain** - The contract should be easy to read and understand. Because of that, it should be minimalistic and concise.
 - **Backed up by exiting documents** - Contract items, if directly related to internal or external decisions, should be backed up by existing documents: ADRs, links to GitHub issues, and so on. This allows to trace the important context for every requirement, if necessary. Such context should never be added to the contract item itself, because it will make the contract bulky and verbose.
 - **Convenient to use by an AI Agent** - The contract should be convenient to use by an AI Agent. It should be structured in a way that makes it "cheap" for an AI Agent to access and process it.
-- **Pragmatic** - The goal is not to introduce a "Markdown-driven" development process. Initially, the contract should only focus on capturing the most important, high-level behaviors. Later on we'll decide how detailed the contract should be. Deciding which behaviors are important enough to be captured by the contract and which should be left to the implementation is a matter of pragmatism and good judgment and it will come with time.
+- **Pragmatic** - The goal is not to introduce a "Markdown-driven" development process. Initially, the contract should only focus on capturing the most important, high-level behaviors and identifying gaps within these. Once it is done we'll decide on how fine-grained the contract should be.
 
 ### Why not ADRs?
 
@@ -144,5 +144,5 @@ The name of each document should correspond to it's scope. For example, the cont
 The contract is a living document. It should be updated as the system evolves.
 It means that before implementing any behavior-affecting change to the system, we should first update the contract accordingly.
 We should work iteratively over the contract to make sure that it is complete and there are no gaps in the design of our system.
-To keep things practical and avoid excessive formalism a pragmatic approach is required: Initially we should focus only on the most important, high level behaviors, gradually documenting lower-level aspects if necessary. Deciding which behaviors are important enough to be captured by the contract and which should be left to the implementation is a matter of pragmatism and good judgment and it will come with time.
 We also have to review other existing documents (like user-facing documentation) to make sure that they are consistent with the contract, and update these external documents if necessary.
+To keep things practical and avoid excessive formalism a pragmatic approach is required: Initially we should focus only on the most important, high level behaviors, gradually documenting lower-level aspects if necessary. Deciding which behaviors are important enough to be captured by the contract and which should be left to the implementation is a matter of pragmatism and good judgment and it will come with time.
