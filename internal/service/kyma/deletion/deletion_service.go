@@ -37,6 +37,7 @@ func NewService(
 	deleteSkrKyma UseCase,
 	deleteSkrKymaCrd UseCase,
 	deleteMetrics UseCase,
+	ensureManifestDeletion UseCase,
 	dropKymaFinalizers UseCase,
 ) (*Service, error) {
 	svc := &Service{
@@ -51,6 +52,7 @@ func NewService(
 			deleteSkrKyma,
 			deleteSkrKymaCrd,
 			deleteMetrics,
+			ensureManifestDeletion,
 			dropKymaFinalizers,
 		},
 	}
@@ -93,6 +95,7 @@ func (s *Service) enforceUseCaseOrder() error {
 		usecase.DeleteSkrKyma,
 		usecase.DeleteSkrKymaCrd,
 		usecase.DeleteMetrics,
+		usecase.EnsureManifestDeletion,
 		usecase.DropKymaFinalizer,
 	}
 

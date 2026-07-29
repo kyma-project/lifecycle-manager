@@ -49,11 +49,9 @@ func ComposeKymaDeletionService(kcpClient client.Client,
 		skrkymastatusrepo.NewRepository(skrClientRetrieverFunc),
 	)
 
-	deleteManifests := usecases.NewDeleteManifests(
-		manifestrepo.NewRepository(
-			kcpClient,
-			shared.DefaultControlPlaneNamespace),
-	)
+	manifestRepo := manifestrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
+
+	deleteManifests := usecases.NewDeleteManifests(manifestRepo)
 
 	istioSystemSecretRepo := secretrepo.NewRepository(
 		kcpClient,
@@ -89,6 +87,8 @@ func ComposeKymaDeletionService(kcpClient client.Client,
 
 	deleteMetrics := usecases.NewDeleteMetrics(kymaMetrics)
 
+	ensureManifestDeletion := usecases.NewEnsureManifestDeletion(manifestRepo)
+
 	dropKymaFinalizer := usecases.NewDropKymaFinalizer(kymaRepo)
 
 	svc, err := kymadeletionsvc.NewService(
@@ -102,6 +102,7 @@ func ComposeKymaDeletionService(kcpClient client.Client,
 		deleteSkrKyma,
 		deleteSkrKymaCrd,
 		deleteMetrics,
+		ensureManifestDeletion,
 		dropKymaFinalizer,
 	)
 	if err != nil {

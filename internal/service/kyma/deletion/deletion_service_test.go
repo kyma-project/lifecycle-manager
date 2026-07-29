@@ -33,6 +33,7 @@ func Test_NewService_ReturnsError_WhenUseCasesAreOutOfOrder(t *testing.T) {
 		useCases[8],
 		useCases[9],
 		useCases[10],
+		useCases[11],
 	)
 
 	require.Nil(t, svc)
@@ -60,6 +61,7 @@ func Test_NewService_ReturnsError_WhenSameUseCaseTwice(t *testing.T) {
 		useCases[8],
 		useCases[9],
 		useCases[10],
+		useCases[11],
 	)
 
 	require.Nil(t, svc)
@@ -85,6 +87,7 @@ func Test_Delete_ReturnsError_WhenIsApplicableReturnsError(t *testing.T) {
 		useCases[8],
 		useCases[9],
 		useCases[10],
+		useCases[11],
 	)
 
 	result := svc.Delete(t.Context(), kyma)
@@ -119,6 +122,7 @@ func Test_Delete_ReturnsEarly_WhenIsApplicableReturnsError(t *testing.T) {
 		useCases[8],
 		useCases[9],
 		useCases[10],
+		useCases[11],
 	)
 
 	result := svc.Delete(t.Context(), kyma)
@@ -158,6 +162,7 @@ func Test_Delete_ExecutesOnlyFirstApplicableUseCase(t *testing.T) {
 		useCases[8],
 		useCases[9],
 		useCases[10],
+		useCases[11],
 	)
 
 	result := svc.Delete(t.Context(), kyma)
@@ -189,6 +194,7 @@ func Test_Delete_Fallthrough_WhenNoUseCaseIsApplicable(t *testing.T) {
 	uc9 := useCases[8]
 	uc10 := useCases[9]
 	uc11 := useCases[10]
+	uc12 := useCases[11]
 
 	svc, err := kymadeletionsvc.NewService(
 		useCases[0],
@@ -202,6 +208,7 @@ func Test_Delete_Fallthrough_WhenNoUseCaseIsApplicable(t *testing.T) {
 		useCases[8],
 		useCases[9],
 		useCases[10],
+		useCases[11],
 	)
 
 	rslt := svc.Delete(t.Context(), kyma)
@@ -231,6 +238,8 @@ func Test_Delete_Fallthrough_WhenNoUseCaseIsApplicable(t *testing.T) {
 	assert.False(t, uc10.executeCalled)
 	assert.True(t, uc11.isApplicableCalled)
 	assert.False(t, uc11.executeCalled)
+	assert.True(t, uc12.isApplicableCalled)
+	assert.False(t, uc12.executeCalled)
 	assert.Equal(t, kyma, uc1.receivedKyma)
 	assert.Equal(t, kyma, uc2.receivedKyma)
 	assert.Equal(t, kyma, uc3.receivedKyma)
@@ -274,6 +283,7 @@ func Test_Delete_ExecutesCorrectOrderOfUseCases(t *testing.T) {
 		useCases[8],
 		useCases[9],
 		useCases[10],
+		useCases[11],
 	)
 
 	_ = svc.Delete(t.Context(), kyma)
@@ -366,6 +376,7 @@ func setupUseCases() []*useCaseStub {
 		{isApplicable: false, err: nil, name: usecase.DeleteSkrKyma},
 		{isApplicable: false, err: nil, name: usecase.DeleteSkrKymaCrd},
 		{isApplicable: false, err: nil, name: usecase.DeleteMetrics},
+		{isApplicable: false, err: nil, name: usecase.EnsureManifestDeletion},
 		{isApplicable: false, err: nil, name: usecase.DropKymaFinalizer},
 	}
 }
