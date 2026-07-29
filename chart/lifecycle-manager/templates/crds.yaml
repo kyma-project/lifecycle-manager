@@ -1,0 +1,21 @@
+
+{{- /* do not update crds here, please update in lifecycle-manager/files/imports/crds.yaml */ -}}
+{{- /* this is used to add "helm.sh/resource-policy: keep" annotation for each crd */ -}}
+{{- if .Values.crds.enabled }}
+  {{- $files := .Files }}
+  {{- $crds := $files.Get "files/imports/crds.yaml" | splitList "---" }}
+  {{- $labels := (include "lifecycle-manager.labels" .) | fromYaml -}}
+  {{- $annotations := mergeOverwrite ((include "lifecycle-manager.crds.annotations" .) | fromYaml) (default (dict) .Values.crds.annotations) -}}
+  {{- $extra := dict "metadata" (dict "annotations" $annotations "labels" $labels) -}}
+  {{- range $crds }}
+    {{- $parsed := fromYaml . }}
+    {{- if $parsed }}
+      {{- $crd := merge $parsed $extra }}
+      {{- range $attrKey, $attrValue := $crd }}
+        {{- $attrKey }}: {{ toJson $attrValue }}
+        {{- printf "\n" -}}
+      {{ end }}
+      {{- print "\n---\n" }}
+    {{- end }}
+  {{- end }}
+{{- end }}

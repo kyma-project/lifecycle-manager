@@ -1,0 +1,3 @@
+algorithm: RSA
+rotationPolicy: Always
+size: 4096
