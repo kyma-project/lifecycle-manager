@@ -48,6 +48,13 @@ func ComposeKymaDeletionService(kcpClient client.Client,
 	setSkrKymaStateDeleting := usecases.NewSetSkrKymaStateDeleting(
 		skrkymastatusrepo.NewRepository(skrClientRetrieverFunc),
 	)
+
+	deleteManifests := usecases.NewDeleteManifests(
+		manifestrepo.NewRepository(
+			kcpClient,
+			shared.DefaultControlPlaneNamespace),
+	)
+
 	istioSystemSecretRepo := secretrepo.NewRepository(
 		kcpClient,
 		shared.IstioNamespace,
@@ -56,40 +63,42 @@ func ComposeKymaDeletionService(kcpClient client.Client,
 		certificateRepository,
 		istioSystemSecretRepo,
 	)
+
 	skrWebhookResourcesRepo := webhook.NewResourceRepository(skrClientRetrieverFunc, shared.DefaultRemoteNamespace,
 		skrWebhookManager.BaseResources)
 	deleteSkrWebhookResources := usecases.NewDeleteSkrWebhookResources(skrWebhookResourcesRepo)
+
 	deleteSkrMtCrd := usecases.NewDeleteSkrCrd(
 		skrcrdrepo.NewRepository(skrClientRetrieverFunc,
 			fmt.Sprintf("%s.%s", shared.ModuleTemplateKind.Plural(), shared.OperatorGroup)),
 		usecase.DeleteSkrModuleTemplateCrd)
+
 	deleteSkrMrmCrd := usecases.NewDeleteSkrCrd(
 		skrcrdrepo.NewRepository(skrClientRetrieverFunc,
 			fmt.Sprintf("%s.%s", shared.ModuleReleaseMetaKind.Plural(), shared.OperatorGroup)),
 		usecase.DeleteSkrModuleReleaseMetaCrd)
-	deleteManifests := usecases.NewDeleteManifests(
-		manifestrepo.NewRepository(
-			kcpClient,
-			shared.DefaultControlPlaneNamespace),
-	)
+
 	deleteSkrKyma := usecases.NewDeleteSkrKyma(
 		skrkymarepo.NewRepository(skrClientRetrieverFunc),
 	)
+
 	deleteSkrKymaCrd := usecases.NewDeleteSkrCrd(
 		skrcrdrepo.NewRepository(skrClientRetrieverFunc,
 			fmt.Sprintf("%s.%s", shared.KymaKind.Plural(), shared.OperatorGroup)),
 		usecase.DeleteSkrKymaCrd)
+
 	deleteMetrics := usecases.NewDeleteMetrics(kymaMetrics)
+
 	dropKymaFinalizer := usecases.NewDropKymaFinalizer(kymaRepo)
 
 	svc, err := kymadeletionsvc.NewService(
 		setKcpKymaStateDeleting,
 		setSkrKymaStateDeleting,
+		deleteManifests,
 		deleteWatcherCertificateSetup,
 		deleteSkrWebhookResources,
 		deleteSkrMtCrd,
 		deleteSkrMrmCrd,
-		deleteManifests,
 		deleteSkrKyma,
 		deleteSkrKymaCrd,
 		deleteMetrics,
