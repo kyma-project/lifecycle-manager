@@ -25,6 +25,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
+//nolint:funlen // composition root wiring
 func ComposeKymaDeletionService(kcpClient client.Client,
 	certificateRepository skrwebhook.CertificateRepository,
 	kymaMetrics *metrics.KymaMetrics,
