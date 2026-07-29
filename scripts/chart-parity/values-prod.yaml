@@ -1,0 +1,15 @@
+# Pinned production-like render inputs for the chart-parity golden gate.
+#
+# The lifecycle-manager chart ships full production defaults in its own
+# values.yaml. Only these landscape-specific keys are `required`-gated with no
+# default, so they must be supplied here or the render fails:
+#   - global.domainName  -> watcher server certificate SAN (certificate.yaml)
+#   - global.landscape   -> app.kubernetes.io/part-of label (_helpers.tpl, argoapp.yaml)
+#   - watcher.dnsName     -> Istio Gateway host (gateway.yaml)
+#
+# Values mirror the plan Appendix so the golden baseline is reproducible.
+global:
+  domainName: "example.kyma.cloud.sap"
+  landscape: "dev"
+watcher:
+  dnsName: "example.kyma.cloud.sap"
