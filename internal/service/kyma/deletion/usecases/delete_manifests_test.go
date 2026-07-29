@@ -133,7 +133,7 @@ type manifestRepoStub struct {
 	deleteErr    error
 }
 
-func (r *manifestRepoStub) ExistForKyma(_ context.Context, kymaName string) (bool, error) {
+func (r *manifestRepoStub) ExistForKymaWithoutDeletionTimestamp(_ context.Context, kymaName string) (bool, error) {
 	r.called = true
 	r.kymaName = kymaName
 	return r.exists, r.err
