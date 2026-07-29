@@ -37,7 +37,11 @@ The chart supports two certificate backends and selects between them based on cl
 
 ## Generated content
 
-The CRDs and RBAC rules under `files/` are generated from the upstream KLM sources, so they stay in sync with `make manifests` output. See the `chart-sync` make target for the generation mechanics.
+The CRDs and RBAC rules under `files/` are generated from the KLM sources, so they stay in sync without a manual copy step. Run `make chart-sync` to regenerate them:
+
+- `files/imports/crds.yaml` comes from `kustomize build config/control-plane`, filtered to the five shipped CRDs. The control-plane build is required rather than a raw `config/crd/bases` concatenation, because the chart's CRDs carry metadata layered by kustomize: the `cert-manager.io/inject-ca-from` annotation and the `app.kubernetes.io/*` labels.
+- `files/rbac-rules/klm-manager-rules.yaml`, `klm-manager-rules-crd.yaml`, and `klm-leader-election-rules.yaml` hold the `.rules` arrays extracted from the hand-maintained `config/rbac/*.yaml` source files.
+- `files/rbac-rules/klm-certmanager-rules.yaml` and `klm-gardener-cm-rules.yaml` are static. They have no `config/rbac` counterpart, so `make chart-sync` leaves them untouched.
 
 ## Parity with production
 
