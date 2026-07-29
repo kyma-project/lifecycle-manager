@@ -14,7 +14,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
-func Test_DeleteManifests_IsApplicable_ManifestsExist(t *testing.T) {
+func Test_DeleteManifests_IsApplicable_ManifestsExistWithoutDeletionTimestamp(t *testing.T) {
 	kcpKyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      random.Name(),
@@ -36,7 +36,7 @@ func Test_DeleteManifests_IsApplicable_ManifestsExist(t *testing.T) {
 	assert.Equal(t, kcpKyma.GetName(), manifestRepo.kymaName)
 }
 
-func Test_DeleteManifests_IsApplicable_ManifestsDoNotExist(t *testing.T) {
+func Test_DeleteManifests_IsApplicable_AllManifestsHaveDeletionTimestamp(t *testing.T) {
 	kcpKyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      random.Name(),
