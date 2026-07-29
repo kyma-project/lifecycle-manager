@@ -101,7 +101,7 @@ func TestRepository_ExistForKymaWithoutDeletionTimestamp(t *testing.T) {
 		require.Equal(t, testKymaName, stub.capturedLabels[shared.KymaName])
 	})
 
-	t.Run("returns true when at least one manifest has deletion timestamp", func(t *testing.T) {
+	t.Run("returns true when at least one manifest exists without deletion timestamp", func(t *testing.T) {
 		stub := &clientStub{
 			partialObjectMetadata: []apimetav1.PartialObjectMetadata{
 				{
