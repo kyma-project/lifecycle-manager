@@ -1,0 +1,12 @@
+# Helm value overlay for the watcher-zero-downtime e2e test.
+# Replaces the kustomize klm-patch: deployment flags plus the watcher-serving
+# Certificate renewBefore/duration override.
+manager:
+  requeue:
+    success:
+      kyma: 1s
+      istioGatewaySecret: 1s
+  istioGatewayServerCertSwitchGracePeriod: 30s
+watcher:
+  caRenewBefore: 59m
+  caCertDuration: 1h

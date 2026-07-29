@@ -1,0 +1,5 @@
+# Helm value overlay for the module-transferred-to-another-oci-registry e2e test.
+# Overrides values-local.yaml's ociRegistryHost and adds the modules repository subpath.
+manager:
+  ociRegistryHost: "https://europe-west3-docker.pkg.dev"
+  modulesRepositorySubPath: "sap-kyma-jellyfish-dev/restricted-market"

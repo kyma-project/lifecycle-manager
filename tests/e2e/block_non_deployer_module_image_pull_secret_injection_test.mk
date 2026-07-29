@@ -3,6 +3,8 @@
 
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))e2e.common.mk
 
+HELM_VALUES_OVERLAY := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))helm-values/block_non_deployer_module_image_pull_secret_injection.yaml
+
 MODULE_NAME := not-deployer
 DEPLOYER_MODULE_NAME := deployer
 GLOBAL_ACCOUNT_ID ?= f6e5d4c3-b2a1-9087-6543-210fedcba987

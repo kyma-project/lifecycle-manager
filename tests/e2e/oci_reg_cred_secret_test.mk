@@ -3,6 +3,8 @@
 
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))e2e.common.mk
 
+HELM_VALUES_OVERLAY := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))helm-values/oci_reg_cred_secret.yaml
+
 .PHONY: klm-patch
 klm-patch:
 	@echo "::group::KLM patch - OCI registry credential secret"

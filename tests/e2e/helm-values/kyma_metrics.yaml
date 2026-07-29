@@ -1,0 +1,4 @@
+# Helm value overlay for the kyma-metrics e2e test.
+# Replaces the kustomize klm-patch that set --metrics-cleanup-interval=1.
+manager:
+  metricsCleanupInterval: 1

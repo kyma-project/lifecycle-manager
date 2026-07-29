@@ -3,6 +3,8 @@
 
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))e2e.common.mk
 
+HELM_VALUES_OVERLAY := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))helm-values/self_signed_certificate_rotation.yaml
+
 .PHONY: klm-patch
 klm-patch: kustomize-install
 	@echo "::group::KLM patch"
