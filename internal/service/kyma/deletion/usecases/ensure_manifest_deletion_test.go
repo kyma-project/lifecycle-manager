@@ -96,6 +96,12 @@ func Test_EnsureManifestDeletion_Execute_NoOp(t *testing.T) {
 	assert.Equal(t, usecase.EnsureManifestDeletion, res.UseCase)
 }
 
+func Test_EnsureManifestDeletion_Name(t *testing.T) {
+	uc := usecases.NewEnsureManifestDeletion(nil)
+
+	assert.Equal(t, usecase.EnsureManifestDeletion, uc.Name())
+}
+
 type ensureManifestDeletionRepoStub struct {
 	usecases.EnsureManifestDeletionRepo
 
