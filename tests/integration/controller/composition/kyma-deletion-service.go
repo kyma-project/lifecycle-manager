@@ -11,7 +11,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	kymarepo "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
-	secretrepo "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	kymadeletionsvc "github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
@@ -26,14 +25,12 @@ func ComposeKymaDeletionService(
 	flagVar *flags.FlagVar,
 ) *kymadeletionsvc.Service {
 	kymaRepo := kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
-	accessSecretRepository := secretrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
 
 	return kymadeletioncmpse.ComposeKymaDeletionService(
 		kcpClient,
 		certificateRepository,
 		kymaMetrics,
 		kymaRepo,
-		accessSecretRepository,
 		skrClientCache,
 		skrWebhookManager,
 	)

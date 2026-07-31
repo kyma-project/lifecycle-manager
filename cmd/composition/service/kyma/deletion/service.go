@@ -25,11 +25,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
+//nolint:funlen // composition root wiring
 func ComposeKymaDeletionService(kcpClient client.Client,
 	certificateRepository skrwebhook.CertificateRepository,
 	kymaMetrics *metrics.KymaMetrics,
 	kymaRepo *kymarepo.Repository,
-	accessSecretRepository *secretrepo.Repository,
 	skrClientCache *remote.ClientCache,
 	skrWebhookManager *watcher.SkrWebhookManifestManager,
 ) *kymadeletionsvc.Service {
@@ -48,8 +48,12 @@ func ComposeKymaDeletionService(kcpClient client.Client,
 	}
 	setSkrKymaStateDeleting := usecases.NewSetSkrKymaStateDeleting(
 		skrkymastatusrepo.NewRepository(skrClientRetrieverFunc),
-		accessSecretRepository,
 	)
+
+	manifestRepo := manifestrepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
+
+	deleteManifests := usecases.NewDeleteManifests(manifestRepo)
+
 	istioSystemSecretRepo := secretrepo.NewRepository(
 		kcpClient,
 		shared.IstioNamespace,
@@ -58,47 +62,48 @@ func ComposeKymaDeletionService(kcpClient client.Client,
 		certificateRepository,
 		istioSystemSecretRepo,
 	)
+
 	skrWebhookResourcesRepo := webhook.NewResourceRepository(skrClientRetrieverFunc, shared.DefaultRemoteNamespace,
 		skrWebhookManager.BaseResources)
 	deleteSkrWebhookResources := usecases.NewDeleteSkrWebhookResources(skrWebhookResourcesRepo)
+
 	deleteSkrMtCrd := usecases.NewDeleteSkrCrd(
 		skrcrdrepo.NewRepository(skrClientRetrieverFunc,
 			fmt.Sprintf("%s.%s", shared.ModuleTemplateKind.Plural(), shared.OperatorGroup)),
-		accessSecretRepository,
 		usecase.DeleteSkrModuleTemplateCrd)
+
 	deleteSkrMrmCrd := usecases.NewDeleteSkrCrd(
 		skrcrdrepo.NewRepository(skrClientRetrieverFunc,
 			fmt.Sprintf("%s.%s", shared.ModuleReleaseMetaKind.Plural(), shared.OperatorGroup)),
-		accessSecretRepository,
 		usecase.DeleteSkrModuleReleaseMetaCrd)
-	deleteManifests := usecases.NewDeleteManifests(
-		manifestrepo.NewRepository(
-			kcpClient,
-			shared.DefaultControlPlaneNamespace),
-	)
+
 	deleteSkrKyma := usecases.NewDeleteSkrKyma(
 		skrkymarepo.NewRepository(skrClientRetrieverFunc),
-		accessSecretRepository,
 	)
+
 	deleteSkrKymaCrd := usecases.NewDeleteSkrCrd(
 		skrcrdrepo.NewRepository(skrClientRetrieverFunc,
 			fmt.Sprintf("%s.%s", shared.KymaKind.Plural(), shared.OperatorGroup)),
-		accessSecretRepository,
 		usecase.DeleteSkrKymaCrd)
+
 	deleteMetrics := usecases.NewDeleteMetrics(kymaMetrics)
+
+	ensureManifestDeletion := usecases.NewEnsureManifestDeletion(manifestRepo)
+
 	dropKymaFinalizer := usecases.NewDropKymaFinalizer(kymaRepo)
 
 	svc, err := kymadeletionsvc.NewService(
 		setKcpKymaStateDeleting,
 		setSkrKymaStateDeleting,
+		deleteManifests,
 		deleteWatcherCertificateSetup,
 		deleteSkrWebhookResources,
 		deleteSkrMtCrd,
 		deleteSkrMrmCrd,
-		deleteManifests,
 		deleteSkrKyma,
 		deleteSkrKymaCrd,
 		deleteMetrics,
+		ensureManifestDeletion,
 		dropKymaFinalizer,
 	)
 	if err != nil {

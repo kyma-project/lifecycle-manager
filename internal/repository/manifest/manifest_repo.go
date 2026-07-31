@@ -66,6 +66,26 @@ func (r *Repository) ExistForKyma(ctx context.Context, kymaName string) (bool, e
 	return len(manifestList.Items) > 0, nil
 }
 
+func (r *Repository) ExistForKymaWithoutDeletionTimestamp(ctx context.Context, kymaName string) (bool, error) {
+	var manifestList apimetav1.PartialObjectMetadataList
+	manifestList.SetGroupVersionKind(v1beta2.GroupVersion.WithKind(shared.ManifestKind.List()))
+
+	if err := r.clnt.List(ctx,
+		&manifestList,
+		client.InNamespace(r.namespace),
+		client.MatchingLabels{shared.KymaName: kymaName}); err != nil {
+		return false, fmt.Errorf("failed to list Manifests for kyma %s: %w", kymaName, err)
+	}
+
+	for _, manifest := range manifestList.Items {
+		if manifest.DeletionTimestamp.IsZero() {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
 func (r *Repository) DeleteAllForKyma(ctx context.Context, kymaName string) error {
 	if err := r.clnt.DeleteAllOf(ctx, // does not return 404 error if no objects found
 		&v1beta2.Manifest{},

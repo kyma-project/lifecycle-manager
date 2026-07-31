@@ -86,6 +86,14 @@ func TestMetricWriter_Write(t *testing.T) {
 			expectedReasons:     []metrics.KymaRequeueReason{metrics.CleanupManifestCrs},
 			expectedRequeueType: queue.IntendedRequeue,
 		},
+		{
+			name:                "CleanupManifestCrs intended via EnsureManifestDeletion",
+			useCase:             usecase.EnsureManifestDeletion,
+			err:                 nil,
+			expectedCall:        true,
+			expectedReasons:     []metrics.KymaRequeueReason{metrics.CleanupManifestCrs},
+			expectedRequeueType: queue.IntendedRequeue,
+		},
 
 		// Unexpected requeues
 		{
@@ -131,6 +139,14 @@ func TestMetricWriter_Write(t *testing.T) {
 		{
 			name:                "CleanupManifestCrs unexpected",
 			useCase:             usecase.DeleteManifests,
+			err:                 assert.AnError,
+			expectedCall:        true,
+			expectedReasons:     []metrics.KymaRequeueReason{metrics.CleanupManifestCrs},
+			expectedRequeueType: queue.UnexpectedRequeue,
+		},
+		{
+			name:                "CleanupManifestCrs unexpected via EnsureManifestDeletion",
+			useCase:             usecase.EnsureManifestDeletion,
 			err:                 assert.AnError,
 			expectedCall:        true,
 			expectedReasons:     []metrics.KymaRequeueReason{metrics.CleanupManifestCrs},

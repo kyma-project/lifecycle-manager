@@ -12,13 +12,14 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion/usecases"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
 func TestDeleteSkrCrd_Name_ReturnsExpectedName(t *testing.T) {
 	ucName := result.UseCase(random.Name())
-	uc := usecases.NewDeleteSkrCrd(nil, nil, ucName)
+	uc := usecases.NewDeleteSkrCrd(nil, ucName)
 
 	assert.Equal(t, ucName, uc.Name())
 }
@@ -31,7 +32,7 @@ func TestDeleteSkrCrd_IsApplicable_False_KcpKymaNotDeleting(t *testing.T) {
 		},
 	}
 
-	uc := usecases.NewDeleteSkrCrd(nil, nil, result.UseCase(random.Name()))
+	uc := usecases.NewDeleteSkrCrd(nil, result.UseCase(random.Name()))
 
 	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
 
@@ -39,7 +40,7 @@ func TestDeleteSkrCrd_IsApplicable_False_KcpKymaNotDeleting(t *testing.T) {
 	assert.False(t, applicable)
 }
 
-func TestDeleteSkrCrd_IsApplicable_False_SecretDoesNotExist(t *testing.T) {
+func TestDeleteSkrCrd_IsApplicable_False_AccessSecretNotFound(t *testing.T) {
 	kcpKyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:              random.Name(),
@@ -48,21 +49,20 @@ func TestDeleteSkrCrd_IsApplicable_False_SecretDoesNotExist(t *testing.T) {
 		},
 	}
 
-	skrAccessSecretRepo := &skrAccessSecretRepoStub{
-		exists: false,
+	crdRepo := &crdRepoStub{
+		err: accessmanager.ErrAccessSecretNotFound,
 	}
 
-	uc := usecases.NewDeleteSkrCrd(nil, skrAccessSecretRepo, result.UseCase(random.Name()))
-
+	uc := usecases.NewDeleteSkrCrd(crdRepo, result.UseCase(random.Name()))
 	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
 
 	require.NoError(t, err)
 	assert.False(t, applicable)
-	assert.True(t, skrAccessSecretRepo.called)
-	assert.Equal(t, kcpKyma.GetName(), skrAccessSecretRepo.kymaName)
+	assert.True(t, crdRepo.existsCalled)
+	assert.Equal(t, kcpKyma.GetNamespacedName(), crdRepo.namespacedName)
 }
 
-func TestDeleteSkrCrd_IsApplicable_False_SecretRepoReturnsError(t *testing.T) {
+func TestDeleteSkrCrd_IsApplicable_False_SkrCrdRetrievalReturnsError(t *testing.T) {
 	kcpKyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:              random.Name(),
@@ -71,18 +71,17 @@ func TestDeleteSkrCrd_IsApplicable_False_SecretRepoReturnsError(t *testing.T) {
 		},
 	}
 
-	skrAccessSecretRepo := &skrAccessSecretRepoStub{
+	crdRepo := &crdRepoStub{
 		err: assert.AnError,
 	}
 
-	uc := usecases.NewDeleteSkrCrd(nil, skrAccessSecretRepo, result.UseCase(random.Name()))
-
+	uc := usecases.NewDeleteSkrCrd(crdRepo, result.UseCase(random.Name()))
 	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
 
 	require.ErrorIs(t, err, assert.AnError)
 	assert.False(t, applicable)
-	assert.True(t, skrAccessSecretRepo.called)
-	assert.Equal(t, kcpKyma.GetName(), skrAccessSecretRepo.kymaName)
+	assert.True(t, crdRepo.existsCalled)
+	assert.Equal(t, kcpKyma.GetNamespacedName(), crdRepo.namespacedName)
 }
 
 func TestDeleteSkrCrd_IsApplicable_True_CrdExists(t *testing.T) {
@@ -98,22 +97,17 @@ func TestDeleteSkrCrd_IsApplicable_True_CrdExists(t *testing.T) {
 		exists: true,
 	}
 
-	skrAccessSecretRepo := &skrAccessSecretRepoStub{
-		exists: true,
-	}
-
-	uc := usecases.NewDeleteSkrCrd(crdRepo, skrAccessSecretRepo, result.UseCase(random.Name()))
+	uc := usecases.NewDeleteSkrCrd(crdRepo, result.UseCase(random.Name()))
 
 	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
 
 	require.NoError(t, err)
 	assert.True(t, applicable)
-	assert.True(t, skrAccessSecretRepo.called)
 	assert.True(t, crdRepo.existsCalled)
 	assert.Equal(t, kcpKyma.GetNamespacedName(), crdRepo.namespacedName)
 }
 
-func TestDeleteSkrModuleMetata_Execute_DeleteSucceeds(t *testing.T) {
+func TestDeleteSkrModuleMeta_Execute_DeleteSucceeds(t *testing.T) {
 	kcpKyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      random.Name(),
@@ -123,7 +117,7 @@ func TestDeleteSkrModuleMetata_Execute_DeleteSucceeds(t *testing.T) {
 	crdRepo := &crdRepoStub{}
 	ucName := result.UseCase(random.Name())
 
-	uc := usecases.NewDeleteSkrCrd(crdRepo, nil, ucName)
+	uc := usecases.NewDeleteSkrCrd(crdRepo, ucName)
 
 	res := uc.Execute(t.Context(), kcpKyma)
 
@@ -133,7 +127,7 @@ func TestDeleteSkrModuleMetata_Execute_DeleteSucceeds(t *testing.T) {
 	assert.Equal(t, kcpKyma.GetNamespacedName(), crdRepo.namespacedName)
 }
 
-func TestDeleteSkrModuleMetata_Execute_DeleteFails(t *testing.T) {
+func TestDeleteSkrModuleMeta_Execute_DeleteFails(t *testing.T) {
 	kcpKyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      random.Name(),
@@ -146,7 +140,7 @@ func TestDeleteSkrModuleMetata_Execute_DeleteFails(t *testing.T) {
 	}
 	ucName := result.UseCase(random.Name())
 
-	uc := usecases.NewDeleteSkrCrd(crdRepo, nil, ucName)
+	uc := usecases.NewDeleteSkrCrd(crdRepo, ucName)
 
 	res := uc.Execute(t.Context(), kcpKyma)
 
