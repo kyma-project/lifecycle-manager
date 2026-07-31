@@ -3,7 +3,9 @@ package img_test
 import (
 	"archive/tar"
 	"bytes"
+	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -11,9 +13,12 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
+	containerregistryv1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
@@ -114,6 +119,109 @@ func TestPathExtractor_FetchLayerToFile(t *testing.T) {
 		})
 	}
 }
+
+// TestPathExtractor_GetPathForFetchedLayer_TamperedCacheIsEvictedAndRefetched verifies
+// the defense-in-depth guarantee: a tampered cached manifest (no matching sidecar digest)
+// is evicted and replaced with freshly fetched content.
+func TestPathExtractor_GetPathForFetchedLayer_TamperedCacheIsEvictedAndRefetched(t *testing.T) {
+	const legitimateContent = "legitimate-manifest-content"
+
+	imageSpec := v1beta2.ImageSpec{
+		Repo: "example.com",
+		Name: "test-module",
+		Ref:  "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		Type: v1beta2.OciRefType,
+	}
+
+	// Mirror getFsChartPath + filename to pre-populate the cache directory.
+	installPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s", imageSpec.Name, imageSpec.Ref))
+	manifestPath := filepath.Join(installPath, string(v1beta2.RawManifestLayer)+".yaml")
+
+	t.Cleanup(func() { os.RemoveAll(installPath) })
+	require.NoError(t, os.RemoveAll(installPath))
+	require.NoError(t, os.MkdirAll(installPath, 0o755))
+
+	// Write tampered content with no sidecar digest — simulates a cache poisoning attempt.
+	require.NoError(t, os.WriteFile(manifestPath, []byte("tampered-content"), 0o600))
+
+	extractor := img.NewPathExtractor(img.WithLayerPuller(
+		func(_ context.Context, _ string, _ authn.Keychain) (containerregistryv1.Layer, error) {
+			return &staticLayer{content: []byte(legitimateContent)}, nil
+		},
+	))
+
+	result, err := extractor.GetPathFromRawManifest(t.Context(), imageSpec, authn.DefaultKeychain)
+	require.NoError(t, err)
+
+	got, err := os.ReadFile(result)
+	require.NoError(t, err)
+	assert.Equal(t, []byte(legitimateContent), got, "tampered cache must be replaced with legitimate content")
+}
+
+// TestPathExtractor_GetPathForFetchedLayer_ValidCacheIsReused verifies that a cache entry
+// with a matching sidecar digest is served without calling the layer puller again.
+func TestPathExtractor_GetPathForFetchedLayer_ValidCacheIsReused(t *testing.T) {
+	const cachedContent = "cached-manifest-content"
+
+	imageSpec := v1beta2.ImageSpec{
+		Repo: "example.com",
+		Name: "test-module-cached",
+		Ref:  "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+		Type: v1beta2.OciRefType,
+	}
+
+	installPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s", imageSpec.Name, imageSpec.Ref))
+	t.Cleanup(func() { os.RemoveAll(installPath) })
+	require.NoError(t, os.RemoveAll(installPath))
+
+	pullerCallCount := 0
+	extractor := img.NewPathExtractor(img.WithLayerPuller(
+		func(_ context.Context, _ string, _ authn.Keychain) (containerregistryv1.Layer, error) {
+			pullerCallCount++
+			return &staticLayer{content: []byte(cachedContent)}, nil
+		},
+	))
+
+	// First call: cache miss — puller invoked, sidecar written.
+	result1, err := extractor.GetPathFromRawManifest(t.Context(), imageSpec, authn.DefaultKeychain)
+	require.NoError(t, err)
+	assert.Equal(t, 1, pullerCallCount)
+
+	// Second call: cache hit with valid sidecar — puller must NOT be called again.
+	result2, err := extractor.GetPathFromRawManifest(t.Context(), imageSpec, authn.DefaultKeychain)
+	require.NoError(t, err)
+	assert.Equal(t, result1, result2)
+	assert.Equal(t, 1, pullerCallCount, "puller must not be called when cache is valid")
+}
+
+// staticLayer is a minimal v1.Layer implementation returning fixed content from Uncompressed.
+type staticLayer struct {
+	content []byte
+}
+
+// zeroHash is a placeholder hash returned by staticLayer for Digest and DiffID.
+// The value is irrelevant for tests that only exercise the caching path.
+const zeroHash = "0000000000000000000000000000000000000000000000000000000000000000"
+
+func (s *staticLayer) Digest() (containerregistryv1.Hash, error) {
+	return containerregistryv1.Hash{Algorithm: "sha256", Hex: zeroHash}, nil
+}
+
+func (s *staticLayer) DiffID() (containerregistryv1.Hash, error) {
+	return containerregistryv1.Hash{Algorithm: "sha256", Hex: zeroHash}, nil
+}
+
+func (s *staticLayer) Compressed() (io.ReadCloser, error) {
+	return io.NopCloser(bytes.NewReader(s.content)), nil
+}
+
+func (s *staticLayer) Uncompressed() (io.ReadCloser, error) {
+	return io.NopCloser(bytes.NewReader(s.content)), nil
+}
+
+func (s *staticLayer) Size() (int64, error) { return int64(len(s.content)), nil }
+
+func (s *staticLayer) MediaType() (types.MediaType, error) { return types.OCIUncompressedLayer, nil }
 
 func generateDummyTarFile(t *testing.T) ([]byte, string) {
 	t.Helper()
