@@ -29,28 +29,30 @@ type Service struct {
 func NewService(
 	setKcpKymaStateDeleting UseCase,
 	setSkrKymaStateDeleting UseCase,
+	deleteManifests UseCase,
 	deleteWatcherCertificateSetup UseCase,
 	deleteSkrWebhookResources UseCase,
 	deleteSkrMtCrd UseCase,
 	deleteSkrMrmCrd UseCase,
-	deleteManifests UseCase,
 	deleteSkrKyma UseCase,
 	deleteSkrKymaCrd UseCase,
 	deleteMetrics UseCase,
+	ensureManifestDeletion UseCase,
 	dropKymaFinalizers UseCase,
 ) (*Service, error) {
 	svc := &Service{
 		deletionSteps: []UseCase{
 			setKcpKymaStateDeleting,
 			setSkrKymaStateDeleting,
+			deleteManifests,
 			deleteWatcherCertificateSetup,
 			deleteSkrWebhookResources,
 			deleteSkrMtCrd,
 			deleteSkrMrmCrd,
-			deleteManifests,
 			deleteSkrKyma,
 			deleteSkrKymaCrd,
 			deleteMetrics,
+			ensureManifestDeletion,
 			dropKymaFinalizers,
 		},
 	}
@@ -85,14 +87,15 @@ func (s *Service) enforceUseCaseOrder() error {
 	expectedUseCaseOrder := []result.UseCase{
 		usecase.SetKcpKymaStateDeleting,
 		usecase.SetSkrKymaStateDeleting,
+		usecase.DeleteManifests,
 		usecase.DeleteWatcherCertificateSetup,
 		usecase.DeleteSkrWebhookResources,
 		usecase.DeleteSkrModuleTemplateCrd,
 		usecase.DeleteSkrModuleReleaseMetaCrd,
-		usecase.DeleteManifests,
 		usecase.DeleteSkrKyma,
 		usecase.DeleteSkrKymaCrd,
 		usecase.DeleteMetrics,
+		usecase.EnsureManifestDeletion,
 		usecase.DropKymaFinalizer,
 	}
 

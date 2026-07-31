@@ -9,7 +9,7 @@ import (
 )
 
 type ManifestRepo interface {
-	ExistForKyma(ctx context.Context, kymaName string) (bool, error)
+	ExistForKymaWithoutDeletionTimestamp(ctx context.Context, kymaName string) (bool, error)
 	DeleteAllForKyma(ctx context.Context, kymaName string) error
 }
 
@@ -24,7 +24,7 @@ func NewDeleteManifests(manifestRepo ManifestRepo) *DeleteManifests {
 }
 
 func (u *DeleteManifests) IsApplicable(ctx context.Context, kcpKyma *v1beta2.Kyma) (bool, error) {
-	return u.manifestRepo.ExistForKyma(ctx, kcpKyma.GetName())
+	return u.manifestRepo.ExistForKymaWithoutDeletionTimestamp(ctx, kcpKyma.GetName())
 }
 
 func (u *DeleteManifests) Execute(ctx context.Context, kcpKyma *v1beta2.Kyma) result.Result {
