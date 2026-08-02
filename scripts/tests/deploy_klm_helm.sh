@@ -6,12 +6,12 @@
 #
 # Two modes:
 #   local (default): build and push the image from source to the k3d registry,
-#     regenerate the chart's CRDs/RBAC (make chart-sync), then deploy. This is
-#     the Helm equivalent of deploy_klm_from_sources.sh.
+#     then deploy. This is the Helm equivalent of deploy_klm_from_sources.sh.
 #   registry (--image-registry given): deploy a pre-built registry image, the
-#     way CI does. Mirrors deploy_klm_from_registry.sh; no docker build/push and
-#     no chart-sync (the image is pre-built at the checked-out SHA and the
-#     chart's generated files are committed and parity-gated).
+#     way CI does. Mirrors deploy_klm_from_registry.sh; no docker build/push.
+#
+# Both modes generate the chart's CRDs and RBAC fragments (chart-sync) before
+# helm runs, because those files are not committed (see the chart .gitignore).
 #
 # The certificate backend is chosen automatically from the cluster's
 # capabilities (the chart branches on .Capabilities.APIVersions.Has
@@ -57,7 +57,7 @@ export KUBECONFIG=${HOME}/.k3d/kcp-local.yaml
 
 # Resolve the image reference for the two modes.
 if [[ -n "${KLM_IMAGE_REGISTRY}" ]]; then
-  # Registry mode (CI): consume a pre-built image, no build/push, no chart-sync.
+  # Registry mode (CI): consume a pre-built image, no build/push.
   if [[ -z "${KLM_IMAGE_TAG}" ]]; then
     echo "Error: --image-tag is required with --image-registry"
     exit 1
@@ -76,7 +76,7 @@ if [[ -n "${KLM_IMAGE_REGISTRY}" ]]; then
   esac
   IMAGE_TAG="${KLM_IMAGE_TAG}"
 else
-  # Local mode: build and push from source to the k3d registry, then sync chart.
+  # Local mode: build and push from source to the k3d registry.
   export LOCAL_IMG="localhost:5111/lifecycle-manager"
   export CLUSTER_IMG="k3d-kcp-registry.localhost:5000/lifecycle-manager"
   TAG=$(date +%Y%m%d%H%M%S)
@@ -84,13 +84,18 @@ else
   make docker-build IMG=${LOCAL_IMG}:${TAG}
   make docker-push IMG=${LOCAL_IMG}:${TAG}
 
-  # Regenerate the chart's CRDs and RBAC from the current sources so local
-  # testing exercises the same generated content the parity gate checks.
-  make chart-sync
-
   IMAGE_REPOSITORY="${CLUSTER_IMG}"
   IMAGE_TAG="${TAG}"
 fi
+
+# Generate the chart's CRDs and RBAC fragments from the repository sources. These
+# are NOT committed (see chart/lifecycle-manager/.gitignore), so they MUST be
+# produced before every helm invocation: with them absent, helm renders
+# successfully but silently emits zero CRDs and empty RBAC rules. The script uses
+# only kustomize + the committed config/ sources (no controller-gen), so it is
+# cheap enough for both the local and CI (registry) paths.
+KUSTOMIZE_BIN="$(command -v kustomize || echo kustomize)"
+./scripts/chart-sync.sh all "${KUSTOMIZE_BIN}"
 
 # Assemble the -f value files in precedence order (last wins): base local
 # values, then the GCM-only overrides when requested, then any per-test overlay.

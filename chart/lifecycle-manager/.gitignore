@@ -1,2 +1,12 @@
 charts
 Chart.lock
+
+# Generated content — produced by `make chart-sync` (see this chart's README).
+# These are NOT committed; they must be generated before rendering or deploying
+# the chart. The static RBAC fragments (klm-certmanager-rules.yaml,
+# klm-gardener-cm-rules.yaml) and the cert-keys have no generation source and
+# ARE committed.
+files/imports/crds.yaml
+files/rbac-rules/klm-manager-rules.yaml
+files/rbac-rules/klm-manager-rules-crd.yaml
+files/rbac-rules/klm-leader-election-rules.yaml
