@@ -62,6 +62,9 @@ sync_crds() {
   echo "chart-sync: building CRDs from config/control-plane" >&2
   "$kustomize_bin" build "${REPO_ROOT}/config/control-plane" > "$built"
 
+  # The generated files are not committed, so their parent directory may be
+  # absent on a fresh checkout (git does not track empty directories).
+  mkdir -p "$(dirname "$CRDS_OUT")"
   : > "$CRDS_OUT"
   for crd in "${SHIPPED_CRDS[@]}"; do
     {
@@ -74,6 +77,9 @@ sync_crds() {
 }
 
 sync_rbac() {
+  # The generated fragments are not committed; ensure the directory exists even
+  # if a fresh checkout has no committed files under it.
+  mkdir -p "$RBAC_DIR"
   for pair in "${RBAC_MAP[@]}"; do
     local src="${REPO_ROOT}/${pair%%:*}"
     local frag="${RBAC_DIR}/${pair##*:}"
