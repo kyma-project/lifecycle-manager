@@ -460,6 +460,15 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	})
 
 	It("Should re-apply ModuleTemplate CRD on SKR after it is deleted", func() {
+		By("Wait for CRDs sync condition to stabilize after previous spec")
+		Eventually(func() bool {
+			kcpKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
+			if err != nil {
+				return false
+			}
+			return kcpKyma.ContainsCondition(v1beta2.ConditionTypeCRDsSync, apimetav1.ConditionTrue)
+		}, Timeout, Interval).Should(BeTrue())
+
 		var moduleTemplateCrd *apiextensionsv1.CustomResourceDefinition
 		Eventually(func() error {
 			var err error
