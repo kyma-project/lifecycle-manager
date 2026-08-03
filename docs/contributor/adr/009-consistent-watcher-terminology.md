@@ -2,24 +2,26 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
-The naming applied to the Watcher mechanism and its Public Key Infrastructure (PKI) is inconsistent across code, configuration, and documentation. The same concept carries a different name in each layer, and some names actively mislead.
+The naming applied to the Watcher mechanism and its Public Key Infrastructure (PKI) is inconsistent across code, configuration, and documentation. The same concept often carries a different name in each layer, and some names contradict what they describe.
 
 The following examples illustrate the problem:
 
 - The mechanism is called `runtime watcher` in official material, `Watcher` in the custom resource and controller, and `SkrWebhook` in the deployed artifact.
 - The certificate hierarchy is described as server certificate and client certificate in [ADR 007](007-pki-certs-and-rotation.md), as `root`, `serving`, and `selfsigned` in configuration, and as `SkrCertificate` in code.
-- The Issuer named `klm-watcher-selfsigned` is a Certificate Authority (CA) Issuer that signs client certificates. It is not self-signed. The name contradicts its function.
+- The Issuer named `klm-watcher-selfsigned` is a Certificate Authority (CA) Issuer that signs client certificates. It is not self-signed, so the name contradicts its function.
 - The command-line flags use the `--self-signed-cert-*` prefix for certificates that follow the server and client roles defined in ADR 007.
 
-This ADR aligns the terminology and records the target names. It extends the naming guidelines of [ADR 005](005-consistent-naming.md) and reuses the certificate vocabulary of [ADR 007](007-pki-certs-and-rotation.md).
+A reader who moves between the code, the manifests, and the documentation must repeatedly re-map one concept onto several names. This slows down onboarding, makes incident response harder, and hides the actual structure of the PKI.
 
-This ADR does not, on its own, rename any code or configuration. It records the agreed vocabulary and the target names so that follow-up changes can apply them incrementally.
+This ADR defines one vocabulary for the mechanism and its PKI, and records the target name for every part in every layer. It extends the naming guidelines of [ADR 005](005-consistent-naming.md) and reuses the certificate vocabulary of [ADR 007](007-pki-certs-and-rotation.md).
 
 ## Decision
+
+Names describe function in the solution domain. A name states what a thing is and what role it plays, not where it happens to sit or how it was bootstrapped. The same concept uses the same name in code, configuration, and documentation.
 
 ### Canonical Terms
 
@@ -30,42 +32,45 @@ The following canonical terms apply to the mechanism and its parts:
 | The mechanism, on the Kyma Control Plane (KCP) side | Watcher | The KCP-side mechanism that receives change notifications from runtimes. Covers the Watcher custom resource, the Watcher controller, and the Istio routing KLM configures for it. |
 | The deployed agent, on the runtime side | Runtime Watcher | The separate component from the `runtime-watcher` repository that KLM deploys into the runtime. The term refers only to that component and its image. |
 | The self-signed CA certificate | CA certificate | The self-signed certificate that anchors the Watcher PKI. It also serves as the server certificate. See ADR 007. |
-| The certificate the gateway presents | Server certificate | The certificate the `klm-watcher` Istio gateway presents to the runtime. Equal to the CA certificate. See ADR 007. |
+| The certificate the gateway presents | Server certificate | The certificate the Watcher Istio gateway presents to the runtime. Equal to the CA certificate. See ADR 007. |
 | The per-runtime certificate | Client certificate | The certificate the Runtime Watcher presents to the gateway. Signed by the CA certificate. One per runtime. See ADR 007. |
 
-The term Watcher refers to KLM's side of the mechanism. The term Runtime Watcher refers to the component deployed into the runtime. Keeping the two distinct removes the central ambiguity, because `runtime watcher` previously named both the end-to-end mechanism and the deployed component.
+Two rules resolve the central ambiguities:
 
-The certificate vocabulary follows ADR 007. The mechanism uses a self-signed CA certificate that doubles as the server certificate, and per-runtime client certificates signed by that CA. The terms root, leaf, and self-signed are not used to describe these certificates, because they either lose the server-and-client role distinction or contradict the actual function.
+- **Watcher and Runtime Watcher are distinct.** Watcher refers to KLM's side of the mechanism. Runtime Watcher refers to the component deployed into the runtime. Previously, `runtime watcher` named both, which is the main source of confusion.
+- **The PKI uses the ADR 007 vocabulary.** The mechanism uses a self-signed CA certificate that doubles as the server certificate, and per-runtime client certificates signed by that CA. The terms root, leaf, and self-signed are not used for these certificates, because they either lose the server-and-client role distinction or contradict the actual function.
 
-### Naming Scheme by Layer
+### Naming Scheme
 
-The scheme separates two categories:
+The scheme renames every part that does not already follow the canonical terms. It applies to Kubernetes resources, secrets, command-line flags, Go identifiers, and documentation, so that one concept reads the same everywhere.
 
-- **Frozen names** are operational contracts. Kubernetes resource names, secret names, and command-line flags are consumed by live landscapes and external tooling. Renaming them is a breaking change that requires a migration. This ADR keeps them as they are and documents their meaning.
-- **Target names** apply to Go identifiers and documentation. They are free to change and represent the agreed end state. This ADR records them; it does not apply them.
+#### Kubernetes Resources and Secrets
 
-#### Configuration and Resources (Frozen)
+| Current Name | Kind | Target Name | Rationale |
+|--------------|------|-------------|-----------|
+| `klm-watcher-root` | Issuer | `klm-watcher-ca-bootstrap` | It is the self-signed Issuer that bootstraps the CA certificate. |
+| `klm-watcher-serving` | Certificate | `klm-watcher-ca` | It is the CA certificate, which also serves as the server certificate. |
+| `klm-watcher-selfsigned` | Issuer | `klm-watcher-ca-issuer` | It is the CA Issuer that signs client certificates. It is not self-signed. |
+| `klm-watcher` | Secret | `klm-watcher-ca` | Stores the CA certificate. Matches the Certificate name. |
+| `klm-istio-gateway` | Secret | `klm-watcher-server` | Stores the server certificate and the CA bundle used by the gateway. |
+| `{KYMA_NAME}-webhook-tls` | Secret | `{KYMA_NAME}-watcher-client` | Stores a client certificate on KCP, one per runtime. |
+| `skr-webhook-tls` | Secret | `watcher-client` | The client certificate and CA bundle synced to the runtime. |
+| `skr-webhook` | Deployment | `runtime-watcher` | The Runtime Watcher deployment in the runtime. |
 
-The following Kubernetes resource and secret names remain unchanged. The table records what each one is, so the frozen name is at least understood:
+#### Command-Line Flags
 
-| Current Name | Kind | Role in the PKI |
-|--------------|------|-----------------|
-| `klm-watcher-root` | Issuer | Self-signed bootstrap Issuer that issues the CA certificate. |
-| `klm-watcher-serving` | Certificate | The self-signed CA certificate. Also the server certificate. |
-| `klm-watcher-selfsigned` | Issuer | The CA Issuer that signs client certificates. Despite the name, it is not self-signed. |
-| `klm-watcher` | Secret | Stores the CA certificate, in the `istio-system` namespace. Referred to as the root secret in code. |
-| `klm-istio-gateway` | Secret | Stores the server certificate and the CA bundle. Referred to as the gateway secret in code. |
-| `{KYMA_NAME}-webhook-tls` | Secret | Stores a client certificate on KCP, one per runtime. |
-| `skr-webhook-tls` | Secret | The client certificate and CA bundle synced to the runtime. |
-| `skr-webhook` | Deployment | The Runtime Watcher deployment in the runtime. |
+The `--self-signed-cert-*` flags are renamed to `--watcher-ca-cert-*`, because they configure the Watcher CA certificate and its Issuer, not an arbitrary self-signed certificate.
 
-#### Command-Line Flags (Frozen)
+| Current Flag | Target Flag |
+|--------------|-------------|
+| `--self-signed-cert-duration` | `--watcher-ca-cert-duration` |
+| `--self-signed-cert-renew-before` | `--watcher-ca-cert-renew-before` |
+| `--self-signed-cert-renew-buffer` | `--watcher-ca-cert-renew-buffer` |
+| `--self-signed-cert-key-size` | `--watcher-ca-cert-key-size` |
+| `--self-signed-cert-issuer-name` | `--watcher-ca-cert-issuer-name` |
+| `--self-signed-cert-issuer-namespace` | `--watcher-ca-cert-issuer-namespace` |
 
-The `--self-signed-cert-*` flags keep their names to avoid breaking landscape configuration. Their documentation must state that the flags configure the CA certificate and its Issuer, following the server and client roles of ADR 007.
-
-#### Go Code (Target)
-
-The following target names apply to Go identifiers. This ADR records them as the agreed end state; a follow-up applies them:
+#### Go Identifiers
 
 | Concept | Current | Target |
 |---------|---------|--------|
@@ -78,20 +83,31 @@ The following target names apply to Go identifiers. This ADR records them as the
 | Get the client certificate secret | `GetSkrCertificateSecret` | `GetClientCertificateSecret` |
 | The client certificate name helper | `name.SkrCertificate` | `name.ClientCertificate` |
 | The CA bundle timestamp accessor | `getGatewaySecretCaBundleExtendedAtTime` | `getCaAddedToBundleAtTime` |
-| The self-signed cert flag fields | `SelfSignedCert*` | `CaCertificate*` |
+| The self-signed cert flag fields | `SelfSignedCert*` | `WatcherCaCert*` |
 
 The `Manager` suffix is dropped from the manifest manager type, because it adds no information beyond the layer suffix already defined by ADR 005.
 
 The variable spellings for the `caAddedToBundleAt` annotation converge on one form. The annotation is `caAddedToBundleAt`. Code currently reads it through variables named `caBundleExtendedAt`, `caBundledAt`, and `getGatewaySecretCaBundleExtendedAtTime`. The target uses `caAddedToBundleAt` consistently.
 
-#### Documentation (Target)
+#### Documentation
 
-Documentation uses the canonical terms. Existing documents are updated as they are touched. Component tables that list frozen resource names keep those names and add the canonical term in the description.
+Documentation uses the canonical terms. Kubernetes resource names in component tables and reference material are updated to the target names. Existing documents are updated as they are touched.
+
+### Migration
+
+Kubernetes resource names, secret names, and command-line flags are operational contracts. Live landscapes reference them, and the Watcher PKI performs zero-downtime certificate rotation (see ADR 007), so a name cannot simply change in place without breaking the mTLS trust chain.
+
+Renames of these contracts follow a transition that keeps the old and new names valid at the same time:
+
+1. Introduce the new name alongside the old one.
+2. Migrate producers and consumers to the new name.
+3. Remove the old name once no landscape references it.
+
+Command-line flags keep their old form as a deprecated alias for one release before removal. Go identifiers and documentation carry no external contract and are renamed directly.
 
 ## Consequences
 
-- The project has one agreed vocabulary for the Watcher mechanism and its PKI, aligned with ADR 007.
-- Frozen names stay stable, so no landscape migration is required for this ADR.
-- Code and documentation diverge from the canonical terms until follow-up changes apply the target names. The divergence is bounded, because the target names are recorded here.
-- The misleading `klm-watcher-selfsigned` Issuer name persists as a frozen contract. Its documentation must state that it is the CA Issuer, so readers are not misled.
-- This ADR is the reference for the implementation detail requested in the follow-up issue.
+- The project has one agreed vocabulary for the Watcher mechanism and its PKI, aligned with ADR 007. One concept reads the same in code, configuration, and documentation.
+- Names describe function, so the misleading `selfsigned` Issuer name and the ambiguous `runtime watcher` term are resolved rather than documented around.
+- Renaming operational contracts requires a staged migration per landscape. The effort is one-time and is scoped as follow-up work.
+- Until the migration completes, some names still use the old form. The target names recorded here bound that transitional state and serve as the reference for the follow-up implementation.
