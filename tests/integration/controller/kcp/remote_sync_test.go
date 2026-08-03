@@ -3,6 +3,7 @@ package kcp_test
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -10,15 +11,13 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var ErrNotContainsExpectedCondition = errors.New("kyma CR does not contain expected condition")
@@ -484,6 +483,6 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 		Eventually(func() error {
 			_, err := fetchCrd(skrClient, shared.ModuleTemplateKind)
 			return err
-		}, Timeout, Interval).WithContext(ctx).Should(Succeed())
+		}, 30*time.Second, Interval).WithContext(ctx).Should(Succeed())
 	})
 })
