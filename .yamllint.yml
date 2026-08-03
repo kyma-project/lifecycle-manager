@@ -6,6 +6,10 @@ ignore: |
   lifecycle-manager/config/crd/bases/
   lifecycle-manager/config/samples/tests/crds/
   lifecycle-manager/config/samples/component-integration-installed/crd/
+  /chart/lifecycle-manager/templates/
+  /chart/lifecycle-manager/files/
+  lifecycle-manager/chart/lifecycle-manager/templates/
+  lifecycle-manager/chart/lifecycle-manager/files/
 #Rules config: https://yamllint.readthedocs.io/en/stable/rules.html
 rules:
   line-length:

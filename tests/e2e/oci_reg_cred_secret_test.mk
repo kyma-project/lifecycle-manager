@@ -15,6 +15,12 @@ klm-patch:
 		'  value: --oci-registry-cred-secret=private-oci-reg-creds' \
 		> oci_registry_host.yaml
 	@popd > /dev/null
+	@if [ "$(USE_HELM)" = "true" ]; then \
+		echo "Creating the OCI credential secret before the Helm deploy"; \
+		export KUBECONFIG=$(HOME)/.k3d/kcp-local.yaml; \
+		kubectl create namespace kcp-system --dry-run=client -o yaml | kubectl apply -f -; \
+		$(SCRIPTS_DIR)/setup_private_registry.sh; \
+	fi
 	@echo "::endgroup::"
 
 .PHONY: module-setup

@@ -39,6 +39,12 @@ watcher:
 manager:
   # Verbose logging for local debugging.
   loglevel: 9
+  # Enforce FIPS-only mode, matching the fips_only_mode.yaml patch the kustomize
+  # local overlays applied to every local deploy. The fips-mode-metric e2e test
+  # asserts both the FipsModeOnly metric and this exact GODEBUG value.
+  env:
+    - name: GODEBUG
+      value: "fips140=only,tlsmlkem=0"
   # Fast requeue intervals so local tests converge quickly.
   requeue:
     success:
