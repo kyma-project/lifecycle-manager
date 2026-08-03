@@ -125,39 +125,45 @@ func (p PathExtractor) GetPathForFetchedLayer(ctx context.Context,
 		return "", err
 	}
 
-	// copy uncompressed manifest to install path
+	if err := writeLayerToDisk(imgLayer, installPath, manifestPath, imageRef); err != nil {
+		return "", err
+	}
+
+	return manifestPath, nil
+}
+
+// writeLayerToDisk writes the uncompressed layer content to manifestPath and stores a
+// SHA-256 sidecar for subsequent integrity verification.
+func writeLayerToDisk(imgLayer containerregistryv1.Layer, installPath, manifestPath, imageRef string) error {
 	blobReadCloser, err := imgLayer.Uncompressed()
 	if err != nil {
-		return "", fmt.Errorf("failed fetching blob for layer %s: %w", imageRef, err)
+		return fmt.Errorf("failed fetching blob for layer %s: %w", imageRef, err)
 	}
 	defer blobReadCloser.Close()
 
-	// create dir for uncompressed manifest
 	if err := os.MkdirAll(installPath, fs.ModePerm); err != nil {
-		return "", fmt.Errorf(
-			"failure while creating installPath directory for layer %s: %w",
-			imageRef, err,
-		)
+		return fmt.Errorf("failure while creating installPath directory for layer %s: %w", imageRef, err)
 	}
-	outFile, err := os.Create(manifestPath)
+	outFile, err := os.OpenFile(manifestPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, manifestFileMode)
 	if err != nil {
-		return "", fmt.Errorf("file create failed for layer %s: %w", imageRef, err)
+		return fmt.Errorf("file create failed for layer %s: %w", imageRef, err)
 	}
 
 	hasher := sha256.New()
 	if _, err := io.Copy(io.MultiWriter(outFile, hasher), blobReadCloser); err != nil {
-		return "", fmt.Errorf("file copy storage failed for layer %s: %w", imageRef, err)
+		_ = outFile.Close()
+		_ = os.Remove(manifestPath)
+		return fmt.Errorf("file copy storage failed for layer %s: %w", imageRef, err)
 	}
 	if err := io.Closer(outFile).Close(); err != nil {
-		return manifestPath, fmt.Errorf("failed to close io: %w", err)
+		return fmt.Errorf("failed to close io: %w", err)
 	}
 
 	digest := hex.EncodeToString(hasher.Sum(nil))
 	if err := os.WriteFile(sidecarDigestPath(manifestPath), []byte(digest), manifestFileMode); err != nil {
-		return "", fmt.Errorf("failed to write digest sidecar for layer %s: %w", imageRef, err)
+		return fmt.Errorf("failed to write digest sidecar for layer %s: %w", imageRef, err)
 	}
-
-	return manifestPath, nil
+	return nil
 }
 
 func (p PathExtractor) ExtractLayer(tarPath string) (string, error) {
@@ -239,7 +245,8 @@ func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (c
 	}
 
 	if isInsecureLayer {
-		imgLayer, err := crane.PullLayer(noSchemeImageRef, crane.Insecure, crane.WithAuthFromKeychain(keyChain))
+		imgLayer, err := crane.PullLayer(noSchemeImageRef,
+			crane.Insecure, crane.WithAuthFromKeychain(keyChain), crane.WithContext(ctx))
 		if err != nil {
 			return nil, fmt.Errorf("%s due to: %w", ErrImageLayerPull.Error(), err)
 		}
@@ -300,6 +307,9 @@ func verifyCachedManifest(manifestPath string) (bool, error) {
 	sidecar := sidecarDigestPath(manifestPath)
 	expected, err := os.ReadFile(sidecar)
 	if err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			return false, fmt.Errorf("failed to read digest sidecar %s: %w", sidecar, err)
+		}
 		// Sidecar absent (legacy cache or tampered without matching sidecar update) → evict.
 		if removeErr := os.Remove(manifestPath); removeErr != nil && !errors.Is(removeErr, fs.ErrNotExist) {
 			return false, fmt.Errorf("failed to evict stale manifest %s: %w", manifestPath, removeErr)
@@ -311,7 +321,7 @@ func verifyCachedManifest(manifestPath string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if actual != string(expected) {
+	if actual != strings.TrimSpace(string(expected)) {
 		_ = os.Remove(manifestPath)
 		_ = os.Remove(sidecar)
 		return false, nil
