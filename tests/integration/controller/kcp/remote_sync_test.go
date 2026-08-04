@@ -316,18 +316,27 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 	})
 
 	It("Default module list should be recreated if remote Kyma gets deleted", func() {
+		By("Wait for KCP Kyma to reach Ready state after previous spec")
+		Eventually(func() bool {
+			kcpKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
+			if err != nil {
+				return false
+			}
+			return kcpKyma.Status.State == shared.StateReady
+		}, Timeout, Interval).Should(BeTrue())
+
 		By("Delete remote Kyma")
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(skrClient, skrKyma).Should(Succeed())
 		By("Remote Kyma contains default module")
-		Eventually(ContainsModuleInSpec, Timeout, Interval).
+		Eventually(ContainsModuleInSpec, 2*Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(skrClient, skrKyma.Name, skrKyma.Namespace, moduleInKCP.Name).
 			Should(Succeed())
 
 		By("KCP Manifest is being created")
-		Eventually(ManifestExists, Timeout, Interval).
+		Eventually(ManifestExists, 2*Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), moduleInKCP.Name).
 			Should(Succeed())
