@@ -46,16 +46,17 @@ The scheme renames every part that does not already follow the canonical terms. 
 
 #### Kubernetes Resources and Secrets
 
-| Current Name | Kind | Target Name | Rationale |
-|--------------|------|-------------|-----------|
-| `klm-watcher-root` | Issuer | `klm-watcher-ca-bootstrap` | It is the self-signed Issuer that bootstraps the CA certificate. |
-| `klm-watcher-serving` | Certificate | `klm-watcher-ca` | It is the CA certificate, which also serves as the server certificate. |
-| `klm-watcher-selfsigned` | Issuer | `klm-watcher-ca-issuer` | It is the CA Issuer that signs client certificates. It is not self-signed. |
-| `klm-watcher` | Secret | `klm-watcher-ca` | Stores the CA certificate. Matches the Certificate name. |
-| `klm-istio-gateway` | Secret | `klm-watcher-server` | Stores the server certificate and the CA bundle used by the gateway. |
-| `{KYMA_NAME}-webhook-tls` | Secret | `{KYMA_NAME}-watcher-client` | Stores a client certificate on KCP, one per runtime. |
-| `skr-webhook-tls` | Secret | `runtime-watcher-client` | The client certificate and CA bundle synced to the runtime. |
-| `skr-webhook` | Deployment | `runtime-watcher` | The Runtime Watcher deployment in the runtime. |
+| Current Name | Kind        | Target Name                  | Rationale                                                                  |
+|--------------|-------------|------------------------------|----------------------------------------------------------------------------|
+| `klm-watcher-root` | Issuer      | `klm-watcher-ca`             | It is the self-signed Issuer that bootstraps the CA certificate.           |
+| `klm-watcher-serving` | Certificate | `klm-watcher-ca`             | It is the CA certificate, which also serves as the server certificate.     |
+| `klm-watcher` | Secret      | `klm-watcher-ca`             | Stores the CA certificate. Matches the Certificate name.                   |
+| `klm-istio-gateway` | Secret      | `klm-watcher-server`         | Stores the server certificate and the CA bundle used by the gateway.       |
+| `klm-watcher-selfsigned` | Issuer      | `klm-watcher-client`         | It is the CA Issuer that signs client certificates. It is not self-signed. |
+| `{KYMA_NAME}-webhook-tls` | Certificate | `{KYMA_NAME}-watcher-client` | Requests a client certificate on KCP, one per runtime. Matches the Secret name.       |
+| `{KYMA_NAME}-webhook-tls` | Secret      | `{KYMA_NAME}-watcher-client` | Stores a client certificate on KCP, one per runtime.                       |
+| `skr-webhook-tls` | Secret      | `runtime-watcher-client`     | The client certificate and CA bundle synced to the runtime.                |
+| `skr-webhook` | Deployment  | `runtime-watcher`            | The Runtime Watcher deployment in the runtime.                             |
 
 #### Command-Line Flags
 
