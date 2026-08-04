@@ -1,6 +1,7 @@
 name: TestSuite integration (local - single spec)
 
-permissions: { }
+permissions:
+  contents: read
 
 on:
   pull_request:
