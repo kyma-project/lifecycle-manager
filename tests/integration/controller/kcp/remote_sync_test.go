@@ -64,6 +64,10 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
+		Eventually(KymaDeleted, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
+			Should(Succeed())
 		DeleteModuleTemplates(ctx, kcpClient, kyma)
 	})
 
@@ -264,6 +268,16 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 			return err
 		}, Timeout, Interval).Should(Succeed())
 	})
+	AfterAll(func() {
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma).Should(Succeed())
+		Eventually(KymaDeleted, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
+			Should(Succeed())
+		DeleteModuleTemplates(ctx, kcpClient, kyma)
+	})
 
 	It("ModuleTemplate for default module should be created in KCP", func() {
 		Eventually(CreateModuleTemplate, Timeout, Interval).
@@ -380,6 +394,10 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
+		Eventually(KymaDeleted, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
+			Should(Succeed())
 		DeleteModuleTemplates(ctx, kcpClient, kyma)
 	})
 
