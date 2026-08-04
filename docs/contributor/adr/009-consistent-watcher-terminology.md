@@ -59,22 +59,24 @@ The scheme renames every part that does not already follow the canonical terms. 
 
 #### Command-Line Flags
 
-The `--self-signed-cert-*` flags are renamed to `--watcher-ca-cert-*`, because they configure the Watcher CA certificate and its Issuer, not an arbitrary self-signed certificate.
+The `--self-signed-cert-*` flags are renamed to `--watcher-client-cert-*`, because they configure the per-runtime client certificate, not the CA certificate. The `--self-signed-cert-issuer-*` flags name the Issuer that signs those client certificates, so they follow the same `client-cert` prefix.
 
 | Current Flag | Target Flag |
 |--------------|-------------|
-| `--self-signed-cert-duration` | `--watcher-ca-cert-duration` |
-| `--self-signed-cert-renew-before` | `--watcher-ca-cert-renew-before` |
-| `--self-signed-cert-renew-buffer` | `--watcher-ca-cert-renew-buffer` |
-| `--self-signed-cert-key-size` | `--watcher-ca-cert-key-size` |
-| `--self-signed-cert-issuer-name` | `--watcher-ca-cert-issuer-name` |
-| `--self-signed-cert-issuer-namespace` | `--watcher-ca-cert-issuer-namespace` |
+| `--self-signed-cert-duration` | `--watcher-client-cert-duration` |
+| `--self-signed-cert-renew-before` | `--watcher-client-cert-renew-before` |
+| `--self-signed-cert-renew-buffer` | `--watcher-client-cert-renew-buffer` |
+| `--self-signed-cert-key-size` | `--watcher-client-cert-key-size` |
+| `--self-signed-cert-issuer-name` | `--watcher-client-cert-issuer-name` |
+| `--self-signed-cert-issuer-namespace` | `--watcher-client-cert-issuer-namespace` |
+
+The duration, renewal, and key size of the CA certificate are not configured by any flag. They are set on the CA Certificate resource in `config/certmanager/certificate_watcher.yaml`. Naming these flags after the CA would imply control the flags do not have.
 
 #### Go Identifiers
 
 | Concept | Current | Target |
 |---------|---------|--------|
-| The manifest manager type | `SkrWebhookManifestManager` | `WatcherResourceReconciler` |
+| The watcher resource service type | `SkrWebhookManifestManager` | `watcher.Service` |
 | The certificate service interface | `SKRCertificateService` | `ClientCertificateService` |
 | Create the client certificate | `CreateSkrCertificate` | `CreateClientCertificate` |
 | Renew the client certificate | `RenewSkrCertificate` | `RenewClientCertificate` |
@@ -83,9 +85,9 @@ The `--self-signed-cert-*` flags are renamed to `--watcher-ca-cert-*`, because t
 | Get the client certificate secret | `GetSkrCertificateSecret` | `GetClientCertificateSecret` |
 | The client certificate name helper | `name.SkrCertificate` | `name.ClientCertificate` |
 | The CA bundle timestamp accessor | `getGatewaySecretCaBundleExtendedAtTime` | `getCaAddedToBundleAtTime` |
-| The self-signed cert flag fields | `SelfSignedCert*` | `WatcherCaCert*` |
+| The client cert flag fields | `SelfSignedCert*` | `WatcherClientCert*` |
 
-The `Manager` suffix is dropped from the manifest manager type, because it adds no information beyond the layer suffix already defined by ADR 005.
+The `SkrWebhookManifestManager` type installs and removes the watcher resources on the runtime and orchestrates the client certificate lifecycle. It lives in package `watcher` and is a service in the sense of ADR 005, so it becomes `watcher.Service`. The `Manager` suffix and the `Watcher` prefix are both dropped: ADR 005 sanctions the `Service` suffix and establishes context from the package name, so a `Watcher` prefix would only stutter as `watcher.Watcher...`. The `Reconciler` suffix is reserved for controller-runtime reconcilers, which this type is not.
 
 The variable spellings for the `caAddedToBundleAt` annotation converge on one form. The annotation is `caAddedToBundleAt`. Code currently reads it through variables named `caBundleExtendedAt`, `caBundledAt`, and `getGatewaySecretCaBundleExtendedAtTime`. The target uses `caAddedToBundleAt` consistently.
 
