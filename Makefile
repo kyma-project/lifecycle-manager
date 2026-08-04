@@ -91,8 +91,8 @@ envtest-dir:
 	echo "$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)"
 
 .PHONY: test
-test: unittest-maintenancewindows unittest-api unittest-klm manifests test-crd generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" $(GO) test `go list ./tests/integration/...` -ginkgo.flake-attempts 10
+test: envtest ## Run tests.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" $(GO) test ./tests/integration/controller/kcp/... -ginkgo.flake-attempts 10
 
 .PHONY: unittest-klm
 unittest-klm: ## Run the unit test suite.

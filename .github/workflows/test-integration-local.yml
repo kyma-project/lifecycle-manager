@@ -1,0 +1,25 @@
+name: TestSuite integration (local - single spec)
+
+permissions: { }
+
+on:
+  pull_request:
+    types: [ opened, synchronize, reopened, ready_for_review ]
+
+jobs:
+  envtest-single-spec:
+    name: "Run single integration spec"
+    runs-on: ubuntu-latest
+    env:
+      GOSUMDB: sum.golang.org
+    steps:
+      - name: Checkout lifecycle-manager
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: 'go.mod'
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+      - name: Run integration tests
+        run: make test
