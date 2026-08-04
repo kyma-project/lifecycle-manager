@@ -239,7 +239,7 @@ func isDescriptorCached(ocmId ocmidentity.ComponentId) bool {
 	return err == nil && result != nil
 }
 
-var _ = FDescribe("Kyma sync default module list into Remote Cluster", Ordered, func() {
+var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, func() {
 	var skrClient client.Client
 	var err error
 
