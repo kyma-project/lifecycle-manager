@@ -54,7 +54,7 @@ The scheme renames every part that does not already follow the canonical terms. 
 | `klm-watcher` | Secret | `klm-watcher-ca` | Stores the CA certificate. Matches the Certificate name. |
 | `klm-istio-gateway` | Secret | `klm-watcher-server` | Stores the server certificate and the CA bundle used by the gateway. |
 | `{KYMA_NAME}-webhook-tls` | Secret | `{KYMA_NAME}-watcher-client` | Stores a client certificate on KCP, one per runtime. |
-| `skr-webhook-tls` | Secret | `watcher-client` | The client certificate and CA bundle synced to the runtime. |
+| `skr-webhook-tls` | Secret | `runtime-watcher-client` | The client certificate and CA bundle synced to the runtime. Carries the `runtime-watcher` prefix, because it lives on the runtime side. |
 | `skr-webhook` | Deployment | `runtime-watcher` | The Runtime Watcher deployment in the runtime. |
 
 #### Command-Line Flags
