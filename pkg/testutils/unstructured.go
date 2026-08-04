@@ -21,6 +21,15 @@ var (
 )
 
 func DeleteCR(ctx context.Context, clnt client.Client, obj client.Object) error {
+	// store the UID to confirm if this exact object was deleted
+	if err := clnt.Get(ctx, client.ObjectKey{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj); err != nil {
+		if util.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	uid := obj.GetUID()
+
 	err := clnt.Delete(ctx, obj)
 	if err != nil && util.IsNotFound(err) {
 		return nil
@@ -28,12 +37,19 @@ func DeleteCR(ctx context.Context, clnt client.Client, obj client.Object) error 
 	if err != nil {
 		return err
 	}
+
 	if err := clnt.Get(ctx, client.ObjectKey{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj); err != nil {
 		if util.IsNotFound(err) {
 			return nil
 		}
 		return err
 	}
+
+	// new obj has been created in the meantime => the original one was deleted
+	if obj.GetUID() != uid {
+		return nil
+	}
+
 	return fmt.Errorf("%s/%s: %w", obj.GetNamespace(), obj.GetName(), ErrNotDeleted)
 }
 
