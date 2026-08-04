@@ -38,28 +38,16 @@ type layerPullerFunc func(
 	ctx context.Context, imageRef string, keyChain authn.Keychain,
 ) (containerregistryv1.Layer, error)
 
-// PathExtractorOption configures a PathExtractor. Intended for testing.
-type PathExtractorOption func(*PathExtractor)
-
-// WithLayerPuller replaces the default pullLayer implementation.
-func WithLayerPuller(f layerPullerFunc) PathExtractorOption {
-	return func(p *PathExtractor) { p.puller = f }
-}
-
 type PathExtractor struct {
 	fileMutexCache *filemutex.MutexCache
 	puller         layerPullerFunc
 }
 
-func NewPathExtractor(opts ...PathExtractorOption) *PathExtractor {
-	extractor := &PathExtractor{
+func NewPathExtractor(puller layerPullerFunc) *PathExtractor {
+	return &PathExtractor{
 		fileMutexCache: filemutex.NewMutexCache(nil),
-		puller:         pullLayer,
+		puller:         puller,
 	}
-	for _, o := range opts {
-		o(extractor)
-	}
-	return extractor
 }
 
 func (p PathExtractor) GetPathFromRawManifest(
@@ -161,7 +149,7 @@ func writeLayerToDisk(imgLayer containerregistryv1.Layer, installPath, manifestP
 
 	digest := hex.EncodeToString(hasher.Sum(nil))
 	if err := os.WriteFile(sidecarDigestPath(manifestPath), []byte(digest), manifestFileMode); err != nil {
-		return fmt.Errorf("failed to write digest sidecar for layer %s: %w", imageRef, err)
+		return fmt.Errorf("failed to write digest file for layer %s: %w", imageRef, err)
 	}
 	return nil
 }
@@ -221,7 +209,7 @@ func (p PathExtractor) ExtractLayer(tarPath string) (string, error) {
 	return "", ErrInvalidArchiveStructure
 }
 
-// pullLayer fetches an OCI layer from a registry.
+// PullLayer fetches an OCI layer from a registry.
 //
 // crane.PullLayer implicitly verifies the OCI layer digest (the sha256 of the compressed
 // blob, i.e. imageSpec.Ref) on every fetch. The go-containerregistry library wraps the
@@ -237,7 +225,7 @@ func (p PathExtractor) ExtractLayer(tarPath string) (string, error) {
 // verification) still applies even over plain HTTP.
 // Follow-up: evaluate replacing the URL-scheme detection with an explicit secure/insecure
 // wiring at startup, or enabling TLS for local test registries (issue #3493).
-func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (containerregistryv1.Layer, error) {
+func PullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (containerregistryv1.Layer, error) {
 	noSchemeImageRef := noSchemeURL(imageRef)
 	isInsecureLayer, err := regexp.MatchString("^http://", imageRef)
 	if err != nil {
@@ -308,7 +296,7 @@ func verifyCachedManifest(manifestPath string) (bool, error) {
 	expected, err := os.ReadFile(sidecar)
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
-			return false, fmt.Errorf("failed to read digest sidecar %s: %w", sidecar, err)
+			return false, fmt.Errorf("failed to read digest file %s: %w", sidecar, err)
 		}
 		// Sidecar absent (legacy cache or tampered without matching sidecar update) → evict.
 		if removeErr := os.Remove(manifestPath); removeErr != nil && !errors.Is(removeErr, fs.ErrNotExist) {

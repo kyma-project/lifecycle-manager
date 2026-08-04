@@ -4,6 +4,9 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -25,7 +28,7 @@ import (
 
 func TestPathExtractor_ExtractLayer(t *testing.T) {
 	content, tarFilePath := generateDummyTarFile(t)
-	pathExtractor := img.NewPathExtractor()
+	pathExtractor := img.NewPathExtractor(img.PullLayer)
 	numGoroutines := 5
 	resultCh := make(chan string, numGoroutines)
 	modTimeCh := make(chan time.Time, numGoroutines)
@@ -109,7 +112,7 @@ func TestPathExtractor_FetchLayerToFile(t *testing.T) {
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			p := img.NewPathExtractor()
+			p := img.NewPathExtractor(img.PullLayer)
 			imageSpec, err := testCase.want.ConvertToImageSpec(commonRepo)
 			require.NoError(t, err)
 			extractedFilePath, err := p.GetPathFromRawManifest(t.Context(), *imageSpec, authn.DefaultKeychain)
@@ -144,11 +147,11 @@ func TestPathExtractor_GetPathForFetchedLayer_TamperedCacheIsEvictedAndRefetched
 	// Write tampered content with no sidecar digest — simulates a cache poisoning attempt.
 	require.NoError(t, os.WriteFile(manifestPath, []byte("tampered-content"), 0o600))
 
-	extractor := img.NewPathExtractor(img.WithLayerPuller(
+	extractor := img.NewPathExtractor(
 		func(_ context.Context, _ string, _ authn.Keychain) (containerregistryv1.Layer, error) {
 			return &staticLayer{content: []byte(legitimateContent)}, nil
 		},
-	))
+	)
 
 	result, err := extractor.GetPathFromRawManifest(t.Context(), imageSpec, authn.DefaultKeychain)
 	require.NoError(t, err)
@@ -175,12 +178,12 @@ func TestPathExtractor_GetPathForFetchedLayer_ValidCacheIsReused(t *testing.T) {
 	require.NoError(t, os.RemoveAll(installPath))
 
 	pullerCallCount := 0
-	extractor := img.NewPathExtractor(img.WithLayerPuller(
+	extractor := img.NewPathExtractor(
 		func(_ context.Context, _ string, _ authn.Keychain) (containerregistryv1.Layer, error) {
 			pullerCallCount++
 			return &staticLayer{content: []byte(cachedContent)}, nil
 		},
-	))
+	)
 
 	// First call: cache miss — puller invoked, sidecar written.
 	result1, err := extractor.GetPathFromRawManifest(t.Context(), imageSpec, authn.DefaultKeychain)
@@ -192,6 +195,76 @@ func TestPathExtractor_GetPathForFetchedLayer_ValidCacheIsReused(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, result1, result2)
 	assert.Equal(t, 1, pullerCallCount, "puller must not be called when cache is valid")
+}
+
+// TestPathExtractor_GetPathForFetchedLayer_DigestMismatchIsEvictedAndRefetched verifies
+// that when the sidecar digest exists but no longer matches the manifest content
+// (the core tampering scenario this feature protects against), the cache is evicted
+// and the fresh layer is fetched.
+func TestPathExtractor_GetPathForFetchedLayer_DigestMismatchIsEvictedAndRefetched(t *testing.T) {
+	const freshContent = "fresh-manifest-content"
+
+	imageSpec := v1beta2.ImageSpec{
+		Repo: "example.com",
+		Name: "test-module-mismatch",
+		Ref:  "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+		Type: v1beta2.OciRefType,
+	}
+
+	installPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s", imageSpec.Name, imageSpec.Ref))
+	manifestPath := filepath.Join(installPath, string(v1beta2.RawManifestLayer)+".yaml")
+
+	t.Cleanup(func() { os.RemoveAll(installPath) })
+	require.NoError(t, os.RemoveAll(installPath))
+	require.NoError(t, os.MkdirAll(installPath, 0o755))
+
+	// Write content whose digest does NOT match the sidecar — simulates in-place file tampering.
+	require.NoError(t, os.WriteFile(manifestPath, []byte("original-content"), 0o600))
+	wrongSum := sha256.Sum256([]byte("something-entirely-different"))
+	require.NoError(t, os.WriteFile(manifestPath+".sha256", []byte(hex.EncodeToString(wrongSum[:])), 0o600))
+
+	extractor := img.NewPathExtractor(
+		func(_ context.Context, _ string, _ authn.Keychain) (containerregistryv1.Layer, error) {
+			return &staticLayer{content: []byte(freshContent)}, nil
+		},
+	)
+
+	result, err := extractor.GetPathFromRawManifest(t.Context(), imageSpec, authn.DefaultKeychain)
+	require.NoError(t, err)
+
+	got, err := os.ReadFile(result)
+	require.NoError(t, err)
+	assert.Equal(t, []byte(freshContent), got, "content with mismatched digest must be replaced with fresh layer")
+}
+
+// TestWriteLayerToDisk_CopyFailure_PartialFileIsCleanedUp verifies that when the layer
+// stream errors during io.Copy, no partial manifest file is left behind.
+func TestWriteLayerToDisk_CopyFailure_PartialFileIsCleanedUp(t *testing.T) {
+	imageSpec := v1beta2.ImageSpec{
+		Repo: "example.com",
+		Name: "test-module-fail",
+		Ref:  "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+		Type: v1beta2.OciRefType,
+	}
+
+	installPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s", imageSpec.Name, imageSpec.Ref))
+	manifestPath := filepath.Join(installPath, string(v1beta2.RawManifestLayer)+".yaml")
+
+	t.Cleanup(func() { os.RemoveAll(installPath) })
+	require.NoError(t, os.RemoveAll(installPath))
+
+	extractor := img.NewPathExtractor(
+		func(_ context.Context, _ string, _ authn.Keychain) (containerregistryv1.Layer, error) {
+			return &errorReadLayer{}, nil
+		},
+	)
+
+	_, err := extractor.GetPathFromRawManifest(t.Context(), imageSpec, authn.DefaultKeychain)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "file copy storage failed")
+
+	_, statErr := os.Stat(manifestPath)
+	assert.ErrorIs(t, statErr, os.ErrNotExist, "partial manifest file must not remain after copy failure")
 }
 
 // staticLayer is a minimal v1.Layer implementation returning fixed content from Uncompressed.
@@ -222,6 +295,39 @@ func (s *staticLayer) Uncompressed() (io.ReadCloser, error) {
 func (s *staticLayer) Size() (int64, error) { return int64(len(s.content)), nil }
 
 func (s *staticLayer) MediaType() (types.MediaType, error) { return types.OCIUncompressedLayer, nil }
+
+// errorReadLayer is a v1.Layer whose Uncompressed stream always fails during Read,
+// used to exercise the io.Copy error path in writeLayerToDisk.
+type errorReadLayer struct{}
+
+func (e *errorReadLayer) Digest() (containerregistryv1.Hash, error) {
+	return containerregistryv1.Hash{Algorithm: "sha256", Hex: zeroHash}, nil
+}
+
+func (e *errorReadLayer) DiffID() (containerregistryv1.Hash, error) {
+	return containerregistryv1.Hash{Algorithm: "sha256", Hex: zeroHash}, nil
+}
+
+func (e *errorReadLayer) Compressed() (io.ReadCloser, error) {
+	return io.NopCloser(bytes.NewReader(nil)), nil
+}
+
+func (e *errorReadLayer) Uncompressed() (io.ReadCloser, error) {
+	return &failingReadCloser{}, nil
+}
+
+func (e *errorReadLayer) Size() (int64, error) { return 0, nil }
+
+func (e *errorReadLayer) MediaType() (types.MediaType, error) { return types.OCIUncompressedLayer, nil }
+
+// failingReadCloser always returns an error on Read, simulating a mid-stream network failure.
+type failingReadCloser struct{}
+
+func (f *failingReadCloser) Read(_ []byte) (int, error) {
+	return 0, errors.New("simulated read error")
+}
+
+func (f *failingReadCloser) Close() error { return nil }
 
 func generateDummyTarFile(t *testing.T) ([]byte, string) {
 	t.Helper()

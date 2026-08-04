@@ -548,7 +548,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
 	orphanDetectionClient := kymaRepo
 	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
-	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr.GetClient(), flagVar), img.NewPathExtractor())
+	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr.GetClient(), flagVar), img.NewPathExtractor(img.PullLayer))
 	clientCache := skrclientcache.NewService()
 	skrClient := skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService)
 
