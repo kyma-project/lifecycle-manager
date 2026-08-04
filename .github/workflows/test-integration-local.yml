@@ -43,8 +43,14 @@ jobs:
           pushd config/watcher_local_test > /dev/null
           kustomize edit add patch --path patches/oci_registry_host.yaml --kind Deployment
           popd > /dev/null
-          IMG="europe-docker.pkg.dev/kyma-project/dev/lifecycle-manager@sha256:14ffcac7339a22fa36fecf98ae686f1eb0461e9017c8a2af248a1120493972c4" \
-            make local-deploy-with-watcher
+          IMG="europe-docker.pkg.dev/kyma-project/dev/lifecycle-manager@sha256:14ffcac7339a22fa36fecf98ae686f1eb0461e9017c8a2af248a1120493972c4"
+          for retry in $(seq 1 5); do
+            if make local-deploy-with-watcher IMG="$IMG"; then
+              kubectl wait pods -n kcp-system -l app.kubernetes.io/name=lifecycle-manager --for condition=Ready --timeout=20s && break
+            fi
+            echo "Retrying deploy ($retry/5)..."
+            sleep 20
+          done
       - name: Install k9s
         run: |
           curl -sL https://github.com/derailed/k9s/releases/latest/download/k9s_Linux_amd64.tar.gz | tar -xz -C /usr/local/bin k9s
