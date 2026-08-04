@@ -3,7 +3,6 @@ package kcp_test
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -492,6 +491,6 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 		Eventually(func() error {
 			_, err := fetchCrd(skrClient, shared.ModuleTemplateKind)
 			return err
-		}, 30*time.Second, Interval).WithContext(ctx).Should(Succeed())
+		}, Timeout, Interval).WithContext(ctx).Should(Succeed())
 	})
 })
