@@ -37,5 +37,16 @@ jobs:
           ./scripts/tests/create_test_clusters.sh \
             --k8s-version ${{ steps.configuration.outputs.k8s_version }} \
             --cert-manager-version ${{ steps.configuration.outputs.cert_manager_version }}
+      - name: Deploy KLM from registry
+        working-directory: lifecycle-manager
+        run: |
+          pushd config/watcher_local_test > /dev/null
+          kustomize edit add patch --path patches/oci_registry_host.yaml --kind Deployment
+          popd > /dev/null
+          IMG="europe-docker.pkg.dev/kyma-project/dev/lifecycle-manager@sha256:14ffcac7339a22fa36fecf98ae686f1eb0461e9017c8a2af248a1120493972c4" \
+            make local-deploy-with-watcher
+      - name: Install k9s
+        run: |
+          curl -sL https://github.com/derailed/k9s/releases/latest/download/k9s_Linux_amd64.tar.gz | tar -xz -C /usr/local/bin k9s
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113 # v3
