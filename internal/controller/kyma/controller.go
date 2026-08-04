@@ -254,14 +254,15 @@ func (r *Reconciler) processDeletion(ctx context.Context, kyma *v1beta2.Kyma) (c
 	switch res.UseCase {
 	case usecase.SetKcpKymaStateDeleting,
 		usecase.SetSkrKymaStateDeleting,
-		usecase.DeleteSkrKyma,
+		usecase.DeleteManifests,
 		usecase.DeleteWatcherCertificateSetup,
 		usecase.DeleteSkrWebhookResources,
 		usecase.DeleteSkrModuleTemplateCrd,
 		usecase.DeleteSkrModuleReleaseMetaCrd,
+		usecase.DeleteSkrKyma,
 		usecase.DeleteSkrKymaCrd,
-		usecase.DeleteManifests,
-		usecase.DeleteMetrics:
+		usecase.DeleteMetrics,
+		usecase.EnsureManifestDeletion:
 		// error takes precedence over the RequeueAfter
 		// res.Err != nil => requeue rate limited
 		// res.Err == nil => requeue after

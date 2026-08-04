@@ -460,8 +460,12 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	})
 
 	It("Should re-apply ModuleTemplate CRD on SKR after it is deleted", func() {
-		moduleTemplateCrd, err := fetchCrd(skrClient, shared.ModuleTemplateKind)
-		Expect(err).NotTo(HaveOccurred())
+		var moduleTemplateCrd *apiextensionsv1.CustomResourceDefinition
+		Eventually(func() error {
+			var err error
+			moduleTemplateCrd, err = fetchCrd(skrClient, shared.ModuleTemplateKind)
+			return err
+		}, Timeout, Interval).WithContext(ctx).Should(Succeed())
 
 		Eventually(skrClient.Delete, Timeout, Interval).
 			WithContext(ctx).
