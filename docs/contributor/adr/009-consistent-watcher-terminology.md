@@ -58,6 +58,10 @@ The scheme renames every part that does not already follow the canonical terms. 
 | `skr-webhook-tls` | Secret      | `runtime-watcher-client`     | The client certificate and CA bundle synced to the runtime.                      |
 | `skr-webhook` | Deployment  | `runtime-watcher`            | The Runtime Watcher deployment in the runtime.                                   |
 
+The following diagram shows these Issuers, Certificates, and Secrets under their target names, and how the certificates flow from KCP to the runtime:
+
+![Watcher PKI certificate and secret flow under the target names](../assets/adr-009/watcher-pki-names.svg)
+
 #### Command-Line Flags
 
 The `--self-signed-cert-*` flags are renamed to `--watcher-client-cert-*`, because they configure the per-runtime client certificate, not the CA certificate. The `--self-signed-cert-issuer-*` flags name the Issuer that signs those client certificates, so they follow the same `client-cert` prefix.
