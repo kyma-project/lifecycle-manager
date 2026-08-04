@@ -16,11 +16,26 @@ jobs:
     steps:
       - name: Checkout lifecycle-manager
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: 'go.mod'
+          path: lifecycle-manager
+      - name: Get configuration
+        uses: ./lifecycle-manager/.github/actions/get-configuration
+        id: configuration
+      - name: Setup tools
+        uses: ./lifecycle-manager/.github/actions/setup-tools
+        with:
+          k8s_version: ${{ steps.configuration.outputs.k8s_version }}
+          istio_version: ${{ steps.configuration.outputs.istio_version }}
+          k3d_version: ${{ steps.configuration.outputs.k3d_version }}
+          ocm_cli_version: ${{ steps.configuration.outputs.ocm_cli_version }}
+          modulectl_version: ${{ steps.configuration.outputs.modulectl_version }}
+          go-version-file: lifecycle-manager/go.mod
+          cache-dependency-path: lifecycle-manager/go.sum
+      - name: Create test clusters
+        working-directory: lifecycle-manager
+        run: |
+          ./scripts/tests/create_test_clusters.sh \
+            --k8s-version ${{ steps.configuration.outputs.k8s_version }} \
+            --cert-manager-version ${{ steps.configuration.outputs.cert_manager_version }}
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113 # v3
-      - name: Run integration tests
-        run: make test
