@@ -10,13 +10,15 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var ErrNotContainsExpectedCondition = errors.New("kyma CR does not contain expected condition")
@@ -315,27 +317,18 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 	})
 
 	It("Default module list should be recreated if remote Kyma gets deleted", func() {
-		By("Wait for KCP Kyma to reach Ready state after previous spec")
-		Eventually(func() bool {
-			kcpKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
-			if err != nil {
-				return false
-			}
-			return kcpKyma.Status.State == shared.StateReady
-		}, Timeout, Interval).Should(BeTrue())
-
 		By("Delete remote Kyma")
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(skrClient, skrKyma).Should(Succeed())
 		By("Remote Kyma contains default module")
-		Eventually(ContainsModuleInSpec, 2*Timeout, Interval).
+		Eventually(ContainsModuleInSpec, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(skrClient, skrKyma.Name, skrKyma.Namespace, moduleInKCP.Name).
 			Should(Succeed())
 
 		By("KCP Manifest is being created")
-		Eventually(ManifestExists, 2*Timeout, Interval).
+		Eventually(ManifestExists, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), moduleInKCP.Name).
 			Should(Succeed())
@@ -467,15 +460,6 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	})
 
 	It("Should re-apply ModuleTemplate CRD on SKR after it is deleted", func() {
-		By("Wait for CRDs sync condition to stabilize after previous spec")
-		Eventually(func() bool {
-			kcpKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
-			if err != nil {
-				return false
-			}
-			return kcpKyma.ContainsCondition(v1beta2.ConditionTypeCRDsSync, apimetav1.ConditionTrue)
-		}, Timeout, Interval).Should(BeTrue())
-
 		var moduleTemplateCrd *apiextensionsv1.CustomResourceDefinition
 		Eventually(func() error {
 			var err error
