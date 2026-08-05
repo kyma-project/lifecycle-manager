@@ -3,8 +3,7 @@ package e2e_test
 import (
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -13,6 +12,8 @@ import (
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Manage Module Metrics", Ordered, func() {
@@ -114,9 +115,9 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 		})
 
 		It("When KCP Kyma CR is deleted", func() {
-			Eventually(DeleteKymaByForceRemovePurgeFinalizer).
+			Eventually(DeleteKyma).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma).
+				WithArguments(kcpClient, kyma, apimetav1.DeletePropagationBackground).
 				Should(Succeed())
 			Eventually(KymaDeleted).
 				WithContext(ctx).
