@@ -3,8 +3,6 @@ package img
 import (
 	"archive/tar"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -24,8 +22,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/filemutex"
 )
 
-const manifestFileMode = 0o600
-
 var (
 	ErrImageLayerPull       = errors.New("failed to pull layer")
 	ErrInvalidImageSpecType = fmt.Errorf("invalid image spec type provided,"+
@@ -34,20 +30,12 @@ var (
 	ErrInvalidArchiveStructure = errors.New("tar archive has invalid structure, expected a single file")
 )
 
-type layerPullerFunc func(
-	ctx context.Context, imageRef string, keyChain authn.Keychain,
-) (containerregistryv1.Layer, error)
-
 type PathExtractor struct {
 	fileMutexCache *filemutex.MutexCache
-	puller         layerPullerFunc
 }
 
-func NewPathExtractor(puller layerPullerFunc) *PathExtractor {
-	return &PathExtractor{
-		fileMutexCache: filemutex.NewMutexCache(nil),
-		puller:         puller,
-	}
+func NewPathExtractor() *PathExtractor {
+	return &PathExtractor{fileMutexCache: filemutex.NewMutexCache(nil)}
 }
 
 func (p PathExtractor) GetPathFromRawManifest(
@@ -97,61 +85,40 @@ func (p PathExtractor) GetPathForFetchedLayer(ctx context.Context,
 		return "", fmt.Errorf("opening dir for installs caused an error %s: %w", imageRef, err)
 	}
 	if dir != nil {
-		dir.Close()
-		ok, verifyErr := verifyCachedManifest(manifestPath)
-		if verifyErr != nil {
-			return "", verifyErr
-		}
-		if ok {
-			return manifestPath, nil
-		}
-		// Integrity check failed: eviction already done, fall through to re-fetch.
+		return manifestPath, nil
 	}
 
-	imgLayer, err := p.puller(ctx, imageRef, keyChain)
+	imgLayer, err := pullLayer(ctx, imageRef, keyChain)
 	if err != nil {
 		return "", err
 	}
 
-	if err := writeLayerToDisk(imgLayer, installPath, manifestPath, imageRef); err != nil {
-		return "", err
-	}
-
-	return manifestPath, nil
-}
-
-// writeLayerToDisk writes the uncompressed layer content to manifestPath and stores a
-// SHA-256 sidecar for subsequent integrity verification.
-func writeLayerToDisk(imgLayer containerregistryv1.Layer, installPath, manifestPath, imageRef string) error {
+	// copy uncompressed manifest to install path
 	blobReadCloser, err := imgLayer.Uncompressed()
 	if err != nil {
-		return fmt.Errorf("failed fetching blob for layer %s: %w", imageRef, err)
+		return "", fmt.Errorf("failed fetching blob for layer %s: %w", imageRef, err)
 	}
 	defer blobReadCloser.Close()
 
+	// create dir for uncompressed manifest
 	if err := os.MkdirAll(installPath, fs.ModePerm); err != nil {
-		return fmt.Errorf("failure while creating installPath directory for layer %s: %w", imageRef, err)
+		return "", fmt.Errorf(
+			"failure while creating installPath directory for layer %s: %w",
+			imageRef, err,
+		)
 	}
-	outFile, err := os.OpenFile(manifestPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, manifestFileMode)
+	outFile, err := os.Create(manifestPath)
 	if err != nil {
-		return fmt.Errorf("file create failed for layer %s: %w", imageRef, err)
+		return "", fmt.Errorf("file create failed for layer %s: %w", imageRef, err)
 	}
-
-	hasher := sha256.New()
-	if _, err := io.Copy(io.MultiWriter(outFile, hasher), blobReadCloser); err != nil {
-		_ = outFile.Close()
-		_ = os.Remove(manifestPath)
-		return fmt.Errorf("file copy storage failed for layer %s: %w", imageRef, err)
+	if _, err := io.Copy(outFile, blobReadCloser); err != nil {
+		return "", fmt.Errorf("file copy storage failed for layer %s: %w", imageRef, err)
 	}
-	if err := io.Closer(outFile).Close(); err != nil {
-		return fmt.Errorf("failed to close io: %w", err)
+	err = io.Closer(outFile).Close()
+	if err != nil {
+		return manifestPath, fmt.Errorf("failed to close io: %w", err)
 	}
-
-	digest := hex.EncodeToString(hasher.Sum(nil))
-	if err := os.WriteFile(sidecarDigestPath(manifestPath), []byte(digest), manifestFileMode); err != nil {
-		return fmt.Errorf("failed to write digest file for layer %s: %w", imageRef, err)
-	}
-	return nil
+	return manifestPath, nil
 }
 
 func (p PathExtractor) ExtractLayer(tarPath string) (string, error) {
@@ -209,23 +176,7 @@ func (p PathExtractor) ExtractLayer(tarPath string) (string, error) {
 	return "", ErrInvalidArchiveStructure
 }
 
-// PullLayer fetches an OCI layer from a registry.
-//
-// crane.PullLayer implicitly verifies the OCI layer digest (the sha256 of the compressed
-// blob, i.e. imageSpec.Ref) on every fetch. The go-containerregistry library wraps the
-// HTTP response body in an internal verify.ReadCloser that hashes bytes on read and returns
-// an error at EOF if the digest does not match. This verification is triggered by the
-// io.Copy in GetPathForFetchedLayer that fully drains the uncompressed stream.
-//
-// Secure vs insecure: when imageRef begins with "http://", crane.Insecure is passed and
-// the layer is fetched over plain HTTP without TLS. This exposes authentication credentials
-// to any in-path network observer. In production all OCI registries use HTTPS, so this
-// branch is not reached there. In local test environments (e.g. k3d with a plain-HTTP
-// registry), this branch is intentionally used. OCI content integrity (digest
-// verification) still applies even over plain HTTP.
-// Follow-up: evaluate replacing the URL-scheme detection with an explicit secure/insecure
-// wiring at startup, or enabling TLS for local test registries (issue #3493).
-func PullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (containerregistryv1.Layer, error) {
+func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (containerregistryv1.Layer, error) {
 	noSchemeImageRef := noSchemeURL(imageRef)
 	isInsecureLayer, err := regexp.MatchString("^http://", imageRef)
 	if err != nil {
@@ -233,8 +184,7 @@ func PullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (c
 	}
 
 	if isInsecureLayer {
-		imgLayer, err := crane.PullLayer(noSchemeImageRef,
-			crane.Insecure, crane.WithAuthFromKeychain(keyChain), crane.WithContext(ctx))
+		imgLayer, err := crane.PullLayer(noSchemeImageRef, crane.Insecure, crane.WithAuthFromKeychain(keyChain))
 		if err != nil {
 			return nil, fmt.Errorf("%s due to: %w", ErrImageLayerPull.Error(), err)
 		}
@@ -265,54 +215,4 @@ func sanitizeArchivePath(dir, path string) (string, error) {
 func noSchemeURL(url string) string {
 	regex := regexp.MustCompile(`^https?://`)
 	return regex.ReplaceAllString(url, "")
-}
-
-// sidecarDigestPath returns the path of the SHA-256 sidecar file for a cached manifest.
-// The sidecar stores the hex-encoded SHA-256 of the uncompressed manifest content written
-// during the initial pull, enabling integrity verification on subsequent cache hits.
-func sidecarDigestPath(manifestPath string) string {
-	return manifestPath + ".sha256"
-}
-
-// manifestFileDigest returns the hex-encoded SHA-256 of the file at path.
-func manifestFileDigest(filePath string) (string, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to open file for digest: %w", err)
-	}
-	defer file.Close()
-	h := sha256.New()
-	if _, err := io.Copy(h, file); err != nil {
-		return "", fmt.Errorf("failed to hash file: %w", err)
-	}
-	return hex.EncodeToString(h.Sum(nil)), nil
-}
-
-// verifyCachedManifest checks the on-disk manifest against its sidecar digest.
-// Returns (true, nil) when the cache is valid. On any integrity failure the manifest
-// and sidecar are removed and (false, nil) is returned so the caller re-fetches.
-func verifyCachedManifest(manifestPath string) (bool, error) {
-	sidecar := sidecarDigestPath(manifestPath)
-	expected, err := os.ReadFile(sidecar)
-	if err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			return false, fmt.Errorf("failed to read digest file %s: %w", sidecar, err)
-		}
-		// Sidecar absent (legacy cache or tampered without matching sidecar update) → evict.
-		if removeErr := os.Remove(manifestPath); removeErr != nil && !errors.Is(removeErr, fs.ErrNotExist) {
-			return false, fmt.Errorf("failed to evict stale manifest %s: %w", manifestPath, removeErr)
-		}
-		return false, nil
-	}
-
-	actual, err := manifestFileDigest(manifestPath)
-	if err != nil {
-		return false, err
-	}
-	if actual != strings.TrimSpace(string(expected)) {
-		_ = os.Remove(manifestPath)
-		_ = os.Remove(sidecar)
-		return false, nil
-	}
-	return true, nil
 }

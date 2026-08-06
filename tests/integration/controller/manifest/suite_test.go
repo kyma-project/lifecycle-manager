@@ -146,7 +146,7 @@ var _ = BeforeSuite(func() {
 
 	kcpClient = mgr.GetClient()
 	keyChainLookup := keychainprovider.NewDefaultKeyChainProvider()
-	extractor := img.NewPathExtractor(img.PullLayer)
+	extractor := img.NewPathExtractor()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorder(shared.OperatorName))
 	manifestClient := manifestclient.NewManifestClient(testEventRec, kcpClient)
 	orphanDetectionClient := kymarepo.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace)
