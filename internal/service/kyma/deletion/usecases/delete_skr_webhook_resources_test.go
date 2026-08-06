@@ -12,6 +12,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion/usecases"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
@@ -109,6 +110,24 @@ func TestDeleteSkrWebhookResources_IsApplicable(t *testing.T) {
 			resourcesExistErr:          errors.New("failed to check resources"),
 			expectedApplicable:         false,
 			expectError:                true,
+			expectResourcesExistCalled: true,
+		},
+		{
+			name: "not applicable when SKR client not in cache",
+			kyma: &v1beta2.Kyma{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Name:              random.Name(),
+					Namespace:         random.Name(),
+					DeletionTimestamp: &now,
+				},
+				Status: v1beta2.KymaStatus{
+					State: shared.StateDeleting,
+				},
+			},
+			resourcesExist:             false,
+			resourcesExistErr:          errorsinternal.ErrSkrClientNotFound,
+			expectedApplicable:         false,
+			expectError:                false,
 			expectResourcesExistCalled: true,
 		},
 	}
