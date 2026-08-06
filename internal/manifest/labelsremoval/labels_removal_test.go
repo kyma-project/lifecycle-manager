@@ -178,7 +178,7 @@ func Test_RemoveManagedByLabel_WhenDefaultCRHasLabels(t *testing.T) {
 	assert.Empty(t, defaultCR.GetLabels())
 }
 
-func Test_RemoveManagedByLabel_WhenDefaultCRCannotBeFetched(t *testing.T) {
+func Test_RemoveManagedByLabel_WhenDefaultCRNotFound(t *testing.T) {
 	gvk := schema.GroupVersionKind{
 		Group:   "test-group",
 		Version: "v1",
@@ -189,9 +189,6 @@ func Test_RemoveManagedByLabel_WhenDefaultCRCannotBeFetched(t *testing.T) {
 	defaultCR.SetName("default-cr")
 	defaultCR.SetNamespace("default-ns")
 	defaultCR.SetGroupVersionKind(gvk)
-	defaultCR.SetLabels(map[string]string{
-		"operator.kyma-project.io/managed-by": "kyma",
-	})
 
 	scheme := machineryruntime.NewScheme()
 	err := v1beta2.AddToScheme(scheme)
@@ -204,6 +201,33 @@ func Test_RemoveManagedByLabel_WhenDefaultCRCannotBeFetched(t *testing.T) {
 	service := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
 
 	err = service.RemoveManagedByLabel(t.Context(), manifest, fakeClient)
+
+	require.NoError(t, err)
+	assert.True(t, manifestClient.called)
+}
+
+func Test_RemoveManagedByLabel_WhenDefaultCRFetchReturnsUnexpectedError(t *testing.T) {
+	gvk := schema.GroupVersionKind{
+		Group:   "test-group",
+		Version: "v1",
+		Kind:    "TestKind",
+	}
+
+	defaultCR := &unstructured.Unstructured{}
+	defaultCR.SetName("default-cr")
+	defaultCR.SetNamespace("default-ns")
+	defaultCR.SetGroupVersionKind(gvk)
+
+	scheme := machineryruntime.NewScheme()
+	err := v1beta2.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	manifest := builder.NewManifestBuilder().WithResource(defaultCR).Build()
+	manifestClient := manifestClientStub{}
+
+	service := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
+
+	err = service.RemoveManagedByLabel(t.Context(), manifest, getErrorClientStub{})
 
 	require.ErrorContains(t, err, "failed to get default CR")
 	assert.False(t, manifestClient.called)
@@ -359,4 +383,12 @@ func (e errorClientStub) Get(
 	opts ...client.GetOption,
 ) error {
 	return e.fakeClient.Get(ctx, key, obj, opts...)
+}
+
+type getErrorClientStub struct {
+	client.Client
+}
+
+func (getErrorClientStub) Get(_ context.Context, _ client.ObjectKey, _ client.Object, _ ...client.GetOption) error {
+	return errors.New("unexpected API error")
 }

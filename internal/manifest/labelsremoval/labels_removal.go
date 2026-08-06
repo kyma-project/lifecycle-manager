@@ -14,6 +14,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/finalizer"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/modulecr"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 type ManifestAPIClient interface {
@@ -79,6 +80,9 @@ func removeFromDefaultCR(ctx context.Context,
 
 	defaultCR, err := modulecr.NewClient(skrClient).GetDefaultCR(ctx, manifest)
 	if err != nil {
+		if util.IsNotFound(err) {
+			return nil
+		}
 		return fmt.Errorf("failed to get default CR, %w", err)
 	}
 
