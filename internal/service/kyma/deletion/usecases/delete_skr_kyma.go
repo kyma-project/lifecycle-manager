@@ -10,7 +10,6 @@ import (
 	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 //nolint:iface // we accept the duplication for clarity
@@ -35,7 +34,7 @@ func (u *DeleteSkrKyma) IsApplicable(ctx context.Context, kcpKyma *v1beta2.Kyma)
 	}
 
 	exists, err := u.skrKymaRepo.Exists(ctx, kcpKyma.GetNamespacedName())
-	if errors.Is(err, errorsinternal.ErrSkrClientNotFound) || util.IsConnectionRelatedError(err) {
+	if errors.Is(err, errorsinternal.ErrSkrClientNotFound) {
 		return false, nil
 	}
 	if err != nil {

@@ -2,7 +2,6 @@ package usecases_test
 
 import (
 	"context"
-	"syscall"
 	"testing"
 	"time"
 
@@ -52,28 +51,6 @@ func TestDeleteSkrCrd_IsApplicable_False_SkrClientNotFoundInCache(t *testing.T) 
 
 	crdRepo := &crdRepoStub{
 		err: errorsinternal.ErrSkrClientNotFound,
-	}
-
-	uc := usecases.NewDeleteSkrCrd(crdRepo, result.UseCase(random.Name()))
-	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
-
-	require.NoError(t, err)
-	assert.False(t, applicable)
-	assert.True(t, crdRepo.existsCalled)
-	assert.Equal(t, kcpKyma.GetNamespacedName(), crdRepo.namespacedName)
-}
-
-func TestDeleteSkrCrd_IsApplicable_False_ConnectionRelatedError(t *testing.T) {
-	kcpKyma := &v1beta2.Kyma{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:              random.Name(),
-			Namespace:         random.Name(),
-			DeletionTimestamp: &apimetav1.Time{Time: time.Now()},
-		},
-	}
-
-	crdRepo := &crdRepoStub{
-		err: syscall.ECONNREFUSED,
 	}
 
 	uc := usecases.NewDeleteSkrCrd(crdRepo, result.UseCase(random.Name()))
