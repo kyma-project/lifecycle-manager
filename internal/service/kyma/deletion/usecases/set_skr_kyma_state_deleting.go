@@ -8,9 +8,9 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
-	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -36,7 +36,7 @@ func (u *SetSkrKymaStateDeleting) IsApplicable(ctx context.Context, kcpKyma *v1b
 
 	status, err := u.skrKymaStatusRepo.Get(ctx, kcpKyma.GetNamespacedName())
 
-	if errors.Is(err, accessmanager.ErrAccessSecretNotFound) || util.IsNotFound(err) {
+	if errors.Is(err, errorsinternal.ErrSkrClientNotFound) || util.IsNotFound(err) {
 		return false, nil
 	}
 
