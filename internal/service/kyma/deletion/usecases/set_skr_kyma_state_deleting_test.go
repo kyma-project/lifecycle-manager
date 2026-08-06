@@ -14,8 +14,8 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
-	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion/usecases"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
@@ -78,7 +78,7 @@ func TestIsApplicable_False_DeletionTimestampNotSet(t *testing.T) {
 	assert.False(t, applicable)
 }
 
-func TestIsApplicable_False_AccessSecretNotFound(t *testing.T) {
+func TestIsApplicable_False_ClientNotFoundInCache(t *testing.T) {
 	kyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:              random.Name(),
@@ -88,7 +88,7 @@ func TestIsApplicable_False_AccessSecretNotFound(t *testing.T) {
 	}
 
 	kymaStatusRepo := &skrKymaStatusRepoStub{
-		err: accessmanager.ErrAccessSecretNotFound,
+		err: errorsinternal.ErrSkrClientNotFound,
 	}
 
 	uc := usecases.NewSetSkrKymaStateDeleting(kymaStatusRepo)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
 )
@@ -41,6 +42,9 @@ func (u *DeleteSkrWebhookResources) IsApplicable(ctx context.Context, kyma *v1be
 	}
 
 	resourcesExist, err := u.skrWebhookResourcesRepo.ResourcesExist(ctx, kyma.GetNamespacedName())
+	if errors.Is(err, errorsinternal.ErrSkrClientNotFound) {
+		return false, nil
+	}
 	if err != nil {
 		return false, errors.Join(errFailedToDetermineApplicability, err)
 	}

@@ -11,8 +11,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
-	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/deletion/usecases"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
@@ -33,7 +33,7 @@ func TestIsApplicable_KcpKymaNotDeleting(t *testing.T) {
 	assert.False(t, applicable)
 }
 
-func TestIsApplicable_AccessSecretNotFound(t *testing.T) {
+func TestIsApplicable_SkrClientNotFoundInCache(t *testing.T) {
 	kcpKyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:              random.Name(),
@@ -43,7 +43,7 @@ func TestIsApplicable_AccessSecretNotFound(t *testing.T) {
 	}
 
 	skrKymaRepo := &skrKymaRepoStub{
-		err: accessmanager.ErrAccessSecretNotFound,
+		err: errorsinternal.ErrSkrClientNotFound,
 	}
 
 	uc := usecases.NewDeleteSkrKyma(skrKymaRepo)
@@ -52,6 +52,7 @@ func TestIsApplicable_AccessSecretNotFound(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, applicable)
 	assert.True(t, skrKymaRepo.called)
+	assert.Equal(t, kcpKyma.GetNamespacedName(), skrKymaRepo.namespacedName)
 }
 
 func TestIsApplicable_KymaExists(t *testing.T) {
