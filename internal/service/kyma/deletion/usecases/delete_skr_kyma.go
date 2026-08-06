@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 
-	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	errorsinternal "github.com/kyma-project/lifecycle-manager/internal/errors"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 //nolint:iface // we accept the duplication for clarity

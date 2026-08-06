@@ -2,6 +2,7 @@ package usecases_test
 
 import (
 	"context"
+	"syscall"
 	"testing"
 	"time"
 
@@ -98,6 +99,29 @@ func TestIsApplicable_False_ClientNotFoundInCache(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, applicable)
 	assert.True(t, kymaStatusRepo.called)
+}
+
+func TestIsApplicable_False_ConnectionRelatedError(t *testing.T) {
+	kyma := &v1beta2.Kyma{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:              random.Name(),
+			Namespace:         random.Name(),
+			DeletionTimestamp: &apimetav1.Time{Time: time.Now()},
+		},
+	}
+
+	kymaStatusRepo := &skrKymaStatusRepoStub{
+		err: syscall.ECONNREFUSED,
+	}
+
+	uc := usecases.NewSetSkrKymaStateDeleting(kymaStatusRepo)
+
+	applicable, err := uc.IsApplicable(t.Context(), kyma)
+
+	require.NoError(t, err)
+	assert.False(t, applicable)
+	assert.True(t, kymaStatusRepo.called)
+	assert.Equal(t, kyma.GetNamespacedName(), kymaStatusRepo.namespacedName)
 }
 
 func TestIsApplicable_False_KymaAlreadyInDeletingState(t *testing.T) {

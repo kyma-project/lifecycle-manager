@@ -2,6 +2,7 @@ package usecases_test
 
 import (
 	"context"
+	"syscall"
 	"testing"
 	"time"
 
@@ -52,6 +53,29 @@ func TestIsApplicable_SkrClientNotFoundInCache(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, applicable)
 	assert.True(t, skrKymaRepo.called)
+	assert.Equal(t, kcpKyma.GetNamespacedName(), skrKymaRepo.namespacedName)
+}
+
+func TestIsApplicable_ConnectionRelatedError(t *testing.T) {
+	kcpKyma := &v1beta2.Kyma{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:              random.Name(),
+			Namespace:         random.Name(),
+			DeletionTimestamp: &apimetav1.Time{Time: time.Now()},
+		},
+	}
+
+	skrKymaRepo := &skrKymaRepoStub{
+		err: syscall.ECONNREFUSED,
+	}
+
+	uc := usecases.NewDeleteSkrKyma(skrKymaRepo)
+	applicable, err := uc.IsApplicable(t.Context(), kcpKyma)
+
+	require.NoError(t, err)
+	assert.False(t, applicable)
+	assert.True(t, skrKymaRepo.called)
+	assert.Equal(t, kcpKyma.GetNamespacedName(), skrKymaRepo.namespacedName)
 }
 
 func TestIsApplicable_KymaExists(t *testing.T) {

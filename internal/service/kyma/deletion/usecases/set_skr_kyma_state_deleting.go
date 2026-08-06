@@ -36,7 +36,9 @@ func (u *SetSkrKymaStateDeleting) IsApplicable(ctx context.Context, kcpKyma *v1b
 
 	status, err := u.skrKymaStatusRepo.Get(ctx, kcpKyma.GetNamespacedName())
 
-	if errors.Is(err, errorsinternal.ErrSkrClientNotFound) || util.IsNotFound(err) {
+	if errors.Is(err, errorsinternal.ErrSkrClientNotFound) ||
+		util.IsNotFound(err) ||
+		util.IsConnectionRelatedError(err) {
 		return false, nil
 	}
 
