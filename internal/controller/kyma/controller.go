@@ -161,6 +161,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
 	if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
+		if !useLegacyKymaDeletion() {
+			return r.processDeletion(ctx, kyma)
+		}
 		return r.handleDeletedSkr(ctx, req, kyma)
 	}
 
@@ -171,12 +174,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, r.updateStatusWithError(ctx, kyma, err)
 	}
 
-	if !kyma.DeletionTimestamp.IsZero() {
-		envValue, isDefined := os.LookupEnv("ENABLE_LEGACY_KYMA_DELETION")
-		useLegacyKymaDeletion := isDefined && envValue == "true"
-		if !useLegacyKymaDeletion {
-			return r.processDeletion(ctx, kyma)
-		}
+	if !kyma.DeletionTimestamp.IsZero() && !useLegacyKymaDeletion() {
+		return r.processDeletion(ctx, kyma)
 	}
 
 	err = skrContext.CreateKymaNamespace(ctx)
@@ -706,6 +705,11 @@ func (r *Reconciler) deleteOrphanedCertificate(ctx context.Context, kymaName str
 		}
 	}
 	return nil
+}
+
+func useLegacyKymaDeletion() bool {
+	envValue, isDefined := os.LookupEnv("ENABLE_LEGACY_KYMA_DELETION")
+	return isDefined && envValue == "true"
 }
 
 func setModuleStatusesToError(kyma *v1beta2.Kyma, message string) {
