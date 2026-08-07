@@ -3,18 +3,15 @@
 # CRs in the cluster. The purge controller was dropped in KLM <VERSION> and no longer removes this
 # finalizer, so Kymas carrying it would be stuck in deletion indefinitely.
 #
-# IMPORTANT: Run this script immediately after updating KLM to <VERSION> or greater. If you run it
+# IMPORTANT: Run this script immediately after updating KLM to v1.21.0 or greater. If you run it
 # before updating KLM the finalizer will be re-added by the old controller. If you update KLM but
 # delay running this script, any Kyma deletion attempted in the interim will block forever.
 #
 # Usage:
-#   ./scripts/remove-purge-finalizer.sh --min-version <VERSION> [--execute] [--skip-version-check]
+#   ./remove-purge-finalizer.sh [--execute]
 #
 # Flags:
-#   --min-version <ver>    Minimum required KLM version (semver, e.g. "1.21.0"). Required unless
-#                          --skip-version-check is set.
-#   --execute              Actually remove finalizers. Omitting this flag runs in dry-run mode.
-#   --skip-version-check   Skip the KLM version sanity check (use with caution).
+#   --execute              Actually remove finalizers. Omitting this flag runs in dry-run mode, which is the default.
 #
 # Requirements: kubectl, yq
 
@@ -23,12 +20,11 @@ set -o errexit
 set -o pipefail
 
 export FINALIZER="operator.kyma-project.io/purge-finalizer"
-readonly KLM_DEPLOYMENT="controller-manager"
+readonly KLM_DEPLOYMENT="klm-controller-manager"
 readonly KLM_NAMESPACE="kcp-system"
+readonly MIN_VERSION="v1.21.0"
 
-MIN_VERSION="v1.21.0"
 EXECUTE=false
-SKIP_VERSION_CHECK=false
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -40,16 +36,8 @@ usage() {
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-  --min-version)
-    MIN_VERSION="${2:?--min-version requires a value}"
-    shift 2
-    ;;
   --execute)
     EXECUTE=true
-    shift
-    ;;
-  --skip-version-check)
-    SKIP_VERSION_CHECK=true
     shift
     ;;
   --help | -h)
@@ -62,11 +50,6 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ "$SKIP_VERSION_CHECK" == "false" && -z "$MIN_VERSION" ]]; then
-  echo "ERROR: --min-version is required (or pass --skip-version-check)." >&2
-  usage
-fi
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -78,8 +61,8 @@ semver_gte() {
   local required="$2"
 
   local -a a r
-  IFS='.' read -ra a <<<"${actual%%[-+]*}"
-  IFS='.' read -ra r <<<"${required%%[-+]*}"
+  IFS='.' read -ra a <<<"${actual#v}"
+  IFS='.' read -ra r <<<"${required#v}"
 
   for i in 0 1 2; do
     local av="${a[$i]:-0}"
@@ -90,42 +73,39 @@ semver_gte() {
   return 0
 }
 
-# Returns true if the string looks like a semver (digits.digits.digits...).
+# Returns true if the string looks like a semver (optional v prefix, digits.digits.digits...).
 is_semver() {
-  [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]
+  [[ "$1" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+ ]]
 }
 
 # ---------------------------------------------------------------------------
 # Version sanity check
 # ---------------------------------------------------------------------------
-if [[ "$SKIP_VERSION_CHECK" == "false" ]]; then
-  echo "Checking KLM version in ${KLM_NAMESPACE}/${KLM_DEPLOYMENT}..."
+echo "Checking KLM version in ${KLM_NAMESPACE}/${KLM_DEPLOYMENT}..."
 
-  KLM_TAG=$(kubectl get deployment "${KLM_DEPLOYMENT}" \
-    -n "${KLM_NAMESPACE}" \
-    -o yaml 2>/dev/null | yq '.metadata.labels["app.kubernetes.io/version"]' - || true)
+KLM_TAG=$(kubectl get deployment "${KLM_DEPLOYMENT}" \
+  -n "${KLM_NAMESPACE}" \
+  -o yaml 2>/dev/null | yq '.metadata.labels["app.kubernetes.io/version"]' - || true)
 
-  if [[ -z "$KLM_TAG" ]]; then
-    echo "ERROR: Could not retrieve KLM version label. Is the deployment '${KLM_DEPLOYMENT}'" >&2
-    echo "       present in namespace '${KLM_NAMESPACE}' and does it have the label 'app.kubernetes.io/version'?" >&2
-    exit 1
-  fi
-
-  if ! is_semver "$KLM_TAG"; then
-    echo "WARNING: KLM image tag '${KLM_TAG}' is not a recognisable semver." >&2
-    echo "         Cannot verify that KLM >= ${MIN_VERSION}." >&2
-    echo "         If you are certain the deployed version is ${MIN_VERSION} or greater, re-run" >&2
-    echo "         with --skip-version-check." >&2
-    exit 1
-  fi
-
-  if ! semver_gte "$KLM_TAG" "$MIN_VERSION"; then
-    echo "ERROR: Deployed KLM version '${KLM_TAG}' is older than the required '${MIN_VERSION}'." >&2
-    echo "       Update KLM first, then re-run this script." >&2
-    exit 1
-  fi
-
+VERSION_OK=false
+if [[ -z "$KLM_TAG" || "$KLM_TAG" == "null" ]]; then
+  echo "WARNING: Could not retrieve the 'app.kubernetes.io/version' label from deployment '${KLM_DEPLOYMENT}' in namespace '${KLM_NAMESPACE}'." >&2
+elif ! is_semver "$KLM_TAG"; then
+  echo "WARNING: KLM version label '${KLM_TAG}' is not a recognisable semver." >&2
+elif ! semver_gte "$KLM_TAG" "$MIN_VERSION"; then
+  echo "WARNING: Deployed KLM version '${KLM_TAG}' is older than the required '${MIN_VERSION}'." >&2
+else
   echo "KLM version check passed: ${KLM_TAG} >= ${MIN_VERSION}"
+  VERSION_OK=true
+fi
+
+if [[ "$VERSION_OK" == "false" ]]; then
+  echo ""
+  read -r -p "Version check failed. Have you manually verified that the deployed KLM version is >= ${MIN_VERSION}? (YES/NO): " CONFIRMED
+  if [[ "$CONFIRMED" != "YES" ]]; then
+    echo "Aborting. Update KLM to ${MIN_VERSION} or greater before running this script."
+    exit 0
+  fi
 fi
 
 # ---------------------------------------------------------------------------

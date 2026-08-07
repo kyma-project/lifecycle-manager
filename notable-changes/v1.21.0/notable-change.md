@@ -29,23 +29,19 @@ With the purge controller removed, nothing removes this finalizer anymore. Any K
 
 1. Update KLM to v1.21.0 or greater.
 
-2. Immediately after the update, run the migration script from the KLM repository root:
+2. Immediately after the update, run the migration script co-located with this document:
 
    ```bash
    # Dry run first - shows affected Kyma custom resources without making any changes
-   ./scripts/remove-purge-finalizer.sh --min-version v1.21.0
+   ./remove-purge-finalizer.sh
 
    # Apply the changes once you have verified the dry-run output
-   ./scripts/remove-purge-finalizer.sh --min-version v1.21.0 --execute
+   ./remove-purge-finalizer.sh --execute
    ```
 
-   The script performs a sanity check at startup: it reads the `app.kubernetes.io/version` label of the `controller-manager` Deployment in the `kcp-system` namespace and aborts if KLM has not yet been updated to at least v1.21.0. This prevents accidentally running the script against an old KLM version that would re-add the finalizer.
+   The script reads the `app.kubernetes.io/version` label of the `klm-controller-manager` Deployment in the `kcp-system` namespace and warns if KLM has not yet been updated to at least v1.21.0. If the version check cannot be completed (for example, the label is missing or not in semver format), the script prompts you to confirm manually before proceeding.
 
-   If the deployed version label is not in semver format, the script exits with a warning. In that case, after manually confirming that the deployed version is v1.21.0 or greater, run the script with `--skip-version-check`:
-
-   ```bash
-   ./scripts/remove-purge-finalizer.sh --skip-version-check --execute
-   ```
+3. You must answer with a capital `YES` in order for the script to proceed. Anything other than a `YES` will fail the script.
 
 ## Post-Update Steps
 
