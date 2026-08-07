@@ -26,8 +26,7 @@ export FINALIZER="operator.kyma-project.io/purge-finalizer"
 readonly KLM_DEPLOYMENT="controller-manager"
 readonly KLM_NAMESPACE="kcp-system"
 
-#TODO: Add the minimum KLM Version
-MIN_VERSION="21"
+MIN_VERSION="v1.21.0"
 EXECUTE=false
 SKIP_VERSION_CHECK=false
 
