@@ -22,7 +22,7 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-readonly FINALIZER="operator.kyma-project.io/purge-finalizer"
+export FINALIZER="operator.kyma-project.io/purge-finalizer"
 readonly KLM_DEPLOYMENT="controller-manager"
 readonly KLM_NAMESPACE="kcp-system"
 
@@ -169,7 +169,7 @@ FAILED=0
 while IFS=' ' read -r namespace name; do
   echo "  Removing finalizer from Kyma '${namespace}/${name}'..."
   FILTERED_FINALIZERS=$(kubectl get kyma.operator.kyma-project.io "${name}" -n "${namespace}" -o yaml |
-    yq '[.metadata.finalizers[] | select(. != env(FINALIZER))]' -)
+    yq -o=json '[.metadata.finalizers[] | select(. != env(FINALIZER))]' - | tr -d '\n')
   if kubectl patch kyma.operator.kyma-project.io "${name}" \
     -n "${namespace}" \
     --type=merge \
