@@ -12,7 +12,7 @@ Lifecycle Manager:
 
 The diagram shows a sample deployment of KCP in interaction with a Kyma runtime.
 
-![Lifecycle Manager Architecture](./assets/lifecycle-manager-architecture.svg)
+![Lifecycle Manager Architecture](./assets/lifecycle-manager-architecture.drawio.png)
 
 To run, Lifecycle Manager uses the following workflow:
 
