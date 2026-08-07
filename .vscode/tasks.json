@@ -136,8 +136,6 @@
         "modulereleasemeta-watch-trigger",
         "non-blocking-deletion",
         "oci-reg-cred-secret",
-        "purge-controller",
-        "purge-metrics",
         "rbac-privileges",
         "restricted-module-catalog-sync",
         "restricted-modules",

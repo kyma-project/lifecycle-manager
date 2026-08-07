@@ -73,8 +73,6 @@
         "Kyma Module Upgrade Under Deletion",
         "Kyma Module with ModuleReleaseMeta Upgrade Under Deletion",
         "Unmanaging Kyma Module",
-        "Purge Controller",
-        "Purge Metrics",
         "Module Upgrade By Channel Switch",
         "Module Upgrade By New Version",
         "Module with ModuleReleaseMeta Upgrade By New Version",

@@ -104,9 +104,9 @@ func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 func CleanupKymaAfterAll(kyma *v1beta2.Kyma) {
 	AfterAll(func() {
 		By("When delete KCP Kyma")
-		Eventually(DeleteKymaByForceRemovePurgeFinalizer).
+		Eventually(DeleteKyma).
 			WithContext(ctx).
-			WithArguments(kcpClient, kyma).
+			WithArguments(kcpClient, kyma, apimetav1.DeletePropagationBackground).
 			Should(Succeed())
 
 		By("Then SKR Kyma deleted")

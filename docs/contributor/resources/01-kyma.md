@@ -198,5 +198,4 @@ The most important labels include, but are not limited to:
 ## `operator.kyma-project.io` Finalizers
 
 * `operator.kyma-project.io/Kyma`: A finalizer set by Lifecycle Manager to handle the Kyma CR cleanup.
-* `operator.kyma-project.io/purge-finalizer`: A finalizer set by Lifecycle Manager to handle the purge of Kyma runtime's resources when the Kyma CR is deleted.
 * `operator.kyma-project.io/runtime-monitoring-finalizer`: A finalizer set by Runtime Monitoring.

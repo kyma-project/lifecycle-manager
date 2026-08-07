@@ -115,39 +115,6 @@ func GetModuleStateMetricCount(ctx context.Context, kymaName, moduleName string,
 	return parseCount(regex, bodyString)
 }
 
-func PurgeMetricsAreAsExpected(ctx context.Context,
-	timeShouldBeMoreThan float64,
-	expectedRequests int,
-) bool {
-	correctCount := false
-	correctTime := false
-	bodyString, err := getKCPMetricsBody(ctx)
-	if err != nil {
-		return false
-	}
-	reg := regexp.MustCompile(`lifecycle_mgr_purgectrl_time ([0-9]*\.?[0-9]+)`)
-	match := reg.FindStringSubmatch(bodyString)
-
-	if len(match) > 1 {
-		duration, err := strconv.ParseFloat(match[1], 64)
-		if err == nil && duration > timeShouldBeMoreThan {
-			correctTime = true
-		}
-	}
-
-	reg = regexp.MustCompile(`lifecycle_mgr_purgectrl_requests_total (\d+)`)
-	match = reg.FindStringSubmatch(bodyString)
-
-	if len(match) > 1 {
-		count, err := strconv.Atoi(match[1])
-		if err == nil && count == expectedRequests {
-			correctCount = true
-		}
-	}
-
-	return correctTime && correctCount
-}
-
 func GetSelfSignedCertNotRenewMetricsGauge(ctx context.Context, kymaName string) (int, error) {
 	bodyString, err := getKCPMetricsBody(ctx)
 	if err != nil {

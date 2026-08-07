@@ -25,21 +25,6 @@ func Test_ConstantMetricNames(t *testing.T) {
 			expectedValue: "lifecycle_mgr_module_state",
 		},
 		{
-			constName:     "MetricPurgeTime",
-			constValue:    MetricPurgeTime,
-			expectedValue: "lifecycle_mgr_purgectrl_time",
-		},
-		{
-			constName:     "MetricPurgeRequests",
-			constValue:    MetricPurgeRequests,
-			expectedValue: "lifecycle_mgr_purgectrl_requests_total",
-		},
-		{
-			constName:     "MetricPurgeError",
-			constValue:    MetricPurgeError,
-			expectedValue: "lifecycle_mgr_purgectrl_error",
-		},
-		{
 			constName:     "MetricSelfSignedCertNotRenew",
 			constValue:    MetricSelfSignedCertNotRenew,
 			expectedValue: "lifecycle_mgr_self_signed_cert_not_renew",

@@ -144,11 +144,6 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: strconv.Itoa(log.WarnLevel),
 		},
 		{
-			constName:     "DefaultPurgeFinalizerTimeout",
-			constValue:    DefaultPurgeFinalizerTimeout.String(),
-			expectedValue: (5 * time.Minute).String(),
-		},
-		{
 			constName:     "DefaultMaxConcurrentManifestReconciles",
 			constValue:    strconv.Itoa(DefaultMaxConcurrentManifestReconciles),
 			expectedValue: "1",

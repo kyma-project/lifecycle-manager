@@ -120,12 +120,6 @@ modulereleasemeta-upgrade-under-deletion:
 unmanage-module:
 	$(MAKE) -f $(MAKEFILE_DIR)/e2e.standard_module_setup.mk test "GINKGO_FOCUS=Unmanaging Kyma Module"
 
-purge-controller:
-	$(MAKE) -f $(MAKEFILE_DIR)/purge_controller_test.mk test
-
-purge-metrics:
-	$(MAKE) -f $(MAKEFILE_DIR)/purge_metrics_test.mk test
-
 module-upgrade-channel-switch:
 	$(MAKE) -f $(MAKEFILE_DIR)/module_upgrade_channel_switch_test.mk test
 
