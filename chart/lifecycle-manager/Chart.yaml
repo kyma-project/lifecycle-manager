@@ -1,0 +1,8 @@
+apiVersion: v2
+appVersion: 1.20.4
+description: A Helm chart for Kubernetes
+name: lifecycle-manager
+sources:
+  - https://github.com/kyma-project/lifecycle-manager
+type: application
+version: 2.26.0

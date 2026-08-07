@@ -12,6 +12,14 @@ klm-patch:
 	@echo "::group::Maintenance-window policy"
 	@$(SCRIPTS_DIR)/generate_maintenance_window_policy.sh \
 		$(LIFECYCLE_MANAGER_DIR)/config/maintenance_windows/policy.json
+	@if [ "$(USE_HELM)" = "true" ]; then \
+		echo "Creating maintenance-policy-config ConfigMap for the Helm deploy"; \
+		export KUBECONFIG=$(HOME)/.k3d/kcp-local.yaml; \
+		kubectl create namespace kcp-system --dry-run=client -o yaml | kubectl apply -f -; \
+		kubectl create configmap maintenance-policy-config \
+			--from-file=general-maintenance-windows.json=$(LIFECYCLE_MANAGER_DIR)/config/maintenance_windows/policy.json \
+			--namespace=kcp-system --dry-run=client -o yaml | kubectl apply -f -; \
+	fi
 	@echo "::endgroup::"
 
 .PHONY: module-setup-in-newer-version-requires-downtime

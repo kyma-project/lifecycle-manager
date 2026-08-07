@@ -1,0 +1,28 @@
+- apiGroups:
+    - ""
+  resources:
+    - secrets
+  verbs:
+    - watch
+    - list
+    - get
+    - create
+    - update
+    - delete
+- apiGroups:
+    - cert-manager.io
+  resources:
+    - certificates
+  verbs:
+    - watch
+    - list
+    - get
+    - create
+    - patch
+    - delete
+- apiGroups:
+    - cert-manager.io
+  resources:
+    - certificates/status
+  verbs:
+    - update

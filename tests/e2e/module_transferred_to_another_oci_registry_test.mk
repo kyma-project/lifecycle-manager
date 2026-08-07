@@ -3,6 +3,8 @@
 
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))e2e.common.mk
 
+HELM_VALUES_OVERLAY := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))helm-values/module_transferred_to_another_oci_registry.yaml
+
 .PHONY: klm-patch
 klm-patch:
 	@echo "::group::KLM patch - remote OCI registry host"

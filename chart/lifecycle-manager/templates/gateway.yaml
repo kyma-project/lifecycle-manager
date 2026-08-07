@@ -1,0 +1,25 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: {{ include "lifecycle-manager.watcher.gatewayName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "lifecycle-manager.labels" . | nindent 4 }}
+    {{ toYaml .Values.watcher.labels | nindent 4 }}
+  annotations:
+    proxy.istio.io/config: '{"gatewayTopology" : { "forwardClientCertDetails": "SANITIZE_SET" } }'
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - hosts:
+        - {{ .Values.watcher.dnsName | required ".watcher.dnsName is required" }}
+      port:
+        name: https
+        number: {{ .Values.watcher.port }}
+        protocol: HTTPS
+      tls:
+        credentialName: {{ .Values.watcher.gatewayCredentialName }}
+        mode: MUTUAL
+        minProtocolVersion: TLSV1_3
+        maxProtocolVersion: TLSV1_3

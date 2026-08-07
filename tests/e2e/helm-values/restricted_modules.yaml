@@ -1,0 +1,7 @@
+# Helm value overlay for the restricted-modules e2e test.
+# Replaces the kustomize klm-patch that set
+# --restricted-default-modules=deployer,some-restricted-module.
+manager:
+  restrictedDefaultModules:
+    - deployer
+    - some-restricted-module

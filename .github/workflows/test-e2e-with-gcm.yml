@@ -70,11 +70,14 @@ jobs:
           modulectl_version: ${{ steps.configuration.outputs.modulectl_version }}
           go-version-file: lifecycle-manager/go.mod
           cache-dependency-path: lifecycle-manager/go.sum
+      - name: Verify helm is available
+        run: helm version
       - name: Run '${{ matrix.e2e-test }}' test
         working-directory: lifecycle-manager
         env:
           KLM_VERSION_TAG: ${{ steps.configuration.outputs.klm_version_tag }}
           KLM_IMAGE_REPO: ${{ steps.configuration.outputs.klm_image_repo }}
+          USE_HELM: "true"
         run: |
           if [[ "${{ matrix.e2e-test }}" == "watcher-enqueue" ]]; then
             make -f tests/e2e/watcher_enqueue_gcm_test.mk test

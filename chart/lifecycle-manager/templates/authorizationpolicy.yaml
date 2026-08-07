@@ -1,0 +1,35 @@
+{{- if .Capabilities.APIVersions.Has "security.istio.io/v1beta1" }}
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  labels:
+    {{ include "lifecycle-manager.labels" . | nindent 4 }}
+  name: {{ include "lifecycle-manager.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  action: ALLOW
+  rules:
+    - to:
+        - operation:
+            paths:
+              - /metrics
+              - /v2*
+              - /convert*
+              - /mutate*
+{{- if not .Values.global.istio.ambient.enabled }}
+  selector:
+    matchLabels:
+      {{ include "lifecycle-manager.selectorLabels" . | nindent 6 }}
+{{ else }}
+  targetRefs:
+  - kind: Service
+    group: ""
+    name: {{ include "lifecycle-manager.webhook.serviceName" . }}
+  - kind: Service
+    group: ""
+    name: {{ include "lifecycle-manager.events.serviceName" . }}
+  - kind: Service
+    group: ""
+    name: {{ include "lifecycle-manager.metrics.serviceName" . }}
+{{- end }}
+{{- end }}

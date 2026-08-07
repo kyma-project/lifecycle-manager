@@ -1,0 +1,4 @@
+# Helm value overlay for the self-signed-certificate-rotation e2e test.
+# Replaces the kustomize klm-patch that set --self-signed-cert-renew-buffer=30s.
+manager:
+  selfSignedCertRenewBuffer: 30s

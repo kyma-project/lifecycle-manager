@@ -3,6 +3,8 @@
 
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))e2e.common.mk
 
+HELM_VALUES_OVERLAY := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))helm-values/restricted_module_catalog_sync.yaml
+
 MODULE_NAME := deployer
 
 .PHONY: klm-patch

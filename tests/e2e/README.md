@@ -131,6 +131,16 @@ The GCM variant tests are:
 
 You can identify GCM makefiles by the `USE_GCM := true` line near the top of the file.
 
+### Helm Deployment Variant
+
+By default, `deploy-klm` deploys KLM with the kustomize local-test overlays. Set `USE_HELM=true` to deploy the in-repo Helm chart (`chart/lifecycle-manager`) with `values-local.yaml` instead, so local testing exercises the same chart that ships to production:
+
+```bash
+make -f tests/e2e/<test>.mk test USE_HELM=true
+```
+
+The Helm path selects the certificate backend automatically from the cluster's capabilities, so it needs no separate GCM overlay. It does not yet apply the per-test kustomize patches that some tests add in their `klm-patch` target, so it currently supports the tests whose `klm-patch` is a no-op. The kustomize path remains the default.
+
 ## Adding a New Test
 
 To add a new end-to-end test scenario:

@@ -3,6 +3,8 @@
 
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))e2e.common.mk
 
+HELM_VALUES_OVERLAY := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))helm-values/modulereleasemeta_watch_trigger.yaml
+
 .PHONY: klm-patch
 klm-patch: kustomize-install
 	@echo "::group::KLM patch"

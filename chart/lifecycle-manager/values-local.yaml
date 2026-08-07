@@ -1,0 +1,63 @@
+# Local k3d overrides for the in-repo lifecycle-manager chart.
+#
+# This file replaces the config/watcher_local_test[_gcm] kustomize overlays for
+# local end-to-end testing. It applies ONLY the debug and k3d-specific values on
+# top of the chart's production defaults (values.yaml), so local testing
+# exercises the same chart that ships to production.
+#
+# The certificate backend (cert-manager vs Gardener) is selected automatically
+# from cluster capabilities, so there is no separate GCM variant of this file.
+#
+# Deploy with:
+#   helm upgrade --install kcp-lifecycle-manager chart/lifecycle-manager \
+#     -n kcp-system --create-namespace -f chart/lifecycle-manager/values-local.yaml \
+#     --set image.repository=$CLUSTER_IMG --set image.tag=$TAG
+
+# Always re-pull the locally built image, matching the old overlay. The e2e
+# deploy uses a unique tag per build, so this is belt-and-suspenders.
+image:
+  pullPolicy: Always
+
+# The Istio Gateway host and the watcher serving certificate must resolve inside
+# k3d. host.k3d.internal is reachable from both KCP and SKR clusters.
+global:
+  domainName: "host.k3d.internal"
+
+watcher:
+  # Istio Gateway host (gateway.yaml). Matches the local overlay's host patch.
+  dnsName: "host.k3d.internal"
+  # Extra SANs on the watcher serving certificate so the webhook is reachable at
+  # the loopback and SKR names used in k3d. The chart always includes the main
+  # SAN (listener.host.k3d.internal); these are added to it. host.k3d.internal
+  # is included so the cert SAN set is a superset of the old kustomize overlay's
+  # (localhost, host.k3d.internal, skr.cluster.local).
+  additionalDnsNames:
+    - "localhost"
+    - "host.k3d.internal"
+    - "skr.cluster.local"
+
+manager:
+  # Verbose logging for local debugging.
+  loglevel: 9
+  # Enforce FIPS-only mode, matching the fips_only_mode.yaml patch the kustomize
+  # local overlays applied to every local deploy. The fips-mode-metric e2e test
+  # asserts both the FipsModeOnly metric and this exact GODEBUG value.
+  env:
+    - name: GODEBUG
+      value: "fips140=only,tlsmlkem=0"
+  # Fast requeue intervals so local tests converge quickly.
+  requeue:
+    success:
+      kyma: 20s
+      manifest: 5s
+  # SKR certificate SANs KLM issues for k3d reachability.
+  additionalDNSNames: "localhost,127.0.0.1,host.k3d.internal"
+  # The webhook listener is reached on 9443 in k3d.
+  listenerPortOverwrite: "9443"
+  # Short leader-election timings so a restarted local KLM takes over quickly.
+  leaderElectionLeaseDuration: 20s
+  leaderElectionRenewDeadline: 15s
+  leaderElectionRetryPeriod: 3s
+  # Local k3d image registry, replacing the dynamic oci_registry_host kustomize
+  # patch that previously mutated the overlay at deploy time.
+  ociRegistryHost: "http://k3d-kcp-registry.localhost:5000"

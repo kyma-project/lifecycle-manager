@@ -59,6 +59,17 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 test-crd: controller-gen ## Generate crd for test
 	$(CONTROLLER_GEN) crd paths="./config/samples/component-integration-installed/crd/..." output:crd:artifacts:config=config/samples/component-integration-installed/crd
 
+.PHONY: chart-crds
+chart-crds: manifests kustomize ## Generate the in-repo chart's CRDs from config/control-plane.
+	./scripts/chart-sync.sh crds $(KUSTOMIZE)
+
+.PHONY: chart-rbac
+chart-rbac: ## Sync the in-repo chart's RBAC rule fragments from config/rbac source files.
+	./scripts/chart-sync.sh rbac
+
+.PHONY: chart-sync
+chart-sync: chart-crds chart-rbac ## Regenerate the in-repo chart's generated CRDs and RBAC rules.
+
 .PHONY: generate-openapi-schema
 generate-openapi-schema: manifests ## Generate OpenAPI schema from CRD YAMLs for applyconfiguration-gen.
 	$(GO) run ./hack/crd-to-openapi/main.go

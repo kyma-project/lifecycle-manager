@@ -1,0 +1,5 @@
+# Helm value overlay for the purge-metrics e2e test.
+# Replaces the kustomize klm-patch that set --purge-finalizer-timeout=5s.
+manager:
+  purgeFinalizer:
+    timeout: 5s

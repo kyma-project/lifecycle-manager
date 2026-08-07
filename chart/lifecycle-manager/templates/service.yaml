@@ -1,0 +1,64 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    {{- include "lifecycle-manager.labels" . | nindent 4 }}
+    {{- if .Values.global.istio.ambient.enabled }}
+    {{- include "istio.waypointLabels" . | nindent 4 }}
+    {{- end }}
+  name: {{ include "lifecycle-manager.events.serviceName" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+    - name: klm
+      port: 8082
+      protocol: TCP
+      targetPort: {{ .Values.service.listener.port }}
+    {{- if .Values.service.kmm.enabled }}
+    - name: kmm
+      port: {{ .Values.service.kmm.port }}
+      protocol: TCP
+      targetPort: {{ .Values.service.kmm.port }}
+    {{- end }}
+  selector:
+    {{ include "lifecycle-manager.selectorLabels" . | nindent 6 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    {{- include "lifecycle-manager.labels" . | nindent 4 }}
+    {{- if .Values.global.istio.ambient.enabled }}
+    {{- include "istio.waypointLabels" . | nindent 4 }}
+    {{- end }}
+  name: {{ include "lifecycle-manager.metrics.serviceName" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+    - appProtocol: http
+      name: metrics
+      port: 8080
+      protocol: TCP
+      targetPort: metrics
+  selector:
+    {{ include "lifecycle-manager.selectorLabels" . | nindent 6 }}
+{{- if .Values.webhook.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    {{- include "lifecycle-manager.labels" . | nindent 4 }}
+    {{- if .Values.global.istio.ambient.enabled }}
+    {{- include "istio.waypointLabels" . | nindent 4 }}
+    {{- end }}
+  name: {{ include "lifecycle-manager.webhook.serviceName" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+    - port: 443
+      protocol: TCP
+      targetPort: {{ .Values.service.webhook.port }}
+  selector:
+    {{ include "lifecycle-manager.selectorLabels" . | nindent 6 }}
+{{- end }}

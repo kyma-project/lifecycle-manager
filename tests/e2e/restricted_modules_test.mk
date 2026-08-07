@@ -3,6 +3,8 @@
 
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))e2e.common.mk
 
+HELM_VALUES_OVERLAY := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))helm-values/restricted_modules.yaml
+
 DEPLOYER_MODULE_NAME := deployer
 # Must match testutils.DeployerDeploymentName so the deployer's Deployment does
 # not collide with template-operator's (which uses MODULE_DEPLOYMENT_OLDER_VERSION).

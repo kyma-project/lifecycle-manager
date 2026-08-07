@@ -1,0 +1,23 @@
+- apiGroups:
+    - ""
+  resources:
+    - secrets
+  verbs:
+    - watch
+    - list
+    - get
+    - create
+    - update
+    - delete
+- apiGroups:
+    - cert.gardener.cloud
+  resources:
+    - certificates
+  verbs:
+    - watch
+    - list
+    - get
+    - create
+    - patch
+    - update
+    - delete

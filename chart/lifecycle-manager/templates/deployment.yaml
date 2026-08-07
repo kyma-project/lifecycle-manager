@@ -1,0 +1,210 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lifecycle-manager.fullname" . }}
+  {{- with .Values.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "lifecycle-manager.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "lifecycle-manager.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "lifecycle-manager.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if .Values.global.istio.ambient.enabled }}
+        {{- include "istio.ambientLabels" . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "lifecycle-manager.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Values.manager.name | quote }}
+          command:
+            - {{ .Values.manager.command }}
+          env:
+            {{- range .Values.manager.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          args:
+            {{- if .Values.manager.leaderElect.enabled }}
+            - --leader-elect
+            {{- end }}
+            - --skr-watcher-image-name={{ .Values.watcher.imageName }}
+            - --skr-watcher-image-tag={{ .Values.watcher.imageTag }}
+            - --skr-watcher-image-registry={{ .Values.watcher.imageRegistry }}
+            - --watcher-requeue-success-interval={{ .Values.manager.requeue.success.watcher }}
+            {{- if .Values.webhook.enabled }}
+            - --enable-webhooks=true
+            {{- end }}
+            - --rate-limiter-burst={{ .Values.manager.ratelimiter.burst }}
+            - --rate-limiter-frequency={{ .Values.manager.ratelimiter.frequency }}
+            - --k8s-client-qps={{ .Values.manager.kubeclient.qps }}
+            - --k8s-client-burst={{ .Values.manager.kubeclient.burst }}
+            - --cache-sync-timeout={{ .Values.manager.cache.syncTimeout }}
+            - --failure-max-delay={{ .Values.manager.failure.maxDelay }}
+            - --failure-base-delay={{ .Values.manager.failure.baseDelay }}
+            {{- if .Values.manager.moduleUpgradeRollout.maxDelay }}
+            - --module-upgrade-rollout-max-delay={{ .Values.manager.moduleUpgradeRollout.maxDelay }}
+            {{- end }}
+            - --kyma-requeue-success-interval={{ .Values.manager.requeue.success.kyma }}
+            - --manifest-requeue-success-interval={{ .Values.manager.requeue.success.manifest }}
+            - --mandatory-module-requeue-success-interval={{ .Values.manager.requeue.success.mandatoryModuleInstall }}
+            - --kyma-requeue-warning-interval={{ .Values.manager.requeue.warning.kyma }}
+            - --kyma-requeue-error-interval={{ .Values.manager.requeue.error.kyma }}
+            - --kyma-requeue-busy-interval={{ .Values.manager.requeue.busy.kyma }}
+            - --max-concurrent-manifest-reconciles={{ .Values.manager.reconciles.concurrency.manifest }}
+            - --max-concurrent-kyma-reconciles={{ .Values.manager.reconciles.concurrency.kyma }}
+            - --skip-finalizer-purging-for={{ join "," (concat .Values.manager.purgeFinalizer.skipFor .Values.manager.purgeFinalizer.additionalSkipFor)}}
+            {{- if .Values.manager.purgeFinalizer.timeout }}
+            - --purge-finalizer-timeout={{ .Values.manager.purgeFinalizer.timeout }}
+            {{- end }}
+            {{- if .Values.manager.metricsCleanupInterval }}
+            - --metrics-cleanup-interval={{ .Values.manager.metricsCleanupInterval }}
+            {{- end }}
+            {{- if .Values.manager.dropStoredVersion.enabled }}
+            {{- if .Values.manager.dropStoredVersion.crdversions }}
+            - --drop-crd-stored-version-map={{ join "," .Values.manager.dropStoredVersion.crdversions}}
+            {{- end }}
+            {{- if .Values.manager.restrictedDefaultModules }}
+            - --restricted-default-modules={{ join "," .Values.manager.restrictedDefaultModules}}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.manager.pprof.enabled }}
+            - --pprof
+            {{- end }}
+            {{- if .Values.manager.loglevel }}
+            - --log-level={{ .Values.manager.loglevel }}
+            {{- end }}
+            {{- if .Values.manager.additionalDNSNames }}
+            - --additional-dns-names={{ .Values.manager.additionalDNSNames }}
+            {{- end }}
+            {{- if .Values.manager.listenerPortOverwrite }}
+            - --listener-port-overwrite={{ .Values.manager.listenerPortOverwrite }}
+            {{- end }}
+            {{- if .Values.manager.leaderElectionLeaseDuration }}
+            - --leader-election-lease-duration={{ .Values.manager.leaderElectionLeaseDuration }}
+            {{- end }}
+            {{- if .Values.manager.leaderElectionRenewDeadline }}
+            - --leader-election-renew-deadline={{ .Values.manager.leaderElectionRenewDeadline }}
+            {{- end }}
+            {{- if .Values.manager.leaderElectionRetryPeriod }}
+            - --leader-election-retry-period={{ .Values.manager.leaderElectionRetryPeriod }}
+            {{- end }}
+            {{- if not (.Capabilities.APIVersions.Has "cert-manager.io/v1") }}
+            - --cert-management=cert.gardener.cloud/v1alpha1
+            {{- end }}
+            {{- if .Values.manager.selfSignedCertDuration }}
+            - --self-signed-cert-duration={{ .Values.manager.selfSignedCertDuration }}
+            {{- end }}
+            {{- if .Values.manager.selfSignedCertRenewBefore }}
+            - --self-signed-cert-renew-before={{ .Values.manager.selfSignedCertRenewBefore }}
+            {{- end }}
+            {{- if .Values.manager.selfSignedCertRenewBuffer }}
+            - --self-signed-cert-renew-buffer={{ .Values.manager.selfSignedCertRenewBuffer }}
+            {{- end }}
+            {{- if .Values.watcher.issuerNamespace }}
+            - --self-signed-cert-issuer-namespace={{ .Values.watcher.issuerNamespace }}
+            {{- end}}
+            {{- if .Values.manager.istioGatewayServerCertSwitchGracePeriod }}
+            - --istio-gateway-server-cert-switch-grace-period={{ .Values.manager.istioGatewayServerCertSwitchGracePeriod }}
+            {{- end }}
+            {{- if .Values.manager.requeue.success.istioGatewaySecret }}
+            - --istio-gateway-secret-requeue-success-interval={{ .Values.manager.requeue.success.istioGatewaySecret }}
+            {{- end }}
+            {{- if .Values.manager.ociRegistryCredentialSecretName }}
+            - --oci-registry-cred-secret={{ .Values.manager.ociRegistryCredentialSecretName }}
+            {{- end }}
+            {{- if .Values.manager.ociRegistryHost }}
+            - --oci-registry-host={{ .Values.manager.ociRegistryHost }}
+            {{- end }}
+            {{- if .Values.manager.modulesRepositorySubPath }}
+            - --modules-repository-subpath={{ .Values.manager.modulesRepositorySubPath }}
+            {{- end }}
+            {{- if .Values.skrImagePullSecret.name }}
+            - --skr-image-pull-secret={{ .Values.skrImagePullSecret.name }}
+            {{- end }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          ports:
+            {{- if .Values.webhook.enabled }}
+            - containerPort: {{ .Values.service.webhook.port }}
+              name: webhook-server
+              protocol: TCP
+            {{- end }}
+            - containerPort: {{ .Values.service.listener.port }}
+              name: listener
+            - containerPort: {{ .Values.service.metrics.port }}
+              name: metrics
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: maintenance-policy
+              mountPath: /etc/maintenance-policy
+              readOnly: true
+            {{- if .Values.webhook.enabled }}
+            - mountPath: /tmp/k8s-webhook-server/serving-certs
+              name: cert
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: maintenance-policy
+          configMap:
+            name: maintenance-policy-config
+            optional: true
+            items:
+              - key: general-maintenance-windows.json
+                path: policy.json
+        {{- if .Values.webhook.enabled }}
+        - name: cert
+          secret:
+            defaultMode: 420
+            secretName: {{ include "lifecycle-manager.webhook.secretName" . }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

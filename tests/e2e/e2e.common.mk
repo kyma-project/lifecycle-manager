@@ -70,6 +70,9 @@ OCM_VERSION                     ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_ocm_v
 # Set USE_GCM=true in a test Makefile to use Gardener CertManager instead of cert-manager.
 USE_GCM ?= false
 
+# Set USE_HELM=true to deploy KLM via the in-repo Helm chart instead of the kustomize overlays.
+USE_HELM ?= false
+
 # Ginkgo binary path.
 GINKGO_CMD ?= $(LOCALBIN)/ginkgo
 
@@ -174,18 +177,32 @@ create-clusters: tools-install ## Create KCP and SKR test clusters.
 deploy-klm: ## Deploy KLM into the KCP test cluster.
 	@echo "::group::Deploying KLM"
 	@export PATH=$(LOCALBIN):$$PATH
-	@echo "Applying kustomize oci-registry-host patch"
-	@if [ "$(USE_GCM)" = "true" ]; then \
-		pushd $(LIFECYCLE_MANAGER_DIR)/config/watcher_local_test_gcm > /dev/null; \
+	@if [ "$(USE_HELM)" = "true" ]; then \
+		echo "Deploying KLM via the in-repo Helm chart (USE_HELM=true)"; \
+		if [ -n "$$GITHUB_ACTIONS" ]; then \
+			$(SCRIPTS_DIR)/deploy_klm_helm.sh \
+				--image-registry $${KLM_IMAGE_REPO} --image-tag $${KLM_VERSION_TAG} \
+				$(if $(filter true,$(USE_GCM)),--use-gcm) \
+				$(if $(HELM_VALUES_OVERLAY),--values-overlay $(HELM_VALUES_OVERLAY)); \
+		else \
+			$(SCRIPTS_DIR)/deploy_klm_helm.sh \
+				$(if $(filter true,$(USE_GCM)),--use-gcm) \
+				$(if $(HELM_VALUES_OVERLAY),--values-overlay $(HELM_VALUES_OVERLAY)); \
+		fi; \
 	else \
-		pushd $(LIFECYCLE_MANAGER_DIR)/config/watcher_local_test > /dev/null; \
-	fi
-	@kustomize edit add patch --path patches/oci_registry_host.yaml --kind Deployment
-	@popd > /dev/null
-	@if [ -z "$$GITHUB_ACTIONS" ]; then \
-		$(SCRIPTS_DIR)/deploy_klm_from_sources.sh $(if $(filter true,$(USE_GCM)),--use-gcm); \
-	else \
-		$(SCRIPTS_DIR)/deploy_klm_from_registry.sh --image-registry $${KLM_IMAGE_REPO} --image-tag $${KLM_VERSION_TAG} $(if $(filter true,$(USE_GCM)),--use-gcm); \
+		echo "Applying kustomize oci-registry-host patch"; \
+		if [ "$(USE_GCM)" = "true" ]; then \
+			pushd $(LIFECYCLE_MANAGER_DIR)/config/watcher_local_test_gcm > /dev/null; \
+		else \
+			pushd $(LIFECYCLE_MANAGER_DIR)/config/watcher_local_test > /dev/null; \
+		fi; \
+		kustomize edit add patch --path patches/oci_registry_host.yaml --kind Deployment; \
+		popd > /dev/null; \
+		if [ -z "$$GITHUB_ACTIONS" ]; then \
+			$(SCRIPTS_DIR)/deploy_klm_from_sources.sh $(if $(filter true,$(USE_GCM)),--use-gcm); \
+		else \
+			$(SCRIPTS_DIR)/deploy_klm_from_registry.sh --image-registry $${KLM_IMAGE_REPO} --image-tag $${KLM_VERSION_TAG} $(if $(filter true,$(USE_GCM)),--use-gcm); \
+		fi; \
 	fi
 	@echo "::endgroup::"
 	@echo "::group::Patching KCP metrics endpoint"

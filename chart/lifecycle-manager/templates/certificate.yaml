@@ -1,0 +1,88 @@
+---
+apiVersion: {{ include "lifecycle-manager.certmanager.apiVersion" . }}
+kind: Certificate
+metadata:
+  labels:
+    {{ include "lifecycle-manager.labels" . | nindent 4 }}
+  name: {{ include "lifecycle-manager.watcher.certName" . }}
+  namespace: istio-system
+spec:
+  {{- if .Values.prefix }}
+  commonName: {{ printf "%s-watcher-selfsigned-ca" .Values.prefix }}
+  {{- else }}
+  commonName: watcher-selfsigned-ca
+  {{- end }}
+  {{ include "lifecycle-manager.certmanager.subjectDN" . | nindent 2 }}
+  dnsNames:
+  {{- $main := printf "%s.%s" .Values.watcher.shortname (.Values.global.domainName | required "global.domainName is unset") }}
+  {{- $all := concat (list $main) (.Values.watcher.additionalDnsNames | default list) }}
+  {{- toYaml $all | nindent 4 }}
+  {{- if .Values.watcher.caRenewBefore }}
+  renewBefore: {{ .Values.watcher.caRenewBefore }}
+  {{- end}}
+  {{- if .Values.watcher.caCertDuration }}
+  duration: {{ .Values.watcher.caCertDuration }}
+  {{- end}}
+  isCA: true
+  issuerRef:
+    {{ include "lifecycle-manager.watcher.issuerRef" . | nindent 4 }}
+  privateKey:
+    {{ include "lifecycle-manager.watcher.privateKey" . | nindent 4 }}
+  secretName: {{ include "lifecycle-manager.watcher.clusterSecretName" . }}
+  {{ include "lifecycle-manager.watcher.secretLabels" . | nindent 2 }}
+---
+# Used for creating the CA cert to sign SKR certs
+apiVersion: {{ include "lifecycle-manager.certmanager.apiVersion" . }}
+kind: Issuer
+metadata:
+  labels:
+    {{ include "lifecycle-manager.labels" . | nindent 4 }}
+  name: {{ include "lifecycle-manager.watcher.rootIssuerName" . }}
+  namespace: {{ include "lifecycle-manager.watcher.issuer.namespace" . }}
+spec:
+  selfSigned: {}
+---
+# Signing SKR certs
+apiVersion: {{ include "lifecycle-manager.certmanager.apiVersion" . }}
+kind: Issuer
+metadata:
+  labels:
+    operator.kyma-project.io/purpose: klm-watcher-cert-manager
+    operator.kyma-project.io/managed-by: lifecycle-manager
+    {{ include "lifecycle-manager.labels" . | nindent 4 }}
+  name: {{ include "lifecycle-manager.watcher.issuerName" . }}
+  namespace: {{ include "lifecycle-manager.watcher.issuer.namespace" . }}
+spec:
+  ca:
+    {{ include "lifecycle-manager.watcher.clusterSecretRef" . | nindent 4 }}
+
+{{- if .Values.webhook.enabled }}
+---
+apiVersion: {{ include "lifecycle-manager.certmanager.apiVersion" . }}
+kind: Certificate
+metadata:
+  labels:
+    {{ include "lifecycle-manager.labels" . | nindent 4 }}
+  name: {{ include "lifecycle-manager.webhook.certName" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  commonName: webhook-selfsigned
+  {{ include "lifecycle-manager.certmanager.subjectDN" . | nindent 2 }}
+  dnsNames:
+    - {{ printf "%s.%s.svc" (include "lifecycle-manager.webhook.serviceName" .) .Release.Namespace}}
+    - {{ printf "%s.%s.svc.cluster.local" (include "lifecycle-manager.webhook.serviceName" .) .Release.Namespace}}
+  issuerRef:
+    {{ include "lifecycle-manager.webhook.issuerRef" . | nindent 4 }}
+  secretName: {{ include "lifecycle-manager.webhook.secretName" . }}
+  isCA: true
+---
+apiVersion: {{ include "lifecycle-manager.certmanager.apiVersion" . }}
+kind: Issuer
+metadata:
+  labels:
+    {{ include "lifecycle-manager.labels" . | nindent 4 }}
+  name: {{ include "lifecycle-manager.webhook.issuerName" . }}
+  namespace: {{ include "lifecycle-manager.webhook.issuer.namespace" . }}
+spec:
+  selfSigned: {}
+{{- end }}

@@ -1,0 +1,29 @@
+{{- if .Capabilities.APIVersions.Has "operator.kyma-project.io/v1beta2/Watcher" }}
+apiVersion: operator.kyma-project.io/v1beta2
+kind: Watcher
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+  labels:
+    operator.kyma-project.io/managed-by: lifecycle-manager
+    {{- include "lifecycle-manager.labels" . | nindent 4 }}
+  name: {{ include "lifecycle-manager.watcher.fullname" .}}
+  namespace: {{ .Release.Namespace }}
+spec:
+  manager: "lifecycle-manager"
+  field: spec
+  gateway:
+    selector:
+      matchLabels:
+        {{ toYaml .Values.watcher.labels | nindent 8 }}
+  labelsToWatch:
+    operator.kyma-project.io/watched-by: {{ .Values.watcher.watchedByLabelValue }}
+  resourceToWatch:
+    group: operator.kyma-project.io
+    resource: kymas
+    version: '*'
+  serviceInfo:
+    name: {{ include "lifecycle-manager.events.serviceName" . }}
+    namespace: {{ .Release.Namespace }}
+    port: {{ .Values.service.listener.port }}
+{{- end }}

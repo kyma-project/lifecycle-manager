@@ -1,0 +1,9 @@
+# Helm value overlay for the watcher-zero-downtime GCM e2e test.
+# Replaces the kustomize klm-patch deployment flags. Unlike the non-GCM variant,
+# this test does not patch the watcher-serving Certificate.
+manager:
+  requeue:
+    success:
+      kyma: 1s
+      istioGatewaySecret: 1s
+  istioGatewayServerCertSwitchGracePeriod: 30s

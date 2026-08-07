@@ -98,3 +98,7 @@ bin
 # claude
 .claude/settings.local.json
 **/CLAUDE.local.md
+
+# Local-only chart parity harness (development scaffolding, not shipped).
+# See scripts/chart-parity/README.md for why it is not committed.
+scripts/chart-parity/

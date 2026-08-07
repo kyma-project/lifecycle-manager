@@ -1,0 +1,19 @@
+# Local k3d GCM-only overrides, layered after values-local.yaml when USE_GCM=true.
+#
+# The local Gardener cert-controller-manager (installed by
+# scripts/tests/apply_gcm_certificate_management.sh) runs without
+# --allow-target-issuers, so it rejects a Certificate whose issuerRef points to
+# an Issuer in a namespace it does not watch ("target issuers not allowed").
+# Placing all watcher and webhook issuers in `default` reproduces what the
+# legacy config/watcher_local_test_gcm kustomize overlay did.
+#
+# This MUST stay separate from values-local.yaml: setting
+# webhook.issuerNamespace=default breaks the cert-manager backend, because the
+# webhook Certificate lives in .Release.Namespace (kcp-system) and cert-manager
+# cannot resolve a namespaced Issuer across namespaces. Gardener honors
+# cross-namespace issuerRefs, so it only works there.
+watcher:
+  # Also emits --self-signed-cert-issuer-namespace=default on the deployment.
+  issuerNamespace: default
+webhook:
+  issuerNamespace: default

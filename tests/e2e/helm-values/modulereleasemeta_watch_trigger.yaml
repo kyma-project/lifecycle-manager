@@ -1,0 +1,15 @@
+# Helm value overlay for the modulereleasemeta-watch-trigger e2e test.
+# Replaces the kustomize klm-patch that set the kyma requeue intervals and
+# module-upgrade-rollout-max-delay.
+manager:
+  requeue:
+    success:
+      kyma: 1h
+    warning:
+      kyma: 1h
+    error:
+      kyma: 1h
+    busy:
+      kyma: 1s
+  moduleUpgradeRollout:
+    maxDelay: 10s
