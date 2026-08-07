@@ -31,7 +31,7 @@ With the purge controller removed, nothing removes this finalizer anymore. Any K
 
 1. Update KLM to version 1.21.0 or greater.
 
-2. Immediately after the update, run the migration script co-located with this document:
+2. Immediately after the update, run the [migration script](./remove-purge-finalizer.sh) co-located with this document:
 
    ```bash
    # Dry run first - shows affected Kyma custom resources without making any changes
