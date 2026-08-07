@@ -155,9 +155,9 @@ spec:
         - access:
             commit: d04757ab29f1c52bd79a99c49668c41ba0b581eb
             repoUrl: https://github.com/kyma-project/template-operator
-            type: gitHub
+            type: GitHub
           name: module-sources
-          type: Github
+          type: git
           version: 1.0.5
       version: 1.0.5
     meta:
