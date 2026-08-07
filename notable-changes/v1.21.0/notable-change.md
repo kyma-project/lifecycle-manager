@@ -43,7 +43,7 @@ With the purge controller removed, nothing removes this finalizer anymore. Any K
 
    The script reads the `app.kubernetes.io/version` label of the `klm-controller-manager` Deployment in the `kcp-system` namespace and warns if KLM has not yet been updated to at least 1.21.0. If the version check cannot be completed (for example, the label is missing or not in semver format), the script prompts you to confirm manually before proceeding.
 
-3. You must answer with a capital `YES` in order for the script to proceed. Anything other than a `YES` will fail the script.
+3. You must answer with a capital `YES` for the script to proceed. Anything other than`YES` fails the script.
 
 ## Post-Update Steps
 
