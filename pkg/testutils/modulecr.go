@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 const (
@@ -33,7 +31,6 @@ const (
 var (
 	errSampleCRDeletionTimestampSet    = errors.New("sample CR has set DeletionTimeStamp")
 	errSampleCRDeletionTimestampNotSet = errors.New("sample CR has not set DeletionTimeStamp")
-	errFinalizerStillExists            = errors.New("finalizer still exists after purge timeout")
 )
 
 func ModuleCRExists(ctx context.Context, clnt client.Client, moduleCR *unstructured.Unstructured) error {
@@ -112,25 +109,6 @@ func AddFinalizerToModuleCR(ctx context.Context, clnt client.Client, moduleCR *u
 
 	if err = clnt.Update(ctx, moduleCR); err != nil {
 		return fmt.Errorf("updating module CR %w", err)
-	}
-
-	return nil
-}
-
-func FinalizerIsRemoved(ctx context.Context, clnt client.Client, moduleCR *unstructured.Unstructured,
-	finalizer string,
-) error {
-	err := clnt.Get(ctx, client.ObjectKey{
-		Namespace: moduleCR.GetNamespace(),
-		Name:      moduleCR.GetName(),
-	}, moduleCR)
-
-	if util.IsNotFound(err) {
-		return nil
-	}
-
-	if slices.Contains(moduleCR.GetFinalizers(), finalizer) {
-		return errFinalizerStillExists
 	}
 
 	return nil

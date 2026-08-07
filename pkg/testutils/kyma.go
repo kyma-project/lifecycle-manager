@@ -8,7 +8,6 @@ import (
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	apiconfigsv1beta2 "github.com/kyma-project/lifecycle-manager/api/applyconfigurations/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -88,22 +87,6 @@ func KymaDeleted(ctx context.Context,
 		return fmt.Errorf("kyma not deleted: %w", err)
 	}
 	return nil
-}
-
-func DeleteKymaByForceRemovePurgeFinalizer(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error {
-	if err := SyncKyma(ctx, clnt, kyma); err != nil {
-		return fmt.Errorf("sync kyma %w", err)
-	}
-
-	if !kyma.DeletionTimestamp.IsZero() {
-		if controllerutil.ContainsFinalizer(kyma, shared.PurgeFinalizer) {
-			controllerutil.RemoveFinalizer(kyma, shared.PurgeFinalizer)
-			if err := clnt.Update(ctx, kyma); err != nil {
-				return fmt.Errorf("can't remove purge finalizer %w", err)
-			}
-		}
-	}
-	return DeleteKyma(ctx, clnt, kyma, apimetav1.DeletePropagationBackground)
 }
 
 func DeleteKyma(ctx context.Context,
