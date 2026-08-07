@@ -2,7 +2,6 @@ package labelsremoval
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -13,8 +12,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/finalizer"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/modulecr"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 type ManifestAPIClient interface {
@@ -35,13 +32,9 @@ func (l *ManagedByLabelRemovalService) RemoveManagedByLabel(ctx context.Context,
 	manifest *v1beta2.Manifest,
 	skrClient client.Client,
 ) error {
-	resourcesError := removeFromSyncedResources(ctx, manifest, skrClient)
-	defaultCRError := removeFromDefaultCR(ctx, manifest, skrClient)
-
-	if resourcesError != nil || defaultCRError != nil {
+	if err := removeFromSyncedResources(ctx, manifest, skrClient); err != nil {
 		return fmt.Errorf("failed to remove %s label from one or more resources: %w",
-			shared.ManagedBy,
-			errors.Join(resourcesError, defaultCRError))
+			shared.ManagedBy, err)
 	}
 
 	controllerutil.RemoveFinalizer(manifest, finalizer.LabelRemovalFinalizer)
@@ -68,25 +61,6 @@ func removeFromSyncedResources(ctx context.Context, manifestCR *v1beta2.Manifest
 	}
 
 	return nil
-}
-
-func removeFromDefaultCR(ctx context.Context,
-	manifest *v1beta2.Manifest,
-	skrClient client.Client,
-) error {
-	if manifest.Spec.Resource == nil || manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
-		return nil
-	}
-
-	defaultCR, err := modulecr.NewClient(skrClient).GetDefaultCR(ctx, manifest)
-	if err != nil {
-		if util.IsNotFound(err) {
-			return nil
-		}
-		return fmt.Errorf("failed to get default CR, %w", err)
-	}
-
-	return removeFromObject(ctx, defaultCR, skrClient)
 }
 
 func removeFromObject(ctx context.Context, obj *unstructured.Unstructured, skrClient client.Client) error {
