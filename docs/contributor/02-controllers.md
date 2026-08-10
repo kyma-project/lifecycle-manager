@@ -43,11 +43,6 @@ it propagates changes from the ModuleTemplate CR to the Manifest CR. The mandato
 Manifest controller deals with the reconciliation and installation of data desired through a Manifest CR, a representation of a single module desired in a cluster.
 The reconciler lives in `internal/controller/manifest`. It resolves the Kyma runtime client (`SKRClient`), renders the target resources using [`internal/service/manifest/render`](../../internal/service/manifest/render/), prunes obsolete resources, and applies the rendered set to the Kyma runtime using server-side apply.
 
-## Purge Controller
-
-Purge controller is responsible for handling the forced cleanup of deployed resources in a remote cluster when its Kyma CR is marked for deletion.
-Suppose a Kyma CR has been marked for deletion for longer than the grace period (default is 5 minutes). In that case, the controller resolves the remote client for the cluster, retrieves all relevant CRs deployed on the cluster, and removes finalizers, allowing the resources to be garbage collected. This ensures that all associated resources are properly purged, maintaining the integrity and cleanliness of the cluster.
-
 ## Watcher Controller
 
 Watcher controller deals with the changes of VirtualService rules derived from the [Watcher CR](./resources/04-watcher.md). This is then used to initialize the Watcher CR from the Kyma Controller in each runtime. Simply put, it is a small component initialized to propagate changes from the runtime (remote) clusters back to the Kyma Control Plane (KCP), for it to react to the changes accordingly, ensuring the integrity of the affected Manifest CRs.

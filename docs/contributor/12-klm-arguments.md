@@ -110,13 +110,6 @@ This document provides a list of flags that can be set to control some specific 
 | `leader-election-retry-period`   | duration | 3s            | Duration configured for the 'RetryPeriod' option of the controller-runtime library used to run the controller manager process   |
 
 
-## Purge Configuration
-
-| Flag                         | Type     | Default Value | Description                                                                                                           |
-|------------------------------|----------|---------------|-----------------------------------------------------------------------------------------------------------------------|
-| `purge-finalizer-timeout`    | duration | 5m            | Duration after a Kyma's deletion timestamp when the remaining resources should be purged in the SKR                   |
-| `skip-finalizer-purging-for` | string   | ""            | CRDs to be excluded from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'          |
-
 ## Miscellaneous Configuration
 
 | Flag                          | Type     | Default Value                                                        | Description                                                                                                                                                                  |

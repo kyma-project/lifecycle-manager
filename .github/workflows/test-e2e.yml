@@ -57,8 +57,6 @@ jobs:
           - module-deletion-with-only-default-cr
           - modulereleasemeta-upgrade-under-deletion
           - module-api-upgrade-under-blocked-deletion
-          - purge-controller
-          - purge-metrics
           - module-upgrade-channel-switch
           - modulereleasemeta-module-upgrade-new-version
           - unmanage-module

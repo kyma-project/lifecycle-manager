@@ -23,7 +23,6 @@ These are defined in a separate Go module in `api/v1beta2`.
 - **Manifest controller** - installs, updates and uninstalls module resources on the SKR. Tracks the status of the module installation.
 - **Mandatory Module Installation controller** - creates and updates Manifest CRs for mandatory modules.
 - **Mandatory Module Deletion controller** - deletes Manifest CRs for mandatory modules.
-- **Purge controller** - purges Custom Resource Definitions from SKRs after a certain timeout when these block the deprovisioning of the SKR.
 - **Watcher controller** - installs the watcher webhook to the SKR and configures ingress on KCP.
 - **Istio Gateway Secret controller** - manages the certificate rotation in the Public Key Infrastructure (PKI) inbound Watcher traffic.
 

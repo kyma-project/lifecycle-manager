@@ -66,7 +66,6 @@ import (
 	kymadeletionctrl "github.com/kyma-project/lifecycle-manager/internal/controller/kyma/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
 	manifestctrl "github.com/kyma-project/lifecycle-manager/internal/controller/manifest"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/purge"
 	watcherctrl "github.com/kyma-project/lifecycle-manager/internal/controller/watcher"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
@@ -102,7 +101,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	mrmwatch "github.com/kyma-project/lifecycle-manager/internal/watch/modulereleasemeta"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
@@ -305,8 +303,6 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		logger, ociRegistry.GetReference(), mandatoryMrmEventHandler)
 	setupMandatoryModuleDeletionReconciler(mgr, eventRecorder, mrmRepo, manifestRepo, flagVar, options, logger)
 
-	setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, logger)
-
 	if flagVar.EnableWebhooks {
 		// enable conversion webhook for CRDs here
 
@@ -499,33 +495,6 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
-	}
-}
-
-func setupPurgeReconciler(mgr ctrl.Manager,
-	skrContextProvider remote.SkrContextProvider,
-	event event.Event,
-	flagVar *flags.FlagVar,
-	options ctrlruntime.Options,
-	setupLog logr.Logger,
-) {
-	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
-		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
-	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
-
-	if err := (&purge.Reconciler{
-		Client:                mgr.GetClient(),
-		SkrContextFactory:     skrContextProvider,
-		Event:                 event,
-		PurgeFinalizerTimeout: flagVar.PurgeFinalizerTimeout,
-		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.SkipPurgingFor),
-		Metrics:               metrics.NewPurgeMetrics(),
-		RateLimiter:           options.RateLimiter,
-	}).SetupWithManager(
-		mgr, options,
-	); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "PurgeReconciler")
-		os.Exit(bootstrapFailedExitCode)
 	}
 }
 
