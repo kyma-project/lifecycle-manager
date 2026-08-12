@@ -77,6 +77,25 @@ var _ = Describe("Given kyma CR with invalid module enabled", Ordered, func() {
 		Eventually(expectKymaStatusModules(ctx, kyma, module.Name, shared.StateError), Timeout,
 			Interval).Should(Succeed())
 	})
+	It("When enabling a mandatory module, expect module status in Warning state", func() {
+		const mandatoryModuleName = "mandatory-enabled"
+		DeployMandatoryModuleTemplate(ctx, kcpClient, mandatoryModuleName, ver110, objTracker)
+		module := NewTestModuleWithFixName(mandatoryModuleName, v1beta2.DefaultChannel, "")
+
+		Eventually(EnableModule, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(skrClient, skrKyma.GetName(), skrKyma.GetNamespace(), module).
+			Should(Succeed())
+		Eventually(SyncKyma, Timeout, Interval).
+			WithContext(ctx).WithArguments(kcpClient, kyma).Should(Succeed())
+
+		Eventually(expectKymaStatusModules(ctx, kyma, module.Name, shared.StateWarning), Timeout,
+			Interval).Should(Succeed())
+		Eventually(KymaIsInState, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateWarning).
+			Should(Succeed())
+	})
 })
 
 func givenKymaWithModule(
