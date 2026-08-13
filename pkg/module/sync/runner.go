@@ -187,7 +187,7 @@ func NeedToUpdate(manifestInCluster, newManifest *v1beta2.Manifest, moduleInStat
 	}
 
 	if manifestInCluster.IsUnmanaged() {
-		return false
+		return !module.IsUnmanaged
 	}
 
 	if module.IsUnmanaged {
