@@ -75,7 +75,7 @@ The `--self-signed-cert-*` flags are renamed to `--watcher-client-cert-*`, becau
 | `--self-signed-cert-issuer-name` | `--watcher-client-cert-issuer-name` |
 | `--self-signed-cert-issuer-namespace` | `--watcher-client-cert-issuer-namespace` |
 
-The duration, renewal, and key size of the CA certificate are not configured by any flag. They are set on the CA Certificate resource in `config/certmanager/certificate_watcher.yaml`. Naming these flags after the CA would imply control the flags do not have.
+The duration, renewal, and key size of the CA certificate are not configured by any flag. They are set on the CA Certificate resource in `config/certmanager/certificate_watcher.yaml`. Naming these flags after the CA would imply control that the flags do not have.
 
 #### Go Identifiers
 
