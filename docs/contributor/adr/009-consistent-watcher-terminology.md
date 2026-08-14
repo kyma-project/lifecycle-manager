@@ -85,7 +85,7 @@ The following diagram shows the KCP-side Issuers, Certificates, and Secrets unde
 
 #### Command-Line Flags
 
-The `--self-signed-cert-*` flags are renamed to `--runtime-watcher-client-cert-*`, because they configure the per-runtime client certificate, not the CA certificate. The `--self-signed-cert-issuer-*` flags name the Issuer that signs those client certificates, so they follow the same `client-cert` prefix.
+The `--self-signed-cert-*` flags are renamed to `--runtime-watcher-client-cert-*`, because they configure the per-runtime client certificate, not the CA certificate. The `--self-signed-cert-issuer-*` flags name the Issuer that signs those client certificates, so they follow the same `client-cert` prefix. The `--skr-watcher-*`, `--skr-webhook-*`, and `--istio-gateway-*` flags are renamed to `--runtime-watcher-*`.
 
 | Current Flag | Target Flag |
 |--------------|-------------|
@@ -97,6 +97,17 @@ The `--self-signed-cert-*` flags are renamed to `--runtime-watcher-client-cert-*
 | `--self-signed-cert-issuer-namespace` | `--runtime-watcher-client-cert-issuer-namespace` |
 | `--istio-gateway-name` | `--runtime-watcher-gateway-name` |
 | `--istio-gateway-namespace` | `--runtime-watcher-gateway-namespace` |
+| `--istio-gateway-cert-switch-before-expiration-time` | `--runtime-watcher-server-cert-switch-before-expiration-time` |
+| `--istio-gateway-server-cert-switch-grace-period` | `--runtime-watcher-server-cert-switch-grace-period` |
+| `--istio-gateway-server-cert-expiry-window` | `--runtime-watcher-server-cert-expiry-window` |
+| `--istio-gateway-secret-requeue-success-interval` | `--runtime-watcher-server-cert-requeue-success-interval` |
+| `--istio-gateway-secret-requeue-error-interval` | `--runtime-watcher-server-cert-requeue-error-interval` |
+| `--watcher-requeue-success-interval` | `--runtime-watcher-requeue-success-interval` |
+| `--skr-watcher-image-name` | `--runtime-watcher-image-name` |
+| `--skr-watcher-image-tag` | `--runtime-watcher-image-tag` |
+| `--skr-watcher-image-registry` | `--runtime-watcher-image-registry` |
+| `--skr-webhook-memory-limits` | `--runtime-watcher-memory-limits` |
+| `--skr-webhook-cpu-limits` | `--runtime-watcher-cpu-limits` |
 
 The duration, renewal, and key size of the CA certificate are not configured by any flag. They are set on the CA Certificate resource in `config/[certmanager|gardener-certmanager]/certificate_watcher.yaml`.
 
@@ -150,15 +161,15 @@ Documentation uses the canonical terms. Kubernetes resource names in component t
 
 ### Migration
 
-Kubernetes resource names, secret names, and command-line flags are operational contracts. Live landscapes reference them, and the Runtime Watcher PKI performs zero-downtime certificate rotation (see ADR 007), so a name cannot simply change in place without breaking the mTLS trust chain.
+Go identifiers and documentation carry no external contract and are renamed directly. The following entities are operational contracts — live landscapes reference them — and require a staged migration:
 
-Renames of these contracts follow a transition that keeps the old and new names valid at the same time:
+- **`Watcher` CRD and existing CR instances** — renamed to `RuntimeWatcher`; existing instances must be migrated in place or replaced.
+- **cert-manager and GCM resources on KCP** — the CA Issuer, CA Certificate, CA Secret, server Secret, client Issuer, and per-runtime client Certificate and Secret (see KCP-side resources table).
+- **Istio Gateway and label selector** — `klm-watcher` Gateway and the `operator.kyma-project.io/watcher-gateway` label.
+- **Runtime-side resources on the SKR** — Deployment, Services, PriorityClass, and NetworkPolicies (see runtime-side resources table).
+- **CLI flags** — all `--self-signed-cert-*`, `--istio-gateway-*`, `--skr-watcher-*`, `--skr-webhook-*`, and `--watcher-requeue-*` flags (see flags table above).
 
-1. Introduce the new name alongside the old one.
-2. Migrate producers and consumers to the new name.
-3. Remove the old name once no landscape references it.
-
-Command-line flags keep their old form as a deprecated alias for one release before removal. Go identifiers and documentation carry no external contract and are renamed directly.
+Each renamed contract follows a three-step transition: introduce the new name alongside the old one, migrate producers and consumers, then remove the old name once no landscape references it. CLI flags keep the old form as a deprecated alias for one release before removal.
 
 ## Consequences
 
