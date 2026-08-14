@@ -183,7 +183,7 @@ func NeedToUpdate(manifestInCluster, newManifest *v1beta2.Manifest, moduleInStat
 	module *modulecommon.Module,
 ) bool {
 	if manifestInCluster == nil || manifestInCluster.IsUnmanaged() {
-		return !(module.IsUnmanaged)
+		return !module.IsUnmanaged
 	}
 
 	if module.IsUnmanaged {
