@@ -45,7 +45,7 @@ The scheme renames every part that does not already follow the canonical terms. 
 
 #### Kubernetes Resources and Secrets
 
-All Kubernetes resources KLM manages on the KCP carry a `klm-` prefix. The KCP hosts other components beside KLM, so the prefix identifies KLM ownership and prevents name collisions in shared namespaces such as `istio-system`. The prefix is applied globally by the `namePrefix: klm-` directive in `config/control-plane/kustomization.yaml`; secrets that cert-manager creates outside kustomize's control carry it explicitly in their `secretName` field. The per-runtime client certificate and secret (`{KYMA_NAME}-runtime-watcher-client`) are an exception: they are named after the Kyma instance rather than KLM, because one exists per runtime and the Kyma name already makes them unique.
+All Kubernetes resources KLM manages on the KCP carry a `klm-` prefix. The KCP hosts other components beside KLM, so the prefix identifies KLM ownership and prevents name collisions in shared namespaces such as `istio-system`. The prefix is applied globally by the `namePrefix: klm-` directive in `config/control-plane/kustomization.yaml`; secrets that cert-manager creates outside kustomize's control carry it explicitly in their `secretName` field.
 
 ##### KCP-side resources
 
@@ -57,8 +57,8 @@ All Kubernetes resources KLM manages on the KCP carry a `klm-` prefix. The KCP h
 | `klm-watcher` | Secret      | `klm-runtime-watcher-ca`             | Stores the CA certificate. Matches the Certificate name.                                 |
 | `klm-istio-gateway` | Secret      | `klm-runtime-watcher-server`         | Stores the server certificate and the CA bundle used by the gateway.                     |
 | `klm-watcher-selfsigned` | Issuer      | `klm-runtime-watcher-client`         | It is the CA Issuer that signs client certificates. It is not self-signed.               |
-| `{KYMA_NAME}-webhook-tls` | Certificate | `{KYMA_NAME}-runtime-watcher-client` | Requests a client certificate on KCP, one per runtime.                                   |
-| `{KYMA_NAME}-webhook-tls` | Secret      | `{KYMA_NAME}-runtime-watcher-client` | Stores a client certificate on KCP, one per runtime. Matches the Certificate name.       |
+| `{KYMA_NAME}-webhook-tls` | Certificate | `klm-{KYMA_NAME}-runtime-watcher-client` | Requests a client certificate on KCP, one per runtime.                                   |
+| `{KYMA_NAME}-webhook-tls` | Secret      | `klm-{KYMA_NAME}-runtime-watcher-client` | Stores a client certificate on KCP, one per runtime. Matches the Certificate name.       |
 
 ##### Runtime-side resources
 
