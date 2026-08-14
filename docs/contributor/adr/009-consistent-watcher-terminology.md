@@ -57,8 +57,11 @@ All Kubernetes resources KLM manages on the KCP carry a `klm-` prefix. The KCP h
 | `klm-watcher` | Secret      | `klm-runtime-watcher-ca`             | Stores the CA certificate. Matches the Certificate name.                                 |
 | `klm-istio-gateway` | Secret      | `klm-runtime-watcher-server`         | Stores the server certificate and the CA bundle used by the gateway.                     |
 | `klm-watcher-selfsigned` | Issuer      | `klm-runtime-watcher-client`         | It is the CA Issuer that signs client certificates. It is not self-signed.               |
-| `{KYMA_NAME}-webhook-tls` | Certificate | `klm-{KYMA_NAME}-runtime-watcher-client` | Requests a client certificate on KCP, one per runtime.                                   |
-| `{KYMA_NAME}-webhook-tls` | Secret      | `klm-{KYMA_NAME}-runtime-watcher-client` | Stores a client certificate on KCP, one per runtime. Matches the Certificate name.       |
+| `klm-{KYMA_NAME}-webhook-tls` | Certificate | `klm-{KYMA_NAME}-runtime-watcher-client` | Requests a client certificate on KCP, one per runtime.                               |
+| `klm-{KYMA_NAME}-webhook-tls` | Secret      | `klm-{KYMA_NAME}-runtime-watcher-client` | Stores a client certificate on KCP, one per runtime. Matches the Certificate name.   |
+| `klm-watcher` | Gateway     | `klm-runtime-watcher`                | The Istio Gateway that terminates mTLS connections from runtimes. Defined in `config/watcher/gateway.yaml`; the `klm-` prefix is applied by kustomize. |
+| `{WATCHER_CR_NAME}` | VirtualService | `{RUNTIME_WATCHER_CR_NAME}`    | One VirtualService per RuntimeWatcher CR; name follows the CR name. Renamed as part of the CRD rename. |
+| `operator.kyma-project.io/watcher-gateway` | Label | `operator.kyma-project.io/runtime-watcher-gateway` | Label selector used to discover the Gateway. |
 
 ##### Runtime-side resources
 
@@ -92,6 +95,8 @@ The `--self-signed-cert-*` flags are renamed to `--runtime-watcher-client-cert-*
 | `--self-signed-cert-key-size` | `--runtime-watcher-client-cert-key-size` |
 | `--self-signed-cert-issuer-name` | `--runtime-watcher-client-cert-issuer-name` |
 | `--self-signed-cert-issuer-namespace` | `--runtime-watcher-client-cert-issuer-namespace` |
+| `--istio-gateway-name` | `--runtime-watcher-gateway-name` |
+| `--istio-gateway-namespace` | `--runtime-watcher-gateway-namespace` |
 
 The duration, renewal, and key size of the CA certificate are not configured by any flag. They are set on the CA Certificate resource in `config/[certmanager|gardener-certmanager]/certificate_watcher.yaml`.
 
