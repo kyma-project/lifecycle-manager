@@ -64,7 +64,7 @@ packages:
   internal/watch/modulereleasemeta: 97.6
   internal/watch/modulereleasemeta/events: 100
 
-  pkg/module/sync: 11
+  pkg/module/sync: 9
   pkg/status: 20
   pkg/templatelookup: 79.7
   pkg/templatelookup/moduletemplateinfolookup: 100
