@@ -19,8 +19,8 @@
   <rect x="0" y="0" width="1760" height="476" fill="#fbfbf9"/>
 
   <!-- title -->
-  <text x="48" y="42" font-size="20" font-weight="600" fill="#0b0b0b" letter-spacing="-0.01em">Watcher PKI: Certificate &amp; Secret Flow (KCP &#8594; SKR)</text>
-  <text x="48" y="64" font-size="13" font-weight="400" fill="#52514e">Target names per ADR 009. Issuers sign Certificates, which materialize Secrets; the client certificate and CA bundle sync to the runtime and are mounted by the Runtime Watcher.</text>
+  <text x="48" y="42" font-size="20" font-weight="600" fill="#0b0b0b" letter-spacing="-0.01em">Runtime Watcher PKI: Certificate &amp; Secret Flow (KCP &#8594; SKR)</text>
+  <text x="48" y="64" font-size="13" font-weight="400" fill="#52514e">Target names per ADR 009. Issuers sign Certificates, which materialize Secrets; the client certificate and CA bundle sync to the runtime and are mounted by the runtime agent.</text>
 
   <!-- cluster containers -->
   <rect x="32" y="96" width="1364" height="288" rx="12" fill="#f4f4f2" stroke="#e1e0d9" stroke-width="1"/>
@@ -42,13 +42,13 @@
 
   <!-- E3 Client-Issuer -> CA-Secret : reads CA (reference, dotted) -->
   <path d="M714,312 V220" fill="none" stroke="#7c7a75" stroke-width="1.5" stroke-dasharray="1.5 3" marker-end="url(#arrow)"/>
-  <text x="726" y="270" font-size="11" font-weight="500" text-anchor="start" stroke="#fbfbf9" stroke-width="3" paint-order="stroke">reads CA</text>
-  <text x="726" y="270" font-size="11" font-weight="500" text-anchor="start" fill="#52514e">reads CA</text>
+  <text x="726" y="270" font-size="11" font-weight="500" text-anchor="start" stroke="#fbfbf9" stroke-width="3" paint-order="stroke">uses CA certificate for signing</text>
+  <text x="726" y="270" font-size="11" font-weight="500" text-anchor="start" fill="#52514e">uses CA certificate for signing</text>
 
   <!-- E4 CA-Secret -> Gateway Secret : server cert + CA bundle -->
   <path d="M820,188 H888" fill="none" stroke="#7c7a75" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <text x="854" y="180" font-size="11" font-weight="500" text-anchor="middle" stroke="#fbfbf9" stroke-width="3" paint-order="stroke">server + CA</text>
-  <text x="854" y="180" font-size="11" font-weight="500" text-anchor="middle" fill="#52514e">server + CA</text>
+  <text x="854" y="172" font-size="11" font-weight="500" text-anchor="middle" stroke="#fbfbf9" stroke-width="3" paint-order="stroke"><tspan x="854" dy="0">copies certificate,</tspan><tspan x="854" dy="13">private key, CA bundle</tspan></text>
+  <text x="854" y="172" font-size="11" font-weight="500" text-anchor="middle" fill="#52514e"><tspan x="854" dy="0">copies certificate,</tspan><tspan x="854" dy="13">private key, CA bundle</tspan></text>
 
   <!-- E5 Client-Issuer -> Client-Cert : issues -->
   <path d="M820,344 H888" fill="none" stroke="#7c7a75" stroke-width="1.5" marker-end="url(#arrow)"/>
@@ -62,13 +62,13 @@
 
   <!-- E8 Gateway Secret -> RW-Secret : sync CA bundle (dashed, cross-cluster) -->
   <path d="M1100,188 H1500" fill="none" stroke="#4a3aa7" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#arrowSync)"/>
-  <text x="1292" y="180" font-size="11" font-weight="500" text-anchor="middle" stroke="#fbfbf9" stroke-width="3" paint-order="stroke">sync CA</text>
-  <text x="1292" y="180" font-size="11" font-weight="500" text-anchor="middle" fill="#4a3aa7">sync CA</text>
+  <text x="1292" y="180" font-size="11" font-weight="500" text-anchor="middle" stroke="#fbfbf9" stroke-width="3" paint-order="stroke">sync CA bundle</text>
+  <text x="1292" y="180" font-size="11" font-weight="500" text-anchor="middle" fill="#4a3aa7">sync CA bundle</text>
 
   <!-- E7 Client-Secret -> RW-Secret : sync client cert (dashed, cross-cluster, elbow) -->
   <path d="M1380,344 H1440 V204 H1500" fill="none" stroke="#4a3aa7" stroke-width="1.6" stroke-dasharray="6 4" stroke-linejoin="round" marker-end="url(#arrowSync)"/>
-  <text x="1444" y="256" font-size="11" font-weight="500" text-anchor="start" stroke="#fbfbf9" stroke-width="3" paint-order="stroke">sync cert</text>
-  <text x="1444" y="256" font-size="11" font-weight="500" text-anchor="start" fill="#4a3aa7">sync cert</text>
+  <text x="1444" y="256" font-size="11" font-weight="500" text-anchor="start" stroke="#fbfbf9" stroke-width="3" paint-order="stroke">sync certificate, private key</text>
+  <text x="1444" y="256" font-size="11" font-weight="500" text-anchor="start" fill="#4a3aa7">sync certificate, private key</text>
 
   <!-- E9 RW-Secret -> RW-Deploy : mounts -->
   <path d="M1606,220 V312" fill="none" stroke="#7c7a75" stroke-width="1.5" marker-end="url(#arrow)"/>
@@ -81,49 +81,49 @@
     <rect width="212" height="64" rx="10" fill="#eaf2fc" stroke="#2a78d6" stroke-width="2"/>
     <rect x="81" y="10" width="50" height="15" rx="7.5" fill="#2a78d6"/>
     <text x="106" y="21.5" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="0.04em">ISSUER</text>
-    <text x="106" y="45" font-size="12.5" font-weight="600" fill="#12385f" text-anchor="middle">klm-watcher-ca</text>
+    <text x="106" y="45" font-size="12.5" font-weight="600" fill="#12385f" text-anchor="middle">klm-runtime-watcher-ca</text>
   </g>
   <!-- 2 CA-Cert -->
   <g transform="translate(328,156)" filter="url(#cardShadow)">
     <rect width="212" height="64" rx="10" fill="#fdeee6" stroke="#eb6834" stroke-width="2"/>
     <rect x="65.5" y="10" width="81" height="15" rx="7.5" fill="#b0491c"/>
     <text x="106" y="21.5" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="0.04em">CERTIFICATE</text>
-    <text x="106" y="45" font-size="12.5" font-weight="600" fill="#7a3111" text-anchor="middle">klm-watcher-ca</text>
+    <text x="106" y="45" font-size="12.5" font-weight="600" fill="#7a3111" text-anchor="middle">klm-runtime-watcher-ca</text>
   </g>
   <!-- 3 CA-Secret -->
   <g transform="translate(608,156)" filter="url(#cardShadow)">
     <rect width="212" height="64" rx="10" fill="#e6f6f0" stroke="#1baf7a" stroke-width="2"/>
     <rect x="81" y="10" width="50" height="15" rx="7.5" fill="#0f6b4b"/>
     <text x="106" y="21.5" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="0.04em">SECRET</text>
-    <text x="106" y="45" font-size="12.5" font-weight="600" fill="#0d5540" text-anchor="middle">klm-watcher-ca</text>
+    <text x="106" y="45" font-size="12.5" font-weight="600" fill="#0d5540" text-anchor="middle">klm-runtime-watcher-ca</text>
   </g>
   <!-- 4 Gateway Secret -->
   <g transform="translate(888,156)" filter="url(#cardShadow)">
     <rect width="212" height="64" rx="10" fill="#e6f6f0" stroke="#1baf7a" stroke-width="2"/>
     <rect x="81" y="10" width="50" height="15" rx="7.5" fill="#0f6b4b"/>
     <text x="106" y="21.5" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="0.04em">SECRET</text>
-    <text x="106" y="45" font-size="12.5" font-weight="600" fill="#0d5540" text-anchor="middle">klm-watcher-server</text>
+    <text x="106" y="45" font-size="12.5" font-weight="600" fill="#0d5540" text-anchor="middle">klm-runtime-watcher-server</text>
   </g>
   <!-- 5 Client-Issuer -->
   <g transform="translate(608,312)" filter="url(#cardShadow)">
     <rect width="212" height="64" rx="10" fill="#eaf2fc" stroke="#2a78d6" stroke-width="2"/>
     <rect x="81" y="10" width="50" height="15" rx="7.5" fill="#2a78d6"/>
     <text x="106" y="21.5" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="0.04em">ISSUER</text>
-    <text x="106" y="45" font-size="12.5" font-weight="600" fill="#12385f" text-anchor="middle">klm-watcher-client</text>
+    <text x="106" y="45" font-size="12.5" font-weight="600" fill="#12385f" text-anchor="middle">klm-runtime-watcher-client</text>
   </g>
   <!-- 6 Client-Cert -->
   <g transform="translate(888,312)" filter="url(#cardShadow)">
     <rect width="212" height="64" rx="10" fill="#fdeee6" stroke="#eb6834" stroke-width="2"/>
     <rect x="65.5" y="10" width="81" height="15" rx="7.5" fill="#b0491c"/>
     <text x="106" y="21.5" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="0.04em">CERTIFICATE</text>
-    <text x="106" y="45" font-size="12.5" font-weight="600" fill="#7a3111" text-anchor="middle">{KYMA_NAME}-watcher-client</text>
+    <text x="106" y="45" font-size="12.5" font-weight="600" fill="#7a3111" text-anchor="middle">{KYMA_NAME}-runtime-watcher-client</text>
   </g>
   <!-- 7 Client-Secret -->
   <g transform="translate(1168,312)" filter="url(#cardShadow)">
     <rect width="212" height="64" rx="10" fill="#e6f6f0" stroke="#1baf7a" stroke-width="2"/>
     <rect x="81" y="10" width="50" height="15" rx="7.5" fill="#0f6b4b"/>
     <text x="106" y="21.5" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="0.04em">SECRET</text>
-    <text x="106" y="45" font-size="12.5" font-weight="600" fill="#0d5540" text-anchor="middle">{KYMA_NAME}-watcher-client</text>
+    <text x="106" y="45" font-size="12.5" font-weight="600" fill="#0d5540" text-anchor="middle">{KYMA_NAME}-runtime-watcher-client</text>
   </g>
   <!-- 8 RW-Secret (SKR) -->
   <g transform="translate(1500,156)" filter="url(#cardShadow)">

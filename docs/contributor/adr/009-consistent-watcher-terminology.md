@@ -1,4 +1,4 @@
-# ADR 009 - Consistent Watcher Terminology
+# ADR 009 - Consistent Runtime Watcher Terminology
 
 ## Status
 
@@ -29,15 +29,14 @@ The following canonical terms apply to the mechanism and its parts:
 
 | Concept | Canonical Term | Definition |
 |---------|----------------|------------|
-| The mechanism, on the Kyma Control Plane (KCP) side | Watcher | The KCP-side mechanism that receives change notifications from runtimes. Covers the Watcher custom resource, the Watcher controller, and the Istio routing KLM configures for it. |
-| The deployed agent, on the runtime side | Runtime Watcher | The separate component from the `runtime-watcher` repository that KLM deploys into the runtime. The term refers only to that component and its image. |
-| The self-signed CA certificate | CA certificate | The self-signed certificate that anchors the Watcher PKI. It also serves as the server certificate. See ADR 007. |
-| The certificate the gateway presents | Server certificate | The certificate the Watcher Istio gateway presents to the runtime. Equal to the CA certificate. See ADR 007. |
-| The per-runtime certificate | Client certificate | The certificate the Runtime Watcher presents to the gateway. Signed by the CA certificate. One per runtime. See ADR 007. |
+| The mechanism and its deployed agent | Runtime Watcher | The mechanism as a whole: the KCP-side custom resource and controller, the Istio routing KLM configures, and the agent component from the `runtime-watcher` repository that KLM deploys into the runtime. One term covers both sides. |
+| The self-signed CA certificate | CA certificate | The self-signed certificate that anchors the Runtime Watcher PKI. It also serves as the server certificate. See ADR 007. |
+| The certificate the gateway presents | Server certificate | The certificate the Runtime Watcher Istio gateway presents to the runtime. Equal to the CA certificate. See ADR 007. |
+| The per-runtime certificate | Client certificate | The certificate the runtime agent presents to the gateway. Signed by the CA certificate. One per runtime. See ADR 007. |
 
 Two rules resolve the central ambiguities:
 
-- **Watcher and Runtime Watcher are distinct.** Watcher refers to KLM's side of the mechanism. Runtime Watcher refers to the component deployed into the runtime. Previously, `runtime watcher` named both, which is the main source of confusion.
+- **Runtime Watcher names the mechanism uniformly.** The same term applies to the KCP-side custom resource and controller and to the agent deployed into the runtime. Previously, `Watcher` named the KCP side and `Runtime Watcher` named the runtime agent, which required readers to maintain a mapping. The custom resource is renamed from `Watcher` to `RuntimeWatcher` as part of this ADR.
 - **The PKI uses the ADR 007 vocabulary.** The mechanism uses a self-signed CA certificate that doubles as the server certificate, and per-runtime client certificates signed by that CA. The terms root, leaf, and self-signed are not used for these certificates, because they either lose the server-and-client role distinction or contradict the actual function.
 
 ### Naming Scheme
@@ -46,42 +45,64 @@ The scheme renames every part that does not already follow the canonical terms. 
 
 #### Kubernetes Resources and Secrets
 
-| Current Name | Kind        | Target Name                  | Rationale                                                                        |
-|--------------|-------------|------------------------------|----------------------------------------------------------------------------------|
-| `klm-watcher-root` | Issuer      | `klm-watcher-ca`             | It is the self-signed Issuer that bootstraps the CA certificate.                 |
-| `klm-watcher-serving` | Certificate | `klm-watcher-ca`             | It is the CA certificate, which also serves as the server certificate.           |
-| `klm-watcher` | Secret      | `klm-watcher-ca`             | Stores the CA certificate. Matches the Certificate name.                         |
-| `klm-istio-gateway` | Secret      | `klm-watcher-server`         | Stores the server certificate and the CA bundle used by the gateway.             |
-| `klm-watcher-selfsigned` | Issuer      | `klm-watcher-client`         | It is the CA Issuer that signs client certificates. It is not self-signed.       |
-| `{KYMA_NAME}-webhook-tls` | Certificate | `{KYMA_NAME}-watcher-client` | Requests a client certificate on KCP, one per runtime.                           |
-| `{KYMA_NAME}-webhook-tls` | Secret      | `{KYMA_NAME}-watcher-client` | Stores a client certificate on KCP, one per runtime. Matches the Certificate name. |
-| `skr-webhook-tls` | Secret      | `runtime-watcher-client`     | The client certificate and CA bundle synced to the runtime.                      |
-| `skr-webhook` | Deployment  | `runtime-watcher`            | The Runtime Watcher deployment in the runtime.                                   |
+All Kubernetes resources KLM manages on the KCP carry a `klm-` prefix. The KCP hosts other components beside KLM, so the prefix identifies KLM ownership and prevents name collisions in shared namespaces such as `istio-system`. The prefix is applied globally by the `namePrefix: klm-` directive in `config/control-plane/kustomization.yaml`; secrets that cert-manager creates outside kustomize's control carry it explicitly in their `secretName` field.
 
-The following diagram shows these Issuers, Certificates, and Secrets under their target names, and how the certificates flow from KCP to the runtime:
+##### KCP-side resources
 
-![Watcher PKI certificate and secret flow under the target names](../assets/adr-009/watcher-pki-names.svg)
+| Current Name | Kind        | Target Name                          | Rationale                                                                                |
+|--------------|-------------|--------------------------------------|------------------------------------------------------------------------------------------|
+| `Watcher` | CustomResourceDefinition | `RuntimeWatcher`              | The mechanism is Runtime Watcher uniformly; the CRD and its instances are renamed accordingly. |
+| `klm-watcher-root` | Issuer      | `klm-runtime-watcher-ca`             | It is the self-signed Issuer that bootstraps the CA certificate.                         |
+| `klm-watcher-serving` | Certificate | `klm-runtime-watcher-ca`             | It is the CA certificate, which also serves as the server certificate.                   |
+| `klm-watcher` | Secret      | `klm-runtime-watcher-ca`             | Stores the CA certificate. Matches the Certificate name.                                 |
+| `klm-istio-gateway` | Secret      | `klm-runtime-watcher-server`         | Stores the server certificate and the CA bundle used by the gateway.                     |
+| `klm-watcher-selfsigned` | Issuer      | `klm-runtime-watcher-client`         | It is the CA Issuer that signs client certificates. It is not self-signed.               |
+| `{KYMA_NAME}-webhook-tls` | Certificate | `{KYMA_NAME}-runtime-watcher-client` | Requests a client certificate on KCP, one per runtime.                                   |
+| `{KYMA_NAME}-webhook-tls` | Secret      | `{KYMA_NAME}-runtime-watcher-client` | Stores a client certificate on KCP, one per runtime. Matches the Certificate name.       |
+
+##### Runtime-side resources
+
+The runtime-side resources are defined in `skr-webhook/resources.yaml`. The `skr-webhook` prefix becomes `runtime-watcher` throughout.
+
+| Current Name | Kind        | Target Name                                          | Rationale                                                                    |
+|--------------|-------------|------------------------------------------------------|------------------------------------------------------------------------------|
+| `skr-webhook-tls` | Secret      | `runtime-watcher-client`                      | The client certificate and CA bundle synced to the runtime.                  |
+| `skr-webhook` | Deployment  | `runtime-watcher`                              | The Runtime Watcher deployment in the runtime.                               |
+| `skr-webhook` | Service     | `runtime-watcher`                              | The Service fronting the Runtime Watcher deployment.                         |
+| `skr-webhook-metrics` | Service | `runtime-watcher-metrics`                   | The metrics-scraping Service for the Runtime Watcher.                        |
+| `skr-webhook-priority` | PriorityClass | `runtime-watcher-priority`             | The PriorityClass reserved for the Runtime Watcher pod.                      |
+| `kyma-project.io--seed-to-watcher` | NetworkPolicy | `kyma-project.io--seed-to-runtime-watcher` | Controls ingress from the VPN shoot to the Runtime Watcher. |
+| `kyma-project.io--watcher-to-apiserver` | NetworkPolicy | `kyma-project.io--runtime-watcher-to-apiserver` | Controls egress from the Runtime Watcher to the API server. |
+| `kyma-project.io--metrics-to-watcher` | NetworkPolicy | `kyma-project.io--metrics-to-runtime-watcher` | Controls ingress to the Runtime Watcher metrics port. |
+| `kyma-project.io--watcher-to-dns` | NetworkPolicy | `kyma-project.io--runtime-watcher-to-dns` | Controls egress from the Runtime Watcher to DNS resolvers. |
+
+The following diagram shows the KCP-side Issuers, Certificates, and Secrets under their target names, and how the certificates flow from KCP to the runtime:
+
+![Runtime Watcher PKI certificate and secret flow under the target names](../assets/adr-009/watcher-pki-names.svg)
 
 #### Command-Line Flags
 
-The `--self-signed-cert-*` flags are renamed to `--watcher-client-cert-*`, because they configure the per-runtime client certificate, not the CA certificate. The `--self-signed-cert-issuer-*` flags name the Issuer that signs those client certificates, so they follow the same `client-cert` prefix.
+The `--self-signed-cert-*` flags are renamed to `--runtime-watcher-client-cert-*`, because they configure the per-runtime client certificate, not the CA certificate. The `--self-signed-cert-issuer-*` flags name the Issuer that signs those client certificates, so they follow the same `client-cert` prefix.
 
 | Current Flag | Target Flag |
 |--------------|-------------|
-| `--self-signed-cert-duration` | `--watcher-client-cert-duration` |
-| `--self-signed-cert-renew-before` | `--watcher-client-cert-renew-before` |
-| `--self-signed-cert-renew-buffer` | `--watcher-client-cert-renew-buffer` |
-| `--self-signed-cert-key-size` | `--watcher-client-cert-key-size` |
-| `--self-signed-cert-issuer-name` | `--watcher-client-cert-issuer-name` |
-| `--self-signed-cert-issuer-namespace` | `--watcher-client-cert-issuer-namespace` |
+| `--self-signed-cert-duration` | `--runtime-watcher-client-cert-duration` |
+| `--self-signed-cert-renew-before` | `--runtime-watcher-client-cert-renew-before` |
+| `--self-signed-cert-renew-buffer` | `--runtime-watcher-client-cert-renew-buffer` |
+| `--self-signed-cert-key-size` | `--runtime-watcher-client-cert-key-size` |
+| `--self-signed-cert-issuer-name` | `--runtime-watcher-client-cert-issuer-name` |
+| `--self-signed-cert-issuer-namespace` | `--runtime-watcher-client-cert-issuer-namespace` |
 
-The duration, renewal, and key size of the CA certificate are not configured by any flag. They are set on the CA Certificate resource in `config/certmanager/certificate_watcher.yaml`. Naming these flags after the CA would imply control that the flags do not have.
+The duration, renewal, and key size of the CA certificate are not configured by any flag. They are set on the CA Certificate resource in `config/[certmanager|gardener-certmanager]/certificate_watcher.yaml`.
 
 #### Go Identifiers
 
+##### Exported identifiers
+
 | Concept | Current | Target |
 |---------|---------|--------|
-| The watcher resource service type | `SkrWebhookManifestManager` | `watcher.Service` |
+| The watcher package | `internal/watcher` | `internal/runtimewatcher` |
+| The watcher resource service type | `SkrWebhookManifestManager` | `runtimewatcher.Service` |
 | The certificate service interface | `SKRCertificateService` | `ClientCertificateService` |
 | Create the client certificate | `CreateSkrCertificate` | `CreateClientCertificate` |
 | Renew the client certificate | `RenewSkrCertificate` | `RenewClientCertificate` |
@@ -90,11 +111,33 @@ The duration, renewal, and key size of the CA certificate are not configured by 
 | Get the client certificate secret | `GetSkrCertificateSecret` | `GetClientCertificateSecret` |
 | The client certificate name helper | `name.SkrCertificate` | `name.ClientCertificate` |
 | The CA bundle timestamp accessor | `getGatewaySecretCaBundleExtendedAtTime` | `getCaAddedToBundleAtTime` |
-| The client cert flag fields | `SelfSignedCert*` | `WatcherClientCert*` |
+| The client cert flag fields | `SelfSignedCert*` | `RuntimeWatcherClientCert*` |
+| The server certificate controller package | `internal/controller/istiogatewaysecret` | `internal/controller/servercertificate` |
+| The server certificate service package | `internal/gatewaysecret` | `internal/servercertificate` |
+| The server certificate controller name | `"istio-controller"` | `"runtime-watcher-server-certificate-controller"` |
+| The server certificate handler method | `Handler.ManageGatewaySecret` | `Handler.ManageServerCertificate` |
+| The server certificate rotation client | `GatewaySecretRotationClient` | `RotationClient` |
+| The server certificate constructor | `NewGatewaySecretHandler` | `NewHandler` |
+| The server certificate metrics interface | `GatewaySecretMetrics` | `Metrics` |
+| The server certificate metrics type | `metrics.GatewaySecret` | `metrics.ServerCertificate` |
+| The server certificate metrics constructor | `metrics.NewGatewaySecret` | `metrics.NewServerCertificate` |
+| The server certificate flag fields | `IstioGatewayServerCert*` / `IstioGatewaySecret*` | `RuntimeWatcherServerCert*` |
 
-The `SkrWebhookManifestManager` type installs and removes the watcher resources on the runtime and orchestrates the client certificate lifecycle. It lives in package `watcher` and is a service in the sense of ADR 005, so it becomes `watcher.Service`. The `Manager` suffix and the `Watcher` prefix are both dropped: ADR 005 sanctions the `Service` suffix and establishes context from the package name, so a `Watcher` prefix would only stutter as `watcher.Watcher...`. The `Reconciler` suffix is reserved for controller-runtime reconcilers, which this type is not.
+The `SkrWebhookManifestManager` type installs and removes the Runtime Watcher resources on the runtime and orchestrates the client certificate lifecycle. It lives in package `watcher` and is a service in the sense of ADR 005, so it becomes `runtimewatcher.Service` after the package is renamed. The `Manager` suffix and the `Watcher` prefix are both dropped: ADR 005 sanctions the `Service` suffix and establishes context from the package name, so a `RuntimeWatcher` prefix would stutter. The `Reconciler` suffix is reserved for controller-runtime reconcilers, which this type is not.
 
 The variable spellings for the `caAddedToBundleAt` annotation converge on one form. The annotation is `caAddedToBundleAt`. Code currently reads it through variables named `caBundleExtendedAt`, `caBundledAt`, and `getGatewaySecretCaBundleExtendedAtTime`. The target uses `caAddedToBundleAt` consistently.
+
+##### Private identifiers (non-exhaustive)
+
+The following private identifiers carry outdated terminology and are renamed alongside the exported ones. This list covers the most important cases; parameter names using `rootSecret` are renamed to `caSecret` at the same call sites.
+
+| Current | Target | Location |
+|---------|--------|----------|
+| `createGatewaySecretFromRootSecret` | `createGatewaySecretFromCASecret` | `gatewaysecret/cabundle/handler.go` |
+| `requiresCertSwitching` | `requiresServerCertSwitching` | `gatewaysecret/cabundle/handler.go` |
+| `getCaBundledAt` | `getCaAddedToBundleAtTime` | `gatewaysecret/cabundle/handler.go` |
+| `isRootSecret` | `isCASecret` | `controller/istiogatewaysecret/setup.go` |
+| `kcpRootSecretName` / `getRootSecret` | `kcpCASecretName` / `getCASecret` | `controller/istiogatewaysecret/setup.go` + `controller.go` |
 
 #### Documentation
 
@@ -102,7 +145,7 @@ Documentation uses the canonical terms. Kubernetes resource names in component t
 
 ### Migration
 
-Kubernetes resource names, secret names, and command-line flags are operational contracts. Live landscapes reference them, and the Watcher PKI performs zero-downtime certificate rotation (see ADR 007), so a name cannot simply change in place without breaking the mTLS trust chain.
+Kubernetes resource names, secret names, and command-line flags are operational contracts. Live landscapes reference them, and the Runtime Watcher PKI performs zero-downtime certificate rotation (see ADR 007), so a name cannot simply change in place without breaking the mTLS trust chain.
 
 Renames of these contracts follow a transition that keeps the old and new names valid at the same time:
 
@@ -114,7 +157,7 @@ Command-line flags keep their old form as a deprecated alias for one release bef
 
 ## Consequences
 
-- The project has one agreed vocabulary for the Watcher mechanism and its PKI, aligned with ADR 007. One concept reads the same in code, configuration, and documentation.
-- Names describe function, so the misleading `selfsigned` Issuer name and the ambiguous `runtime watcher` term are resolved rather than documented around.
-- Renaming operational contracts requires a staged migration per landscape. The effort is one-time and is scoped as follow-up work.
+- The project has one agreed vocabulary for the Runtime Watcher mechanism and its PKI, aligned with ADR 007. One concept reads the same in code, configuration, and documentation.
+- Names describe function, so the misleading `selfsigned` Issuer name and the split `Watcher`/`Runtime Watcher` terminology are resolved rather than documented around.
+- Renaming operational contracts (Kubernetes resources, secrets, flags, the CRD itself) requires a staged migration per landscape. The effort is one-time and is scoped as follow-up work.
 - Until the migration completes, some names still use the old form. The target names recorded here bound that transitional state and serve as the reference for the follow-up implementation.
