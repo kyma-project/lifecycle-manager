@@ -45,7 +45,7 @@ The scheme renames every part that does not already follow the canonical terms. 
 
 #### Kubernetes Resources and Secrets
 
-All Kubernetes resources KLM manages on the KCP carry a `klm-` prefix. The KCP hosts other components beside KLM, so the prefix identifies KLM ownership and prevents name collisions in shared namespaces such as `istio-system`. The prefix is applied globally by the `namePrefix: klm-` directive in `config/control-plane/kustomization.yaml`; secrets that cert-manager creates outside kustomize's control carry it explicitly in their `secretName` field.
+All Kubernetes resources KLM manages on the KCP carry a `klm-` prefix. The KCP hosts other components beside KLM, so the prefix identifies KLM ownership and prevents name collisions in shared namespaces such as `istio-system`. The prefix is applied globally by the `namePrefix: klm-` directive in `config/control-plane/kustomization.yaml`; secrets that cert-manager creates outside kustomize's control carry it explicitly in their `secretName` field. The per-runtime client certificate and secret (`{KYMA_NAME}-runtime-watcher-client`) are an exception: they are named after the Kyma instance rather than KLM, because one exists per runtime and the Kyma name already makes them unique.
 
 ##### KCP-side resources
 
@@ -101,8 +101,8 @@ The duration, renewal, and key size of the CA certificate are not configured by 
 
 | Concept | Current | Target |
 |---------|---------|--------|
-| The watcher package | `internal/watcher` | `internal/runtimewatcher` |
-| The watcher resource service type | `SkrWebhookManifestManager` | `runtimewatcher.Service` |
+| The watcher package | `internal/watcher` | `internal/runtimewatcher/client` |
+| The watcher resource service type | `SkrWebhookManifestManager` | `runtimewatcher/client.Service` |
 | The certificate service interface | `SKRCertificateService` | `ClientCertificateService` |
 | Create the client certificate | `CreateSkrCertificate` | `CreateClientCertificate` |
 | Renew the client certificate | `RenewSkrCertificate` | `RenewClientCertificate` |
@@ -112,8 +112,8 @@ The duration, renewal, and key size of the CA certificate are not configured by 
 | The client certificate name helper | `name.SkrCertificate` | `name.ClientCertificate` |
 | The CA bundle timestamp accessor | `getGatewaySecretCaBundleExtendedAtTime` | `getCaAddedToBundleAtTime` |
 | The client cert flag fields | `SelfSignedCert*` | `RuntimeWatcherClientCert*` |
-| The server certificate controller package | `internal/controller/istiogatewaysecret` | `internal/controller/servercertificate` |
-| The server certificate service package | `internal/gatewaysecret` | `internal/servercertificate` |
+| The server certificate controller package | `internal/controller/istiogatewaysecret` | `internal/runtimewatcher/server` |
+| The server certificate service package | `internal/gatewaysecret` | `internal/runtimewatcher/server` |
 | The server certificate controller name | `"istio-controller"` | `"runtime-watcher-server-certificate-controller"` |
 | The server certificate handler method | `Handler.ManageGatewaySecret` | `Handler.ManageServerCertificate` |
 | The server certificate rotation client | `GatewaySecretRotationClient` | `RotationClient` |
@@ -123,7 +123,7 @@ The duration, renewal, and key size of the CA certificate are not configured by 
 | The server certificate metrics constructor | `metrics.NewGatewaySecret` | `metrics.NewServerCertificate` |
 | The server certificate flag fields | `IstioGatewayServerCert*` / `IstioGatewaySecret*` | `RuntimeWatcherServerCert*` |
 
-The `SkrWebhookManifestManager` type installs and removes the Runtime Watcher resources on the runtime and orchestrates the client certificate lifecycle. It lives in package `watcher` and is a service in the sense of ADR 005, so it becomes `runtimewatcher.Service` after the package is renamed. The `Manager` suffix and the `Watcher` prefix are both dropped: ADR 005 sanctions the `Service` suffix and establishes context from the package name, so a `RuntimeWatcher` prefix would stutter. The `Reconciler` suffix is reserved for controller-runtime reconcilers, which this type is not.
+The `SkrWebhookManifestManager` type installs and removes the Runtime Watcher resources on the runtime and orchestrates the client certificate lifecycle. It lives in package `watcher` and is a service in the sense of ADR 005, so it becomes `runtimewatcher/client.Service` after the package is renamed. The `Manager` suffix and the `Watcher` prefix are both dropped: ADR 005 sanctions the `Service` suffix and establishes context from the package name, so a `RuntimeWatcher` prefix would stutter. The `Reconciler` suffix is reserved for controller-runtime reconcilers, which this type is not.
 
 The variable spellings for the `caAddedToBundleAt` annotation converge on one form. The annotation is `caAddedToBundleAt`. Code currently reads it through variables named `caBundleExtendedAt`, `caBundledAt`, and `getGatewaySecretCaBundleExtendedAtTime`. The target uses `caAddedToBundleAt` consistently.
 
@@ -133,11 +133,11 @@ The following private identifiers carry outdated terminology and are renamed alo
 
 | Current | Target | Location |
 |---------|--------|----------|
-| `createGatewaySecretFromRootSecret` | `createGatewaySecretFromCASecret` | `gatewaysecret/cabundle/handler.go` |
-| `requiresCertSwitching` | `requiresServerCertSwitching` | `gatewaysecret/cabundle/handler.go` |
-| `getCaBundledAt` | `getCaAddedToBundleAtTime` | `gatewaysecret/cabundle/handler.go` |
-| `isRootSecret` | `isCASecret` | `controller/istiogatewaysecret/setup.go` |
-| `kcpRootSecretName` / `getRootSecret` | `kcpCASecretName` / `getCASecret` | `controller/istiogatewaysecret/setup.go` + `controller.go` |
+| `createGatewaySecretFromRootSecret` | `createServerSecretFromCASecret` | `runtimewatcher/server` |
+| `requiresCertSwitching` | `requiresServerCertSwitching` | `runtimewatcher/server` |
+| `getCaBundledAt` | `getCaAddedToBundleAtTime` | `runtimewatcher/server` |
+| `isRootSecret` | `isCASecret` | `runtimewatcher/server` |
+| `kcpRootSecretName` / `getRootSecret` | `kcpCASecretName` / `getCASecret` | `runtimewatcher/server` |
 
 #### Documentation
 
