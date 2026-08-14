@@ -182,12 +182,8 @@ func (r *Runner) updateAvailableManifestSpec(ctx context.Context,
 func NeedToUpdate(manifestInCluster, newManifest *v1beta2.Manifest, moduleInStatus *v1beta2.ModuleStatus,
 	module *modulecommon.Module,
 ) bool {
-	if manifestInCluster == nil {
+	if manifestInCluster == nil || manifestInCluster.IsUnmanaged() {
 		return !(module.IsUnmanaged)
-	}
-
-	if manifestInCluster.IsUnmanaged() {
-		return !module.IsUnmanaged
 	}
 
 	if module.IsUnmanaged {
