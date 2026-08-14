@@ -116,14 +116,14 @@
     <rect width="212" height="64" rx="10" fill="#fdeee6" stroke="#eb6834" stroke-width="2"/>
     <rect x="65.5" y="10" width="81" height="15" rx="7.5" fill="#b0491c"/>
     <text x="106" y="21.5" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="0.04em">CERTIFICATE</text>
-    <text x="106" y="45" font-size="12.5" font-weight="600" fill="#7a3111" text-anchor="middle">{KYMA_NAME}-runtime-watcher-client</text>
+    <text x="106" y="45" font-size="10" font-weight="600" fill="#7a3111" text-anchor="middle">klm-{KYMA_NAME}-runtime-watcher-client</text>
   </g>
   <!-- 7 Client-Secret -->
   <g transform="translate(1168,312)" filter="url(#cardShadow)">
     <rect width="212" height="64" rx="10" fill="#e6f6f0" stroke="#1baf7a" stroke-width="2"/>
     <rect x="81" y="10" width="50" height="15" rx="7.5" fill="#0f6b4b"/>
     <text x="106" y="21.5" font-size="9.5" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="0.04em">SECRET</text>
-    <text x="106" y="45" font-size="12.5" font-weight="600" fill="#0d5540" text-anchor="middle">{KYMA_NAME}-runtime-watcher-client</text>
+    <text x="106" y="45" font-size="10" font-weight="600" fill="#0d5540" text-anchor="middle">klm-{KYMA_NAME}-runtime-watcher-client</text>
   </g>
   <!-- 8 RW-Secret (SKR) -->
   <g transform="translate(1500,156)" filter="url(#cardShadow)">
