@@ -41,11 +41,11 @@ Two rules resolve the central ambiguities:
 
 ### Naming Scheme
 
-The scheme renames every part that does not already follow the canonical terms. It applies to Kubernetes resources, secrets, command-line flags, Go identifiers, and documentation, so that one concept reads the same everywhere.
+The scheme renames every part that does not already follow the canonical terms. It applies to Kubernetes resources, Secrets, command-line flags, Go identifiers, and documentation, so that one concept reads the same everywhere.
 
 #### Kubernetes Resources and Secrets
 
-All Kubernetes resources KLM manages on the KCP carry a `klm-` prefix. The KCP hosts other components beside KLM, so the prefix identifies KLM ownership and prevents name collisions in shared namespaces such as `istio-system`. The prefix is applied globally by the `namePrefix: klm-` directive in `config/control-plane/kustomization.yaml`; secrets that cert-manager creates outside kustomize's control carry it explicitly in their `secretName` field.
+All Kubernetes resources KLM manages on the KCP carry a `klm-` prefix. The KCP hosts other components beside KLM, so the prefix identifies KLM ownership and prevents name collisions in shared namespaces such as `istio-system`. The prefix is applied globally by the `namePrefix: klm-` directive in `config/control-plane/kustomization.yaml`; Secrets that cert-manager creates outside kustomize's control carry it explicitly in their `secretName` field.
 
 ##### KCP-Side Resources
 
@@ -175,5 +175,5 @@ Each renamed contract follows a three-step transition: introduce the new name al
 
 - The project has one agreed vocabulary for the Runtime Watcher mechanism and its PKI, aligned with ADR 007. One concept reads the same in code, configuration, and documentation.
 - Names describe function, so the misleading `selfsigned` Issuer name and the split `Watcher`/`Runtime Watcher` terminology are resolved rather than documented around.
-- Renaming operational contracts (Kubernetes resources, secrets, flags, the CRD itself) requires a staged migration per landscape. The effort is one-time and is scoped as follow-up work.
+- Renaming operational contracts (Kubernetes resources, Secrets, flags, the CRD itself) requires a staged migration per landscape. The effort is one-time and is scoped as follow-up work.
 - Until the migration completes, some names still use the old form. The target names recorded here bound that transitional state and serve as the reference for the follow-up implementation.
