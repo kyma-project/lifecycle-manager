@@ -47,7 +47,7 @@ The scheme renames every part that does not already follow the canonical terms. 
 
 All Kubernetes resources KLM manages on the KCP carry a `klm-` prefix. The KCP hosts other components beside KLM, so the prefix identifies KLM ownership and prevents name collisions in shared namespaces such as `istio-system`. The prefix is applied globally by the `namePrefix: klm-` directive in `config/control-plane/kustomization.yaml`; secrets that cert-manager creates outside kustomize's control carry it explicitly in their `secretName` field.
 
-##### KCP-side resources
+##### KCP-Side Resources
 
 | Current Name | Kind        | Target Name                          | Rationale                                                                                |
 |--------------|-------------|--------------------------------------|------------------------------------------------------------------------------------------|
@@ -63,7 +63,7 @@ All Kubernetes resources KLM manages on the KCP carry a `klm-` prefix. The KCP h
 | `{WATCHER_CR_NAME}` | VirtualService | `{RUNTIME_WATCHER_CR_NAME}`    | One VirtualService per RuntimeWatcher CR; name follows the CR name. Renamed as part of the CRD rename. |
 | `operator.kyma-project.io/watcher-gateway` | Label | `operator.kyma-project.io/runtime-watcher-gateway` | Label selector used to discover the Gateway. |
 
-##### Runtime-side resources
+##### Runtime-Side Resources
 
 The runtime-side resources are defined in `skr-webhook/resources.yaml`. The `skr-webhook` prefix becomes `runtime-watcher` throughout.
 
@@ -113,7 +113,7 @@ The duration, renewal, and key size of the CA certificate are not configured by 
 
 #### Go Identifiers
 
-##### Exported identifiers
+##### Exported Identifiers
 
 | Concept | Current | Target |
 |---------|---------|--------|
@@ -143,7 +143,7 @@ The `SkrWebhookManifestManager` type installs and removes the Runtime Watcher re
 
 The variable spellings for the `caAddedToBundleAt` annotation converge on one form. The annotation is `caAddedToBundleAt`. Code currently reads it through variables named `caBundleExtendedAt`, `caBundledAt`, and `getGatewaySecretCaBundleExtendedAtTime`. The target uses `caAddedToBundleAt` consistently.
 
-##### Private identifiers (non-exhaustive)
+##### Private Identifiers (Non-Exhaustive)
 
 The following private identifiers carry outdated terminology and are renamed alongside the exported ones. This list covers the most important cases; parameter names using `rootSecret` are renamed to `caSecret` at the same call sites.
 
@@ -164,9 +164,9 @@ Documentation uses the canonical terms. Kubernetes resource names in component t
 Go identifiers and documentation carry no external contract and are renamed directly. The following entities are operational contracts — live landscapes reference them — and require a staged migration:
 
 - **`Watcher` CRD and existing CR instances** — renamed to `RuntimeWatcher`; existing instances must be migrated in place or replaced.
-- **cert-manager and GCM resources on KCP** — the CA Issuer, CA Certificate, CA Secret, server Secret, client Issuer, and per-runtime client Certificate and Secret (see KCP-side resources table).
+- **cert-manager and GCM resources in KCP** — the CA Issuer, CA Certificate, CA Secret, server Secret, client Issuer, and per-runtime client Certificate and Secret (see KCP-side resources table).
 - **Istio Gateway and label selector** — `klm-watcher` Gateway and the `operator.kyma-project.io/watcher-gateway` label.
-- **Runtime-side resources on the SKR** — Deployment, Services, PriorityClass, and NetworkPolicies (see runtime-side resources table).
+- **Runtime-side resources in the Kyma runtime** — Deployment, Services, PriorityClass, and NetworkPolicies (see the runtime-side resources table).
 - **CLI flags** — all `--self-signed-cert-*`, `--istio-gateway-*`, `--skr-watcher-*`, `--skr-webhook-*`, and `--watcher-requeue-*` flags (see flags table above).
 
 Each renamed contract follows a three-step transition: introduce the new name alongside the old one, migrate producers and consumers, then remove the old name once no landscape references it. CLI flags keep the old form as a deprecated alias for one release before removal.
