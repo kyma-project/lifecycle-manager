@@ -179,7 +179,7 @@ func TestNeedToUpdate(t *testing.T) {
 			false,
 		},
 		{
-			"When cluster Manifest is unmanaged and module is managed, expect no update",
+			"When cluster Manifest is unmanaged and module is managed, expect update",
 			args{
 				&v1beta2.Manifest{
 					ObjectMeta: apimetav1.ObjectMeta{
@@ -207,7 +207,7 @@ func TestNeedToUpdate(t *testing.T) {
 					IsUnmanaged: false,
 				},
 			},
-			false,
+			true,
 		},
 		{
 			"When cluster Manifest is managed and module is unmanaged, expect update",
