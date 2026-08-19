@@ -159,14 +159,22 @@ func TestGenerateModuleStatusFromError_WhenCalledWithWarningClassError_ReturnsNe
 	tests := []struct {
 		name          string
 		templateError error
+		status        *v1beta2.ModuleStatus
 	}{
 		{
 			name:          "When no templates are found",
 			templateError: common.ErrNoTemplatesInListResult,
+			status:        createStatus(),
+		},
+		{
+			name:          "When no templates are found and status is nil",
+			templateError: common.ErrNoTemplatesInListResult,
+			status:        nil,
 		},
 		{
 			name:          "When a mandatory module is enabled",
 			templateError: templatelookup.ErrMandatoryModuleCannotBeEnabled,
+			status:        createStatus(),
 		},
 	}
 	for _, testCase := range tests {
@@ -174,14 +182,15 @@ func TestGenerateModuleStatusFromError_WhenCalledWithWarningClassError_ReturnsNe
 			expectedModuleName := "some-module"
 			expectedChannel := "some-channel"
 			expectedComponentName := "example.org/some-module/backend"
-			status := createStatus()
 
 			result, err := fromerror.GenerateModuleStatusFromError(testCase.templateError, expectedModuleName,
-				expectedChannel, expectedComponentName, status)
+				expectedChannel, expectedComponentName, testCase.status)
 
 			assert.NotNil(t, result)
 			require.NoError(t, err)
-			assert.NotEqual(t, status.DeepCopy(), result)
+			if testCase.status != nil {
+				assert.NotEqual(t, testCase.status.DeepCopy(), result)
+			}
 
 			// Module info is used for creating a new status
 			assert.Equal(t, expectedModuleName, result.Name)
