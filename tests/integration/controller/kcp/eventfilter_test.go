@@ -78,5 +78,9 @@ var _ = Describe("Kyma is reconciled correctly based on the event filters", Orde
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
+		Eventually(KymaDeleted, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).Should(Succeed())
+		Expect(testSkrContextFactory.StopEnvForKyma(kyma.GetNamespacedName())).To(Succeed())
 	})
 })

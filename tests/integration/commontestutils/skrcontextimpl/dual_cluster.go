@@ -116,6 +116,21 @@ func (f *DualClusterFactory) InvalidateCache(_ types.NamespacedName) {
 	// no-op
 }
 
+// StopEnvForKyma stops and removes the SKR envtest environment that was started for the
+// given Kyma. Call this after the Kyma has been fully deleted to avoid accumulating idle
+// envtest processes over the lifetime of the test suite.
+func (f *DualClusterFactory) StopEnvForKyma(kymaName types.NamespacedName) error {
+	val, loaded := f.SkrEnvs.LoadAndDelete(kymaName.Name)
+	if !loaded {
+		return nil
+	}
+	f.clientCache.Delete(kymaName)
+	if stopper, ok := val.(Stopper); ok {
+		return stopper.Stop()
+	}
+	return nil
+}
+
 func (f *DualClusterFactory) GetSkrEnv() *envtest.Environment {
 	var env *envtest.Environment
 	f.SkrEnvs.Range(func(key, value any) bool {
