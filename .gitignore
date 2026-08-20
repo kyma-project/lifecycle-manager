@@ -98,3 +98,5 @@ bin
 # claude
 .claude/settings.local.json
 **/CLAUDE.local.md
+PROJECT_CONTEXT.md
+tests/e2e/standing_env.mk
