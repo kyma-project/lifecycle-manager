@@ -38,6 +38,16 @@ var _ = Describe("Remote Namespace is correctly labelled", Ordered, func() {
 		Eventually(namespaceHasExpectedLabels, Timeout, Interval).WithContext(ctx).WithArguments(skrClient,
 			RemoteNamespace, expectedLabels).Should(Succeed())
 	})
+
+	AfterAll(func() {
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma).Should(Succeed())
+		Expect(testSkrContextFactory.StopEnvForKyma(kyma.GetNamespacedName())).To(Succeed())
+		Eventually(KymaDeleted, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).Should(Succeed())
+	})
 })
 
 func namespaceHasExpectedLabels(ctx context.Context, clnt client.Client,

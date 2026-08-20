@@ -13,6 +13,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 )
 
 var (
@@ -31,10 +32,11 @@ type ClientCache interface {
 }
 
 type DualClusterFactory struct {
-	clientCache ClientCache
-	scheme      *machineryruntime.Scheme
-	event       event.Event
-	SkrEnvs     sync.Map
+	clientCache  ClientCache
+	scheme       *machineryruntime.Scheme
+	event        event.Event
+	SkrEnvs      sync.Map
+	stoppedKymas sync.Map
 }
 
 func NewDualClusterFactory(scheme *machineryruntime.Scheme,
@@ -50,6 +52,13 @@ func NewDualClusterFactory(scheme *machineryruntime.Scheme,
 }
 
 func (f *DualClusterFactory) Init(_ context.Context, kyma types.NamespacedName) error {
+	// Once StopEnvForKyma has been called for a Kyma, return ErrAccessSecretNotFound
+	// so the controller routes deleting Kymas straight to processDeletion, which skips
+	// all SKR-facing steps when the client is no longer in cache.
+	if _, stopped := f.stoppedKymas.Load(kyma.Name); stopped {
+		return accessmanager.ErrAccessSecretNotFound
+	}
+
 	clnt := f.clientCache.Get(kyma)
 	if clnt != nil {
 		// already initialized
@@ -116,10 +125,13 @@ func (f *DualClusterFactory) InvalidateCache(_ types.NamespacedName) {
 	// no-op
 }
 
-// StopEnvForKyma stops and removes the SKR envtest environment that was started for the
-// given Kyma. Call this after the Kyma has been fully deleted to avoid accumulating idle
-// envtest processes over the lifetime of the test suite.
+// StopEnvForKyma stops and removes the SKR envtest environment for the given Kyma.
+// It marks the Kyma as stopped first so that Init() returns ErrAccessSecretNotFound
+// for any future reconcile, routing deleting Kymas through processDeletion (which
+// skips all SKR steps when the client is absent from cache) so deletion completes quickly.
 func (f *DualClusterFactory) StopEnvForKyma(kymaName types.NamespacedName) error {
+	f.stoppedKymas.Store(kymaName.Name, struct{}{})
+
 	val, loaded := f.SkrEnvs.LoadAndDelete(kymaName.Name)
 	if !loaded {
 		return nil

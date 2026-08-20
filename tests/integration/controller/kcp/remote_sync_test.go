@@ -64,10 +64,10 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
+		Expect(testSkrContextFactory.StopEnvForKyma(kyma.GetNamespacedName())).To(Succeed())
 		Eventually(KymaDeleted, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).Should(Succeed())
-		Expect(testSkrContextFactory.StopEnvForKyma(kyma.GetNamespacedName())).To(Succeed())
 		DeleteModuleTemplates(ctx, kcpClient, kyma)
 	})
 
@@ -384,10 +384,10 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
+		Expect(testSkrContextFactory.StopEnvForKyma(kyma.GetNamespacedName())).To(Succeed())
 		Eventually(KymaDeleted, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).Should(Succeed())
-		Expect(testSkrContextFactory.StopEnvForKyma(kyma.GetNamespacedName())).To(Succeed())
 		DeleteModuleTemplates(ctx, kcpClient, kyma)
 	})
 
