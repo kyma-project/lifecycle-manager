@@ -127,7 +127,7 @@ func TestValidateTemplateMode_ForOldModuleTemplates(t *testing.T) {
 					WithMandatory(true).Build(),
 			},
 			kyma:    builder.NewKymaBuilder().Build(),
-			wantErr: common.ErrNoTemplatesInListResult,
+			wantErr: templatelookup.ErrMandatoryModuleCannotBeEnabled,
 		},
 	}
 	for _, testCase := range tests {
@@ -989,6 +989,42 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 			}
 		})
 	}
+}
+
+func TestTemplateLookup_GetRegularTemplates_WhenEnablingMandatoryModule(t *testing.T) {
+	testModule := testutils.NewTestModule("mandatory-module", v1beta2.DefaultChannel)
+	const moduleVersion = "1.0.0"
+
+	kyma := builder.NewKymaBuilder().WithEnabledModule(testModule).Build()
+
+	givenTemplateList := &v1beta2.ModuleTemplateList{}
+	givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
+		WithName(fmt.Sprintf("%s-%s", testModule.Name, moduleVersion)).
+		WithModuleName(testModule.Name).
+		WithVersion(moduleVersion).
+		Build())
+
+	moduleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
+	moduleReleaseMetas.Items = append(moduleReleaseMetas.Items, *builder.NewModuleReleaseMetaBuilder().
+		WithModuleName(testModule.Name).
+		WithOcmComponentName(testutils.FullOCMName(testModule.Name)).
+		WithMandatory(moduleVersion).
+		Build())
+
+	reader := NewFakeModuleTemplateReader(*givenTemplateList, moduleReleaseMetas)
+	lookup := templatelookup.NewTemplateLookup(
+		reader,
+		provider.NewCachedDescriptorProvider(&componentdescriptor.FakeService{}, descriptorcache.NewDescriptorCache()),
+		moduletemplateinfolookup.NewLookup(reader),
+		nil,
+	)
+
+	got := lookup.GetRegularTemplates(t.Context(), kyma)
+
+	moduleInfo, found := got[testModule.Name]
+	require.True(t, found)
+	require.ErrorIs(t, moduleInfo.Err, templatelookup.ErrMandatoryModuleCannotBeEnabled)
+	assert.Nil(t, moduleInfo.ModuleTemplate)
 }
 
 func TestTemplateNameMatch(t *testing.T) {
