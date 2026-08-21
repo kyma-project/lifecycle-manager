@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -160,7 +161,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
 	if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
-		return r.processDeletion(ctx, kyma)
+		if !useLegacyKymaDeletion() {
+			return r.processDeletion(ctx, kyma)
+		}
+		return r.handleDeletedSkr(ctx, req, kyma)
 	}
 
 	skrContext, err := r.SkrContextFactory.Get(kyma.GetNamespacedName())
@@ -170,7 +174,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, r.updateStatusWithError(ctx, kyma, err)
 	}
 
-	if !kyma.DeletionTimestamp.IsZero() {
+	if !kyma.DeletionTimestamp.IsZero() && !useLegacyKymaDeletion() {
 		return r.processDeletion(ctx, kyma)
 	}
 
@@ -678,6 +682,34 @@ func (r *Reconciler) deleteOrphanedCertificate(ctx context.Context, kymaName str
 		}
 	}
 	return nil
+}
+
+func (r *Reconciler) handleDeletedSkr(ctx context.Context, req ctrl.Request, kyma *v1beta2.Kyma) (ctrl.Result, error) {
+	logf.FromContext(ctx).Info("access secret not found for kyma, assuming already deleted cluster")
+	if err := r.cleanupManifestCRs(ctx, kyma); err != nil {
+		r.Metrics.RecordRequeueReason(metrics.CleanupManifestCrs, queue.UnexpectedRequeue)
+		return ctrl.Result{}, err
+	}
+	r.cleanupMetrics(kyma.Name)
+	r.removeAllFinalizers(kyma)
+
+	if err := r.updateKyma(ctx, kyma); err != nil {
+		r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, queue.UnexpectedRequeue)
+		return ctrl.Result{}, err
+	}
+	r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, queue.IntendedRequeue)
+	return ctrl.Result{RequeueAfter: r.RateLimiter.When(req)}, nil
+}
+
+func (r *Reconciler) removeAllFinalizers(kyma *v1beta2.Kyma) {
+	for _, finalizer := range kyma.Finalizers {
+		controllerutil.RemoveFinalizer(kyma, finalizer)
+	}
+}
+
+func useLegacyKymaDeletion() bool {
+	envValue, isDefined := os.LookupEnv("ENABLE_LEGACY_KYMA_DELETION")
+	return isDefined && envValue == "true"
 }
 
 func setModuleStatusesToError(kyma *v1beta2.Kyma, message string) {
