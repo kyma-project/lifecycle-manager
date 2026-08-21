@@ -272,6 +272,23 @@ func (r *Reconciler) processDeletion(ctx context.Context, kyma *v1beta2.Kyma) (c
 	return ctrl.Result{}, res.Err
 }
 
+func (r *Reconciler) handleDeletedSkr(ctx context.Context, req ctrl.Request, kyma *v1beta2.Kyma) (ctrl.Result, error) {
+	logf.FromContext(ctx).Info("access secret not found for kyma, assuming already deleted cluster")
+	if err := r.cleanupManifestCRs(ctx, kyma); err != nil {
+		r.Metrics.RecordRequeueReason(metrics.CleanupManifestCrs, queue.UnexpectedRequeue)
+		return ctrl.Result{}, err
+	}
+	r.cleanupMetrics(kyma.Name)
+	r.removeAllFinalizers(kyma)
+
+	if err := r.updateKyma(ctx, kyma); err != nil {
+		r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, queue.UnexpectedRequeue)
+		return ctrl.Result{}, err
+	}
+	r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, queue.IntendedRequeue)
+	return ctrl.Result{RequeueAfter: r.RateLimiter.When(req)}, nil
+}
+
 func (r *Reconciler) reconcile(ctx context.Context, req ctrl.Request, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != shared.StateDeleting {
 		if err := r.deleteRemoteKyma(ctx, kyma); err != nil {
@@ -610,6 +627,12 @@ func (r *Reconciler) relatedManifestCRsAreDeleted(manifests []v1beta2.Manifest) 
 	return len(manifests) == 0
 }
 
+func (r *Reconciler) removeAllFinalizers(kyma *v1beta2.Kyma) {
+	for _, finalizer := range kyma.Finalizers {
+		controllerutil.RemoveFinalizer(kyma, finalizer)
+	}
+}
+
 func (r *Reconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
 	if err := r.Update(ctx, kyma); err != nil {
 		err = fmt.Errorf("error while updating kyma during deletion: %w", err)
@@ -682,29 +705,6 @@ func (r *Reconciler) deleteOrphanedCertificate(ctx context.Context, kymaName str
 		}
 	}
 	return nil
-}
-
-func (r *Reconciler) handleDeletedSkr(ctx context.Context, req ctrl.Request, kyma *v1beta2.Kyma) (ctrl.Result, error) {
-	logf.FromContext(ctx).Info("access secret not found for kyma, assuming already deleted cluster")
-	if err := r.cleanupManifestCRs(ctx, kyma); err != nil {
-		r.Metrics.RecordRequeueReason(metrics.CleanupManifestCrs, queue.UnexpectedRequeue)
-		return ctrl.Result{}, err
-	}
-	r.cleanupMetrics(kyma.Name)
-	r.removeAllFinalizers(kyma)
-
-	if err := r.updateKyma(ctx, kyma); err != nil {
-		r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, queue.UnexpectedRequeue)
-		return ctrl.Result{}, err
-	}
-	r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, queue.IntendedRequeue)
-	return ctrl.Result{RequeueAfter: r.RateLimiter.When(req)}, nil
-}
-
-func (r *Reconciler) removeAllFinalizers(kyma *v1beta2.Kyma) {
-	for _, finalizer := range kyma.Finalizers {
-		controllerutil.RemoveFinalizer(kyma, finalizer)
-	}
 }
 
 func useLegacyKymaDeletion() bool {
