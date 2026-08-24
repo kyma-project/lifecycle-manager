@@ -14,14 +14,14 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	restrictedmodulesvc "github.com/kyma-project/lifecycle-manager/internal/service/restrictedmodule"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 )
 
 var (
-	ErrTemplateNotAllowed       = errors.New("module template not allowed")
-	ErrTemplateUpdateNotAllowed = errors.New("module template update not allowed")
-	ErrNoModuleReleaseMeta      = errors.New("no ModuleReleaseMeta found")
-	ErrNoIdentity               = errors.New("component identity is nil")
+	ErrTemplateNotAllowed             = errors.New("module template not allowed")
+	ErrTemplateUpdateNotAllowed       = errors.New("module template update not allowed")
+	ErrNoModuleReleaseMeta            = errors.New("no ModuleReleaseMeta found")
+	ErrNoIdentity                     = errors.New("component identity is nil")
+	ErrMandatoryModuleCannotBeEnabled = errors.New("mandatory module cannot be enabled")
 )
 
 type ModuleTemplateInfo struct {
@@ -99,6 +99,13 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 			continue
 		}
 
+		if moduleInfo.Enabled && moduleReleaseMeta.IsMandatory() {
+			templates[moduleInfo.Name] = &ModuleTemplateInfo{
+				Err: fmt.Errorf("%w: %q", ErrMandatoryModuleCannotBeEnabled, moduleInfo.Name),
+			}
+			continue
+		}
+
 		templateInfo := t.moduleTemplateInfoLookupStrategy.Lookup(ctx,
 			&moduleInfo,
 			kyma,
@@ -157,8 +164,7 @@ func (t *TemplateLookup) validateTemplateMode(template ModuleTemplateInfo,
 		return template
 	}
 	if template.Spec.Mandatory {
-		template.Err = fmt.Errorf("%w: for module %s in channel %s ",
-			common.ErrNoTemplatesInListResult, template.Name, template.DesiredChannel)
+		template.Err = fmt.Errorf("%w: %q", ErrMandatoryModuleCannotBeEnabled, template.Name)
 		return template
 	}
 	if mrm != nil {

@@ -19,34 +19,32 @@ func GenerateModuleStatusFromError(err error, moduleName, desiredChannel, ocmCom
 		return nil, errFunctionCalledWitNilError
 	}
 
-	if status == nil {
-		return newDefaultErrorStatus(moduleName, desiredChannel, ocmComponentName, err), nil
-	}
+	if status != nil {
+		if errorIsWaitingForMaintenanceWindow(err) {
+			newModuleStatus := status.DeepCopy()
+			newModuleStatus.Message = err.Error()
+			newModuleStatus.Maintenance = true
+			return newModuleStatus, nil
+		}
 
-	if errorIsWaitingForMaintenanceWindow(err) {
-		newModuleStatus := status.DeepCopy()
-		newModuleStatus.Message = err.Error()
-		newModuleStatus.Maintenance = true
-		return newModuleStatus, nil
-	}
+		if errorIsMaintenanceWindowUnknown(err) {
+			newModuleStatus := status.DeepCopy()
+			newModuleStatus.Message = err.Error()
+			newModuleStatus.State = shared.StateError
+			return newModuleStatus, nil
+		}
 
-	if errorIsMaintenanceWindowUnknown(err) {
-		newModuleStatus := status.DeepCopy()
-		newModuleStatus.Message = err.Error()
-		newModuleStatus.State = shared.StateError
-		return newModuleStatus, nil
-	}
-
-	if errorIsForbiddenTemplateUpdate(err) {
-		newModuleStatus := status.DeepCopy()
-		newModuleStatus.Message = err.Error()
-		newModuleStatus.State = shared.StateWarning
-		return newModuleStatus, nil
+		if errorIsForbiddenTemplateUpdate(err) {
+			newModuleStatus := status.DeepCopy()
+			newModuleStatus.Message = err.Error()
+			newModuleStatus.State = shared.StateWarning
+			return newModuleStatus, nil
+		}
 	}
 
 	newStatus := newDefaultErrorStatus(moduleName, desiredChannel, ocmComponentName, err)
 
-	if errorIsTemplateNotFound(err) {
+	if errorIsTemplateNotFound(err) || errorIsMandatoryModuleEnabled(err) {
 		newStatus.State = shared.StateWarning
 	}
 
@@ -68,6 +66,10 @@ func errorIsForbiddenTemplateUpdate(err error) bool {
 
 func errorIsTemplateNotFound(err error) bool {
 	return errors.Is(err, common.ErrNoTemplatesInListResult)
+}
+
+func errorIsMandatoryModuleEnabled(err error) bool {
+	return errors.Is(err, templatelookup.ErrMandatoryModuleCannotBeEnabled)
 }
 
 func newDefaultErrorStatus(moduleName, desiredChannel, componentName string, err error) *v1beta2.ModuleStatus {
