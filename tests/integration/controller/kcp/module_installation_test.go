@@ -30,6 +30,21 @@ var _ = Describe("Module installation", func() {
 			kymaName := "installation-test-kyma-" + random.Name()
 			moduleName := "installation-test-module-" + random.Name()
 
+			kymaNN := types.NamespacedName{Name: kymaName, Namespace: ControlPlaneNamespace}
+			DeferCleanup(func() {
+				kymaToDelete := builder.NewKymaBuilder().
+					WithName(kymaName).
+					WithNamespace(ControlPlaneNamespace).
+					Build()
+				Eventually(DeleteCR, Timeout, Interval).
+					WithContext(ctx).
+					WithArguments(kcpClient, kymaToDelete).Should(Succeed())
+				Expect(testSkrContextFactory.StopEnvForKyma(kymaNN)).To(Succeed())
+				Eventually(KymaDeleted, Timeout, Interval).
+					WithContext(ctx).
+					WithArguments(kymaName, ControlPlaneNamespace, kcpClient).Should(Succeed())
+			})
+
 			Eventually(configureKCPKyma, Timeout, Interval).WithArguments(kymaName, kymaBeta,
 				kymaInternal).Should(Succeed())
 			Eventually(configureKCPModuleTemplates, Timeout, Interval).WithArguments(moduleName, moduleBeta,
