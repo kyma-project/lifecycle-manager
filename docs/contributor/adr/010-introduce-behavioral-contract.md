@@ -18,7 +18,9 @@ This ADR is an attempt to address this situation by introducing a systematic way
 
 ### Solution
 
-Introduce and maintain a behavioral contract for the entire system (Lifecycle-Manager + Runtime Watcher).
+Introduce and maintain a behavioral contract. To limit the scope, this ADR only addresses the contract for the `Module-CR` handling.
+If successful, the same approach can be applied to other areas of the system.
+
 The contract is intended to be a first-class artifact of our architecture documentation: It is the authoritative source of truth for system behavior and takes precedence over the source-code implementation.
 
 Every important behavior-affecting implementation decision should be captured by the contract. The implementation should not introduce observable behavior that is not captured by the contract.
@@ -59,84 +61,27 @@ ADRs are great for capturing decisions: They provide room for context, rationale
 But they are bulky and verbose at the same time.
 Most contract items should be backed up by existing ADRs but the ADRs themselves are not good tool for working on the contract - they are the tool for capturing decisions.
 
-### Where to put the contract?
-
-It should be a repository under our control. 
-I don't see any problem with storing it in the `Lifecycle-Manager` repository.
-
-Now, should the contract be stored in a single well-known location, or should it be defined at the source-code level, closer to the implementation?
-Having the contract closer to the implementation looks like a good idea at first glance.
-After all, the contract influences the implementation, so maybe these two things should be located close to each other?
-
-Well, there is a problem with that approach. Once the contract is defined, implementation becomes a derivative of the contract.
-More than that, the implementation may be changed (and will change) at any time. We're free to refactor, remove, split or merge packages and so on.
-We may use AI Agents to very quickly refactor large parts of the project.
-What happens to the contract documents stored in these directories being moved around? We'll have to constantly decide where to put them, and it will create a lot of friction.
-In addition, the location of the contract documents will constantly change. This "uncertainity of location" is not providing any advantage in my opinion.
-We should observe that the contract is superior to the implementation. If so, the contract's location shouldn't be affected by changes to the implementation that is derived from it.
-Thus I conclude that the contract should be stored in a single well-known location that is not affected by changes in the source code structure.
-
-
 ## Decision
 
-### Format
-The contract is written in Markdown format. It has four sections:
+### Scope
 
-- **Scope** - defines the scope of the contract. It describes what is covered by the document and what is not.
-- **Decisions** - defines the contract items that are in effect
-- **Pending Decisions** - defines the contract items that are not yet in effect. These may be contract gaps or things that are still under discussion, but are important enough to be visible.
-- **Decisions References** - list of references to existing documents that provide context for the contract items. These may be ADRs, GitHub issues, end-user documentation, and so on.
+The scope of this ADR is limited to the contract for the `Module-CR` handling. This contract is scoped to the - currently non-existent - "module-cr-service" that will be responsible for implementing it.
 
-The `Decisions` and `Pending Decisions` have a very simple table-based structure. Each contract item is a single row in the table. The columns of the table are:
-
-- **ID** - A unique identifier of the contract item, useful when referencing the decision from other decisions or the source code. A `R010` is an example ID.
-- **Description** - A short description of the contract item.
-- **References** - A list of references to existing documents that provide context for the contract item. These may be ADRs, GitHub issues, end-user documentation, and so on. To keep the contract item minimalistic, the full reference link is provided in a separate section of the document. A `DL01` is an example document reference.
-- **Comments** - Any additional comments that may be useful for understanding the contract item. Usually the comments should not be required as all the context should be provided by the references (ADRs, issues etc).
-
-An example document is shown below (the actual content is not important, it is just an example of the structure):
-
-```
-## Scope
-
-This document describes the contract for the handling the `Default-Module-CR` and `Module-CRD`.
-
-## Decisions
-
-| ID | Description | References | Comments |
-| ------- | ----------------| ------------------- | ----- |
-| R010 | When CRP is `CreateAndDelete`, `LM` deletes `Default-Module-CR` (if exists) upon module deprovisioning | DL02 ||
-| R020 | `Default-Module-CR` instance is not actively reconciled | DL02, DL03 | \[DL02\]: "KLM does only Create and Delete it, but NOT reconcile the ModuleCR" |
-| R030 | `LM` pauses resource deletion during module deprovisioning until all `Module-CRs` are deleted in the SKR | DL02 ||
-| R040 | `Default-Module-CR` instance is created in the SKR **only** if the Module's `CustomResourcePolicy` is `CreateAndDelete` | DL03 ||
-| R050 | `Default-Module-CR` instance is created in the SKR only once | DL03 ||
-| R060 | `Default-Module-CR` instance is deleted in the SKR **only** if the Module's `CustomResourcePolicy` is `CreateAndDelete` | DL03 ||
-
-
-## Pending decisions
-
-| ID | Description | References | Comments |
-| ------- | ----------------| ------------------- | ----- |
-| PD005 | `Default-Module-CR` instance may be cluster-scoped | GAP | No ADR/Issue provides justification of this? |
-| PD010 | For non-mandatory modules `LM` rejects module version without `Default-Module-CR` definition | DL01 | The rule is redundant by design, submission pipeline should guarantee that. |
-| PD020 | `LM` accepts modules without `Module-CRD` defined in module's resources || We can treat this as an error and put the Manifest into error state, but perhaps Module Team has some other means to install the `Module-CRD` in the SKR? |
-| PD030 | `LM` Ignores `Default-Module-CR` for Mandatory Modules | DL01 | According to DL01, Mandatory Modules should not have `Default-Module-CR`. Ignoring this misconfiguration seems to be best option |
-| PD040 | When module is removed from Kyma module's list and no `Default-Module-CR` is found in the SKR, `LM` just waits until all `Module-CRs` are deleted|||
-| PD050 | `LM` identifies `Default-Module-CR` by inspecting OCM Artifact corresponding to the module's version deployed in the SKR || Module Team may change name/namespace of the module between versions. KLM still should be able to find the `Default-Module-CR` for the currently deployed version |
-
-
-### Decisions references
-DL01: https://github.com/kyma-project/community/issues/982
-DLO2: https://github.com/kyma-project/community/issues/972
-DL03: https://github.com/kyma-project/lifecycle-manager/issues/3007
-
-```
 
 ### Location
 
-The contract documents are stored in a `Lifecycle-Manager` repository under the `docs/internal/contract` directory.
-The contract consists of multiple documents, each corresponding to a specific scope of the contract.
-The name of each document should correspond to it's scope. For example, the contract for the `Default-Module-CR` and `Module-CRD` is stored in the `docs/internal/contract/module-cr.md` file.
+By Team's agreement, the contract documents will be stored in the service layer directories, close to the services they describe.
+For example, the contract for the `Module-CR` handling should be stored in the `Lifecycle-Manager` repository under the `internal/service/modulecr` directory (or similar).
+
+
+### Format
+
+By Team's agreement, the contract document format is not specified - on purpose. It's format should be decided on a case-by-case basis.
+Once few contracts are defined, we can decide on a common format for all contracts, if necessary.
+The only specific requirement is that the contract for `Module-CR` handling should initially also describe **gaps** in the current implementation / architecture.
+The gaps are rules (contract items) that are required by stakeholders or logically implied by other rules, but are not yet properly implemented, including cases for which the current implementation yields and unspecified behavior.
+Having all gaps documented close to the contract will help us to better understand the overall "health" of the contract.
+It is expected that over time all the gaps will be resolved and so the final contract will not contain any.
 
 
 ## Consequence
