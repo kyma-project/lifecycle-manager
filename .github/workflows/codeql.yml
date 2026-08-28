@@ -24,7 +24,7 @@ on:
       - "renovate.json"
       - "notable-changes/**"
   schedule:
-    - cron: '37 2 * * 6'
+    - cron: '17 3 * * 1'
 
 permissions: read-all
 
