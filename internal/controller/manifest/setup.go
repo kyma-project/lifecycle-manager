@@ -41,7 +41,7 @@ func SetupWithManager(mgr manager.Manager,
 	managedLabelRemovalService ManagedByLabelRemoval,
 ) error {
 	if err := ctrl.NewControllerManagedBy(mgr).
-		For(&v1beta2.Manifest{}).
+		For(&v1beta2.Manifest{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Named(controllerName).
 		Watches(&apicorev1.Secret{}, handler.Funcs{},
 			builder.WithPredicates(predicate.Or(predicate.GenerationChangedPredicate{},
