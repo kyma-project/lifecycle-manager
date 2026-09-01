@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"fmt"
+	"reflect"
 
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
@@ -47,7 +48,8 @@ func SetupWithManager(mgr manager.Manager,
 				generationChanged := e.ObjectNew.GetGeneration() != e.ObjectOld.GetGeneration()
 				deletionRequested := e.ObjectOld.GetDeletionTimestamp().IsZero() &&
 					!e.ObjectNew.GetDeletionTimestamp().IsZero()
-				return generationChanged || deletionRequested
+				labelChanged := !reflect.DeepEqual(e.ObjectOld.GetLabels(), e.ObjectNew.GetLabels())
+				return generationChanged || deletionRequested || labelChanged
 			},
 		})).
 		Named(controllerName).
