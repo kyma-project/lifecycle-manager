@@ -1,12 +1,4 @@
-<!--
-{
-  "metadata": {
-    "requirement": "MANDATORY",
-    "type": "INTERNAL",
-    "category": "MIGRATION"
-  }
-}
--->
+<!--{"metadata":{"requirement":"MANDATORY","type":"INTERNAL","category":"MIGRATION"}}-->
 
 # KLM: Remove the Purge Finalizer from All Kyma Custom Resources
 
