@@ -27,7 +27,7 @@ When introducing a KLM change that requires operator action:
 
 3. Fill in the JSON metadata as one line at the top of the file:
 
-   ```json
+   ```
    <!--{"metadata":{"requirement":"MANDATORY","type":"EXTERNAL","category":"CONFIGURATION"}}-->
    ```
 
