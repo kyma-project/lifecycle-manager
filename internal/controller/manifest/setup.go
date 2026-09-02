@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"fmt"
+	"reflect"
 
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
@@ -9,6 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -41,7 +43,15 @@ func SetupWithManager(mgr manager.Manager,
 	managedLabelRemovalService ManagedByLabelRemoval,
 ) error {
 	if err := ctrl.NewControllerManagedBy(mgr).
-		For(&v1beta2.Manifest{}).
+		For(&v1beta2.Manifest{}, builder.WithPredicates(predicate.Funcs{
+			UpdateFunc: func(e event.UpdateEvent) bool {
+				generationChanged := e.ObjectNew.GetGeneration() != e.ObjectOld.GetGeneration()
+				deletionRequested := e.ObjectOld.GetDeletionTimestamp().IsZero() &&
+					!e.ObjectNew.GetDeletionTimestamp().IsZero()
+				labelChanged := !reflect.DeepEqual(e.ObjectOld.GetLabels(), e.ObjectNew.GetLabels())
+				return generationChanged || deletionRequested || labelChanged
+			},
+		})).
 		Named(controllerName).
 		Watches(&apicorev1.Secret{}, handler.Funcs{},
 			builder.WithPredicates(predicate.Or(predicate.GenerationChangedPredicate{},
