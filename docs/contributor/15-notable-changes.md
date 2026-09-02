@@ -25,16 +25,10 @@ When introducing a KLM change that requires operator action:
 
 2. In that folder, create a `notable-change.md` file using the [Notable Change Template](./assets/notable-change-template.md).
 
-3. Fill in the JSON metadata block at the top of the file:
+3. Fill in the JSON metadata as one line at the top of the file:
 
    ```json
-   {
-     "metadata": {
-       "requirement": "RECOMMENDED",
-       "type": "INTERNAL",
-       "category": "CONFIGURATION"
-     }
-   }
+   <!--{"metadata":{"requirement":"MANDATORY","type":"EXTERNAL","category":"CONFIGURATION"}}-->
    ```
 
    Valid values:
