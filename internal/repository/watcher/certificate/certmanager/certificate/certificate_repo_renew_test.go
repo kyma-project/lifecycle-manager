@@ -171,7 +171,7 @@ func (s *statusWriterStub) Update(_ context.Context, obj client.Object, _ ...cli
 		return *s.updateErr
 	}
 
-	*s.receivedObj = *(obj.(*certmanagerv1.Certificate))
+	*s.receivedObj = *obj.(*certmanagerv1.Certificate)
 
 	return nil
 }

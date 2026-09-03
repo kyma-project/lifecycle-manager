@@ -98,7 +98,7 @@ func (c *clientStub) Get(_ context.Context, key client.ObjectKey, obj client.Obj
 		return c.getErr
 	}
 
-	*(obj.(*gcertv1alpha1.Certificate)) = gcertv1alpha1.Certificate{
+	*obj.(*gcertv1alpha1.Certificate) = gcertv1alpha1.Certificate{
 		Spec: gcertv1alpha1.CertificateSpec{
 			EnsureRenewedAfter: &apimetav1.Time{Time: time.Now()},
 		},
@@ -109,7 +109,7 @@ func (c *clientStub) Get(_ context.Context, key client.ObjectKey, obj client.Obj
 
 func (c *clientStub) Update(_ context.Context, obj client.Object, _ ...client.UpdateOption) error {
 	c.updateCalls++
-	c.updateCallArg = *(obj.(*gcertv1alpha1.Certificate))
+	c.updateCallArg = *obj.(*gcertv1alpha1.Certificate)
 	if c.updateErr != nil {
 		return c.updateErr
 	}
