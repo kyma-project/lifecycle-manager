@@ -57,7 +57,7 @@ func (m *ModuleStatusGenerator) GenerateModuleStatus(module *modulecommon.Module
 	templateAPIVersion, templateKind := module.TemplateInfo.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	moduleStatus := &v1beta2.ModuleStatus{
 		Name:             module.ModuleName,
-		FQDN:             module.OCMComponentName, // Set for backwards compatibility
+		FQDN:             module.OCMComponentName, //nolint:staticcheck // FQDN is deprecated
 		OCMComponentName: module.OCMComponentName,
 		State:            manifest.Status.State,
 		Channel:          module.TemplateInfo.DesiredChannel,

@@ -257,7 +257,7 @@ func createStatus() *v1beta2.ModuleStatus {
 	return &v1beta2.ModuleStatus{
 		Name:             "test-module",
 		Channel:          "test-channel",
-		FQDN:             "example.org/default-module/backend", // Ensure backward compatibility
+		FQDN:             "example.org/default-module/backend", //nolint:staticcheck // FQDN is deprecated
 		OCMComponentName: "example.org/default-module/backend",
 		Version:          "test-version",
 		Message:          "test-message",
