@@ -22,7 +22,8 @@ func TestRepository_DropAllFinalizers(t *testing.T) {
 	testKymaName := random.Name()
 
 	t.Run("successfully drops Kyma finalizer", func(t *testing.T) {
-		finalizers := []string{random.Name(), random.Name()}
+		finalizers := make([]string, 0, 3)
+		finalizers = append(finalizers, random.Name(), random.Name())
 		stub := &clientStub{
 			kyma: &v1beta2.Kyma{
 				ObjectMeta: apimetav1.ObjectMeta{
@@ -138,7 +139,8 @@ func TestRepository_DropAllFinalizers(t *testing.T) {
 	})
 
 	t.Run("returns error when patch fails", func(t *testing.T) {
-		finalizers := []string{random.Name(), random.Name()}
+		finalizers := make([]string, 0, 3)
+		finalizers = append(finalizers, random.Name(), random.Name())
 		stub := &clientStub{
 			kyma: &v1beta2.Kyma{
 				ObjectMeta: apimetav1.ObjectMeta{
@@ -159,7 +161,8 @@ func TestRepository_DropAllFinalizers(t *testing.T) {
 	})
 
 	t.Run("ignores not found error on patch", func(t *testing.T) {
-		finalizers := []string{random.Name(), random.Name()}
+		finalizers := make([]string, 0, 3)
+		finalizers = append(finalizers, random.Name(), random.Name())
 		stub := &clientStub{
 			kyma: &v1beta2.Kyma{
 				ObjectMeta: apimetav1.ObjectMeta{
