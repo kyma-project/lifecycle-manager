@@ -23,7 +23,7 @@ func (d *DiffCalc[E]) NotExistingIn(second []E) []*E {
 	// Calculate diff
 	for i := range d.First {
 		if _, isInSecond := presentInSecond[d.Identity(d.First[i])]; !isInSecond {
-			onlyInFirst = append(onlyInFirst, &(d.First[i]))
+			onlyInFirst = append(onlyInFirst, &d.First[i])
 		}
 	}
 	return onlyInFirst

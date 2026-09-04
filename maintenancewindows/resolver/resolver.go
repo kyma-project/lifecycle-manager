@@ -53,6 +53,7 @@ func GetMaintenancePolicyPool() (map[string]*[]byte, error) {
 			continue
 		}
 
+		//nolint:gosec // path comes from a trusted env var; name is an os.ReadDir entry filtered to .json files
 		data, err := os.ReadFile(filepath.Join(path, name))
 		if err != nil {
 			return nil, fmt.Errorf("error while reading the file %s: %w", name, err)

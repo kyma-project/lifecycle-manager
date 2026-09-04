@@ -64,7 +64,7 @@ func Test_WithMWDecorator_Lookup_ReturnsModuleTemplateInfo_WhenNoMWRequired(t *t
 		DesiredChannel: "test",
 		ModuleTemplate: &v1beta2.ModuleTemplate{
 			Spec: v1beta2.ModuleTemplateSpec{
-				Channel: "test",
+				Channel: "test", //nolint:staticcheck // Channel is deprecated.
 			},
 		},
 	}
@@ -94,7 +94,7 @@ func Test_WithMWDecorator_Lookup_ReturnsError_WhenIsActiveReturnsError(t *testin
 		moduleTemplateInfo: templatelookup.ModuleTemplateInfo{
 			ModuleTemplate: &v1beta2.ModuleTemplate{
 				Spec: v1beta2.ModuleTemplateSpec{
-					Channel: "test",
+					Channel: "test", //nolint:staticcheck // Channel is deprecated.
 				},
 			},
 		},
@@ -123,7 +123,7 @@ func Test_WithMWDecorator_Lookup_ReturnsError_WhenMWIsRequiredAndNotActive(t *te
 		moduleTemplateInfo: templatelookup.ModuleTemplateInfo{
 			ModuleTemplate: &v1beta2.ModuleTemplate{
 				Spec: v1beta2.ModuleTemplateSpec{
-					Channel: "test",
+					Channel: "test", //nolint:staticcheck // Channel is deprecated.
 				},
 			},
 		},
@@ -151,7 +151,7 @@ func Test_WithMWDecorator_Lookup_ReturnsModuleTemplateInfo_WhenMWIsRequiredAndAc
 		DesiredChannel: "test",
 		ModuleTemplate: &v1beta2.ModuleTemplate{
 			Spec: v1beta2.ModuleTemplateSpec{
-				Channel: "test",
+				Channel: "test", //nolint:staticcheck // Channel is deprecated.
 			},
 		},
 	}

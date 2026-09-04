@@ -169,6 +169,7 @@ func getKubeConfigs() (*[]byte, *[]byte, error) {
 	if controlPlaneConfigFile == "" {
 		return nil, nil, fmt.Errorf("%w: %s", errEmptyEnvVar, kcpConfigEnvVar)
 	}
+	//nolint:gosec // path comes from a trusted env var, not user input
 	controlPlaneConfig, err := os.ReadFile(controlPlaneConfigFile)
 	if err != nil {
 		return nil, nil, err
@@ -178,6 +179,7 @@ func getKubeConfigs() (*[]byte, *[]byte, error) {
 	if runtimeConfigFile == "" {
 		return nil, nil, fmt.Errorf("%w: %s", errEmptyEnvVar, skrConfigEnvVar)
 	}
+	//nolint:gosec // path comes from a trusted env var, not user input
 	runtimeConfig, err := os.ReadFile(runtimeConfigFile)
 	if err != nil {
 		return nil, nil, err

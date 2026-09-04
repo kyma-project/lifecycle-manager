@@ -59,7 +59,7 @@ func (m *StatusHandler) UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.
 		if err != nil {
 			newModuleStatus = &v1beta2.ModuleStatus{
 				Name:             module.ModuleName,
-				FQDN:             module.OCMComponentName, // Set for backward compatibility
+				FQDN:             module.OCMComponentName, //nolint:staticcheck // FQDN is deprecated.
 				OCMComponentName: module.OCMComponentName,
 				State:            shared.StateError,
 				Message:          err.Error(),
