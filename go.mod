@@ -10,50 +10,40 @@ replace (
 )
 
 require (
-	github.com/kyma-project/lifecycle-manager/api v1.0.0
-	github.com/kyma-project/lifecycle-manager/maintenancewindows v1.0.0
-	github.com/kyma-project/runtime-watcher/listener v1.4.3
-	github.com/kyma-project/template-operator/api v1.0.0
-)
-
-require (
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/cert-manager/cert-manager v1.21.1
+	github.com/distribution/reference v0.6.0
+	github.com/gardener/cert-management/pkg/apis v0.27.0
+	github.com/go-co-op/gocron/v2 v2.22.0
 	github.com/go-logr/logr v1.4.4
 	github.com/go-logr/zapr v1.3.0
 	github.com/google/go-containerregistry v0.21.9
 	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20231202142526-55ffb0092afd
 	github.com/jellydator/ttlcache/v3 v3.4.1
+	github.com/kyma-project/lifecycle-manager/api v1.0.0
+	github.com/kyma-project/lifecycle-manager/maintenancewindows v1.0.0
+	github.com/kyma-project/runtime-watcher/listener v1.4.3
+	github.com/kyma-project/template-operator/api v1.0.0
 	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.42.1
 	github.com/prometheus/client_golang v1.24.1
+	github.com/prometheus/client_model v0.6.2
 	github.com/stretchr/testify v1.12.0
 	go.uber.org/zap v1.28.0
 	golang.org/x/sync v0.22.0
 	golang.org/x/time v0.15.0
-	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3 // indirect
-	ocm.software/ocm v0.48.0
-	sigs.k8s.io/controller-runtime v0.24.1
-	sigs.k8s.io/yaml v1.6.0
-)
-
-require (
+	gopkg.in/yaml.v3 v3.0.1
 	istio.io/api v1.30.4
 	istio.io/client-go v1.30.4
-)
-
-require (
-	github.com/distribution/reference v0.6.0
-	github.com/gardener/cert-management/pkg/apis v0.27.0
-	github.com/go-co-op/gocron/v2 v2.22.0
-	github.com/prometheus/client_model v0.6.2
-	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.36.3
 	k8s.io/apiextensions-apiserver v0.36.3
 	k8s.io/apimachinery v0.36.3
 	k8s.io/cli-runtime v0.36.3
 	k8s.io/client-go v0.36.3
 	k8s.io/kubectl v0.36.3
+	ocm.software/ocm v0.48.0
+	sigs.k8s.io/controller-runtime v0.24.1
+	sigs.k8s.io/yaml v1.6.0
 )
 
 require (
@@ -378,6 +368,7 @@ require (
 	k8s.io/component-base v0.36.3 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260603220949-865597e52e25 // indirect
+	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3 // indirect
 	oras.land/oras-go/v2 v2.6.2 // indirect
 	sigs.k8s.io/gateway-api v1.6.0 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
