@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -77,6 +78,7 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []client.Objec
 		if c.allTLSExpired(errs) {
 			return errors.Join(util.ErrClientTLSCertExpired, ErrModuleResourcesSSAFailed)
 		}
+		sort.Slice(errs, func(i, j int) bool { return errs[i].Error() < errs[j].Error() })
 		errs = append(errs, ErrModuleResourcesSSAFailed)
 		return errors.Join(errs...)
 	}
