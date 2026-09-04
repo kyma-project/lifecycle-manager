@@ -33,8 +33,8 @@ require (
 	golang.org/x/sync v0.22.0
 	golang.org/x/time v0.15.0
 	gopkg.in/yaml.v3 v3.0.1
-	istio.io/api v1.30.4
-	istio.io/client-go v1.30.4
+	istio.io/api v1.31.0
+	istio.io/client-go v1.31.0
 	k8s.io/api v0.37.0
 	k8s.io/apiextensions-apiserver v0.37.0
 	k8s.io/apimachinery v0.37.0
