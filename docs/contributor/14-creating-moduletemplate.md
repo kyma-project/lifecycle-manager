@@ -164,6 +164,37 @@ When a Kyma CR requests a module, Lifecycle Manager:
 > ### Note
 > The `spec.descriptor` field in ModuleTemplate is deprecated and not used at runtime. Component descriptors are always fetched from the OCI registry.
 
+## Providing a new template-operator version for E2E testing
+
+When a new version of template-operator got released, do the following:
+1. Update [`template-operator` in *versions.yaml*](https://github.com/kyma-project/lifecycle-manager/blob/1d6f635b9d57180433ceb7fda72e44d6138a4290/versions.yaml#L16)
+2. Update the [`ModuleVersionToBeUsed` in *utils_test.go*](https://github.com/kyma-project/lifecycle-manager/blob/1d6f635b9d57180433ceb7fda72e44d6138a4290/tests/e2e/utils_test.go#L44)
+
+In addition, the E2E test *Module Transferred to Another OCI Registry* requires the module Component Version to be transferred to the `europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market` repository (other tests build and publish the Component Version into a local registry). To prepare this, do the following:
+1. Install the version of modulectl lifecycle-manager uses. See [`template-operator` in *versions.yaml*](https://github.com/kyma-project/lifecycle-manager/blob/b5b52aaa50029abaef255b25ef0ed9247c7ae48c/versions.yaml#L14)
+2. Download the raw-manifest resource from the template-operator release
+3. Insert the following lines into the container of the Deployment defined in the raw-manifest
+   ```yaml
+   env:
+    - name: DOKCER_KEDA_IMAGE
+      value: "europe-docker.pkg.dev/kyma-project/prod/keda-manager:1.7.0"
+    - name: DOKCER_TELEMETRY_IMAGE
+      value: "europe-docker.pkg.dev/kyma-project/prod/telemetry-manager:1.43.1"
+   ```
+4. Update the *module-config.yaml* in the template-operator repository so that the `manifest` points to the local modified raw manifest.
+    - the path must be relative to the *module-config.yaml*.
+5. Run `modulectl create` (see Procedure above)
+6. Create the CTF archive (see Procedure above)
+7. Transfer the CTF archive to `europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market` (see Procedure above)
+    - requires `Artifact Registry Create-on-Push Repository Administrator` and `Artifact Registry Writer` permissions
+8. Get the digests of the images transferred
+   ```
+   ocm get cv \
+     europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market//kyma-project.io/module/template-operator:<version> \
+     -o yaml
+   ```
+9. Update the versions and digests of [`rewrittenTemplateOperatorImage`, `rewrittenTemplateOperatorImage` and `rewrittenTemplateOperatorImage`](https://github.com/kyma-project/lifecycle-manager/blob/b5b52aaa50029abaef255b25ef0ed9247c7ae48c/tests/e2e/transferred_module_test.go#L28-L44) in the E2E test as necessary.
+
 ## Related Information
 
 - [ModuleTemplate CR Reference](./resources/03-moduletemplate.md)
