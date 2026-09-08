@@ -17,7 +17,7 @@ require (
 	github.com/go-co-op/gocron/v2 v2.22.0
 	github.com/go-logr/logr v1.4.4
 	github.com/go-logr/zapr v1.3.0
-	github.com/google/go-containerregistry v0.22.0
+	github.com/google/go-containerregistry v0.22.1
 	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20231202142526-55ffb0092afd
 	github.com/jellydator/ttlcache/v3 v3.4.1
 	github.com/kyma-project/lifecycle-manager/api v1.0.0
