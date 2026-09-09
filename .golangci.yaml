@@ -4,7 +4,8 @@ linters:
   disable:
     - contextcheck # too many false positives
     - depguard # checks if package imports are whitelisted
-    - exhaustruct # too subjective and harms code readability
+    - exhaustruct # deprecated and replaced by exhaustruct_v5 in golangci-lint v2.13.0
+    - exhaustruct_v5 # too subjective and harms code readability
     - nlreturn # too strict and mostly code is not more readable
     - paralleltest # should be enabled consciously for long running tests
     - lll # revive.line-length-limit serve same purpose
@@ -27,9 +28,6 @@ linters:
         - "*.DeepCopyObject"
     cyclop:
       max-complexity: 20
-    exhaustruct:
-      exclude:
-        - gdfs
     funlen:
       lines: 80
     gomoddirectives:
@@ -220,6 +218,9 @@ linters:
         - v1.Layer
         - authn.Keychain
         - ratelimiter.RateLimiter
+    modernize:
+      disable:
+        - "embedlit" # embedlit is not good for Kubernetes-based projects, with lots of core types embedding.
     nestif:
       min-complexity: 6
     nolintlint:

@@ -55,6 +55,10 @@ var (
 	errManifestInstallRepoNotCorrect = errors.New("manifest install image spec repo is not correct")
 )
 
+const (
+	trueStr = "true"
+)
+
 func NewTestManifest(prefix string) *v1beta2.Manifest {
 	return builder.NewManifestBuilder().WithName(fmt.Sprintf("%s-%s", prefix,
 		random.Name())).WithNamespace(ControlPlaneNamespace).WithLabel(shared.KymaName,
@@ -199,7 +203,7 @@ func MandatoryManifestExistsWithLabelAndAnnotation(ctx context.Context, clnt cli
 ) error {
 	manifests := v1beta2.ManifestList{}
 	if err := clnt.List(ctx, &manifests, &client.ListOptions{
-		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
+		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: trueStr}),
 	}); err != nil {
 		return fmt.Errorf("failed listing manifests: %w", err)
 	}
@@ -323,7 +327,7 @@ func SetSkipLabelToMandatoryManifests(ctx context.Context, clnt client.Client, i
 ) error {
 	manifestList := v1beta2.ManifestList{}
 	if err := clnt.List(ctx, &manifestList, &client.ListOptions{
-		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
+		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: trueStr}),
 	}); err != nil {
 		return fmt.Errorf("failed to list manifests: %w", err)
 	}
@@ -342,7 +346,7 @@ func MandatoryModuleManifestExistWithCorrectVersion(ctx context.Context, clnt cl
 ) error {
 	manifestList := v1beta2.ManifestList{}
 	if err := clnt.List(ctx, &manifestList, &client.ListOptions{
-		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
+		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: trueStr}),
 	}); err != nil {
 		return fmt.Errorf("failed to list manifests: %w", err)
 	}
@@ -372,7 +376,7 @@ func MandatoryModuleManifestContainsExpectedLabel(ctx context.Context, clnt clie
 ) error {
 	manifestList := v1beta2.ManifestList{}
 	if err := clnt.List(ctx, &manifestList, &client.ListOptions{
-		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
+		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: trueStr}),
 	}); err != nil {
 		return fmt.Errorf("failed to list manifests: %w", err)
 	}
@@ -401,7 +405,7 @@ func SkipLabelExistsInManifest(ctx context.Context,
 		return false
 	}
 
-	return manifest.Labels[shared.SkipReconcileLabel] == "true"
+	return manifest.Labels[shared.SkipReconcileLabel] == trueStr
 }
 
 func CheckManifestIsInState(

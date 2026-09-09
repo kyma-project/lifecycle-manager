@@ -344,10 +344,10 @@ func TestResourceRepository_DeleteWebhookResources(t *testing.T) {
 
 	t.Run("deletes all resources in parallel", func(t *testing.T) {
 		// This test verifies parallel execution by checking that all resources are processed
-		var deletedCount int32
+		var deletedCount atomic.Int32
 		mockClient := &mockSkrClient{
 			deleteFunc: func(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
-				atomic.AddInt32(&deletedCount, 1)
+				deletedCount.Add(1)
 				return nil
 			},
 		}
@@ -358,7 +358,7 @@ func TestResourceRepository_DeleteWebhookResources(t *testing.T) {
 		err := repo.DeleteWebhookResources(context.Background(), kymaName)
 
 		require.NoError(t, err)
-		assert.Equal(t, int32(5), atomic.LoadInt32(&deletedCount)) // 3 base + 2 generated
+		assert.Equal(t, int32(5), deletedCount.Load()) // 3 base + 2 generated
 	})
 }
 

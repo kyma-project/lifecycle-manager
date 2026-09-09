@@ -76,8 +76,7 @@ func IsConnectionRelatedError(err error) bool {
 }
 
 func isNoSuchHostError(err error) bool {
-	var dnsErr *net.DNSError
-	if errors.As(err, &dnsErr) {
+	if dnsErr, ok := errors.AsType[*net.DNSError](err); ok {
 		return dnsErr.IsNotFound
 	}
 	return false

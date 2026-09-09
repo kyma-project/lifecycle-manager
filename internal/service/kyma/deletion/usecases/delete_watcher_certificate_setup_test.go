@@ -47,7 +47,7 @@ func TestDeleteWatcherCertificateSetup_IsApplicable(t *testing.T) {
 			expectError:        false,
 			expectedCertName:   "test-kyma-webhook-tls",
 		},
-		{
+		{ //nolint:gosec //false positive: "G101: Potential hardcoded credentials"
 			name: "applicable when only secret exists",
 			kyma: &v1beta2.Kyma{
 				ObjectMeta: apimetav1.ObjectMeta{
@@ -83,7 +83,7 @@ func TestDeleteWatcherCertificateSetup_IsApplicable(t *testing.T) {
 			expectedCertName:   "test-kyma-webhook-tls",
 			expectedSecretName: "", // secret repo is not called because cert repo already leads to IsApplicable
 		},
-		{
+		{ //nolint:gosec //false positive: "G101: Potential hardcoded credentials"
 			name: "not applicable when neither certificate nor secret exist",
 			kyma: &v1beta2.Kyma{
 				ObjectMeta: apimetav1.ObjectMeta{
@@ -150,7 +150,7 @@ func TestDeleteWatcherCertificateSetup_IsApplicable(t *testing.T) {
 			expectError:        true,
 			expectedCertName:   "test-kyma-webhook-tls",
 		},
-		{
+		{ //nolint:gosec //false positive: "G101: Potential hardcoded credentials"
 			name: "error when secret Exists fails",
 			kyma: &v1beta2.Kyma{
 				ObjectMeta: apimetav1.ObjectMeta{
