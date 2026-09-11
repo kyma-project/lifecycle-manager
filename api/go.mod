@@ -4,12 +4,12 @@ go 1.27.1
 
 require (
 	github.com/gardener/cert-management/pkg/apis v0.27.0
-	github.com/stretchr/testify v1.12.0
+	github.com/stretchr/testify v1.12.1
 	k8s.io/apimachinery v0.37.0
 	k8s.io/client-go v0.37.0
 	sigs.k8s.io/controller-runtime v0.25.0
+	// required by applyconfiguration-gen (k8s.io/code-generator); can be updated to v7 once the generator supports it
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.2
-	sigs.k8s.io/structured-merge-diff/v7 v7.0.0
 )
 
 require (
@@ -41,7 +41,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
-	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
@@ -50,7 +50,6 @@ require (
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.37.0 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260721132016-d427ff9ee9ad // indirect
