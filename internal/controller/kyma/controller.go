@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -161,10 +160,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
 	if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
-		if !useLegacyKymaDeletion() {
-			return r.processDeletion(ctx, kyma)
-		}
-		return r.handleDeletedSkr(ctx, req, kyma)
+		return r.processDeletion(ctx, kyma)
 	}
 
 	skrContext, err := r.SkrContextFactory.Get(kyma.GetNamespacedName())
@@ -174,7 +170,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, r.updateStatusWithError(ctx, kyma, err)
 	}
 
-	if !kyma.DeletionTimestamp.IsZero() && !useLegacyKymaDeletion() {
+	if !kyma.DeletionTimestamp.IsZero() {
 		return r.processDeletion(ctx, kyma)
 	}
 
@@ -270,23 +266,6 @@ func (r *Reconciler) processDeletion(ctx context.Context, kyma *v1beta2.Kyma) (c
 		// finalizers removed, no need to requeue if there is no error
 	}
 	return ctrl.Result{}, res.Err
-}
-
-func (r *Reconciler) handleDeletedSkr(ctx context.Context, req ctrl.Request, kyma *v1beta2.Kyma) (ctrl.Result, error) {
-	logf.FromContext(ctx).Info("access secret not found for kyma, assuming already deleted cluster")
-	if err := r.cleanupManifestCRs(ctx, kyma); err != nil {
-		r.Metrics.RecordRequeueReason(metrics.CleanupManifestCrs, queue.UnexpectedRequeue)
-		return ctrl.Result{}, err
-	}
-	r.cleanupMetrics(kyma.Name)
-	r.removeAllFinalizers(kyma)
-
-	if err := r.updateKyma(ctx, kyma); err != nil {
-		r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, queue.UnexpectedRequeue)
-		return ctrl.Result{}, err
-	}
-	r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, queue.IntendedRequeue)
-	return ctrl.Result{RequeueAfter: r.RateLimiter.When(req)}, nil
 }
 
 func (r *Reconciler) reconcile(ctx context.Context, req ctrl.Request, kyma *v1beta2.Kyma) (ctrl.Result, error) {
@@ -627,12 +606,6 @@ func (r *Reconciler) relatedManifestCRsAreDeleted(manifests []v1beta2.Manifest) 
 	return len(manifests) == 0
 }
 
-func (r *Reconciler) removeAllFinalizers(kyma *v1beta2.Kyma) {
-	for _, finalizer := range kyma.Finalizers {
-		controllerutil.RemoveFinalizer(kyma, finalizer)
-	}
-}
-
 func (r *Reconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
 	if err := r.Update(ctx, kyma); err != nil {
 		err = fmt.Errorf("error while updating kyma during deletion: %w", err)
@@ -705,11 +678,6 @@ func (r *Reconciler) deleteOrphanedCertificate(ctx context.Context, kymaName str
 		}
 	}
 	return nil
-}
-
-func useLegacyKymaDeletion() bool {
-	envValue, isDefined := os.LookupEnv("ENABLE_LEGACY_KYMA_DELETION")
-	return isDefined && envValue == "true"
 }
 
 func setModuleStatusesToError(kyma *v1beta2.Kyma, message string) {
