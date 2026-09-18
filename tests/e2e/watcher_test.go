@@ -182,9 +182,9 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 
 			// The skip-reconciliation label no longer blocks deletion; the reconciler proceeds
 			// with the deletion flow regardless. While the access secret still exists the
-			// reconciler will requeue after failing to reach the removed SKR cluster. Once
-			// the secret is manually deleted the next reconcile triggers handleDeletedSkr and
-			// cleans up the Kyma CR fully.
+			// reconciler will requeue after failing to reach the removed SKR cluster.
+			// Once the access secret is deleted, the next reconcile entering processDeletion
+			// skips the SKR-related cleanup tasks and eventually drops the Kyma finalizer.
 			By("And Kubeconfig Secret is deleted")
 			Consistently(AccessSecretExists).
 				WithContext(ctx).
