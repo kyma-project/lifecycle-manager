@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"golang.org/x/sync/errgroup"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,6 +42,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/result"
 	"github.com/kyma-project/lifecycle-manager/internal/result/kyma/usecase"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
