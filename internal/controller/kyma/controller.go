@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"golang.org/x/sync/errgroup"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -157,8 +158,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
-	// Init failure is intentionally ignored: SKR-facing usecases skip themselves upon ErrSkrClientNotFound.
-	_ = r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
+	err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
+	if !errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
+		r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)
+		setModuleStatusesToError(kyma, err.Error())
+		return ctrl.Result{}, r.updateStatusWithError(ctx, kyma, err)
+	}
+
 	if !kyma.DeletionTimestamp.IsZero() {
 		return r.processDeletion(ctx, kyma)
 	}
@@ -168,10 +174,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)
 		setModuleStatusesToError(kyma, err.Error())
 		return ctrl.Result{}, r.updateStatusWithError(ctx, kyma, err)
-	}
-
-	if !kyma.DeletionTimestamp.IsZero() {
-		return r.processDeletion(ctx, kyma)
 	}
 
 	err = skrContext.CreateKymaNamespace(ctx)
