@@ -159,6 +159,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
+
+	// The error accessmanager.ErrAccessSecretNotFound falls through intentionally
+	// as this condition is handled in the consecutive processing.
 	if !errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
 		r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)
 		setModuleStatusesToError(kyma, err.Error())
