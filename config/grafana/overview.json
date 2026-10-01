@@ -612,7 +612,7 @@
           "instant": false,
           "interval": "",
           "legendFormat": "{{requeue_reason}} - {{requeue_type}}",
-          "refId": "kyma_under_deletion_with_no_access_secret"
+          "refId": "A"
         }
       ],
       "thresholds": [],
