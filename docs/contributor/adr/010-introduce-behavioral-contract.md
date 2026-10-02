@@ -30,7 +30,6 @@ The contract is driven by stakeholder requirements. Within those constraints, we
 What exactly is captured by the contract? For example, the answers to the following questions with respect to the `Lifecycle-Manager's` behavior:
 - What does `Lifecycle-Manager` do if OCM artifact for a Kyma module doesn't have a `Default-Module-CR` layer?
 - What does `Lifecycle-Manager` do if user changes the namespace of a `Default-Module-CR` in an SKR cluster?
-and so on.
 See below for an example of a contract document.
 
 
