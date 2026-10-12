@@ -118,6 +118,10 @@ dry-run-control-plane: kustomize manifests
 build: generate fmt vet ## Build manager binary.
 	$(GO) build -ldflags="-X 'main.buildVersion=${BUILD_VERSION}'" -o bin/manager cmd/main.go
 
+.PHONY: build-for-codeql
+build-for-codeql: ## Compile all packages for CodeQL analysis (no codegen, no output).
+	$(GO) build -o /dev/null ./...
+
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
 	$(GO) run ./cmd/main.go
