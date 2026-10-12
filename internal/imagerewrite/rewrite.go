@@ -80,16 +80,16 @@ func (ir *DockerImageReference) String() string {
 
 func extractImageName(namedRef reference.Named) string {
 	familiarName := reference.FamiliarName(namedRef)
-	if idx := strings.LastIndex(familiarName, "/"); idx != -1 {
-		return familiarName[idx+1:]
+	if _, after, found := strings.CutLast(familiarName, "/"); found {
+		return after
 	}
 	return familiarName
 }
 
 func extractRepositoryPath(namedRef reference.Named) string {
 	path := reference.Path(namedRef)
-	if lastSlash := strings.LastIndex(path, "/"); lastSlash != -1 {
-		return path[:lastSlash]
+	if before, _, ok := strings.CutLast(path, "/"); ok {
+		return before
 	}
 	return ""
 }
