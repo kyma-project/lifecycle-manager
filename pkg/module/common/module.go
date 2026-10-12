@@ -89,12 +89,9 @@ const maxModuleNameLength = validation.DNS1035LabelMaxLength
 // e.g. kyma-project.io/module/some-module, default-id => "default-id-some-module-34180237"
 // e.g. domain.com/some-module, default-id => "default-id-some-module-1238916".
 func CreateModuleName(compName, prefix, moduleName string) string {
-	lastSeparatorIdx := strings.LastIndexByte(compName, '/')
-	var lastPart string
-	if lastSeparatorIdx != -1 {
-		lastPart = compName[lastSeparatorIdx+1:]
-	} else {
-		lastPart = compName
+	lastPart := compName
+	if _, after, found := strings.CutLast(compName, "/"); found {
+		lastPart = after
 	}
 	hash := fnv.New32()
 	_, _ = hash.Write([]byte(compName + moduleName))
