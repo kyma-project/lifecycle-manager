@@ -24,7 +24,7 @@ require (
 	github.com/kyma-project/lifecycle-manager/maintenancewindows v1.0.0
 	github.com/kyma-project/runtime-watcher/listener v1.4.4
 	github.com/kyma-project/template-operator/api v1.0.0
-	github.com/onsi/ginkgo/v2 v2.33.0
+	github.com/onsi/ginkgo/v2 v2.33.1
 	github.com/onsi/gomega v1.44.0
 	github.com/prometheus/client_golang v1.25.0
 	github.com/prometheus/client_model v0.6.3
