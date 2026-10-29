@@ -14,7 +14,7 @@ require (
 	github.com/cert-manager/cert-manager v1.21.3
 	github.com/distribution/reference v0.6.0
 	github.com/gardener/cert-management/pkg/apis v0.28.0
-	github.com/go-co-op/gocron/v2 v2.22.0
+	github.com/go-co-op/gocron/v2 v2.23.0
 	github.com/go-logr/logr v1.4.4
 	github.com/go-logr/zapr v1.3.0
 	github.com/google/go-containerregistry v0.22.1
