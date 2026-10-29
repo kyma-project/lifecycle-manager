@@ -11,7 +11,7 @@ replace (
 
 require (
 	github.com/Masterminds/semver/v3 v3.5.0
-	github.com/cert-manager/cert-manager v1.21.2
+	github.com/cert-manager/cert-manager v1.21.3
 	github.com/distribution/reference v0.6.0
 	github.com/gardener/cert-management/pkg/apis v0.28.0
 	github.com/go-co-op/gocron/v2 v2.22.0
