@@ -81,6 +81,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &certv1alpha1.SecretKeySelectorApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("SecretStatuses"):
 		return &certv1alpha1.SecretStatusesApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("X509Subject"):
+		return &certv1alpha1.X509SubjectApplyConfiguration{}
 
 	}
 	return nil
