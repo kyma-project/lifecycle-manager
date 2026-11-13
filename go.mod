@@ -1,6 +1,6 @@
 module github.com/kyma-project/lifecycle-manager
 
-go 1.27.3
+go 1.27.4
 
 replace (
 	//module rename in version v1.6.8
