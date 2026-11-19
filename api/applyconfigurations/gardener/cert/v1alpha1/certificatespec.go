@@ -18,6 +18,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	certv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/client-go/applyconfigurations/core/v1"
 )
@@ -27,6 +28,20 @@ import (
 //
 // CertificateSpec is the spec of the certificate to request.
 type CertificateSpecApplyConfiguration struct {
+	// Subject defines the optional requested set of X509 certificate subject attributes.
+	// Cannot be set if the `literalSubject` field is set.
+	// Note: The subject is typically ignored by ACME issuers.
+	Subject *X509SubjectApplyConfiguration `json:"subject,omitempty"`
+	// LiteralSubject defines the requested X.509 certificate subject, represented using the LDAP "String
+	// Representation of a Distinguished Name" [1].
+	// Important: the LDAP string format also specifies the order of the attributes
+	// in the subject, this is important when issuing certs for LDAP authentication.
+	// Example: `CN=foo,DC=corp,DC=example,DC=com`
+	// More info [1]: https://datatracker.ietf.org/doc/html/rfc4514
+	//
+	// Cannot be set if the `subject` or `commonName` field is set.
+	// Note: The literalSubject is typically ignored by ACME issuers.
+	LiteralSubject *string `json:"literalSubject,omitempty"`
 	// CommonName is the CN for the certificate (max. 64 chars).
 	CommonName *string `json:"commonName,omitempty"`
 	// DNSNames are the optional additional domain names of the certificate.
@@ -69,6 +84,10 @@ type CertificateSpecApplyConfiguration struct {
 	// Note that the issuer may choose to ignore the requested isCA value, just
 	// like any other requested attribute.
 	IsCA *bool `json:"isCA,omitempty"`
+	// Usages defines the requested key usages and extended key usages.
+	// If unset, defaults to `digital signature` (and `key encipherment` for RSA keys).
+	// Note: Usages are typically ignored by ACME issuers.
+	Usages []certv1alpha1.KeyUsage `json:"usages,omitempty"`
 	// Requested 'duration' (i.e. lifetime) of the Certificate. Note that the
 	// ACME issuer may choose to ignore the requested duration, just like any other
 	// requested attribute.
@@ -82,6 +101,22 @@ type CertificateSpecApplyConfiguration struct {
 // apply.
 func CertificateSpec() *CertificateSpecApplyConfiguration {
 	return &CertificateSpecApplyConfiguration{}
+}
+
+// WithSubject sets the Subject field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Subject field is set to the value of the last call.
+func (b *CertificateSpecApplyConfiguration) WithSubject(value *X509SubjectApplyConfiguration) *CertificateSpecApplyConfiguration {
+	b.Subject = value
+	return b
+}
+
+// WithLiteralSubject sets the LiteralSubject field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the LiteralSubject field is set to the value of the last call.
+func (b *CertificateSpecApplyConfiguration) WithLiteralSubject(value string) *CertificateSpecApplyConfiguration {
+	b.LiteralSubject = &value
+	return b
 }
 
 // WithCommonName sets the CommonName field in the declarative configuration to the given value
@@ -241,6 +276,16 @@ func (b *CertificateSpecApplyConfiguration) WithPrivateKey(value *CertificatePri
 // If called multiple times, the IsCA field is set to the value of the last call.
 func (b *CertificateSpecApplyConfiguration) WithIsCA(value bool) *CertificateSpecApplyConfiguration {
 	b.IsCA = &value
+	return b
+}
+
+// WithUsages adds the given value to the Usages field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Usages field.
+func (b *CertificateSpecApplyConfiguration) WithUsages(values ...certv1alpha1.KeyUsage) *CertificateSpecApplyConfiguration {
+	for i := range values {
+		b.Usages = append(b.Usages, values[i])
+	}
 	return b
 }
 

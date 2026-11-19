@@ -46,6 +46,7 @@ type ModuleTemplateSpecApplyConfiguration struct {
 	// While Data can change after the initial creation of ModuleTemplate, it is not expected to be propagated to
 	// downstream modules as it is considered a set of default values. This means that an update of the data block
 	// will only propagate to new Modules created form ModuleTemplate, not any existing Module.
+	//
 	Data *unstructured.Unstructured `json:"data,omitempty"`
 	// The Descriptor is the Open Component Model Descriptor of a Module, containing all relevant information
 	// to correctly initialize a module (e.g. Manifests, References to Binaries and/or configuration)
@@ -59,6 +60,7 @@ type ModuleTemplateSpecApplyConfiguration struct {
 	//
 	// NOTE: Only Raw Rendering is Supported for the layers. So previously used "config" layers for the helm
 	// charts and kustomize renderers are deprecated and ignored.
+	//
 	Descriptor *runtime.RawExtension `json:"descriptor,omitempty"`
 	// CustomStateCheck is deprecated.
 	CustomStateCheck []*apiv1beta2.CustomStateCheck `json:"customStateCheck,omitempty"`
