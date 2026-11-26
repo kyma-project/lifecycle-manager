@@ -47,7 +47,7 @@ jobs:
           - watcher-zero-downtime
 
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - name: Checkout lifecycle-manager
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -75,7 +75,7 @@ jobs:
       - name: Run '${{ matrix.e2e-test }}' test
         working-directory: lifecycle-manager
         # Temporarily local build only while ADO builder is broken:
-        # 
+        #
         # env:
           # KLM_VERSION_TAG: ${{ steps.configuration.outputs.klm_version_tag }}
           # KLM_IMAGE_REPO: ${{ steps.configuration.outputs.klm_image_repo }}
