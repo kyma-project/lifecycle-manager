@@ -8,22 +8,13 @@ on:
       k8s_version:
         description: "With Kubernetes version (format: X.Y.Z)"
         required: false
-  # Temporarily local build only while ADO builder is broken.
-  # This is a critical change. We must use pull_request_target and checkout the PR head explicitly 
-  # so that E2E tests run the PR's code, not the base branch. This MUST be gated by the restricted 
-  # environment to ensure proper approval before running E2E tests possibly containing malicious code.
-  # DO NOT remove the restricted-gate step or the need for it without reverting this to pull_request again.
-  # 
-  # pull_request:
-  pull_request_target:
+  pull_request:
     types: [ opened, synchronize, reopened, ready_for_review ]
 
 jobs:
   # NOTE: The external image build is temporarily broken. We build the KLM image
   # locally in each E2E job (see tests/e2e/e2e.common.mk) instead of waiting for
-  # the pre-built image. The restricted-gate below preserves the approval gate
-  # that previously came implicitly from the image build. Revert both once the
-  # external build is fixed.
+  # the pre-built image. Revert once the external build is fixed.
   # wait-for-image-build:
   #   name: Wait for image build
   #   runs-on: ubuntu-latest
@@ -46,15 +37,8 @@ jobs:
   #         ITERATIONS: 40
   #         SLEEP_SECONDS: 30
   #       run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS}}
-  restricted-gate:
-    runs-on: ubuntu-latest
-    environment:
-      name: restricted
-    steps:
-      - run: echo "'e2e' job approval granted"
   e2e-tests:
     name: E2E With Gardener CertManager
-    needs: restricted-gate
     strategy:
       fail-fast: false
       matrix:
@@ -69,9 +53,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: lifecycle-manager
-          # pull_request_target checks out the base ref by default; explicitly
-          # check out the PR head so E2E tests the PR's code, not main.
-          ref: ${{ github.event.pull_request.head.sha }}
       - name: Get configuration
         uses: ./lifecycle-manager/.github/actions/get-configuration
         id: configuration
