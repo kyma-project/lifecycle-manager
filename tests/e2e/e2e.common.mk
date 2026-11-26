@@ -182,11 +182,17 @@ deploy-klm: ## Deploy KLM into the KCP test cluster.
 	fi
 	@kustomize edit add patch --path patches/oci_registry_host.yaml --kind Deployment
 	@popd > /dev/null
-	@if [ -z "$$GITHUB_ACTIONS" ]; then \
-		$(SCRIPTS_DIR)/deploy_klm_from_sources.sh $(if $(filter true,$(USE_GCM)),--use-gcm); \
-	else \
-		$(SCRIPTS_DIR)/deploy_klm_from_registry.sh --image-registry $${KLM_IMAGE_REPO} --image-tag $${KLM_VERSION_TAG} $(if $(filter true,$(USE_GCM)),--use-gcm); \
-	fi
+	@# NOTE: Temporarily always build KLM from sources (local docker-build + push
+	@# to the k3d registry) because the external image build is broken. Revert to
+	@# the registry-based path (commented out below) once it is fixed.
+
+# Temporarily local build only while ADO builder is broken:
+	@$(SCRIPTS_DIR)/deploy_klm_from_sources.sh $(if $(filter true,$(USE_GCM)),--use-gcm)
+#	@if [ -z "$$GITHUB_ACTIONS" ]; then \
+#		$(SCRIPTS_DIR)/deploy_klm_from_sources.sh $(if $(filter true,$(USE_GCM)),--use-gcm); \
+#	else \
+#		$(SCRIPTS_DIR)/deploy_klm_from_registry.sh --image-registry $${KLM_IMAGE_REPO} --image-tag $${KLM_VERSION_TAG} $(if $(filter true,$(USE_GCM)),--use-gcm); \
+#	fi
 	@echo "::endgroup::"
 	@echo "::group::Patching KCP metrics endpoint"
 	@$(SCRIPTS_DIR)/patch_kcp_metrics_endpoint.sh

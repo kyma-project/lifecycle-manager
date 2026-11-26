@@ -12,31 +12,33 @@ on:
     types: [ opened, synchronize, reopened, ready_for_review ]
 
 jobs:
-  wait-for-image-build:
-    name: Wait for image build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-      - name: Set Image
-        run: |
-          if [ -n "${{ github.event.pull_request.head.sha }}" ]; then
-            echo "IMAGE=europe-docker.pkg.dev/kyma-project/dev/lifecycle-manager:${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
-          else
-            # Manually executed workflow should use the latest image of main branch
-            echo "IMAGE=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest" >> $GITHUB_ENV
-          fi
-      - name: Wait for the Docker image
-        timeout-minutes: 20
-        env:
-          ITERATIONS: 40
-          SLEEP_SECONDS: 30
-        run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS}}
+  # NOTE: The external image build is temporarily broken. We build the KLM image
+  # locally in each E2E job (see tests/e2e/e2e.common.mk) instead of waiting for
+  # the pre-built image. Revert once the external build is fixed.
+  # wait-for-image-build:
+  #   name: Wait for image build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+  #       with:
+  #         fetch-depth: 0
+  #     - name: Set Image
+  #       run: |
+  #         if [ -n "${{ github.event.pull_request.head.sha }}" ]; then
+  #           echo "IMAGE=europe-docker.pkg.dev/kyma-project/dev/lifecycle-manager:${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
+  #         else
+  #           # Manually executed workflow should use the latest image of main branch
+  #           echo "IMAGE=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest" >> $GITHUB_ENV
+  #         fi
+  #     - name: Wait for the Docker image
+  #       timeout-minutes: 20
+  #       env:
+  #         ITERATIONS: 40
+  #         SLEEP_SECONDS: 30
+  #       run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS}}
   e2e-tests:
     name: E2E With Gardener CertManager
-    needs: wait-for-image-build
     strategy:
       fail-fast: false
       matrix:
@@ -45,7 +47,7 @@ jobs:
           - watcher-zero-downtime
 
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - name: Checkout lifecycle-manager
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -72,9 +74,11 @@ jobs:
           cache-dependency-path: lifecycle-manager/go.sum
       - name: Run '${{ matrix.e2e-test }}' test
         working-directory: lifecycle-manager
-        env:
-          KLM_VERSION_TAG: ${{ steps.configuration.outputs.klm_version_tag }}
-          KLM_IMAGE_REPO: ${{ steps.configuration.outputs.klm_image_repo }}
+        # Temporarily local build only while ADO builder is broken:
+        #
+        # env:
+          # KLM_VERSION_TAG: ${{ steps.configuration.outputs.klm_version_tag }}
+          # KLM_IMAGE_REPO: ${{ steps.configuration.outputs.klm_image_repo }}
         run: |
           if [[ "${{ matrix.e2e-test }}" == "watcher-enqueue" ]]; then
             make -f tests/e2e/watcher_enqueue_gcm_test.mk test
