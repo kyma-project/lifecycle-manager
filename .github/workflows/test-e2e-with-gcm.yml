@@ -8,7 +8,14 @@ on:
       k8s_version:
         description: "With Kubernetes version (format: X.Y.Z)"
         required: false
-  pull_request:
+  # Temporarily local build only while ADO builder is broken.
+  # This is a critical change. We must use pull_request_target and checkout the PR head explicitly 
+  # so that E2E tests run the PR's code, not the base branch. This MUST be gated by the restricted 
+  # environment to ensure proper approval before running E2E tests possibly containing malicious code.
+  # DO NOT remove the restricted-gate step or the need for it without reverting this to pull_request again.
+  # 
+  # pull_request:
+  pull_request_target:
     types: [ opened, synchronize, reopened, ready_for_review ]
 
 jobs:
@@ -62,6 +69,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: lifecycle-manager
+          # pull_request_target checks out the base ref by default; explicitly
+          # check out the PR head so E2E tests the PR's code, not main.
+          ref: ${{ github.event.pull_request.head.sha }}
       - name: Get configuration
         uses: ./lifecycle-manager/.github/actions/get-configuration
         id: configuration
