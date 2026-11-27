@@ -44,7 +44,7 @@ fi
 # Read the pinned SHA-256 checksum for the detected OS/architecture from versions.yaml
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIFECYCLE_MANAGER_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-EXPECTED_CHECKSUM="$(yq -e ".istioChecksums.\"${OS_ARCH}\"" "${LIFECYCLE_MANAGER_DIR}/versions.yaml")"
+EXPECTED_CHECKSUM="$(yq -e ".[\"istio-checksum-${OS_ARCH}\"]" "${LIFECYCLE_MANAGER_DIR}/versions.yaml")"
 
 # Download the specified istio release tarball and verify it against the pinned checksum
 ARCHIVE="istio-${REQUIRED_VERSION}-${OS_ARCH}.tar.gz"

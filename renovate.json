@@ -114,7 +114,7 @@
       "enabled": false
     },
     {
-      "description": "Never automerge istio bumps: the istioChecksums in versions.yaml must be updated manually in the same PR, otherwise istioctl install fails the checksum verification.",
+      "description": "Never automerge istio bumps: the istio-checksum-* values in versions.yaml must be updated manually in the same PR, otherwise istioctl install fails the checksum verification.",
       "matchManagers": ["regex"],
       "matchFileNames": ["^versions\\.yaml$"],
       "matchDepNames": ["istio/istio"],
