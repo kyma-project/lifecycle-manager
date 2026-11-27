@@ -203,13 +203,13 @@ func getFsChartPath(imageSpec v1beta2.ImageSpec) string {
 }
 
 // sanitizeArchivePath ensures the path is within the intended directory to prevent path traversal attacks (gosec:G305).
-func sanitizeArchivePath(dir, path string) (string, error) {
-	joinedPath := filepath.Join(dir, path)
-	if strings.HasPrefix(joinedPath, filepath.Clean(dir)) {
-		return joinedPath, nil
+func sanitizeArchivePath(existingDir, untrustedPath string) (string, error) {
+	joinedPath := filepath.Join(existingDir, untrustedPath)
+	rel, err := filepath.Rel(existingDir, joinedPath)
+	if err != nil || strings.HasPrefix(rel, "..") {
+		return "", fmt.Errorf("%w: %s", ErrTaintedArchive, untrustedPath)
 	}
-
-	return "", fmt.Errorf("%w: %s", ErrTaintedArchive, path)
+	return joinedPath, nil
 }
 
 func noSchemeURL(url string) string {
