@@ -6,7 +6,13 @@ controllerTools: "0.20.1"
 docker: "27.5.1"
 go: "1.27.4"
 golangciLint: "2.14.0"
-istio: "1.26.4" # https://github.com/kyma-project/lifecycle-manager/issues/2797
+istio: "1.26.4"
+# Regenerate manually on every istio bump with: make update-istio-checksums
+istioChecksums:
+  osx: "1adde9ad2e694e5b5e55c332a9aca2bfbfef2239a20806f8d2c7ca402992579a"
+  osx-arm64: "03e28bc0ecc2b724e87c3e74257419324e8a2fc9ce59e0121a8ca7ecd855ed92"
+  linux-amd64: "50f150e7c7dea2f3fd5fad6160ee134ed19dcccf18db35368911ea6a82441b22"
+  linux-arm64: "2d0843f285ff5f6a9b204c59b53a80f5dc5fcb0fa4e0260e88a10388eeed630a"
 k3d: "5.8.3"
 k8s: "1.32.2" # kubernetes version used in e2e tests
 envtest_k8s: "1.32.0" # kubernetes version used in integration tests
