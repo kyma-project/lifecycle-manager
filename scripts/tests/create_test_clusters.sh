@@ -106,8 +106,19 @@ else
 
   kubectl config use-context k3d-kcp
 
-  # install istio
-  istioctl install --set profile=demo -y
+  # install istio via helm, with charts pinned by SHA-256 digest from versions.yaml (demo profile)
+  ISTIO_REGISTRY="oci://gcr.io/istio-release/charts"
+  ISTIO_VERSION="$(yq -e '.istio' ../../versions.yaml)"
+  ISTIO_BASE_DIGEST="$(yq -e '.["istio-chart-base"]' ../../versions.yaml)"
+  ISTIO_ISTIOD_DIGEST="$(yq -e '.["istio-chart-istiod"]' ../../versions.yaml)"
+  ISTIO_GATEWAY_DIGEST="$(yq -e '.["istio-chart-gateway"]' ../../versions.yaml)"
+
+  helm install istio-base "${ISTIO_REGISTRY}/base@${ISTIO_BASE_DIGEST}" \
+    --version "${ISTIO_VERSION}" -n istio-system --create-namespace --set profile=demo --wait
+  helm install istiod "${ISTIO_REGISTRY}/istiod@${ISTIO_ISTIOD_DIGEST}" \
+    --version "${ISTIO_VERSION}" -n istio-system --set profile=demo --wait
+  helm install istio-ingressgateway "${ISTIO_REGISTRY}/gateway@${ISTIO_GATEWAY_DIGEST}" \
+    --version "${ISTIO_VERSION}" -n istio-system --wait
 
   # install certificate management
   if [ -n "$CERT_MANAGER_VERSION" ]; then

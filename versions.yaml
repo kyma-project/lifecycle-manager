@@ -7,6 +7,11 @@ docker: "27.5.1"
 go: "1.27.4"
 golangciLint: "2.14.0"
 istio: "1.26.4" # https://github.com/kyma-project/lifecycle-manager/issues/2797
+# SHA-256 digests of the istio helm charts (oci://gcr.io/istio-release/charts) for the pinned istio version.
+# These are the supply-chain trust anchor: helm verifies the pulled chart against them. Regenerate on every istio bump.
+istio-chart-base: "sha256:4a3f3537f58cf5aec456ce1ad41c57058c113676c23ddc2ebcc6079729af4960"
+istio-chart-istiod: "sha256:066c54e920b94114ad384514bb159d70c86f3301733832a48492afe4a4975e60"
+istio-chart-gateway: "sha256:ec6bff70960e944152a7eccb6e7a733896e7a4c2e78451f9da270b03bc031eac"
 k3d: "5.8.3"
 k8s: "1.32.2" # kubernetes version used in e2e tests
 envtest_k8s: "1.32.0" # kubernetes version used in integration tests

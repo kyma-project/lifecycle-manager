@@ -246,3 +246,7 @@ lint-yaml: ## Run yamllint against repository. Assumes yamllint is installed. In
 .PHONY: bump-go-version
 bump-go-version: ## Bump Go version. Usage: make bump-go-version GO_VERSION=1.27.3
 	./scripts/bump-go-version.sh $(GO_VERSION)
+
+.PHONY: update-istio-chart-digests
+update-istio-chart-digests: ## Update istio-chart-* digests in versions.yaml for the pinned istio version.
+	./scripts/update_istio_chart_digests.sh

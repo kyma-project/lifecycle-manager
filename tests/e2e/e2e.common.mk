@@ -62,7 +62,6 @@ GINKGO_VERSION                  ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_ginkg
 K8S_VERSION                     ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_k8s_version.sh)
 CERT_MANAGER_VERSION            ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_cert_manager_version.sh)
 GARDENER_CERT_MANAGER_VERSION   ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_gardener_cert_manager_version.sh)
-ISTIOCTL_VERSION                ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_istioctl_version.sh)
 KUSTOMIZE_VERSION               ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_kustomize_version.sh)
 MODULECTL_VERSION               ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_modulectl_version.sh)
 OCM_VERSION                     ?= $(shell $(INSTALL_SCRIPTS_DIR)/required_ocm_version.sh)
@@ -127,18 +126,6 @@ modulectl-install: $(LOCALBIN) ## Install modulectl into LOCALBIN (skipped if al
 	fi
 	@echo "::endgroup::"
 
-.PHONY: istioctl-install
-istioctl-install: $(LOCALBIN) ## Install istioctl into LOCALBIN (skipped if already present).
-	@echo "::group::Install istioctl"
-	@if [ -f $(LOCALBIN)/istioctl ]; then \
-		echo "istioctl already installed, skipping"; \
-	else \
-		pushd $(LOCALBIN) > /dev/null && \
-		$(INSTALL_SCRIPTS_DIR)/istioctl_install.sh $(ISTIOCTL_VERSION) && \
-		popd > /dev/null; \
-	fi
-	@echo "::endgroup::"
-
 .PHONY: ocm-install
 ocm-install: $(LOCALBIN) ## Install ocm CLI into LOCALBIN (skipped if already present).
 	@echo "::group::Install ocm"
@@ -152,7 +139,7 @@ ocm-install: $(LOCALBIN) ## Install ocm CLI into LOCALBIN (skipped if already pr
 	@echo "::endgroup::"
 
 .PHONY: tools-install
-tools-install: istioctl-install kustomize-install modulectl-install ocm-install ginkgo-install
+tools-install: kustomize-install modulectl-install ocm-install ginkgo-install
 
 
 ##@ Cluster lifecycle
@@ -232,7 +219,6 @@ log-tool-versions: ## Print the versions of all tools used in the test run.
 	@echo "::group::Tool versions"
 	@echo "K8S VERSION:          $(K8S_VERSION)"
 	@echo "CERT-MANAGER VERSION: $(CERT_MANAGER_VERSION)"
-	@echo "ISTIOCTL VERSION:     $(ISTIOCTL_VERSION)"
 	@echo "KUSTOMIZE VERSION:    $(KUSTOMIZE_VERSION)"
 	@echo "MODULECTL VERSION:    $(MODULECTL_VERSION)"
 	@echo "OCM VERSION:          $(OCM_VERSION)"

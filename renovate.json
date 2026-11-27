@@ -80,6 +80,12 @@
       "automerge": true
     },
     {
+      "description": "Never automerge istio bumps: the istioChartDigests in versions.yaml must be reviewed together with the version in the same PR.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["gcr.io/istio-release/charts/**"],
+      "automerge": false
+    },
+    {
       "matchManagers": ["gomod"],
       "groupName": "All opentelemetry collector packages",
       "matchSourceUrls": [
@@ -127,9 +133,42 @@
       "customType": "regex",
       "managerFilePatterns": ["^versions\\.yaml$"],
       "matchStrings": ["istio: \"(?<currentValue>[\\d.]+)\""],
-      "datasourceTemplate": "github-releases",
+      "datasourceTemplate": "docker",
       "versioningTemplate": "semver",
-      "depNameTemplate": "istio/istio"
+      "depNameTemplate": "gcr.io/istio-release/charts/istiod"
+    },
+    {
+      "customType": "regex",
+      "description": "Istio base chart digest, resolved for the pinned istio version.",
+      "managerFilePatterns": ["^versions\\.yaml$"],
+      "matchStrings": [
+        "istio: \"(?<currentValue>[\\d.]+)\"[\\s\\S]*?istio-chart-base: \"(?<currentDigest>sha256:[a-f0-9]{64})\""
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "gcr.io/istio-release/charts/base"
+    },
+    {
+      "customType": "regex",
+      "description": "Istio istiod chart digest, resolved for the pinned istio version.",
+      "managerFilePatterns": ["^versions\\.yaml$"],
+      "matchStrings": [
+        "istio: \"(?<currentValue>[\\d.]+)\"[\\s\\S]*?istio-chart-istiod: \"(?<currentDigest>sha256:[a-f0-9]{64})\""
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "gcr.io/istio-release/charts/istiod"
+    },
+    {
+      "customType": "regex",
+      "description": "Istio gateway chart digest, resolved for the pinned istio version.",
+      "managerFilePatterns": ["^versions\\.yaml$"],
+      "matchStrings": [
+        "istio: \"(?<currentValue>[\\d.]+)\"[\\s\\S]*?istio-chart-gateway: \"(?<currentDigest>sha256:[a-f0-9]{64})\""
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver",
+      "depNameTemplate": "gcr.io/istio-release/charts/gateway"
     },
     {
       "customType": "regex",

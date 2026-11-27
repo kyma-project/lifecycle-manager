@@ -12,7 +12,6 @@ KUBECTL_VERSION_DEFAULT=$(yq e '.kubectl' ./versions.yaml)
 GO_VERSION_DEFAULT=$(yq e '.go' ./versions.yaml)
 K3D_VERSION_DEFAULT=$(yq e '.k3d' ./versions.yaml)
 DOCKER_VERSION_DEFAULT=$(yq e '.docker' ./versions.yaml)
-ISTIOCTL_VERSION_DEFAULT=$(yq e '.istio' ./versions.yaml)
 
 versioning_error=false
 # Check if required tools are installed
@@ -36,8 +35,8 @@ if ! command -v docker &> /dev/null; then
   versioning_error=true
 fi
 
-if ! command -v istioctl &> /dev/null; then
-  echo "istioctl is not installed. Please install istioctl."
+if ! command -v helm &> /dev/null; then
+  echo "helm is not installed. Please install helm."
   versioning_error=true
 fi
 
@@ -50,7 +49,6 @@ KUBECTL_VERSION_INSTALLED=$(kubectl version --client | grep -E '[0-9]{1,}.[0-9]{
 GO_VERSION_INSTALLED=$(go version | awk '{print $3}' | sed 's/go//')
 K3D_VERSION_INSTALLED=$(k3d --version | head -n1 | awk '{print $3}' | sed 's/v//')
 DOCKER_VERSION_INSTALLED=$(docker --version | awk '{print $3}' | cut -d',' -f1)
-ISTIOCTL_VERSION_INSTALLED=$(istioctl version --short --remote=false | awk '{print $NF}' | sed 's/v//')
 
 # Function to compare two versions
 # Returns:
@@ -98,11 +96,6 @@ if [[ ! $DOCKER_VERSION_INSTALLED =~ $SEM_VER_REGEX ]]; then
   exit 2
 fi
 
-if [[ ! $ISTIOCTL_VERSION_INSTALLED =~ $SEM_VER_REGEX ]]; then
-  echo "Invalid istioctl version: $ISTIOCTL_VERSION_INSTALLED"
-  exit 2
-fi
-
 # Check if the installed versions are up to date
 [[ $(version_comparator "$KUBECTL_VERSION_INSTALLED" "$KUBECTL_VERSION_DEFAULT") -eq 1 ]] \
   && print_warning "kubectl" "$KUBECTL_VERSION_DEFAULT" \
@@ -119,10 +112,6 @@ fi
 [[ $(version_comparator "$DOCKER_VERSION_INSTALLED" "$DOCKER_VERSION_DEFAULT") -eq 1 ]] \
   && print_warning "docker" "$DOCKER_VERSION_DEFAULT" \
   || echo "docker   version is up to date, using: v$DOCKER_VERSION_INSTALLED"
-
-[[ $(version_comparator "$ISTIOCTL_VERSION_INSTALLED" "$ISTIOCTL_VERSION_DEFAULT") -eq 1 ]] \
-  && print_warning "istioctl" "$ISTIOCTL_VERSION_DEFAULT" \
-  || echo "istioctl version is up to date, using: v$ISTIOCTL_VERSION_INSTALLED"
 
 # Exit with success
 exit 0

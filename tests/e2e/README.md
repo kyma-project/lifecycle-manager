@@ -11,7 +11,7 @@ Before running the tests, install the following tools:
 - GNU Make ≥ 3.82 — macOS ships Make 3.81, which is not supported. Install a newer version with `brew install make` and use `gmake` instead of `make` in all commands below.
 - The [`template-operator`](https://github.com/kyma-project/template-operator) repository checked out at the same level as this repository — the makefiles resolve it at `../template-operator/` relative to the `lifecycle-manager` root.
 
-All other required tools (ginkgo, kustomize, modulectl, istioctl, ocm) are installed automatically into `tests/e2e/bin/` the first time you run any test target.
+All other required tools (ginkgo, kustomize, modulectl, ocm) are installed automatically into `tests/e2e/bin/` the first time you run any test target. The test setup installs Istio into the cluster from its Helm charts, pinned by digest in `versions.yaml`, so you don't need an istioctl binary.
 
 ## Structure
 
@@ -47,7 +47,7 @@ Every test-specific `.mk` file includes `e2e.common.mk` and must define the foll
 | `create-clusters` | Creates the KCP and SKR k3d test clusters and installs all cluster dependencies. |
 | `deploy-klm` | Builds and deploys KLM into the KCP cluster. Locally, it builds from source; in CI, it pulls from a registry. |
 | `teardown` | Deletes the KCP and SKR test clusters. |
-| `tools-install` | Installs all required tools (ginkgo, kustomize, modulectl, istioctl, ocm) into `tests/e2e/bin/`. |
+| `tools-install` | Installs all required tools (ginkgo, kustomize, modulectl, ocm) into `tests/e2e/bin/`. |
 | `module-setup-latest` | Deploys the latest template-operator ModuleTemplate. |
 | `module-setup-in-older-version` | Deploys the older template-operator version. |
 | `module-setup-in-newer-version` | Deploys the newer template-operator version. |

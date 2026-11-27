@@ -1,7 +1,7 @@
 # Overview of All Scripts
 
 ## Version Checker: `version.sh`
-The script checks if the Command Line Tools (CLI) for `kubectl`, `docker`, `GoLang`, `k3d`, and `istioctl` have the correct versions.
+The script checks if the Command Line Tools (CLI) for `kubectl`, `docker`, `GoLang`, `k3d`, and `helm` have the correct versions.
 It ensures that the versions are in a valid format using [Semantic Versioning](https://semver.org/).
 If the check detects outdated versions, it gives a warning and exits with success. For more information, see all the possible exit statuses:  
 

@@ -4,9 +4,6 @@ outputs:
   k8s_version:
     description: The version of k8s to use. For example, 1.28.7.
     value: ${{ steps.define-variables.outputs.k8s_version }}
-  istio_version:
-    description: The version of Istio to install. For example, 1.20.3.
-    value: ${{ steps.define-variables.outputs.istio_version }}
   k3d_version:
     description: The version of k3d to install. For example, 5.6.0.
     value: ${{ steps.define-variables.outputs.k3d_version }}
@@ -46,7 +43,6 @@ runs:
       working-directory: lifecycle-manager
       shell: bash
       run: |
-        echo "istio_version=$(yq e '.istio' versions.yaml)" >> $GITHUB_OUTPUT
         echo "k3d_version=$(yq e '.k3d' versions.yaml)" >> $GITHUB_OUTPUT
         echo "ocm_cli_version=$(yq e '.ocm-cli' versions.yaml)" >> $GITHUB_OUTPUT
         echo "modulectl_version=$(yq e '.modulectl' versions.yaml)" >> $GITHUB_OUTPUT
